@@ -807,23 +807,22 @@ async function initMyReviews() {
         const li = document.createElement("li");
         li.className = "my-row " + (r.decision === "approve" ? "approved" : "modified");
         if (r.is_report) li.classList.add("self-reported");
-        const reviewer = "Reviewer";  // anonymized
+        const reviewer = r.reviewer_label || "Reviewer";
         const decision = r.decision === "approve" ? "✅ Approved" : "✏ Modified";
         const flag = r.is_report ? '<span class="self-flag">⚠ self-reported</span>' : '';
-        const payloadHTML = (() => {
-          const p = r.review_payload || r.payload || {};
-          return `Q: ${p.quality ?? "—"} · F: ${p.faithful ?? "—"}${p.notes ? ` · ${escapeHtml(p.notes)}` : ""}`;
-        })();
-        const origHTML = (() => {
-          const p = r.original_payload || {};
-          if (r.decision !== "modify") return "";
-          return `<div class="orig-line">Original — Q: ${p.quality ?? "—"} · F: ${p.faithful ?? "—"}${p.notes ? ` · ${escapeHtml(p.notes)}` : ""}</div>`;
-        })();
+        // Backend fields are r.final (after review) and r.original (annotator's submission).
+        const fin = r.final || r.review_payload || r.payload || {};
+        const orig = r.original || r.original_payload || {};
+        const finalHTML = `Q: ${fin.quality ?? "—"} · F: ${fin.faithful ?? "—"}${fin.notes ? ` · ${escapeHtml(fin.notes)}` : ""}`;
+        const origHTML = (r.decision === "modify")
+          ? `<div class="orig-line">Original — Q: ${orig.quality ?? "—"} · F: ${orig.faithful ?? "—"}${orig.notes ? ` · ${escapeHtml(orig.notes)}` : ""}</div>`
+          : "";
+        const kindBadge = r.kind === "gold" ? '<span class="self-flag" style="background:#fff3a3;color:#8a5500">GOLD</span>' : '';
         li.innerHTML = `
-          <div class="my-line1">${decision} ${flag} <span class="muted">by ${reviewer} · ${r.created_at || ""}</span></div>
+          <div class="my-line1">${decision} ${kindBadge} ${flag} <span class="muted">by ${escapeHtml(reviewer)} · ${r.ts || r.created_at || ""}</span></div>
           <div class="my-line2">Item: <code>${escapeHtml(r.item_id || "")}</code></div>
           ${origHTML}
-          <div class="my-line3">Reviewer payload — ${payloadHTML}</div>
+          <div class="my-line3">Final — ${finalHTML}</div>
         `;
         ul.appendChild(li);
       }
@@ -945,9 +944,10 @@ async function loadGoldLibrary() {
     for (const it of items) {
       const card = document.createElement("section");
       card.className = "card gl-card";
-      const p = it.payload || {};
+      // Backend returns final scores at `item.final` (not `item.payload`).
+      const p = it.final || it.payload || {};
       card.innerHTML = `
-        <div class="meta"><span class="tag gold-tag">GOLD</span><span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span></div>
+        <div class="meta"><span class="tag gold-tag">GOLD</span><span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${it.confirmed_by ? `<span class="tag">by ${escapeHtml(it.confirmed_by)}</span>` : ""}</div>
         <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline src="${absUrl(it.video_url || "")}"></video></figure></div>
         <p class="gl-scores">Quality: <strong>${p.quality ?? "—"}</strong> · Faithful: <strong>${p.faithful ?? "—"}</strong></p>
         <p class="muted">${escapeHtml(p.notes || "")}</p>
