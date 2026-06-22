@@ -752,6 +752,57 @@ ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
 .nav-list { font-size: 14px; }
 .nav-list a { color: var(--accent); }
 
+/* Reviewer hub grid */
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.hub-card {
+  display: block;
+  text-decoration: none;
+  color: var(--text);
+  background: #fafafd;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 16px;
+  transition: transform 0.1s, border-color 0.15s, background 0.15s;
+}
+.hub-card:hover {
+  border-color: var(--accent);
+  background: #fff;
+  transform: translateY(-2px);
+}
+.hub-card.primary { border-color: var(--accent); background: #eef2fb; }
+.hub-card.primary:hover { background: #dbe5fb; }
+.hub-card.admin-only { background: #fff4e0; border-color: #f0d59c; }
+.hub-card.admin-only:hover { background: #fde9c2; }
+.hub-emoji { font-size: 28px; }
+.hub-title { font-weight: 700; font-size: 16px; margin: 6px 0 4px; }
+.hub-sub { font-size: 13px; color: var(--muted); line-height: 1.45; }
+
+/* Reviewer banner on task.html */
+.reviewer-banner {
+  background: #fff4e0;
+  border-color: #f0d59c;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.rev-btn {
+  background: var(--accent);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+.rev-btn:hover { background: var(--accent-dark); }
+.muted-small { color: var(--muted); font-size: 12px; }
+
 /* met-by-day list (non-admin secondary section) */
 .met-title {
   margin: 0 0 12px;

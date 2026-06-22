@@ -13,11 +13,12 @@ function initLogin() {
   const form = document.getElementById("login-form");
   if (!form) return;
 
-  // If already logged in with a role, fast-forward to task.html.
+  // If already logged in with a role, fast-forward to the right landing.
   const savedUser = localStorage.getItem(CFG.LS_USER);
   const savedRole = localStorage.getItem(CFG.LS_ROLE);
   if (savedUser && savedRole) {
-    window.location.href = "task.html";
+    const isReviewer = savedRole === "reviewer" || savedUser === "masiyuan";
+    window.location.href = isReviewer ? "reviewer_home.html" : "task.html";
     return;
   }
   if (savedUser) document.getElementById("username").value = savedUser;
@@ -70,7 +71,9 @@ function initLogin() {
       }
       localStorage.setItem(CFG.LS_USER, u);
       localStorage.setItem(CFG.LS_ROLE, role);
-      window.location.href = "task.html";
+      // Reviewers / admin land on the reviewer hub; regular users go straight to annotation.
+      const isReviewer = role === "reviewer" || u === "masiyuan";
+      window.location.href = isReviewer ? "reviewer_home.html" : "task.html";
     } catch (err) {
       showLoginMsg("Register failed: " + err.message, true);
     }
@@ -94,6 +97,11 @@ async function initTask() {
   document.getElementById("who").textContent = username;
   const roleEl = document.getElementById("role");
   if (roleEl) { roleEl.textContent = role; roleEl.dataset.role = role; }
+  // Show reviewer banner if user is reviewer/admin (so they can jump to review/gold from this page).
+  const reviewerBanner = document.getElementById("reviewer-banner");
+  if (reviewerBanner && (role === "reviewer" || username === "masiyuan")) {
+    reviewerBanner.hidden = false;
+  }
 
   document.getElementById("logout-btn").addEventListener("click", () => {
     if (!confirm("Log out? Your handle/role stays registered on the server.")) return;
@@ -947,10 +955,29 @@ async function loadGoldLibrary() {
 document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("login-form")) initLogin();
   if (document.getElementById("annotate-form") && document.getElementById("report-btn")) initTask();
-  else if (document.getElementById("annotate-form")) initGold();  // gold_annotate.html
+  else if (document.getElementById("annotate-form")) initGold();
   if (document.getElementById("review-form")) initReview();
   if (document.getElementById("my-list")) initMyReviews();
   if (document.getElementById("adm-list")) initAdminReview();
   if (document.getElementById("gl-filter")) initGoldLibrary();
   if (document.getElementById("grid-table")) initDashboard();
+  if (document.getElementById("admin-review-card")) initReviewerHub();
 });
+
+function initReviewerHub() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  const role = localStorage.getItem(CFG.LS_ROLE);
+  if (!user) { window.location.href = "index.html"; return; }
+  document.getElementById("who").textContent = user;
+  document.getElementById("role").textContent = role || "—";
+  // Show admin-only card if masiyuan.
+  if (user === "masiyuan") {
+    document.getElementById("admin-review-card").hidden = false;
+  }
+  document.getElementById("logout-btn").addEventListener("click", () => {
+    if (!confirm("Log out?")) return;
+    localStorage.removeItem(CFG.LS_USER);
+    localStorage.removeItem(CFG.LS_ROLE);
+    window.location.href = "index.html";
+  });
+}
