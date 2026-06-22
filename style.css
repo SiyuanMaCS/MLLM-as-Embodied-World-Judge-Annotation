@@ -401,6 +401,8 @@ fieldset.role-row.known .role-opt:has(input:checked) {
 }
 .role-pill[data-role="author"] { background: #fdecea; color: #b00020; }
 .role-pill[data-role="contributor"] { background: #e8f0fd; color: var(--accent-dark); }
+.role-pill[data-role="reviewer"] { background: #f3e8fd; color: #5b21b6; }
+.role-pill[data-role="admin"] { background: #fff3a3; color: #8a5500; }
 
 /* ---------- quota progress in task chip ---------- */
 .quota-block {

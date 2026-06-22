@@ -361,12 +361,16 @@ function renderGrid(data) {
     const tdUser = document.createElement("td");
     tdUser.className = "user-cell";
     // Admin gets a role dropdown; everyone else sees a pill.
-    const roleControl = isAdmin
+    const isMaSiyuan = a.user === "masiyuan";
+    const roleControl = isAdmin && !isMaSiyuan
       ? `<select class="role-select" data-target="${escapeHtml(a.user)}">
            <option value="author"${a.role === "author" ? " selected" : ""}>author</option>
            <option value="contributor"${a.role === "contributor" ? " selected" : ""}>contributor</option>
-         </select>`
-      : (a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : "");
+           <option value="reviewer"${a.role === "reviewer" ? " selected" : ""}>reviewer</option>
+         </select>${isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ''}`
+      : (a.role
+          ? `${isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ""}<span class="role-pill" data-role="${a.role}">${a.role}</span>`
+          : (isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ""));
     tdUser.innerHTML = `
       <div class="user-head">
         <span class="user-name">${escapeHtml(a.user)}${a.is_self ? ' <span class="you-badge">you</span>' : ''}</span>
