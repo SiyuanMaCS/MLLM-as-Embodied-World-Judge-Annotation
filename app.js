@@ -338,6 +338,18 @@ function renderGrid(data) {
     }
   }
 
+  // Non-admin: render prominent self-summary banner above the grid.
+  const selfBlock = document.getElementById("self-summary");
+  if (selfBlock) {
+    const me = annotators.find(a => a.is_self);
+    if (!isAdmin && me) {
+      renderSelfSummary(selfBlock, me);
+      selfBlock.hidden = false;
+    } else {
+      selfBlock.hidden = true;
+    }
+  }
+
   // Non-admin: filter the main grid to ONLY self.
   const gridUsers = isAdmin ? annotators : annotators.filter(a => a.is_self);
 
@@ -465,6 +477,38 @@ function formatDayLabel(iso, isToday) {
   if (!iso) return "—";
   const md = iso.slice(5);  // MM-DD
   return isToday ? `Today (${md})` : md;
+}
+
+function renderSelfSummary(root, me) {
+  const today = me.today ?? 0;
+  const quota = me.quota ?? 0;
+  const net = me.net ?? 0;
+  const met = quota > 0 && today >= quota;
+  const remaining = Math.max(0, quota - today);
+  const netHTML = net > 0
+    ? `<span class="ok-text">+${net}</span>`
+    : (net < 0 ? `<span class="warn-text">−${Math.abs(net)}</span>` : `<span class="muted">0</span>`);
+  root.innerHTML = `
+    <div class="self-summary-row">
+      <div class="self-stat ${met ? 'ok' : 'warn'}">
+        <span class="self-num">${today}<span class="self-of">/${quota}</span></span>
+        <span class="self-label">Today (${me.role ?? "—"})</span>
+      </div>
+      <div class="self-stat">
+        <span class="self-num">${me.total ?? 0}</span>
+        <span class="self-label">Total annotations</span>
+      </div>
+      <div class="self-stat">
+        <span class="self-num">${netHTML}</span>
+        <span class="self-label">Cumulative net</span>
+      </div>
+      <div class="self-msg">
+        ${met
+          ? `🎉 You're at ${today}/${quota} today — quota met!`
+          : `Keep going — <strong>${remaining}</strong> more annotations to hit today's quota of ${quota}.`}
+      </div>
+    </div>
+  `;
 }
 
 function renderMetByDay(root, days, annotators, metByDate) {
