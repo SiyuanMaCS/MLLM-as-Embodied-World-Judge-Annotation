@@ -137,7 +137,16 @@ function renderItem(it) {
 }
 
 async function fetchPrompt(it) {
-  let url = it.prompt_url || (it.video_url && it.video_url.replace(/[^\/]+\.mp4$/, "prompt/prompt.txt"));
+  // Show the *original* task instruction from gt_data — not the variant used for generation.
+  // generated_data path:  data/<ds>/generated_data/<model>/task_X/episode_X/1/<file>.mp4
+  // → original prompt at: data/<ds>/gt_data/task_X/episode_X/prompt/prompt.txt
+  let url = it.prompt_url;
+  if (!url && it.video_url) {
+    url = it.video_url.replace(
+      /generated_data\/[^\/]+\/(task_\d+)\/(episode_\d+)\/1\/[^\/]+\.mp4$/,
+      "gt_data/$1/$2/prompt/prompt.txt"
+    );
+  }
   if (!url) { document.getElementById("prompt-text").textContent = "(no prompt)"; return; }
   try {
     const res = await fetch(absUrl(url));
