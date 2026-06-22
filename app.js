@@ -335,19 +335,35 @@ function renderGrid(data) {
   tbody.innerHTML = "";
   tfoot.innerHTML = "";
 
-  // Header row: "..." (sliding window) | user1 | user2 | ... | userN
+  // Header row: "..." (sliding window indicator) | day1 | day2 | ... | Today | Net
   const trHead = document.createElement("tr");
   const thSliding = document.createElement("th");
   thSliding.className = "sliding";
   thSliding.title = "Sliding 7-day window — earlier days off-screen";
   thSliding.textContent = "…";
   trHead.appendChild(thSliding);
-  for (const a of annotators) {
+  for (let i = 0; i < days.length; i++) {
     const th = document.createElement("th");
-    th.className = "user-col-head";
-    if (a.is_self) th.classList.add("self-col");
+    th.className = "day-col-head";
+    if (i === days.length - 1) th.classList.add("today-col-head");
+    th.textContent = formatDayLabel(days[i], i === days.length - 1);
+    trHead.appendChild(th);
+  }
+  const thNet = document.createElement("th");
+  thNet.className = "net-col-head";
+  thNet.textContent = "Net";
+  trHead.appendChild(thNet);
+  thead.appendChild(trHead);
+
+  // Data rows: one per annotator
+  for (const a of annotators) {
+    const tr = document.createElement("tr");
+    if (a.is_self) tr.classList.add("self-row");
+
+    // First cell: user info (name, role, quota if admin)
+    const tdUser = document.createElement("td");
+    tdUser.className = "user-cell";
     const isMaSiyuan = a.user === "masiyuan";
-    // Admin gets a role dropdown; everyone else sees a pill.
     const roleControl = isAdmin && !isMaSiyuan
       ? `<select class="role-select" data-target="${escapeHtml(a.user)}">
            <option value="author"${a.role === "author" ? " selected" : ""}>author</option>
@@ -355,11 +371,10 @@ function renderGrid(data) {
            <option value="reviewer"${a.role === "reviewer" ? " selected" : ""}>reviewer</option>
          </select>`
       : (a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : "");
-    // Quota number visible only to admin.
     const quotaHTML = isAdmin
       ? `<span class="quota-label">${a.quota ?? "—"}/day</span>`
       : "";
-    th.innerHTML = `
+    tdUser.innerHTML = `
       <div class="user-head">
         <span class="user-name">${escapeHtml(a.user)}${a.is_self ? ' <span class="you-badge">you</span>' : ''}</span>
         ${isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ''}
@@ -367,9 +382,9 @@ function renderGrid(data) {
         ${quotaHTML}
       </div>
     `;
-    trHead.appendChild(th);
+    tr.appendChild(tdUser);
     if (isAdmin && !isMaSiyuan) {
-      const sel = th.querySelector(".role-select");
+      const sel = tdUser.querySelector(".role-select");
       sel.addEventListener("change", async (ev) => {
         const newRole = ev.target.value;
         const target = ev.target.dataset.target;
@@ -385,65 +400,51 @@ function renderGrid(data) {
         }
       });
     }
-  }
-  thead.appendChild(trHead);
 
-  // Data rows: one per DAY
-  for (let i = 0; i < days.length; i++) {
-    const tr = document.createElement("tr");
-    const isToday = i === days.length - 1;
-    if (isToday) tr.classList.add("today-row");
-    const tdDay = document.createElement("td");
-    tdDay.className = "day-label";
-    tdDay.textContent = formatDayLabel(days[i], isToday);
-    tr.appendChild(tdDay);
-    for (const a of annotators) {
+    // Day cells
+    for (let i = 0; i < days.length; i++) {
       const cell = (a.week || [])[i];
       const td = document.createElement("td");
       td.className = "grid-cell";
-      if (a.is_self) td.classList.add("self-col-cell");
-      if (!cell || cell.count === 0) {
+      if (i === days.length - 1) td.classList.add("today-cell");
+      const state = cell ? (cell.state || (cell.count === 0 ? "none" : (cell.met ? "met" : "below"))) : "none";
+      const showNumbers = (isAdmin || a.is_self) && cell && typeof cell.count === "number";
+      if (state === "none") {
         td.classList.add("zero");
-        // Show "·" for admin (acknowledge zero); blank for non-admin (no leak).
-        td.textContent = isAdmin ? "·" : "";
-      } else if (cell.met) {
+        td.textContent = showNumbers && cell.count === 0 ? "·" : "";
+      } else if (state === "met") {
         td.classList.add("met");
-        // Admin sees count + signed delta; non-admin sees just a green block.
-        if (isAdmin) {
+        if (showNumbers) {
           const sign = cell.delta >= 0 ? "+" : "";
           td.innerHTML = `<span class="cell-count">${cell.count}</span><span class="cell-delta">${sign}${cell.delta}</span>`;
         }
       } else {
         td.classList.add("miss");
-        if (isAdmin) {
+        if (showNumbers) {
           const sign = cell.delta >= 0 ? "+" : "";
           td.innerHTML = `<span class="cell-count">${cell.count}</span><span class="cell-delta">${sign}${cell.delta}</span>`;
         }
       }
-      if (cell) td.title = `${cell.date}: ${cell.count}/${a.quota ?? "?"} (delta ${cell.delta >= 0 ? "+" : ""}${cell.delta})`;
+      if (cell && showNumbers) td.title = `${cell.date}: ${cell.count}/${a.quota ?? "?"} (delta ${cell.delta >= 0 ? "+" : ""}${cell.delta})`;
       tr.appendChild(td);
     }
+
+    // Net cell at end of row
+    const tdNet = document.createElement("td");
+    tdNet.className = "net";
+    const showNet = isAdmin || a.is_self;
+    if (!showNet || a.net == null) {
+      tdNet.innerHTML = `<span class="muted">·</span>`;
+    } else {
+      const net = a.net;
+      if (net > 0) tdNet.innerHTML = `<span class="ok-text">+${net}</span>`;
+      else if (net < 0) tdNet.innerHTML = `<span class="warn-text">−${Math.abs(net)}</span>`;
+      else tdNet.innerHTML = `<span class="muted">0</span>`;
+    }
+    tr.appendChild(tdNet);
+
     tbody.appendChild(tr);
   }
-
-  // Footer row: per-user Net at the rightmost row (visually under each column)
-  const trFoot = document.createElement("tr");
-  trFoot.className = "net-row";
-  const tdFootLabel = document.createElement("td");
-  tdFootLabel.className = "foot-label";
-  tdFootLabel.textContent = "Net";
-  trFoot.appendChild(tdFootLabel);
-  for (const a of annotators) {
-    const td = document.createElement("td");
-    td.className = "net";
-    if (a.is_self) td.classList.add("self-col-cell");
-    const net = a.net ?? 0;
-    if (net > 0) td.innerHTML = `<span class="ok-text">+${net}</span>`;
-    else if (net < 0) td.innerHTML = `<span class="warn-text">${net}</span>`;
-    else td.innerHTML = `<span class="muted">0</span>`;
-    trFoot.appendChild(td);
-  }
-  tfoot.appendChild(trFoot);
 }
 
 function formatDayLabel(iso, isToday) {
