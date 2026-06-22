@@ -585,20 +585,23 @@ select.role-select:disabled { opacity: 0.6; cursor: wait; }
   font-variant-numeric: tabular-nums;
   min-width: 64px;
   cursor: help;
+  height: 38px;
 }
 .grid-cell.met {
-  background: #d6f1de;
-  color: var(--ok);
+  background: #4cb568;
+  color: #fff;
 }
 .grid-cell.miss {
-  background: #fce0e3;
-  color: var(--err);
+  background: #e25563;
+  color: #fff;
 }
 .grid-cell.zero {
   background: #f2f2f5;
   color: var(--muted);
   font-weight: 400;
 }
+.cell-count { display: block; font-size: 14px; }
+.cell-delta { display: block; font-size: 10px; opacity: 0.9; font-weight: 600; }
 
 .foot-label {
   text-align: right;

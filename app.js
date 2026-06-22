@@ -355,12 +355,16 @@ function renderGrid(data) {
            <option value="reviewer"${a.role === "reviewer" ? " selected" : ""}>reviewer</option>
          </select>`
       : (a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : "");
+    // Quota number visible only to admin.
+    const quotaHTML = isAdmin
+      ? `<span class="quota-label">${a.quota ?? "—"}/day</span>`
+      : "";
     th.innerHTML = `
       <div class="user-head">
         <span class="user-name">${escapeHtml(a.user)}${a.is_self ? ' <span class="you-badge">you</span>' : ''}</span>
         ${isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ''}
         ${roleControl}
-        <span class="quota-label">${a.quota ?? "—"}/day</span>
+        ${quotaHTML}
       </div>
     `;
     trHead.appendChild(th);
@@ -400,13 +404,21 @@ function renderGrid(data) {
       if (a.is_self) td.classList.add("self-col-cell");
       if (!cell || cell.count === 0) {
         td.classList.add("zero");
-        td.textContent = "·";
+        // Show "·" for admin (acknowledge zero); blank for non-admin (no leak).
+        td.textContent = isAdmin ? "·" : "";
       } else if (cell.met) {
         td.classList.add("met");
-        td.textContent = String(cell.count);
+        // Admin sees count + signed delta; non-admin sees just a green block.
+        if (isAdmin) {
+          const sign = cell.delta >= 0 ? "+" : "";
+          td.innerHTML = `<span class="cell-count">${cell.count}</span><span class="cell-delta">${sign}${cell.delta}</span>`;
+        }
       } else {
         td.classList.add("miss");
-        td.textContent = String(cell.count);
+        if (isAdmin) {
+          const sign = cell.delta >= 0 ? "+" : "";
+          td.innerHTML = `<span class="cell-count">${cell.count}</span><span class="cell-delta">${sign}${cell.delta}</span>`;
+        }
       }
       if (cell) td.title = `${cell.date}: ${cell.count}/${a.quota ?? "?"} (delta ${cell.delta >= 0 ? "+" : ""}${cell.delta})`;
       tr.appendChild(td);
