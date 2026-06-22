@@ -114,7 +114,7 @@ function renderItem(it) {
   document.getElementById("meta-dataset").textContent = it.dataset || "?";
   document.getElementById("meta-task").textContent = it.task || "?";
   document.getElementById("meta-variant").textContent = it.variant || "?";
-  document.getElementById("prompt-text").textContent = it.prompt || "(no prompt)";
+  document.getElementById("prompt-text").textContent = "(loading prompt…)";
   const gen = document.getElementById("gen-video");
   gen.src = absUrl(it.video_url);
   gen.load();
@@ -131,6 +131,21 @@ function renderItem(it) {
   for (const id of ["quality", "faithful"]) {
     document.getElementById(id).value = 3;
     document.getElementById(id + "-out").value = 3;
+  }
+  // Fetch prompt.txt — sibling of the mp4 under prompt/prompt.txt
+  fetchPrompt(it);
+}
+
+async function fetchPrompt(it) {
+  let url = it.prompt_url || (it.video_url && it.video_url.replace(/[^\/]+\.mp4$/, "prompt/prompt.txt"));
+  if (!url) { document.getElementById("prompt-text").textContent = "(no prompt)"; return; }
+  try {
+    const res = await fetch(absUrl(url));
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+    document.getElementById("prompt-text").textContent = text.trim() || "(empty prompt)";
+  } catch (err) {
+    document.getElementById("prompt-text").textContent = "(prompt load failed: " + err.message + ")";
   }
 }
 
