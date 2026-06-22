@@ -114,6 +114,24 @@ async function initTask() {
   });
   document.getElementById("skip-btn").addEventListener("click", () => onSubmit(true));
   document.getElementById("retry-btn").addEventListener("click", () => loadNext());
+  const reportBtn = document.getElementById("report-btn");
+  if (reportBtn) {
+    reportBtn.addEventListener("click", async () => {
+      if (!CURRENT) return;
+      if (!confirm("Report this item to a reviewer? (will be flagged as self-reported)")) return;
+      try {
+        await fetch(CFG.APPS_SCRIPT_URL + "/", {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ report: true, user: username, item_id: CURRENT.id })
+        });
+        alert("Reported. Loading next item.");
+        await loadNext();
+      } catch (err) {
+        alert("Report failed: " + err.message);
+      }
+    });
+  }
 
   await refreshStats();
   await loadNext();
@@ -570,9 +588,368 @@ function escapeHtml(s) {
   }[c]));
 }
 
+/* ===================== Gold annotation page ===================== */
+let GOLD_CURRENT = null;
+
+async function initGold() {
+  const username = localStorage.getItem(CFG.LS_USER);
+  const role = localStorage.getItem(CFG.LS_ROLE);
+  if (!username) { window.location.href = "index.html"; return; }
+  document.getElementById("who").textContent = username;
+  const roleEl = document.getElementById("role");
+  if (roleEl) roleEl.textContent = role || "—";
+  for (const id of ["quality", "faithful"]) {
+    const inp = document.getElementById(id);
+    const out = document.getElementById(id + "-out");
+    inp.addEventListener("input", () => out.value = inp.value);
+  }
+  document.getElementById("annotate-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await submitGold(false);
+  });
+  document.getElementById("skip-btn").addEventListener("click", () => submitGold(true));
+  document.getElementById("retry-btn").addEventListener("click", () => loadNextGold());
+  await loadNextGold();
+}
+
+async function loadNextGold() {
+  hide("error"); hide("item"); show("loading");
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=gold_next&user=${encodeURIComponent(user)}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (data.done) { showError("🎉 Your gold set is fully annotated!"); return; }
+    GOLD_CURRENT = data;
+    renderItem(data);  // re-use the regular item renderer
+    hide("loading"); show("item");
+  } catch (err) {
+    showError("Failed to load gold item: " + err.message);
+  }
+}
+
+async function submitGold(skip) {
+  if (!GOLD_CURRENT) return;
+  const user = localStorage.getItem(CFG.LS_USER);
+  const body = {
+    gold: true, user, item_id: GOLD_CURRENT.id,
+    payload: {
+      skip,
+      quality: skip ? null : Number(document.getElementById("quality").value),
+      faithful: skip ? null : Number(document.getElementById("faithful").value),
+      notes: skip ? null : document.getElementById("notes").value.trim(),
+    }
+  };
+  try {
+    const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data && data.ok === false) throw new Error(data.error || "save failed");
+    await loadNextGold();
+  } catch (err) {
+    showError("Save failed: " + err.message);
+  }
+}
+
+/* ===================== Review queue page ===================== */
+let REVIEW_CURRENT = null;
+
+async function initReview() {
+  const username = localStorage.getItem(CFG.LS_USER);
+  const role = localStorage.getItem(CFG.LS_ROLE);
+  if (!username) { window.location.href = "index.html"; return; }
+  document.getElementById("who").textContent = username;
+  document.getElementById("role").textContent = role || "—";
+  for (const id of ["m-quality", "m-faithful"]) {
+    const inp = document.getElementById(id);
+    const out = document.getElementById(id + "-out");
+    inp.addEventListener("input", () => out.value = inp.value);
+  }
+  document.getElementById("approve-btn").addEventListener("click", () => submitReview("approve"));
+  document.getElementById("modify-btn").addEventListener("click", () => {
+    const fields = document.getElementById("modify-fields");
+    if (fields.hidden) {
+      // First click: reveal fields prefilled with original
+      const orig = REVIEW_CURRENT?.annotation_payload || {};
+      document.getElementById("m-quality").value = orig.quality ?? 3;
+      document.getElementById("m-quality-out").value = orig.quality ?? 3;
+      document.getElementById("m-faithful").value = orig.faithful ?? 3;
+      document.getElementById("m-faithful-out").value = orig.faithful ?? 3;
+      document.getElementById("m-notes").value = "";
+      fields.hidden = false;
+      document.getElementById("modify-btn").textContent = "Submit modify";
+    } else {
+      submitReview("modify");
+    }
+  });
+  document.getElementById("skip-btn").addEventListener("click", () => loadNextReview());
+  document.getElementById("retry-btn").addEventListener("click", () => loadNextReview());
+  await loadNextReview();
+}
+
+async function loadNextReview() {
+  hide("error"); hide("item"); show("loading");
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=review_next&user=${encodeURIComponent(user)}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (data.done) { showError("🎉 No more review tasks in your queue."); return; }
+    REVIEW_CURRENT = data;
+    renderReviewItem(data);
+    hide("loading"); show("item");
+    // Reset modify panel
+    document.getElementById("modify-fields").hidden = true;
+    document.getElementById("modify-btn").textContent = "✏ Modify";
+  } catch (err) {
+    showError("Failed to load review task: " + err.message);
+  }
+}
+
+function renderReviewItem(it) {
+  document.getElementById("meta-kind").textContent = it.is_report ? "SELF-REPORTED" : "DAILY";
+  document.getElementById("meta-dataset").textContent = it.dataset || "?";
+  document.getElementById("meta-task").textContent = it.task || "?";
+  document.getElementById("meta-self-report").hidden = !it.is_report;
+  document.getElementById("gen-video").src = absUrl(it.video_url);
+  document.getElementById("gen-video").load();
+  document.getElementById("prompt-text").textContent = "(loading instruction…)";
+  // Original annotator submission (annotator anon)
+  const payload = it.annotation_payload || {};
+  document.getElementById("orig-quality").textContent = payload.quality ?? "—";
+  document.getElementById("orig-faithful").textContent = payload.faithful ?? "—";
+  document.getElementById("orig-notes").textContent = payload.notes || "(no notes)";
+  fetchPrompt(it);
+}
+
+async function submitReview(decision) {
+  if (!REVIEW_CURRENT) return;
+  const reviewer = localStorage.getItem(CFG.LS_USER);
+  const target = REVIEW_CURRENT.annotator;
+  const item_id = REVIEW_CURRENT.id;
+  const is_report = !!REVIEW_CURRENT.is_report;
+  let payload = REVIEW_CURRENT.annotation_payload || {};
+  if (decision === "modify") {
+    payload = {
+      quality: Number(document.getElementById("m-quality").value),
+      faithful: Number(document.getElementById("m-faithful").value),
+      notes: document.getElementById("m-notes").value.trim(),
+    };
+  }
+  const body = { review_submit: true, reviewer, item_id, target, decision, payload, is_report };
+  try {
+    const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data && data.ok === false) throw new Error(data.error || "submit failed");
+    await loadNextReview();
+  } catch (err) {
+    showError("Review submit failed: " + err.message);
+  }
+}
+
+/* ===================== My reviews page ===================== */
+async function initMyReviews() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  if (!user) { window.location.href = "index.html"; return; }
+  document.getElementById("who").textContent = user;
+  try {
+    const [revRes, statsRes] = await Promise.all([
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=my_reviews&user=${encodeURIComponent(user)}`),
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=review_stats&user=${encodeURIComponent(user)}`),
+    ]);
+    const data = await revRes.json();
+    const stats = await statsRes.json();
+    document.getElementById("my-loading").hidden = true;
+    // Summary
+    const reviewed = stats?.reviewed ?? (data.reviews ?? []).length;
+    const approved = stats?.approved ?? (data.reviews ?? []).filter(r => r.decision === "approve").length;
+    const modified = stats?.modified ?? (data.reviews ?? []).filter(r => r.decision === "modify").length;
+    const rate = stats?.approval_rate;
+    document.getElementById("t-reviewed").textContent = reviewed;
+    document.getElementById("t-approved").textContent = approved;
+    document.getElementById("t-modified").textContent = modified;
+    document.getElementById("t-rate").textContent = rate != null ? `${Math.round(rate * 100)}%` : "—";
+    document.getElementById("my-summary").hidden = false;
+
+    const list = data.reviews || [];
+    if (list.length === 0) {
+      document.getElementById("my-empty").hidden = false;
+    } else {
+      const ul = document.getElementById("my-list");
+      ul.innerHTML = "";
+      for (const r of list) {
+        const li = document.createElement("li");
+        li.className = "my-row " + (r.decision === "approve" ? "approved" : "modified");
+        if (r.is_report) li.classList.add("self-reported");
+        const reviewer = "Reviewer";  // anonymized
+        const decision = r.decision === "approve" ? "✅ Approved" : "✏ Modified";
+        const flag = r.is_report ? '<span class="self-flag">⚠ self-reported</span>' : '';
+        const payloadHTML = (() => {
+          const p = r.review_payload || r.payload || {};
+          return `Q: ${p.quality ?? "—"} · F: ${p.faithful ?? "—"}${p.notes ? ` · ${escapeHtml(p.notes)}` : ""}`;
+        })();
+        const origHTML = (() => {
+          const p = r.original_payload || {};
+          if (r.decision !== "modify") return "";
+          return `<div class="orig-line">Original — Q: ${p.quality ?? "—"} · F: ${p.faithful ?? "—"}${p.notes ? ` · ${escapeHtml(p.notes)}` : ""}</div>`;
+        })();
+        li.innerHTML = `
+          <div class="my-line1">${decision} ${flag} <span class="muted">by ${reviewer} · ${r.created_at || ""}</span></div>
+          <div class="my-line2">Item: <code>${escapeHtml(r.item_id || "")}</code></div>
+          ${origHTML}
+          <div class="my-line3">Reviewer payload — ${payloadHTML}</div>
+        `;
+        ul.appendChild(li);
+      }
+      ul.hidden = false;
+    }
+  } catch (err) {
+    document.getElementById("my-loading").hidden = true;
+    document.getElementById("my-err-msg").textContent = err.message;
+    document.getElementById("my-error").hidden = false;
+  }
+}
+
+/* ===================== Admin gold-review queue ===================== */
+async function initAdminReview() {
+  const admin = localStorage.getItem(CFG.LS_USER);
+  if (!admin) { window.location.href = "index.html"; return; }
+  document.getElementById("who").textContent = admin;
+  try {
+    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=gold_review_queue&admin=${encodeURIComponent(admin)}`);
+    const data = await res.json();
+    document.getElementById("adm-loading").hidden = true;
+    if (data.error) throw new Error(data.error);
+    const list = data.queue || [];
+    if (list.length === 0) {
+      document.getElementById("adm-empty").hidden = false;
+      return;
+    }
+    const root = document.getElementById("adm-list");
+    for (const r of list) {
+      const card = document.createElement("section");
+      card.className = "card adm-card";
+      const p = r.payload || {};
+      card.innerHTML = `
+        <div class="meta"><span class="tag gold-tag">GOLD</span><span class="tag">${escapeHtml(r.dataset || "?")}</span><span class="tag">${escapeHtml(r.task || "?")}</span><span class="tag">by ${escapeHtml(r.reviewer || "?")}</span></div>
+        <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline src="${absUrl(r.video_url || "")}"></video></figure></div>
+        <div class="prompt-box"><label>Reviewer payload</label><p>Q: <strong>${p.quality ?? "—"}</strong> · F: <strong>${p.faithful ?? "—"}</strong> · ${escapeHtml(p.notes || "(no notes)")}</p></div>
+        <div class="form-row actions">
+          <button type="button" class="approve-btn">✅ Approve as gold</button>
+          <button type="button" class="modify-btn ghost">✏ Modify before confirming</button>
+        </div>
+        <div class="modify-panel" hidden>
+          <label>Quality <input type="range" class="m-q" min="1" max="5" value="${p.quality ?? 3}"> <output class="m-q-out">${p.quality ?? 3}</output></label>
+          <label>Faithful <input type="range" class="m-f" min="1" max="5" value="${p.faithful ?? 3}"> <output class="m-f-out">${p.faithful ?? 3}</output></label>
+          <label>Notes <textarea class="m-n" rows="2">${escapeHtml(p.notes || "")}</textarea></label>
+          <button type="button" class="m-submit">Confirm modified</button>
+        </div>
+      `;
+      const mq = card.querySelector(".m-q"), mqo = card.querySelector(".m-q-out");
+      mq.addEventListener("input", () => mqo.value = mq.value);
+      const mf = card.querySelector(".m-f"), mfo = card.querySelector(".m-f-out");
+      mf.addEventListener("input", () => mfo.value = mf.value);
+      card.querySelector(".approve-btn").addEventListener("click", async () => {
+        await adminGoldDecision(admin, r, "approve", null, card);
+      });
+      card.querySelector(".modify-btn").addEventListener("click", () => {
+        card.querySelector(".modify-panel").hidden = false;
+      });
+      card.querySelector(".m-submit").addEventListener("click", async () => {
+        await adminGoldDecision(admin, r, "modify", {
+          quality: Number(mq.value), faithful: Number(mf.value), notes: card.querySelector(".m-n").value.trim()
+        }, card);
+      });
+      root.appendChild(card);
+    }
+  } catch (err) {
+    document.getElementById("adm-loading").hidden = true;
+    document.getElementById("adm-err-msg").textContent = err.message;
+    document.getElementById("adm-error").hidden = false;
+  }
+}
+
+async function adminGoldDecision(admin, r, decision, payload, card) {
+  try {
+    const body = { gold_review: true, admin, item_id: r.item_id, target: r.reviewer, decision };
+    if (payload) body.payload = payload;
+    const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data && data.ok === false) throw new Error(data.error || "submit failed");
+    card.style.opacity = "0.3";
+    card.querySelector(".form-row.actions").innerHTML = `<p class="ok-text">✅ ${decision === "approve" ? "Approved" : "Modified"} & in gold library</p>`;
+  } catch (err) {
+    alert("Failed: " + err.message);
+  }
+}
+
+/* ===================== Gold library (public) ===================== */
+async function initGoldLibrary() {
+  const form = document.getElementById("gl-filter");
+  if (!form) return;
+  form.addEventListener("submit", (e) => { e.preventDefault(); loadGoldLibrary(); });
+  await loadGoldLibrary();
+}
+
+async function loadGoldLibrary() {
+  hide("gl-empty"); hide("gl-error");
+  document.getElementById("gl-loading").hidden = false;
+  document.getElementById("gl-list").innerHTML = "";
+  const qMin = document.getElementById("q-min").value;
+  const fMin = document.getElementById("f-min").value;
+  const qMax = document.getElementById("q-max").value;
+  const fMax = document.getElementById("f-max").value;
+  const qs = new URLSearchParams();
+  qs.set("action", "gold_library");
+  if (qMin) qs.set("quality_min", qMin);
+  if (fMin) qs.set("faithful_min", fMin);
+  if (qMax) qs.set("quality_max", qMax);
+  if (fMax) qs.set("faithful_max", fMax);
+  try {
+    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?${qs.toString()}`);
+    const data = await res.json();
+    document.getElementById("gl-loading").hidden = true;
+    if (data.error) throw new Error(data.error);
+    const items = data.items || [];
+    document.getElementById("gl-count").textContent = `${items.length} item(s)`;
+    if (items.length === 0) { document.getElementById("gl-empty").hidden = false; return; }
+    const root = document.getElementById("gl-list");
+    for (const it of items) {
+      const card = document.createElement("section");
+      card.className = "card gl-card";
+      const p = it.payload || {};
+      card.innerHTML = `
+        <div class="meta"><span class="tag gold-tag">GOLD</span><span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span></div>
+        <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline src="${absUrl(it.video_url || "")}"></video></figure></div>
+        <p class="gl-scores">Quality: <strong>${p.quality ?? "—"}</strong> · Faithful: <strong>${p.faithful ?? "—"}</strong></p>
+        <p class="muted">${escapeHtml(p.notes || "")}</p>
+      `;
+      root.appendChild(card);
+    }
+  } catch (err) {
+    document.getElementById("gl-loading").hidden = true;
+    document.getElementById("gl-err-msg").textContent = err.message;
+    document.getElementById("gl-error").hidden = false;
+  }
+}
+
 /* ---------- entry ---------- */
 document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("login-form")) initLogin();
-  if (document.getElementById("annotate-form")) initTask();
+  if (document.getElementById("annotate-form") && document.getElementById("report-btn")) initTask();
+  else if (document.getElementById("annotate-form")) initGold();  // gold_annotate.html
+  if (document.getElementById("review-form")) initReview();
+  if (document.getElementById("my-list")) initMyReviews();
+  if (document.getElementById("adm-list")) initAdminReview();
+  if (document.getElementById("gl-filter")) initGoldLibrary();
   if (document.getElementById("grid-table")) initDashboard();
 });

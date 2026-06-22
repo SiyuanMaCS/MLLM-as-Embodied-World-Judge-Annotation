@@ -688,6 +688,70 @@ td.net {
   .self-msg { grid-column: 1 / -1; }
 }
 
+/* ---------- new page styling: gold / review / my_reviews / admin / library ---------- */
+.subtitle { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+
+.tag.gold-tag {
+  background: #fff3a3;
+  color: #8a5500;
+}
+
+ul.my-list { list-style: none; padding: 0; margin: 0; }
+ul.my-list .my-row {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background: #fafafd;
+}
+ul.my-list .my-row.approved { border-left: 4px solid var(--ok); }
+ul.my-list .my-row.modified { border-left: 4px solid #d39c00; background: #fff8e7; }
+ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
+.self-flag {
+  background: #fff3a3;
+  color: #8a5500;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  margin-left: 6px;
+}
+.my-line1 { font-weight: 600; margin-bottom: 4px; }
+.my-line2 { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.my-line3 { font-size: 13px; }
+.orig-line { font-size: 12px; color: var(--muted); margin-bottom: 4px; text-decoration: line-through; }
+
+.adm-card .modify-panel {
+  padding: 12px;
+  background: #fafafd;
+  border-radius: 8px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.adm-card .modify-panel label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.adm-card .modify-panel input[type="range"] { flex: 1 1 200px; }
+
+.gl-filter {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+}
+.gl-filter label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 4px; margin: 0; }
+.gl-filter select {
+  padding: 4px 8px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.gl-filter button { margin: 0; padding: 6px 16px; font-size: 14px; }
+.gl-card .gl-scores { font-size: 15px; margin: 8px 0 4px; }
+
+.nav-list { font-size: 14px; }
+.nav-list a { color: var(--accent); }
+
 /* met-by-day list (non-admin secondary section) */
 .met-title {
   margin: 0 0 12px;

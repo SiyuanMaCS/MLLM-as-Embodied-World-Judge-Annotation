@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gold Library — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1>📖 Gold Library <span class="subtitle">(public)</span></h1>
+    <div class="user-chip"><a href="index.html" class="link">home</a></div>
+  </header>
+
+  <section class="card">
+    <form id="gl-filter" class="gl-filter">
+      <label>Quality ≥ <select id="q-min"><option value="">any</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+      <label>Faithful ≥ <select id="f-min"><option value="">any</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+      <label>Quality ≤ <select id="q-max"><option value="">any</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+      <label>Faithful ≤ <select id="f-max"><option value="">any</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+      <button type="submit">Search</button>
+      <span class="muted" id="gl-count">—</span>
+    </form>
+  </section>
+
+  <section id="gl-loading" class="card" hidden><p>Loading…</p></section>
+  <section id="gl-empty" class="card" hidden><p>No matching items.</p></section>
+  <section id="gl-error" class="card error" hidden><h3>Failed</h3><p id="gl-err-msg">—</p></section>
+
+  <div id="gl-list"></div>
+</main>
+<script src="app.js" defer></script>
+</body>
+</html>

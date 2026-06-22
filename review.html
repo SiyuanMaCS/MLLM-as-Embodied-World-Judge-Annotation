@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review Queue — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1>🔍 Review Queue <span class="subtitle">(reviewers)</span></h1>
+    <div class="user-chip">
+      <span id="who">—</span> <span class="role-pill" id="role">—</span>
+      <a href="index.html" class="link">home</a>
+    </div>
+  </header>
+
+  <section id="loading" class="card"><p>Loading next review task…</p></section>
+
+  <section id="item" class="card" hidden>
+    <div class="meta">
+      <span class="tag" id="meta-kind">DAILY</span>
+      <span class="tag" id="meta-dataset">—</span>
+      <span class="tag" id="meta-task">—</span>
+      <span class="tag" id="meta-self-report" hidden>⚠ SELF-REPORTED</span>
+    </div>
+
+    <div class="video-row">
+      <figure><figcaption>Generated</figcaption><video id="gen-video" controls preload="metadata" muted playsinline></video></figure>
+    </div>
+    <div class="prompt-box"><label>Task instruction</label><p id="prompt-text">—</p></div>
+
+    <div class="prompt-box">
+      <label>Annotator submission (annotator hidden)</label>
+      <p>Quality: <strong id="orig-quality">—</strong> · Faithful: <strong id="orig-faithful">—</strong></p>
+      <p>Notes: <em id="orig-notes">—</em></p>
+    </div>
+
+    <form id="review-form">
+      <h3>Your decision</h3>
+      <div class="form-row" id="modify-fields" hidden>
+        <label for="m-quality">Modified quality (1–5) <output for="m-quality" id="m-quality-out">3</output></label>
+        <input type="range" id="m-quality" min="1" max="5" step="1" value="3">
+        <label for="m-faithful">Modified faithful (1–5) <output for="m-faithful" id="m-faithful-out">3</output></label>
+        <input type="range" id="m-faithful" min="1" max="5" step="1" value="3">
+        <label for="m-notes">Modification note</label>
+        <textarea id="m-notes" rows="2" maxlength="500" placeholder="why you changed it"></textarea>
+      </div>
+      <div class="form-row actions">
+        <button type="button" id="approve-btn">✅ Approve as-is</button>
+        <button type="button" id="modify-btn" class="ghost">✏ Modify</button>
+        <button type="button" id="skip-btn" class="ghost">Skip</button>
+      </div>
+    </form>
+  </section>
+
+  <section id="error" class="card error" hidden><h3>Notice</h3><p id="error-msg">—</p><button id="retry-btn">Retry</button></section>
+</main>
+<script src="app.js" defer></script>
+</body>
+</html>

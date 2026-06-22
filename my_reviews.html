@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Reviews — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1>📝 My Reviews</h1>
+    <div class="user-chip">
+      <span id="who">—</span>
+      <a href="index.html" class="link">home</a>
+    </div>
+  </header>
+
+  <section id="my-summary" class="card" hidden>
+    <div class="stat-row">
+      <div class="stat"><span class="stat-num" id="t-reviewed">0</span><span class="stat-label">reviewed</span></div>
+      <div class="stat"><span class="stat-num" id="t-approved">0</span><span class="stat-label">approved</span></div>
+      <div class="stat"><span class="stat-num" id="t-modified">0</span><span class="stat-label">modified</span></div>
+      <div class="stat"><span class="stat-num" id="t-rate">—</span><span class="stat-label">approval rate</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Reviewed history</h3>
+    <p id="my-loading">Loading…</p>
+    <p id="my-empty" hidden>No reviews yet for you. Submit some annotations and they'll be sampled or self-reportable.</p>
+    <ul id="my-list" class="my-list" hidden></ul>
+  </section>
+
+  <section id="my-error" class="card error" hidden><h3>Failed</h3><p id="my-err-msg">—</p></section>
+</main>
+<script src="app.js" defer></script>
+</body>
+</html>
