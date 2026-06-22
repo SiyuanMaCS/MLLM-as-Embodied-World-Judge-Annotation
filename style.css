@@ -778,6 +778,7 @@ ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
 .hub-card.primary:hover { background: #dbe5fb; }
 .hub-card.admin-only { background: #fff4e0; border-color: #f0d59c; }
 .hub-card.admin-only:hover { background: #fde9c2; }
+.hub-card[hidden] { display: none !important; }
 .hub-emoji { font-size: 28px; }
 .hub-title { font-weight: 700; font-size: 16px; margin: 6px 0 4px; }
 .hub-sub { font-size: 13px; color: var(--muted); line-height: 1.45; }
