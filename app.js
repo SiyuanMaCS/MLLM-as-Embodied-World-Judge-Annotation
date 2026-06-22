@@ -399,5 +399,5 @@ function escapeHtml(s) {
 document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("login-form")) initLogin();
   if (document.getElementById("annotate-form")) initTask();
-  if (document.getElementById("ann-table")) initDashboard();
+  if (document.getElementById("grid-table")) initDashboard();
 });
