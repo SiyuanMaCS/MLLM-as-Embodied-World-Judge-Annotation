@@ -327,6 +327,20 @@ function renderGrid(data) {
     return (b.total ?? 0) - (a.total ?? 0);
   });
 
+  // Hide the "met-by-day" auxiliary block when admin; only show for non-admin.
+  const metBlock = document.getElementById("met-by-day");
+  if (metBlock) {
+    if (isAdmin) {
+      metBlock.hidden = true;
+    } else {
+      renderMetByDay(metBlock, days, annotators, data.met_by_date);
+      metBlock.hidden = false;
+    }
+  }
+
+  // Non-admin: filter the main grid to ONLY self.
+  const gridUsers = isAdmin ? annotators : annotators.filter(a => a.is_self);
+
   const table = document.getElementById("grid-table");
   const thead = table.querySelector("thead");
   const tbody = table.querySelector("tbody");
@@ -355,8 +369,8 @@ function renderGrid(data) {
   trHead.appendChild(thNet);
   thead.appendChild(trHead);
 
-  // Data rows: one per annotator
-  for (const a of annotators) {
+  // Data rows: one per annotator (full list for admin; only self for non-admin)
+  for (const a of gridUsers) {
     const tr = document.createElement("tr");
     if (a.is_self) tr.classList.add("self-row");
 
@@ -451,6 +465,45 @@ function formatDayLabel(iso, isToday) {
   if (!iso) return "—";
   const md = iso.slice(5);  // MM-DD
   return isToday ? `Today (${md})` : md;
+}
+
+function renderMetByDay(root, days, annotators, metByDate) {
+  // For each day, list anonymized labels of annotators who met quota that day.
+  // Prefer server-provided `metByDate` (already anonymized with "You" label);
+  // fall back to client-side computation from annotators[].week.
+  root.innerHTML = "";
+  const title = document.createElement("h3");
+  title.textContent = "Who met daily quota";
+  title.className = "met-title";
+  root.appendChild(title);
+  const ul = document.createElement("ul");
+  ul.className = "met-list";
+  for (let i = 0; i < days.length; i++) {
+    const isToday = i === days.length - 1;
+    const day = days[i];
+    let winners;
+    if (metByDate && Array.isArray(metByDate[day])) {
+      winners = metByDate[day];
+    } else {
+      winners = annotators
+        .filter(a => (a.week || [])[i]?.state === "met")
+        .map(a => a.user);
+    }
+    const li = document.createElement("li");
+    li.className = "met-row" + (isToday ? " today" : "");
+    const dayLbl = isToday ? `Today (${day.slice(5)})` : day.slice(5);
+    if (winners.length === 0) {
+      li.innerHTML = `<span class="met-day">${dayLbl}</span><span class="met-empty">no one met yet</span>`;
+    } else {
+      const tags = winners.map(u => {
+        const cls = (u === "You" || u === "you") ? "met-tag self" : "met-tag";
+        return `<span class="${cls}">${escapeHtml(u)}</span>`;
+      }).join("");
+      li.innerHTML = `<span class="met-day">${dayLbl}</span><span class="met-tags">${tags}</span>`;
+    }
+    ul.appendChild(li);
+  }
+  root.appendChild(ul);
 }
 
 async function setRoleAdmin(target, role) {
