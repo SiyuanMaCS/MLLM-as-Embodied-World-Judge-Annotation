@@ -5,15 +5,11 @@
  */
 
 const CFG = {
-  // Fallback when Supabase creds missing — serves static manifest + localStorage only.
-  MANIFEST_URL: "manifest.json",
+  // Filled at deploy by injecting <script>window.__APPS_SCRIPT_URL__="https://...";</script> in HTML.
+  APPS_SCRIPT_URL: window.__APPS_SCRIPT_URL__ || null,
   HF_RESOLVE_BASE: "https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main",
-  // Filled at deploy by injecting <script>window.__SUPABASE_URL__="https://...";</script> in HTML.
-  SUPABASE_URL: window.__SUPABASE_URL__ || null,
-  SUPABASE_ANON_KEY: window.__SUPABASE_ANON_KEY__ || null,
-  ANNOTATIONS_PER_ITEM: 3,  // how many annotators per item (matches RPC p_target default)
   LS_USER: "ewj_annotator",
-  LS_DONE: "ewj_done",
+  LS_DONE: "ewj_done",  // optimistic local cache for UI counter
 };
 
 /* ---------- index.html: login ---------- */
@@ -41,7 +37,6 @@ function showLoginMsg(text, isErr) {
 }
 
 /* ---------- task.html: annotation loop ---------- */
-let MANIFEST = [];
 let CURRENT = null;
 let DONE_CACHE = new Set();
 
@@ -71,41 +66,47 @@ async function initTask() {
   document.getElementById("skip-btn").addEventListener("click", () => onSubmit(true));
   document.getElementById("retry-btn").addEventListener("click", () => loadNext());
 
-  await loadManifest();
+  await refreshStats();
   await loadNext();
 }
 
-async function loadManifest() {
-  // Phase 1: static manifest.json shipped with the site.
-  // Phase 2: replace with Supabase RPC get_next_item(user) — server picks for us.
+async function refreshStats() {
+  if (!CFG.APPS_SCRIPT_URL) return;
+  const user = localStorage.getItem(CFG.LS_USER);
   try {
-    const res = await fetch(CFG.MANIFEST_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error("manifest fetch " + res.status);
-    MANIFEST = await res.json();
+    const url = `${CFG.APPS_SCRIPT_URL}?action=stats&user=${encodeURIComponent(user)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data && typeof data.done === "number") {
+      document.getElementById("counter").textContent = `${data.done} / ${data.total}`;
+    }
   } catch (err) {
-    showError("Failed to load manifest: " + err.message);
-    throw err;
+    console.warn("stats fetch failed", err);
   }
 }
 
 async function loadNext() {
   hide("error"); hide("item"); show("loading");
-  // Phase 1 picker — first item not in local done cache + skip already-annotated server-side.
-  // Phase 2 — call supabase RPC get_next_item(user).
-  CURRENT = pickNext();
-  if (!CURRENT) {
-    showError("No more items! You're done — thank you.");
+  if (!CFG.APPS_SCRIPT_URL) {
+    showError("Backend URL not configured (window.__APPS_SCRIPT_URL__ missing).");
     return;
   }
-  renderItem(CURRENT);
-  hide("loading"); show("item");
-}
-
-function pickNext() {
-  for (const it of MANIFEST) {
-    if (!DONE_CACHE.has(it.id)) return it;
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const url = `${CFG.APPS_SCRIPT_URL}?action=next&user=${encodeURIComponent(user)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.done) {
+      showError("🎉 All done! Thank you — no more items for you.");
+      return;
+    }
+    if (data.error) throw new Error(data.error);
+    CURRENT = data;
+    renderItem(CURRENT);
+    hide("loading"); show("item");
+  } catch (err) {
+    showError("Failed to load next item: " + err.message);
   }
-  return null;
 }
 
 function renderItem(it) {
@@ -141,45 +142,41 @@ function absUrl(u) {
 
 async function onSubmit(skip) {
   if (!CURRENT) return;
-  const payload = {
+  const body = {
     user: localStorage.getItem(CFG.LS_USER),
     item_id: CURRENT.id,
-    skip,
-    quality: skip ? null : Number(document.getElementById("quality").value),
-    faithful: skip ? null : Number(document.getElementById("faithful").value),
-    notes: skip ? null : document.getElementById("notes").value.trim(),
-    ts: new Date().toISOString(),
+    payload: {
+      skip,
+      quality: skip ? null : Number(document.getElementById("quality").value),
+      faithful: skip ? null : Number(document.getElementById("faithful").value),
+      notes: skip ? null : document.getElementById("notes").value.trim(),
+    },
   };
   try {
-    await submitAnnotation(payload);
+    await submitAnnotation(body);
     DONE_CACHE.add(CURRENT.id);
     localStorage.setItem(CFG.LS_DONE, JSON.stringify([...DONE_CACHE]));
-    document.getElementById("counter").textContent = DONE_CACHE.size;
+    await refreshStats();
     await loadNext();
   } catch (err) {
     showError("Save failed: " + err.message);
   }
 }
 
-async function submitAnnotation(payload) {
-  // Phase 1: log locally (placeholder).
-  // Phase 2: POST to Supabase REST insert.
-  if (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY) {
-    const url = CFG.SUPABASE_URL + "/rest/v1/annotations";
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "apikey": CFG.SUPABASE_ANON_KEY,
-        "Authorization": "Bearer " + CFG.SUPABASE_ANON_KEY,
-        "Content-Type": "application/json",
-        "Prefer": "return=minimal",
-      },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error("HTTP " + res.status + " " + (await res.text()));
+async function submitAnnotation(body) {
+  if (!CFG.APPS_SCRIPT_URL) {
+    console.warn("[stub] would save:", body);
     return;
   }
-  console.log("[stub] would save annotation:", payload);
+  // text/plain avoids CORS preflight on Apps Script Web App endpoints.
+  const res = await fetch(CFG.APPS_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  if (data && data.ok === false) throw new Error(data.error || "save failed");
 }
 
 function show(id) { const el = document.getElementById(id); if (el) el.hidden = false; }
