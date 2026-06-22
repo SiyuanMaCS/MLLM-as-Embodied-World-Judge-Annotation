@@ -299,8 +299,18 @@ function showError(text) {
 async function initDashboard() {
   const root = document.getElementById("grid-table");
   if (!root) return;
+  // Role-aware nav: show reviewer/admin links only for those roles.
+  const user = localStorage.getItem(CFG.LS_USER);
+  const role = localStorage.getItem(CFG.LS_ROLE);
+  const isReviewer = role === "reviewer" || user === "masiyuan";
+  const isAdmin = user === "masiyuan";
+  document.querySelectorAll(".page-nav .reviewer-only").forEach(a => {
+    if (!isReviewer) a.style.display = "none";
+  });
+  document.querySelectorAll(".page-nav .admin-only").forEach(a => {
+    if (!isAdmin) a.style.display = "none";
+  });
   await loadDashboard();
-  // Auto-refresh every 30s; pause when tab hidden.
   let timer = setInterval(() => {
     if (!document.hidden) loadDashboard();
   }, 30000);
