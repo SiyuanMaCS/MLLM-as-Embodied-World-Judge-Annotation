@@ -269,9 +269,9 @@ function showError(text) {
   hide("loading"); hide("item"); show("error");
 }
 
-/* ---------- dashboard.html ---------- */
+/* ---------- dashboard.html (grid view) ---------- */
 async function initDashboard() {
-  const root = document.getElementById("ann-table");
+  const root = document.getElementById("grid-table");
   if (!root) return;
   document.getElementById("refresh-btn").addEventListener("click", () => loadDashboard());
   await loadDashboard();
@@ -280,41 +280,113 @@ async function initDashboard() {
 async function loadDashboard() {
   hide("dash-error");
   document.getElementById("ann-loading").hidden = false;
-  document.getElementById("ann-table").hidden = true;
+  document.getElementById("grid-wrap").hidden = true;
   try {
     const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=progress`);
     const data = await res.json();
-    document.getElementById("date").textContent = data.date || "—";
     document.getElementById("t-annotators").textContent = data.totals?.annotators ?? 0;
     document.getElementById("t-today").textContent = data.totals?.today ?? 0;
     document.getElementById("t-total").textContent = data.totals?.annotations ?? 0;
-
-    const tbody = document.getElementById("ann-tbody");
-    tbody.innerHTML = "";
-    const anns = (data.annotators || []).slice().sort((a, b) => (b.today || 0) - (a.today || 0));
-    for (const a of anns) {
-      const tr = document.createElement("tr");
-      const pct = a.quota ? Math.min(100, Math.round((a.today / a.quota) * 100)) : 0;
-      const met = a.quota && a.today >= a.quota;
-      tr.innerHTML = `
-        <td><strong>${escapeHtml(a.user)}</strong></td>
-        <td>${a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : '<span class="muted">—</span>'}</td>
-        <td class="${met ? 'ok-text' : 'warn-text'}">${a.today ?? 0} / ${a.quota ?? '—'}</td>
-        <td>
-          <div class="progress-bar">
-            <div class="progress-fill ${met ? 'met' : ''}" style="width:${pct}%"></div>
-          </div>
-        </td>
-        <td>${a.total ?? 0}</td>
-      `;
-      tbody.appendChild(tr);
-    }
+    renderGrid(data);
     document.getElementById("ann-loading").hidden = true;
-    document.getElementById("ann-table").hidden = false;
+    document.getElementById("grid-wrap").hidden = false;
   } catch (err) {
     document.getElementById("dash-err-msg").textContent = err.message;
     show("dash-error");
   }
+}
+
+function renderGrid(data) {
+  const days = data.days || [];
+  const annotators = (data.annotators || []).slice().sort((a, b) => {
+    // sort by net descending (most ahead first), then by total desc
+    const aNet = a.net ?? 0, bNet = b.net ?? 0;
+    if (bNet !== aNet) return bNet - aNet;
+    return (b.total ?? 0) - (a.total ?? 0);
+  });
+
+  const table = document.getElementById("grid-table");
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  const tfoot = table.querySelector("tfoot");
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
+  tfoot.innerHTML = "";
+
+  // Header row: "..." | user1 | user2 | ...
+  const trHead = document.createElement("tr");
+  const thSliding = document.createElement("th");
+  thSliding.className = "sliding";
+  thSliding.title = "Sliding 7-day window — earlier days off-screen";
+  thSliding.textContent = "…";
+  trHead.appendChild(thSliding);
+  for (const a of annotators) {
+    const th = document.createElement("th");
+    th.innerHTML = `
+      <div class="user-head">
+        <span class="user-name">${escapeHtml(a.user)}</span>
+        ${a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : ""}
+        <span class="quota-label">${a.quota ?? "—"}/day</span>
+      </div>
+    `;
+    trHead.appendChild(th);
+  }
+  thead.appendChild(trHead);
+
+  // Data rows: one per day
+  for (let i = 0; i < days.length; i++) {
+    const day = days[i];
+    const tr = document.createElement("tr");
+    const tdDay = document.createElement("td");
+    tdDay.className = "day-label";
+    tdDay.textContent = formatDayLabel(day, i === days.length - 1);
+    tr.appendChild(tdDay);
+    for (const a of annotators) {
+      const cell = (a.week || [])[i];
+      const td = document.createElement("td");
+      td.className = "grid-cell";
+      if (!cell || cell.count === 0) {
+        td.classList.add("zero");
+        td.textContent = "·";
+      } else if (cell.met) {
+        td.classList.add("met");
+        td.textContent = String(cell.count);
+      } else {
+        td.classList.add("miss");
+        td.textContent = String(cell.count);
+      }
+      if (cell) td.title = `${cell.date}: ${cell.count}/${a.quota ?? "?"} (delta ${cell.delta >= 0 ? "+" : ""}${cell.delta})`;
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+
+  // Footer: cumulative net per user
+  const trFoot = document.createElement("tr");
+  const tdFootLabel = document.createElement("td");
+  tdFootLabel.className = "foot-label";
+  tdFootLabel.textContent = "Net";
+  trFoot.appendChild(tdFootLabel);
+  for (const a of annotators) {
+    const td = document.createElement("td");
+    td.className = "net";
+    const net = a.net ?? 0;
+    if (net > 0) {
+      td.innerHTML = `<span class="ok-text">+${net}</span>`;
+    } else if (net < 0) {
+      td.innerHTML = `<span class="warn-text">${net}</span>`;
+    } else {
+      td.innerHTML = `<span class="muted">0</span>`;
+    }
+    trFoot.appendChild(td);
+  }
+  tfoot.appendChild(trFoot);
+}
+
+function formatDayLabel(iso, isToday) {
+  if (!iso) return "—";
+  const md = iso.slice(5);  // MM-DD
+  return isToday ? `Today (${md})` : md;
 }
 
 function escapeHtml(s) {

@@ -10,7 +10,7 @@
 <body>
 <main>
   <header class="bar">
-    <h1>📊 Annotation Dashboard</h1>
+    <h1>📊 Annotator Progress (7-day window)</h1>
     <div class="user-chip">
       <a href="index.html" class="link">← back</a>
       <button id="refresh-btn" class="link">refresh</button>
@@ -18,30 +18,26 @@
   </header>
 
   <section id="summary" class="card">
-    <h2>Today (<span id="date">—</span>)</h2>
     <div class="stat-row">
       <div class="stat"><span class="stat-num" id="t-annotators">0</span><span class="stat-label">annotators</span></div>
-      <div class="stat"><span class="stat-num" id="t-today">0</span><span class="stat-label">annotations today</span></div>
+      <div class="stat"><span class="stat-num" id="t-today">0</span><span class="stat-label">today</span></div>
       <div class="stat"><span class="stat-num" id="t-total">0</span><span class="stat-label">total annotations</span></div>
     </div>
   </section>
 
   <section class="card">
-    <h2>Annotator progress</h2>
-    <div id="table-wrap">
-      <p id="ann-loading">Loading…</p>
-      <table id="ann-table" hidden>
-        <thead>
-          <tr>
-            <th>Annotator</th>
-            <th>Role</th>
-            <th>Today / Quota</th>
-            <th>Today progress</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody id="ann-tbody"></tbody>
+    <p id="ann-loading">Loading…</p>
+    <div id="grid-wrap" hidden>
+      <table id="grid-table">
+        <thead></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
       </table>
+      <p class="legend">
+        🟢 met daily quota · 🔴 below quota · ◻ no activity ·
+        <strong class="ok-text">+N</strong> ahead of cumulative target ·
+        <strong class="warn-text">−N</strong> behind cumulative target
+      </p>
     </div>
   </section>
 
