@@ -320,6 +320,7 @@ async function loadDashboard() {
 
 function renderGrid(data) {
   const days = data.days || [];
+  const isAdmin = !!data.is_admin;
   const annotators = (data.annotators || []).slice().sort((a, b) => {
     const aNet = a.net ?? 0, bNet = b.net ?? 0;
     if (bNet !== aNet) return bNet - aNet;
@@ -359,14 +360,39 @@ function renderGrid(data) {
     if (a.is_self) tr.classList.add("self-row");
     const tdUser = document.createElement("td");
     tdUser.className = "user-cell";
+    // Admin gets a role dropdown; everyone else sees a pill.
+    const roleControl = isAdmin
+      ? `<select class="role-select" data-target="${escapeHtml(a.user)}">
+           <option value="author"${a.role === "author" ? " selected" : ""}>author</option>
+           <option value="contributor"${a.role === "contributor" ? " selected" : ""}>contributor</option>
+         </select>`
+      : (a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : "");
     tdUser.innerHTML = `
       <div class="user-head">
         <span class="user-name">${escapeHtml(a.user)}${a.is_self ? ' <span class="you-badge">you</span>' : ''}</span>
-        ${a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : ""}
+        ${roleControl}
         <span class="quota-label">${a.quota ?? "—"}/day</span>
       </div>
     `;
     tr.appendChild(tdUser);
+    // Wire change handler after element is in DOM
+    if (isAdmin) {
+      const sel = tdUser.querySelector(".role-select");
+      sel.addEventListener("change", async (ev) => {
+        const newRole = ev.target.value;
+        const target = ev.target.dataset.target;
+        const prevRole = a.role;
+        ev.target.disabled = true;
+        try {
+          await setRoleAdmin(target, newRole);
+          await loadDashboard();  // refresh
+        } catch (err) {
+          alert("Failed to set role: " + err.message);
+          ev.target.value = prevRole;
+          ev.target.disabled = false;
+        }
+      });
+    }
 
     for (let i = 0; i < days.length; i++) {
       const cell = (a.week || [])[i];
@@ -403,6 +429,14 @@ function formatDayLabel(iso, isToday) {
   if (!iso) return "—";
   const md = iso.slice(5);  // MM-DD
   return isToday ? `Today (${md})` : md;
+}
+
+async function setRoleAdmin(target, role) {
+  const admin = localStorage.getItem(CFG.LS_USER) || "";
+  const url = `${CFG.APPS_SCRIPT_URL}/?action=set_role&admin=${encodeURIComponent(admin)}&target=${encodeURIComponent(target)}&role=${encodeURIComponent(role)}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "set_role failed");
 }
 
 function escapeHtml(s) {
