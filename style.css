@@ -1,4 +1,4 @@
-/* Embodied World Judge — Annotation UI */
+/* Embodied World Judge — Annotation UI (responsive) */
 
 * { box-sizing: border-box; }
 
@@ -12,46 +12,63 @@
   --border: #e5e5ea;
   --ok: #2e8b57;
   --err: #b00020;
+  --warn-bg: #fff8e7;
 }
 
+html, body { height: 100%; }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 15px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
   line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
 }
 
 main {
-  max-width: 900px;
+  max-width: 980px;
   margin: 0 auto;
-  padding: 28px 20px 60px;
+  padding: 24px 20px 100px; /* extra bottom padding so sticky bar doesn't overlap content */
 }
 
-header { margin-bottom: 20px; }
-header h1 { margin: 0 0 6px; font-size: 24px; font-weight: 700; }
-header .sub { color: var(--muted); margin: 0; }
+/* ---------- header (default + bar variant) ---------- */
+header { margin-bottom: 18px; }
+header h1 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+header .sub { color: var(--muted); margin: 0; font-size: 15px; }
 
 header.bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .user-chip {
   background: var(--card);
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: 999px;
   border: 1px solid var(--border);
   font-size: 14px;
   color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
 }
-.user-chip strong { color: var(--text); }
+.user-chip strong { color: var(--text); font-weight: 600; }
 
+/* ---------- cards ---------- */
 .card {
   background: var(--card);
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   padding: 20px 22px;
   margin-bottom: 16px;
@@ -59,76 +76,270 @@ header.bar {
 .card h2 { margin: 0 0 8px; font-size: 18px; }
 .card h3 { margin: 0 0 8px; font-size: 16px; }
 .card.help { background: #fafafd; color: var(--muted); font-size: 14px; }
-.card.error { border-color: var(--err); background: #fff5f5; color: var(--err); }
+.card.error {
+  border-color: var(--err);
+  background: #fff5f5;
+  color: var(--err);
+}
 
-form label { display: block; font-weight: 600; margin: 12px 0 4px; }
+/* ---------- form elements ---------- */
+form label {
+  display: block;
+  font-weight: 600;
+  margin: 12px 0 6px;
+  font-size: 14px;
+}
 form input[type="text"],
 form textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 15px;
+  border-radius: 8px;
+  font-size: 16px;
   font-family: inherit;
+  background: #fff;
+  -webkit-appearance: none;
 }
-form small { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+form input[type="text"]:focus,
+form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(44, 93, 217, 0.15);
+}
+form small {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
 form button {
   margin-top: 12px;
   background: var(--accent);
   color: #fff;
   border: 0;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 15px;
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-size: 16px;
   cursor: pointer;
   font-weight: 600;
+  min-height: 44px; /* touch target */
 }
 form button:hover { background: var(--accent-dark); }
+form button:active { transform: scale(0.98); }
 form button.ghost {
   background: transparent;
   color: var(--muted);
   border: 1px solid var(--border);
 }
+form button.ghost:hover { background: #f0f0f5; }
 form button.link {
   background: transparent;
   color: var(--accent);
   border: 0;
   padding: 0;
-  text-decoration: underline;
+  margin: 0;
   font-size: inherit;
   font-weight: 400;
+  min-height: auto;
+  text-decoration: underline;
   cursor: pointer;
 }
 
-.form-row { margin-bottom: 14px; }
-.form-row.actions { display: flex; gap: 10px; margin-top: 18px; }
-.form-row.actions button { margin: 0; }
-.form-row output { display: inline-block; margin-left: 8px; font-weight: 600; }
+/* sliders — bigger thumb on touch devices */
+input[type="range"] {
+  width: 100%;
+  max-width: 320px;
+  height: 30px;
+  -webkit-appearance: none;
+  background: transparent;
+  vertical-align: middle;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: -9px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 0;
+  cursor: pointer;
+}
 
+.form-row { margin-bottom: 16px; }
+.form-row.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.form-row.actions button { margin: 0; flex: 1; }
+.form-row output {
+  display: inline-block;
+  margin-left: 12px;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--accent);
+  min-width: 18px;
+  vertical-align: middle;
+}
+
+/* ---------- meta tags ---------- */
 .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
 .tag {
   background: #eef2fb;
   color: var(--accent-dark);
-  padding: 3px 9px;
+  padding: 4px 10px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
-.video-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
-.video-row figure { margin: 0; flex: 1 1 380px; min-width: 280px; }
-.video-row figcaption { font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
-.video-row video { width: 100%; border-radius: 6px; background: #000; }
+/* ---------- videos ---------- */
+.video-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.video-row figure {
+  margin: 0;
+  flex: 1 1 380px;
+  min-width: 0;
+}
+.video-row figcaption {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.video-row video {
+  width: 100%;
+  border-radius: 8px;
+  background: #000;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+}
 
-.prompt-box { margin-bottom: 18px; background: #fafafd; padding: 12px 14px; border-radius: 6px; border: 1px solid var(--border); }
-.prompt-box label { font-weight: 600; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
-.prompt-box p { margin: 0; font-size: 14px; line-height: 1.55; }
+/* ---------- prompt box ---------- */
+.prompt-box {
+  margin-bottom: 18px;
+  background: #fafafd;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.prompt-box label {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: block;
+}
+.prompt-box p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+}
 
-.msg { font-size: 13px; color: var(--muted); margin-top: 8px; min-height: 18px; }
+/* ---------- status msg ---------- */
+.msg {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+  min-height: 18px;
+}
 .msg.ok { color: var(--ok); }
 .msg.err { color: var(--err); }
 
-@media (max-width: 600px) {
-  main { padding: 20px 14px; }
-  .video-row { flex-direction: column; }
+/* ---------- ordered list (login page help) ---------- */
+ol { padding-left: 22px; }
+ol li { margin: 4px 0; }
+
+/* ============================================================
+   MOBILE (≤ 640px)
+   ============================================================ */
+@media (max-width: 640px) {
+  main { padding: 16px 12px 120px; }
+  header h1 { font-size: 20px; }
+  header .sub { font-size: 14px; }
+  header.bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .user-chip { width: 100%; justify-content: space-between; }
+
+  .card { padding: 16px; border-radius: 10px; }
+  .card h2 { font-size: 16px; }
+
+  /* Videos stack vertically on mobile */
+  .video-row { flex-direction: column; gap: 10px; }
+  .video-row figure { flex: 1 1 auto; }
+  .video-row video { aspect-ratio: 16 / 9; }
+
+  .form-row.actions {
+    /* sticky bottom action bar so Save/Skip always reachable on phone */
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    margin: 0;
+    gap: 8px;
+    z-index: 10;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+  }
+  .form-row.actions button { padding: 14px; font-size: 15px; }
+
+  /* meta tags single line scroll on mobile */
+  .meta { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .meta::-webkit-scrollbar { display: none; }
+
+  input[type="range"] { max-width: 100%; }
+  .form-row output { font-size: 17px; }
+
+  .prompt-box p { font-size: 14px; }
+}
+
+/* ============================================================
+   LARGE (≥ 1024px) — side-by-side desktop optimization
+   ============================================================ */
+@media (min-width: 1024px) {
+  main { padding: 32px 24px 60px; }
+  .video-row { gap: 18px; }
+}
+
+strong { font-weight: 700; }
+em { font-style: italic; }
+code {
+  background: #f0f0f5;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: "SF Mono", Menlo, Monaco, "Courier New", monospace;
 }
