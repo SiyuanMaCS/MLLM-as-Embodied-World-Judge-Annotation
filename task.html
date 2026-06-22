@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Annotate — Embodied World Judge</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1>🤖 Annotation</h1>
+    <div class="user-chip">
+      annotator: <strong id="who">—</strong>
+      &middot; <span id="counter">0</span> done
+      <button id="logout-btn" class="link">switch user</button>
+    </div>
+  </header>
+
+  <section id="loading" class="card">
+    <p>Loading next sample…</p>
+  </section>
+
+  <section id="item" class="card" hidden>
+    <div class="meta">
+      <span class="tag" id="meta-model">model</span>
+      <span class="tag" id="meta-dataset">dataset</span>
+      <span class="tag" id="meta-task">task</span>
+      <span class="tag" id="meta-variant">variant</span>
+    </div>
+
+    <div class="video-row">
+      <figure>
+        <figcaption>Generated</figcaption>
+        <video id="gen-video" controls preload="metadata" muted></video>
+      </figure>
+      <figure id="gt-fig" hidden>
+        <figcaption>Ground truth</figcaption>
+        <video id="gt-video" controls preload="metadata" muted></video>
+      </figure>
+    </div>
+
+    <div class="prompt-box">
+      <label>Prompt</label>
+      <p id="prompt-text">—</p>
+    </div>
+
+    <form id="annotate-form">
+      <h3>Annotation (placeholder — final fields TBD)</h3>
+      <div class="form-row">
+        <label for="quality">Overall quality (1–5)</label>
+        <input type="range" id="quality" name="quality" min="1" max="5" step="1" value="3">
+        <output for="quality" id="quality-out">3</output>
+      </div>
+      <div class="form-row">
+        <label for="faithful">Faithfulness to prompt (1–5)</label>
+        <input type="range" id="faithful" name="faithful" min="1" max="5" step="1" value="3">
+        <output for="faithful" id="faithful-out">3</output>
+      </div>
+      <div class="form-row">
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" name="notes" rows="3" maxlength="500"
+                  placeholder="anything weird, hallucinated objects, broken motion…"></textarea>
+      </div>
+      <div class="form-row actions">
+        <button type="submit" id="submit-btn">Save &amp; next →</button>
+        <button type="button" id="skip-btn" class="ghost">Skip this one</button>
+      </div>
+    </form>
+  </section>
+
+  <section id="error" class="card error" hidden>
+    <h3>Something went wrong</h3>
+    <p id="error-msg">—</p>
+    <button id="retry-btn">Retry</button>
+  </section>
+</main>
+<script src="app.js" defer></script>
+</body>
+</html>
