@@ -335,53 +335,37 @@ function renderGrid(data) {
   tbody.innerHTML = "";
   tfoot.innerHTML = "";
 
-  // Header row: "..." (sliding window) | day1 | day2 | ... | dayN | Net
+  // Header row: "..." (sliding window) | user1 | user2 | ... | userN
   const trHead = document.createElement("tr");
   const thSliding = document.createElement("th");
   thSliding.className = "sliding";
   thSliding.title = "Sliding 7-day window — earlier days off-screen";
   thSliding.textContent = "…";
   trHead.appendChild(thSliding);
-  for (let i = 0; i < days.length; i++) {
-    const th = document.createElement("th");
-    th.className = "day-col-head";
-    th.textContent = formatDayLabel(days[i], i === days.length - 1);
-    trHead.appendChild(th);
-  }
-  const thNet = document.createElement("th");
-  thNet.className = "net-col-head";
-  thNet.textContent = "Net";
-  trHead.appendChild(thNet);
-  thead.appendChild(trHead);
-
-  // Data rows: one per annotator
   for (const a of annotators) {
-    const tr = document.createElement("tr");
-    if (a.is_self) tr.classList.add("self-row");
-    const tdUser = document.createElement("td");
-    tdUser.className = "user-cell";
-    // Admin gets a role dropdown; everyone else sees a pill.
+    const th = document.createElement("th");
+    th.className = "user-col-head";
+    if (a.is_self) th.classList.add("self-col");
     const isMaSiyuan = a.user === "masiyuan";
+    // Admin gets a role dropdown; everyone else sees a pill.
     const roleControl = isAdmin && !isMaSiyuan
       ? `<select class="role-select" data-target="${escapeHtml(a.user)}">
            <option value="author"${a.role === "author" ? " selected" : ""}>author</option>
            <option value="contributor"${a.role === "contributor" ? " selected" : ""}>contributor</option>
            <option value="reviewer"${a.role === "reviewer" ? " selected" : ""}>reviewer</option>
-         </select>${isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ''}`
-      : (a.role
-          ? `${isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ""}<span class="role-pill" data-role="${a.role}">${a.role}</span>`
-          : (isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ""));
-    tdUser.innerHTML = `
+         </select>`
+      : (a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : "");
+    th.innerHTML = `
       <div class="user-head">
         <span class="user-name">${escapeHtml(a.user)}${a.is_self ? ' <span class="you-badge">you</span>' : ''}</span>
+        ${isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ''}
         ${roleControl}
         <span class="quota-label">${a.quota ?? "—"}/day</span>
       </div>
     `;
-    tr.appendChild(tdUser);
-    // Wire change handler after element is in DOM
-    if (isAdmin) {
-      const sel = tdUser.querySelector(".role-select");
+    trHead.appendChild(th);
+    if (isAdmin && !isMaSiyuan) {
+      const sel = th.querySelector(".role-select");
       sel.addEventListener("change", async (ev) => {
         const newRole = ev.target.value;
         const target = ev.target.dataset.target;
@@ -389,7 +373,7 @@ function renderGrid(data) {
         ev.target.disabled = true;
         try {
           await setRoleAdmin(target, newRole);
-          await loadDashboard();  // refresh
+          await loadDashboard();
         } catch (err) {
           alert("Failed to set role: " + err.message);
           ev.target.value = prevRole;
@@ -397,11 +381,23 @@ function renderGrid(data) {
         }
       });
     }
+  }
+  thead.appendChild(trHead);
 
-    for (let i = 0; i < days.length; i++) {
+  // Data rows: one per DAY
+  for (let i = 0; i < days.length; i++) {
+    const tr = document.createElement("tr");
+    const isToday = i === days.length - 1;
+    if (isToday) tr.classList.add("today-row");
+    const tdDay = document.createElement("td");
+    tdDay.className = "day-label";
+    tdDay.textContent = formatDayLabel(days[i], isToday);
+    tr.appendChild(tdDay);
+    for (const a of annotators) {
       const cell = (a.week || [])[i];
       const td = document.createElement("td");
       td.className = "grid-cell";
+      if (a.is_self) td.classList.add("self-col-cell");
       if (!cell || cell.count === 0) {
         td.classList.add("zero");
         td.textContent = "·";
@@ -415,18 +411,27 @@ function renderGrid(data) {
       if (cell) td.title = `${cell.date}: ${cell.count}/${a.quota ?? "?"} (delta ${cell.delta >= 0 ? "+" : ""}${cell.delta})`;
       tr.appendChild(td);
     }
-
-    // Net cell at end of row
-    const tdNet = document.createElement("td");
-    tdNet.className = "net";
-    const net = a.net ?? 0;
-    if (net > 0) tdNet.innerHTML = `<span class="ok-text">+${net}</span>`;
-    else if (net < 0) tdNet.innerHTML = `<span class="warn-text">${net}</span>`;
-    else tdNet.innerHTML = `<span class="muted">0</span>`;
-    tr.appendChild(tdNet);
-
     tbody.appendChild(tr);
   }
+
+  // Footer row: per-user Net at the rightmost row (visually under each column)
+  const trFoot = document.createElement("tr");
+  trFoot.className = "net-row";
+  const tdFootLabel = document.createElement("td");
+  tdFootLabel.className = "foot-label";
+  tdFootLabel.textContent = "Net";
+  trFoot.appendChild(tdFootLabel);
+  for (const a of annotators) {
+    const td = document.createElement("td");
+    td.className = "net";
+    if (a.is_self) td.classList.add("self-col-cell");
+    const net = a.net ?? 0;
+    if (net > 0) td.innerHTML = `<span class="ok-text">+${net}</span>`;
+    else if (net < 0) td.innerHTML = `<span class="warn-text">${net}</span>`;
+    else td.innerHTML = `<span class="muted">0</span>`;
+    trFoot.appendChild(td);
+  }
+  tfoot.appendChild(trFoot);
 }
 
 function formatDayLabel(iso, isToday) {
