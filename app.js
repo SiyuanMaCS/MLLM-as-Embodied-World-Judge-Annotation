@@ -672,8 +672,7 @@ async function initReview() {
   document.getElementById("modify-btn").addEventListener("click", () => {
     const fields = document.getElementById("modify-fields");
     if (fields.hidden) {
-      // First click: reveal fields prefilled with original
-      const orig = REVIEW_CURRENT?.annotation_payload || {};
+      const orig = REVIEW_CURRENT?.annotation || REVIEW_CURRENT?.annotation_payload || {};
       document.getElementById("m-quality").value = orig.quality ?? 3;
       document.getElementById("m-quality-out").value = orig.quality ?? 3;
       document.getElementById("m-faithful").value = orig.faithful ?? 3;
@@ -717,8 +716,9 @@ function renderReviewItem(it) {
   document.getElementById("gen-video").src = absUrl(it.video_url);
   document.getElementById("gen-video").load();
   document.getElementById("prompt-text").textContent = "(loading instruction…)";
-  // Original annotator submission (annotator anon)
-  const payload = it.annotation_payload || {};
+  // Original annotator submission (annotator anon).
+  // Backend field: `annotation` (was `annotation_payload` in my earlier draft).
+  const payload = it.annotation || it.annotation_payload || {};
   document.getElementById("orig-quality").textContent = payload.quality ?? "—";
   document.getElementById("orig-faithful").textContent = payload.faithful ?? "—";
   document.getElementById("orig-notes").textContent = payload.notes || "(no notes)";
@@ -728,10 +728,11 @@ function renderReviewItem(it) {
 async function submitReview(decision) {
   if (!REVIEW_CURRENT) return;
   const reviewer = localStorage.getItem(CFG.LS_USER);
-  const target = REVIEW_CURRENT.annotator;
-  const item_id = REVIEW_CURRENT.id;
+  // Backend uses `target` for the annotator being reviewed; `item_id` for item.
+  const target = REVIEW_CURRENT.target || REVIEW_CURRENT.annotator;
+  const item_id = REVIEW_CURRENT.item_id || REVIEW_CURRENT.id;
   const is_report = !!REVIEW_CURRENT.is_report;
-  let payload = REVIEW_CURRENT.annotation_payload || {};
+  let payload = REVIEW_CURRENT.annotation || REVIEW_CURRENT.annotation_payload || {};
   if (decision === "modify") {
     payload = {
       quality: Number(document.getElementById("m-quality").value),
