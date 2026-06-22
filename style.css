@@ -470,16 +470,34 @@ fieldset.role-row.known .role-opt:has(input:checked) {
   color: var(--muted);
   font-size: 18px;
   letter-spacing: 0.1em;
+  text-align: center;
+}
+#grid-table th.day-col-head {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+}
+#grid-table th.net-col-head {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .user-head {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 3px;
-  min-width: 96px;
 }
 .user-head .user-name { font-weight: 700; font-size: 14px; }
 .user-head .quota-label { color: var(--muted); font-size: 11px; }
+
+#grid-table td.user-cell {
+  text-align: left;
+  background: transparent;
+  min-width: 130px;
+}
 
 .day-label {
   text-align: right;
@@ -488,6 +506,12 @@ fieldset.role-row.known .role-opt:has(input:checked) {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   background: transparent;
+}
+
+.auto-tick {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
 }
 
 .grid-cell {

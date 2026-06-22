@@ -273,8 +273,11 @@ function showError(text) {
 async function initDashboard() {
   const root = document.getElementById("grid-table");
   if (!root) return;
-  document.getElementById("refresh-btn").addEventListener("click", () => loadDashboard());
   await loadDashboard();
+  // Auto-refresh every 30s; pause when tab hidden.
+  let timer = setInterval(() => {
+    if (!document.hidden) loadDashboard();
+  }, 30000);
 }
 
 async function loadDashboard() {
@@ -299,7 +302,6 @@ async function loadDashboard() {
 function renderGrid(data) {
   const days = data.days || [];
   const annotators = (data.annotators || []).slice().sort((a, b) => {
-    // sort by net descending (most ahead first), then by total desc
     const aNet = a.net ?? 0, bNet = b.net ?? 0;
     if (bNet !== aNet) return bNet - aNet;
     return (b.total ?? 0) - (a.total ?? 0);
@@ -313,35 +315,40 @@ function renderGrid(data) {
   tbody.innerHTML = "";
   tfoot.innerHTML = "";
 
-  // Header row: "..." | user1 | user2 | ...
+  // Header row: "..." (sliding window) | day1 | day2 | ... | dayN | Net
   const trHead = document.createElement("tr");
   const thSliding = document.createElement("th");
   thSliding.className = "sliding";
   thSliding.title = "Sliding 7-day window — earlier days off-screen";
   thSliding.textContent = "…";
   trHead.appendChild(thSliding);
-  for (const a of annotators) {
+  for (let i = 0; i < days.length; i++) {
     const th = document.createElement("th");
-    th.innerHTML = `
+    th.className = "day-col-head";
+    th.textContent = formatDayLabel(days[i], i === days.length - 1);
+    trHead.appendChild(th);
+  }
+  const thNet = document.createElement("th");
+  thNet.className = "net-col-head";
+  thNet.textContent = "Net";
+  trHead.appendChild(thNet);
+  thead.appendChild(trHead);
+
+  // Data rows: one per annotator
+  for (const a of annotators) {
+    const tr = document.createElement("tr");
+    const tdUser = document.createElement("td");
+    tdUser.className = "user-cell";
+    tdUser.innerHTML = `
       <div class="user-head">
         <span class="user-name">${escapeHtml(a.user)}</span>
         ${a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : ""}
         <span class="quota-label">${a.quota ?? "—"}/day</span>
       </div>
     `;
-    trHead.appendChild(th);
-  }
-  thead.appendChild(trHead);
+    tr.appendChild(tdUser);
 
-  // Data rows: one per day
-  for (let i = 0; i < days.length; i++) {
-    const day = days[i];
-    const tr = document.createElement("tr");
-    const tdDay = document.createElement("td");
-    tdDay.className = "day-label";
-    tdDay.textContent = formatDayLabel(day, i === days.length - 1);
-    tr.appendChild(tdDay);
-    for (const a of annotators) {
+    for (let i = 0; i < days.length; i++) {
       const cell = (a.week || [])[i];
       const td = document.createElement("td");
       td.className = "grid-cell";
@@ -358,29 +365,18 @@ function renderGrid(data) {
       if (cell) td.title = `${cell.date}: ${cell.count}/${a.quota ?? "?"} (delta ${cell.delta >= 0 ? "+" : ""}${cell.delta})`;
       tr.appendChild(td);
     }
+
+    // Net cell at end of row
+    const tdNet = document.createElement("td");
+    tdNet.className = "net";
+    const net = a.net ?? 0;
+    if (net > 0) tdNet.innerHTML = `<span class="ok-text">+${net}</span>`;
+    else if (net < 0) tdNet.innerHTML = `<span class="warn-text">${net}</span>`;
+    else tdNet.innerHTML = `<span class="muted">0</span>`;
+    tr.appendChild(tdNet);
+
     tbody.appendChild(tr);
   }
-
-  // Footer: cumulative net per user
-  const trFoot = document.createElement("tr");
-  const tdFootLabel = document.createElement("td");
-  tdFootLabel.className = "foot-label";
-  tdFootLabel.textContent = "Net";
-  trFoot.appendChild(tdFootLabel);
-  for (const a of annotators) {
-    const td = document.createElement("td");
-    td.className = "net";
-    const net = a.net ?? 0;
-    if (net > 0) {
-      td.innerHTML = `<span class="ok-text">+${net}</span>`;
-    } else if (net < 0) {
-      td.innerHTML = `<span class="warn-text">${net}</span>`;
-    } else {
-      td.innerHTML = `<span class="muted">0</span>`;
-    }
-    trFoot.appendChild(td);
-  }
-  tfoot.appendChild(trFoot);
 }
 
 function formatDayLabel(iso, isToday) {
