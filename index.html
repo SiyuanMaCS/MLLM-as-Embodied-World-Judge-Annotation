@@ -15,14 +15,29 @@
   </header>
 
   <section class="card">
-    <h2>Step 1 — Enter your name</h2>
-    <p>Your handle is used to track your annotations (no auth required for MVP).</p>
+    <h2>Step 1 — Register</h2>
+    <p>Pick your role and enter a handle. Daily targets: <strong>Author 50</strong> · <strong>Contributor 20</strong> (soft target — keep going if you want).</p>
     <form id="login-form">
-      <label for="username">Annotator handle</label>
+      <label for="username">Your handle</label>
       <input type="text" id="username" name="username" required minlength="2" maxlength="32"
              pattern="[A-Za-z0-9_\-]+" placeholder="e.g. alice_w"
              autocomplete="off">
       <small>Letters, digits, underscore, dash. 2–32 chars.</small>
+
+      <fieldset class="role-row">
+        <legend>Role</legend>
+        <label class="role-opt">
+          <input type="radio" name="role" value="author" required>
+          <span class="role-title">Author</span>
+          <span class="role-sub">50 / day target</span>
+        </label>
+        <label class="role-opt">
+          <input type="radio" name="role" value="contributor" required>
+          <span class="role-title">Contributor</span>
+          <span class="role-sub">20 / day target</span>
+        </label>
+      </fieldset>
+
       <button type="submit">Start annotating →</button>
     </form>
     <p id="login-msg" class="msg"></p>
@@ -31,11 +46,11 @@
   <section class="card help">
     <h3>What you'll do</h3>
     <ol>
-      <li>Watch a generated video (5–8s, ~1MB).</li>
-      <li>Answer a short form (quality, faithfulness to prompt, etc. — finalized soon).</li>
+      <li>Watch a generated video (5–8s).</li>
+      <li>Rate quality + faithfulness to the original task, write optional notes.</li>
       <li>Submit. The system auto-picks your next sample (no overlap, dynamic assignment).</li>
     </ol>
-    <p>Repo: <a href="https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge">HuggingFriends/mllm-as-embodied-world-judge</a></p>
+    <p>📊 <a href="dashboard.html">All annotators progress dashboard →</a></p>
   </section>
 </main>
 

@@ -12,9 +12,12 @@
   <header class="bar">
     <h1>🤖 Annotation</h1>
     <div class="user-chip">
-      annotator: <strong id="who">—</strong>
-      &middot; <span id="counter">0</span> done
-      <button id="logout-btn" class="link">switch user</button>
+      <span id="who">—</span> <span class="role-pill" id="role">—</span>
+      <span class="quota-block">
+        today <strong id="today">0</strong> / <strong id="quota">—</strong>
+      </span>
+      <a href="dashboard.html" class="link">dashboard</a>
+      <button id="logout-btn" class="link">logout</button>
     </div>
   </header>
 
@@ -24,7 +27,6 @@
 
   <section id="item" class="card" hidden>
     <div class="meta">
-      <span class="tag" id="meta-model">model</span>
       <span class="tag" id="meta-dataset">dataset</span>
       <span class="tag" id="meta-task">task</span>
       <span class="tag" id="meta-variant">variant</span>
@@ -33,30 +35,28 @@
     <div class="video-row">
       <figure>
         <figcaption>Generated</figcaption>
-        <video id="gen-video" controls preload="metadata" muted></video>
+        <video id="gen-video" controls preload="metadata" muted playsinline></video>
       </figure>
       <figure id="gt-fig" hidden>
         <figcaption>Ground truth</figcaption>
-        <video id="gt-video" controls preload="metadata" muted></video>
+        <video id="gt-video" controls preload="metadata" muted playsinline></video>
       </figure>
     </div>
 
     <div class="prompt-box">
-      <label>Prompt</label>
+      <label>Task instruction</label>
       <p id="prompt-text">—</p>
     </div>
 
     <form id="annotate-form">
       <h3>Annotation (placeholder — final fields TBD)</h3>
       <div class="form-row">
-        <label for="quality">Overall quality (1–5)</label>
+        <label for="quality">Overall quality (1–5) <output for="quality" id="quality-out">3</output></label>
         <input type="range" id="quality" name="quality" min="1" max="5" step="1" value="3">
-        <output for="quality" id="quality-out">3</output>
       </div>
       <div class="form-row">
-        <label for="faithful">Faithfulness to prompt (1–5)</label>
+        <label for="faithful">Faithfulness to instruction (1–5) <output for="faithful" id="faithful-out">3</output></label>
         <input type="range" id="faithful" name="faithful" min="1" max="5" step="1" value="3">
-        <output for="faithful" id="faithful-out">3</output>
       </div>
       <div class="form-row">
         <label for="notes">Notes (optional)</label>
@@ -65,7 +65,7 @@
       </div>
       <div class="form-row actions">
         <button type="submit" id="submit-btn">Save &amp; next →</button>
-        <button type="button" id="skip-btn" class="ghost">Skip this one</button>
+        <button type="button" id="skip-btn" class="ghost">Skip</button>
       </div>
     </form>
   </section>

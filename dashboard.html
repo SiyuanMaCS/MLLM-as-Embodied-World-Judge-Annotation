@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1>📊 Annotation Dashboard</h1>
+    <div class="user-chip">
+      <a href="index.html" class="link">← back</a>
+      <button id="refresh-btn" class="link">refresh</button>
+    </div>
+  </header>
+
+  <section id="summary" class="card">
+    <h2>Today (<span id="date">—</span>)</h2>
+    <div class="stat-row">
+      <div class="stat"><span class="stat-num" id="t-annotators">0</span><span class="stat-label">annotators</span></div>
+      <div class="stat"><span class="stat-num" id="t-today">0</span><span class="stat-label">annotations today</span></div>
+      <div class="stat"><span class="stat-num" id="t-total">0</span><span class="stat-label">total annotations</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Annotator progress</h2>
+    <div id="table-wrap">
+      <p id="ann-loading">Loading…</p>
+      <table id="ann-table" hidden>
+        <thead>
+          <tr>
+            <th>Annotator</th>
+            <th>Role</th>
+            <th>Today / Quota</th>
+            <th>Today progress</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="ann-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="dash-error" class="card error" hidden>
+    <h3>Failed to load</h3>
+    <p id="dash-err-msg">—</p>
+  </section>
+</main>
+<script src="app.js" defer></script>
+</body>
+</html>

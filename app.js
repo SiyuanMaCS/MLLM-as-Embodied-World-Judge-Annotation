@@ -1,34 +1,82 @@
-/* Embodied World Judge — Annotation app.js
- * Phase 1: username + manifest-driven sample loop + localStorage cache.
- * Phase 2 (after Supabase creds): replace MANIFEST_URL fetch with /rpc/get_next_item,
- *   and replace submitAnnotation() with /rest/v1/annotations insert.
- */
+/* Embodied World Judge — Annotation app.js */
 
 const CFG = {
-  // Filled at deploy by injecting <script>window.__APPS_SCRIPT_URL__="https://...";</script> in HTML.
   APPS_SCRIPT_URL: window.__APPS_SCRIPT_URL__ || null,
   HF_RESOLVE_BASE: "https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main",
   LS_USER: "ewj_annotator",
-  LS_DONE: "ewj_done",  // optimistic local cache for UI counter
+  LS_ROLE: "ewj_role",
+  LS_DONE: "ewj_done",
 };
 
-/* ---------- index.html: login ---------- */
+/* ---------- index.html: login + role ---------- */
 function initLogin() {
   const form = document.getElementById("login-form");
   if (!form) return;
-  const saved = localStorage.getItem(CFG.LS_USER);
-  if (saved) document.getElementById("username").value = saved;
-  form.addEventListener("submit", (e) => {
+
+  // If already logged in with a role, fast-forward to task.html.
+  const savedUser = localStorage.getItem(CFG.LS_USER);
+  const savedRole = localStorage.getItem(CFG.LS_ROLE);
+  if (savedUser && savedRole) {
+    window.location.href = "task.html";
+    return;
+  }
+  if (savedUser) document.getElementById("username").value = savedUser;
+
+  const usernameInput = document.getElementById("username");
+  const roleFieldset = form.querySelector("fieldset.role-row");
+  let knownRole = null;  // set if backend confirms existing user
+
+  // On username blur, probe backend for existing role.
+  usernameInput.addEventListener("blur", async () => {
+    const u = usernameInput.value.trim();
+    knownRole = null;
+    roleFieldset.classList.remove("known");
+    if (!/^[A-Za-z0-9_\-]{2,32}$/.test(u) || !CFG.APPS_SCRIPT_URL) return;
+    try {
+      const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(u)}`);
+      const data = await res.json();
+      if (data.role) {
+        knownRole = data.role;
+        const radio = form.querySelector(`input[name="role"][value="${data.role}"]`);
+        if (radio) radio.checked = true;
+        roleFieldset.classList.add("known");
+        showLoginMsg(`Welcome back, ${u} (role: ${data.role})`, false);
+      } else {
+        showLoginMsg("New annotator — pick a role to register.", false);
+      }
+    } catch (err) {
+      console.warn("user probe failed", err);
+    }
+  });
+
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const u = document.getElementById("username").value.trim();
+    const u = usernameInput.value.trim();
     if (!/^[A-Za-z0-9_\-]{2,32}$/.test(u)) {
       showLoginMsg("Invalid handle — use 2–32 chars, letters/digits/_/-", true);
       return;
     }
-    localStorage.setItem(CFG.LS_USER, u);
-    window.location.href = "task.html";
+    const selected = form.querySelector('input[name="role"]:checked');
+    const role = knownRole || (selected && selected.value);
+    if (!role) {
+      showLoginMsg("Pick a role (Author or Contributor).", true);
+      return;
+    }
+    try {
+      if (!knownRole && CFG.APPS_SCRIPT_URL) {
+        const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=register&user=${encodeURIComponent(u)}&role=${encodeURIComponent(role)}`);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "register failed");
+      }
+      localStorage.setItem(CFG.LS_USER, u);
+      localStorage.setItem(CFG.LS_ROLE, role);
+      window.location.href = "task.html";
+    } catch (err) {
+      showLoginMsg("Register failed: " + err.message, true);
+    }
   });
 }
+
 function showLoginMsg(text, isErr) {
   const el = document.getElementById("login-msg");
   if (!el) return;
@@ -38,18 +86,19 @@ function showLoginMsg(text, isErr) {
 
 /* ---------- task.html: annotation loop ---------- */
 let CURRENT = null;
-let DONE_CACHE = new Set();
 
 async function initTask() {
   const username = localStorage.getItem(CFG.LS_USER);
-  if (!username) { window.location.href = "index.html"; return; }
+  const role = localStorage.getItem(CFG.LS_ROLE);
+  if (!username || !role) { window.location.href = "index.html"; return; }
   document.getElementById("who").textContent = username;
-  DONE_CACHE = new Set(JSON.parse(localStorage.getItem(CFG.LS_DONE) || "[]"));
-  document.getElementById("counter").textContent = DONE_CACHE.size;
+  const roleEl = document.getElementById("role");
+  if (roleEl) { roleEl.textContent = role; roleEl.dataset.role = role; }
 
   document.getElementById("logout-btn").addEventListener("click", () => {
-    if (!confirm("Switch user? Local stats stay on this browser.")) return;
+    if (!confirm("Log out? Your handle/role stays registered on the server.")) return;
     localStorage.removeItem(CFG.LS_USER);
+    localStorage.removeItem(CFG.LS_ROLE);
     window.location.href = "index.html";
   });
 
@@ -74,11 +123,17 @@ async function refreshStats() {
   if (!CFG.APPS_SCRIPT_URL) return;
   const user = localStorage.getItem(CFG.LS_USER);
   try {
-    const url = `${CFG.APPS_SCRIPT_URL}?action=stats&user=${encodeURIComponent(user)}`;
+    const url = `${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(user)}`;
     const res = await fetch(url);
     const data = await res.json();
-    if (data && typeof data.done === "number") {
-      document.getElementById("counter").textContent = `${data.done} / ${data.total}`;
+    if (typeof data.today === "number") {
+      document.getElementById("today").textContent = data.today;
+      const quotaEl = document.getElementById("quota");
+      if (quotaEl) quotaEl.textContent = data.quota ?? "—";
+      const quotaBlock = quotaEl?.parentElement;
+      if (quotaBlock && data.quota) {
+        quotaBlock.classList.toggle("met", data.today >= data.quota);
+      }
     }
   } catch (err) {
     console.warn("stats fetch failed", err);
@@ -88,12 +143,12 @@ async function refreshStats() {
 async function loadNext() {
   hide("error"); hide("item"); show("loading");
   if (!CFG.APPS_SCRIPT_URL) {
-    showError("Backend URL not configured (window.__APPS_SCRIPT_URL__ missing).");
+    showError("Backend URL not configured.");
     return;
   }
   const user = localStorage.getItem(CFG.LS_USER);
   try {
-    const url = `${CFG.APPS_SCRIPT_URL}?action=next&user=${encodeURIComponent(user)}`;
+    const url = `${CFG.APPS_SCRIPT_URL}/?action=next&user=${encodeURIComponent(user)}`;
     const res = await fetch(url);
     const data = await res.json();
     if (data.done) {
@@ -110,11 +165,16 @@ async function loadNext() {
 }
 
 function renderItem(it) {
-  document.getElementById("meta-model").textContent = it.model || "?";
   document.getElementById("meta-dataset").textContent = it.dataset || "?";
   document.getElementById("meta-task").textContent = it.task || "?";
-  document.getElementById("meta-variant").textContent = it.variant || "?";
-  document.getElementById("prompt-text").textContent = "(loading prompt…)";
+  // model name intentionally NOT shown — annotators should be blind.
+  // Variant (prefix/rewrite) still shown so annotator knows what prompt the model received.
+  const variant = (it.id || "").includes("_rewrite_") || (it.video_url || "").includes("_rewrite/")
+    ? "rewrite"
+    : ((it.id || "").includes("_prefix_") || (it.video_url || "").includes("_prefix/") ? "prefix" : "?");
+  const variantEl = document.getElementById("meta-variant");
+  if (variantEl) variantEl.textContent = "prompt: " + variant;
+  document.getElementById("prompt-text").textContent = "(loading task instruction…)";
   const gen = document.getElementById("gen-video");
   gen.src = absUrl(it.video_url);
   gen.load();
@@ -132,30 +192,30 @@ function renderItem(it) {
     document.getElementById(id).value = 3;
     document.getElementById(id + "-out").value = 3;
   }
-  // Fetch prompt.txt — sibling of the mp4 under prompt/prompt.txt
   fetchPrompt(it);
 }
 
 async function fetchPrompt(it) {
-  // Show the *original* task instruction from gt_data — not the variant used for generation.
+  // Original task instruction from gt_data — try instruction.txt first, fall back to prompt.txt.
   // generated_data path:  data/<ds>/generated_data/<model>/task_X/episode_X/1/<file>.mp4
-  // → original prompt at: data/<ds>/gt_data/task_X/episode_X/prompt/prompt.txt
-  let url = it.prompt_url;
-  if (!url && it.video_url) {
-    url = it.video_url.replace(
-      /generated_data\/[^\/]+\/(task_\d+)\/(episode_\d+)\/1\/[^\/]+\.mp4$/,
-      "gt_data/$1/$2/prompt/prompt.txt"
-    );
+  // → gt_data:            data/<ds>/gt_data/task_X/episode_X/prompt/{instruction.txt|prompt.txt}
+  const base = it.video_url && it.video_url.replace(
+    /generated_data\/[^\/]+\/(task_\d+)\/(episode_\d+)\/1\/[^\/]+\.mp4$/,
+    "gt_data/$1/$2/prompt"
+  );
+  if (!base) { document.getElementById("prompt-text").textContent = "(no prompt)"; return; }
+  for (const fname of ["instruction.txt", "prompt.txt"]) {
+    try {
+      const res = await fetch(`${base}/${fname}`);
+      if (!res.ok) continue;
+      const text = await res.text();
+      document.getElementById("prompt-text").textContent = text.trim() || "(empty)";
+      return;
+    } catch (err) {
+      // try next filename
+    }
   }
-  if (!url) { document.getElementById("prompt-text").textContent = "(no prompt)"; return; }
-  try {
-    const res = await fetch(absUrl(url));
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const text = await res.text();
-    document.getElementById("prompt-text").textContent = text.trim() || "(empty prompt)";
-  } catch (err) {
-    document.getElementById("prompt-text").textContent = "(prompt load failed: " + err.message + ")";
-  }
+  document.getElementById("prompt-text").textContent = "(prompt unavailable)";
 }
 
 function absUrl(u) {
@@ -166,8 +226,10 @@ function absUrl(u) {
 
 async function onSubmit(skip) {
   if (!CURRENT) return;
+  const role = localStorage.getItem(CFG.LS_ROLE);
   const body = {
     user: localStorage.getItem(CFG.LS_USER),
+    role,
     item_id: CURRENT.id,
     payload: {
       skip,
@@ -178,8 +240,6 @@ async function onSubmit(skip) {
   };
   try {
     await submitAnnotation(body);
-    DONE_CACHE.add(CURRENT.id);
-    localStorage.setItem(CFG.LS_DONE, JSON.stringify([...DONE_CACHE]));
     await refreshStats();
     await loadNext();
   } catch (err) {
@@ -192,8 +252,7 @@ async function submitAnnotation(body) {
     console.warn("[stub] would save:", body);
     return;
   }
-  // text/plain avoids CORS preflight on Apps Script Web App endpoints.
-  const res = await fetch(CFG.APPS_SCRIPT_URL, {
+  const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify(body),
@@ -210,8 +269,63 @@ function showError(text) {
   hide("loading"); hide("item"); show("error");
 }
 
+/* ---------- dashboard.html ---------- */
+async function initDashboard() {
+  const root = document.getElementById("ann-table");
+  if (!root) return;
+  document.getElementById("refresh-btn").addEventListener("click", () => loadDashboard());
+  await loadDashboard();
+}
+
+async function loadDashboard() {
+  hide("dash-error");
+  document.getElementById("ann-loading").hidden = false;
+  document.getElementById("ann-table").hidden = true;
+  try {
+    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=progress`);
+    const data = await res.json();
+    document.getElementById("date").textContent = data.date || "—";
+    document.getElementById("t-annotators").textContent = data.totals?.annotators ?? 0;
+    document.getElementById("t-today").textContent = data.totals?.today ?? 0;
+    document.getElementById("t-total").textContent = data.totals?.annotations ?? 0;
+
+    const tbody = document.getElementById("ann-tbody");
+    tbody.innerHTML = "";
+    const anns = (data.annotators || []).slice().sort((a, b) => (b.today || 0) - (a.today || 0));
+    for (const a of anns) {
+      const tr = document.createElement("tr");
+      const pct = a.quota ? Math.min(100, Math.round((a.today / a.quota) * 100)) : 0;
+      const met = a.quota && a.today >= a.quota;
+      tr.innerHTML = `
+        <td><strong>${escapeHtml(a.user)}</strong></td>
+        <td>${a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : '<span class="muted">—</span>'}</td>
+        <td class="${met ? 'ok-text' : 'warn-text'}">${a.today ?? 0} / ${a.quota ?? '—'}</td>
+        <td>
+          <div class="progress-bar">
+            <div class="progress-fill ${met ? 'met' : ''}" style="width:${pct}%"></div>
+          </div>
+        </td>
+        <td>${a.total ?? 0}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+    document.getElementById("ann-loading").hidden = true;
+    document.getElementById("ann-table").hidden = false;
+  } catch (err) {
+    document.getElementById("dash-err-msg").textContent = err.message;
+    show("dash-error");
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
 /* ---------- entry ---------- */
 document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("login-form")) initLogin();
   if (document.getElementById("annotate-form")) initTask();
+  if (document.getElementById("ann-table")) initDashboard();
 });
