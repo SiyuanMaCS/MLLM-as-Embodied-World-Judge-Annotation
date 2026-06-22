@@ -588,16 +588,17 @@ select.role-select:disabled { opacity: 0.6; cursor: wait; }
   height: 46px;
   padding: 4px 6px;
 }
-.grid-cell.met {
-  background: #4cb568;
+/* High specificity to override #grid-table td default bg */
+#grid-table td.grid-cell.met {
+  background: #4cb568 !important;
   color: #fff;
 }
-.grid-cell.miss {
-  background: #e25563;
+#grid-table td.grid-cell.miss {
+  background: #e25563 !important;
   color: #fff;
 }
-.grid-cell.zero {
-  background: #f2f2f5;
+#grid-table td.grid-cell.zero {
+  background: #f2f2f5 !important;
   color: var(--muted);
   font-weight: 400;
 }

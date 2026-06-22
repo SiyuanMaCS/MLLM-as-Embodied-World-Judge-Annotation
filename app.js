@@ -511,6 +511,12 @@ function renderSelfSummary(root, me) {
   `;
 }
 
+function capitalizeLabel(s) {
+  // "author 3" → "Author 3", "admin 1" → "Admin 1", "You" → "You"
+  if (!s) return s;
+  return s.replace(/\b([a-z])/g, c => c.toUpperCase());
+}
+
 function renderMetByDay(root, days, annotators, metByDate) {
   // For each day, list anonymized labels of annotators who met quota that day.
   // Prefer server-provided `metByDate` (already anonymized with "You" label);
@@ -541,7 +547,7 @@ function renderMetByDay(root, days, annotators, metByDate) {
     } else {
       const tags = winners.map(u => {
         const cls = (u === "You" || u === "you") ? "met-tag self" : "met-tag";
-        return `<span class="${cls}">${escapeHtml(u)}</span>`;
+        return `<span class="${cls}">${escapeHtml(capitalizeLabel(u))}</span>`;
       }).join("");
       li.innerHTML = `<span class="met-day">${dayLbl}</span><span class="met-tags">${tags}</span>`;
     }
