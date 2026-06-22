@@ -514,6 +514,41 @@ fieldset.role-row.known .role-opt:has(input:checked) {
   font-style: italic;
 }
 
+.view-mode {
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.view-mode.admin {
+  background: #fff4e0;
+  color: #8a5500;
+  border: 1px solid #f0d59c;
+}
+.view-mode.anon {
+  background: #eef2fb;
+  color: var(--accent-dark);
+  border: 1px solid #d0dcf2;
+}
+
+#grid-table tr.self-row td {
+  background: #fff7d6;
+  outline: 2px solid #e0b94a;
+}
+#grid-table tr.self-row td.user-cell {
+  background: #fff7d6;
+}
+.you-badge {
+  background: #e0b94a;
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .grid-cell {
   font-weight: 700;
   font-variant-numeric: tabular-nums;

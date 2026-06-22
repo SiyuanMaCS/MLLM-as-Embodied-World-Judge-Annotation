@@ -282,14 +282,33 @@ async function initDashboard() {
 
 async function loadDashboard() {
   hide("dash-error");
-  document.getElementById("ann-loading").hidden = false;
-  document.getElementById("grid-wrap").hidden = true;
+  // Only show the full "Loading…" curtain on the first fetch; subsequent
+  // auto-refreshes update silently in-place.
+  if (document.getElementById("grid-wrap").hidden) {
+    document.getElementById("ann-loading").hidden = false;
+  }
   try {
-    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=progress`);
+    const user = localStorage.getItem(CFG.LS_USER) || "";
+    const url = `${CFG.APPS_SCRIPT_URL}/?action=progress${user ? `&user=${encodeURIComponent(user)}` : ""}`;
+    const res = await fetch(url);
     const data = await res.json();
     document.getElementById("t-annotators").textContent = data.totals?.annotators ?? 0;
     document.getElementById("t-today").textContent = data.totals?.today ?? 0;
     document.getElementById("t-total").textContent = data.totals?.annotations ?? 0;
+    // Show admin-vs-anon banner
+    const banner = document.getElementById("view-mode");
+    if (banner) {
+      if (data.is_admin) {
+        banner.textContent = "👁 Admin view — all real names";
+        banner.className = "view-mode admin";
+      } else if (user) {
+        banner.textContent = `🔒 Anonymized view — only "${user}" (you) shown by real name; others labeled "Annotator N".`;
+        banner.className = "view-mode anon";
+      } else {
+        banner.textContent = "🔒 Anonymized view — log in to see your own row by name.";
+        banner.className = "view-mode anon";
+      }
+    }
     renderGrid(data);
     document.getElementById("ann-loading").hidden = true;
     document.getElementById("grid-wrap").hidden = false;
@@ -337,11 +356,12 @@ function renderGrid(data) {
   // Data rows: one per annotator
   for (const a of annotators) {
     const tr = document.createElement("tr");
+    if (a.is_self) tr.classList.add("self-row");
     const tdUser = document.createElement("td");
     tdUser.className = "user-cell";
     tdUser.innerHTML = `
       <div class="user-head">
-        <span class="user-name">${escapeHtml(a.user)}</span>
+        <span class="user-name">${escapeHtml(a.user)}${a.is_self ? ' <span class="you-badge">you</span>' : ''}</span>
         ${a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : ""}
         <span class="quota-label">${a.quota ?? "—"}/day</span>
       </div>
