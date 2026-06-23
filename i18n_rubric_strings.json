@@ -1,0 +1,92 @@
+{
+  "_comment": "Bilingual (en/cn) i18n strings for the judge/annotation rubric. Drop into the language pack. Generic UI chrome (buttons, nav) left to Francis; this covers the rubric-specific content so EN and CN stay faithful to RUBRIC.md / docs.html. Field keys match the locked schema; note field key = 'notes'.",
+
+  "lang_toggle": { "en": "EN", "cn": "中" },
+
+  "axis": {
+    "physical_adherence": {
+      "label": { "en": "Physical Adherence", "cn": "物理真实度" },
+      "desc": {
+        "en": "Does the video obey physical commonsense? Judge from the VIDEO ALONE — ignore the instruction.",
+        "cn": "视频本身是否符合物理常识？只看视频判断——忽略 instruction。"
+      }
+    },
+    "instruction_alignment": {
+      "label": { "en": "Instruction Alignment", "cn": "指令对齐" },
+      "desc": {
+        "en": "Does the video accomplish the instruction? Judge using the instruction + the init frame.",
+        "cn": "视频是否完成了 instruction？用 instruction + 首帧判断。"
+      }
+    }
+  },
+
+  "main_score_levels": {
+    "physical_adherence": {
+      "1": { "en": "1 — No adherence: pervasive violations; manipulator/scene break down (melting hand, teleporting mass, gross penetration).", "cn": "1 完全不符：普遍违反，机械手/场景崩坏（融化、瞬移、严重穿模）。" },
+      "2": { "en": "2 — Poor: some physics holds but MAJOR violations (object floats unsupported, hand clips through object).", "cn": "2 较差：部分物理成立但有重大违反（物体无支撑漂浮、手穿过物体）。" },
+      "3": { "en": "3 — Moderate: mostly plausible but NOTICEABLE inconsistencies (brief finger warp, short clip-through, flicker).", "cn": "3 中等：大体合理但有明显不一致（短暂手指形变、短暂穿模、闪烁）。" },
+      "4": { "en": "4 — Good: convincing with only MINOR issues (a single small artifact, momentary jitter).", "cn": "4 良好：物理可信，仅轻微瑕疵（单个小 artifact、瞬间抖动）。" },
+      "5": { "en": "5 — Perfect: no visible physical violations; manipulator, scene, interaction all look real.", "cn": "5 完美：无可见物理违反，机械手/场景/交互都真实。" }
+    },
+    "instruction_alignment": {
+      "1": { "en": "1 — No alignment: wrong manipulator, or agent does not move / does something unrelated.", "cn": "1 完全不符：错的机械手 / agent 不动 / 做无关动作。" },
+      "2": { "en": "2 — Wrong action or object: correct manipulator acts, but on the WRONG object or performs the WRONG action.", "cn": "2 错动作或错物体：对的机械手动了，但操作了错的物体或做了错的动作。" },
+      "3": { "en": "3 — Partial: correct manipulator on the correct object, but goal only PARTIALLY met (approaches without completing).", "cn": "3 部分完成：对的机械手在对的物体上操作，但目标只部分达成（趋向未完成）。" },
+      "4": { "en": "4 — Near-complete: goal essentially achieved with a MINOR shortfall (placed but slightly misaligned / not fully released).", "cn": "4 接近完成：目标基本达成，仅轻微欠缺（放了但略歪 / 没完全松爪）。" },
+      "5": { "en": "5 — Full: correct manipulator, correct object, goal FULLY and accurately completed.", "cn": "5 完整完成：正确机械手在正确物体上完整、准确达成目标。" }
+    }
+  },
+
+  "sub_checks": {
+    "agent_consistency": {
+      "label": { "en": "Manipulator integrity", "cn": "机械手/人手完整性" },
+      "criterion": { "en": "Gripper/hand stays structurally complete, rigid, temporally consistent — no melting, fused/extra/missing fingers, rubber warping, flicker, identity change.", "cn": "夹爪/手全程结构完整、刚性、时序一致——不融化、手指不黏连、不多/少指、不橡皮形变、不闪烁。" },
+      "yes": { "en": "1 = fingers/links keep a stable, plausible shape throughout.", "cn": "1 = 手指/连杆形状全程稳定可信。" },
+      "no": { "en": "0 = hand melts into a blob / gains an extra finger / gripper distorts unnaturally.", "cn": "0 = 手融成一团 / 多出一根手指 / 夹爪不自然扭曲。" }
+    },
+    "scene_consistency": {
+      "label": { "en": "Scene & object consistency", "cn": "背景与物体一致性" },
+      "criterion": { "en": "Background and manipulated object(s) are temporally coherent — no teleporting, sudden appearance/disappearance, unexplained morphing, background flicker.", "cn": "背景与被操纵物体时序连贯——不瞬移、相关物体不凭空出现/消失、不无故变形变色、背景不闪。" },
+      "yes": { "en": "1 = object keeps identity/size/color; background stable.", "cn": "1 = 物体保持同一身份/大小/颜色；背景稳定。" },
+      "no": { "en": "0 = cube changes color mid-clip / a second object pops in / table texture swims.", "cn": "0 = 方块中途变色 / 凭空多一个物体 / 桌面纹理浮动。" }
+    },
+    "interaction_realism": {
+      "label": { "en": "Interaction realism", "cn": "交互真实性" },
+      "criterion": { "en": "Contact and forces are plausible — gripper/hand actually closes on and supports the object, no penetration, motion obeys gravity/inertia/plausible force transmission.", "cn": "接触与受力合理——夹爪/手真实闭合并支撑物体、无穿模、遵守重力惯性与合理受力传递。" },
+      "yes": { "en": "1 = object is gripped and moves with the hand; contact looks load-bearing; nothing floats or clips.", "cn": "1 = 物体被夹住随手移动、接触可承重、不漂浮不穿模。" },
+      "no": { "en": "0 = object floats without support / hand passes through the mug / object jumps against gravity.", "cn": "0 = 物体无支撑漂浮 / 手穿过杯子 / 物体逆重力跳动。" }
+    },
+    "agent_match": {
+      "label": { "en": "Correct manipulator", "cn": "机械手匹配" },
+      "criterion": { "en": "The hand/gripper performing the task is the SAME manipulator shown in the init frame (not a newly appeared/teleported arm).", "cn": "完成任务的手/夹爪是不是 init_frame 里那个（不是新出现/瞬移的手臂）。" },
+      "yes": { "en": "1 = the init-frame gripper/hand does the task.", "cn": "1 = 首帧的夹爪/手在做任务。" },
+      "no": { "en": "0 = a different/extra arm appears and does it, or the init agent is replaced.", "cn": "0 = 另一只/多余手臂出现来做，或起始 agent 被替换。" }
+    },
+    "object_correct": {
+      "label": { "en": "Correct object", "cn": "物体正确" },
+      "criterion": { "en": "The manipulated object is the target named/implied by the instruction (right object, right attributes — color/type).", "cn": "被操纵的是不是 instruction 指定的目标物体（物体对、属性对——颜色/类型）。" },
+      "yes": { "en": "1 = the red cube in 'pick the red cube' is the one grasped.", "cn": "1 = “抓红方块”抓的就是红方块。" },
+      "no": { "en": "0 = it manipulates the blue cube / a different object than instructed.", "cn": "0 = 抓成了蓝方块 / 别的物体。" }
+    },
+    "goal_completed": {
+      "label": { "en": "Goal achieved", "cn": "目标达成" },
+      "criterion": { "en": "The instruction's goal state is actually reached (e.g., placed INTO the container, not merely lifted toward it).", "cn": "instruction 的目标终态是否真正达成（如真把物体放进容器，而非只是举起靠近）。" },
+      "yes": { "en": "1 = the task end-state is achieved in-frame.", "cn": "1 = 终态在画面里达成。" },
+      "no": { "en": "0 = only partially performed / approached but not completed.", "cn": "0 = 只做了一半 / 接近但没完成。" }
+    }
+  },
+
+  "notes_field": {
+    "label": { "en": "Note (required)", "cn": "备注（必填）" },
+    "placeholder": { "en": "Briefly cite the visual evidence behind your scores, especially any sub-check marked 0.", "cn": "简述打分的视觉证据，尤其任何标 0 的小分。" },
+    "required_error": { "en": "Note is required.", "cn": "备注为必填项。" }
+  },
+
+  "annotator_notes": {
+    "two_axes": { "en": "Score the two axes independently — a video can be physically perfect but ignore the instruction, or complete the task while looking unphysical.", "cn": "两轴独立打分——可以物理完美但没按指令做，也可以完成任务但画面不真实。" },
+    "physical_video_only": { "en": "Physical Adherence = video only. Ignore the instruction; only ask 'does this look real?'", "cn": "物理真实度只看视频；忽略 instruction，只问“看起来真不真实”。" },
+    "instruction_uses_initframe": { "en": "Instruction Alignment uses the init frame as the reference for which manipulator/scene the task starts from.", "cn": "指令对齐以首帧为参照判断 agent/场景起点。" },
+    "all_eight": { "en": "All 8 fields are required: 2 main scores (1–5) + 6 sub-checks (0/1).", "cn": "8 字段全标：2 主分（1–5）+ 6 小分（0/1）。" },
+    "subs_are_evidence": { "en": "Sub-checks are evidence; the 1–5 should be consistent with them (e.g., goal_completed=0 caps Instruction Alignment at 3).", "cn": "小分是证据、主分是综合，需一致（如 goal_completed=0 时 Instruction Alignment 一般 ≤3）。" }
+  }
+}

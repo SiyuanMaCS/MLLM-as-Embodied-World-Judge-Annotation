@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reviewer Alignment — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css?v=v29">
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1>Reviewer alignment</h1>
+    <div class="user-chip">
+      <span id="who">—</span> <span class="role-pill" id="role">—</span>
+      <button id="logout-btn" class="link">logout</button>
+    </div>
+  </header>
+  <nav class="page-nav">
+    <a href="dashboard.html" class="back-link">← Back</a>
+    <span class="nav-stat">progress <strong id="al-done">0</strong>/<strong id="al-total">50</strong></span>
+    <span class="nav-stat" id="al-byline" hidden>by <strong id="al-by">—</strong></span>
+  </nav>
+
+  <section id="al-loading" class="card"><p>Loading alignment status…</p></section>
+
+  <section id="al-nocampaign" class="card" hidden>
+    <h3>No active alignment campaign</h3>
+    <p class="muted">An admin must start an alignment task before reviewers can begin.</p>
+    <div id="al-start-block" class="form-row actions" hidden>
+      <button type="button" id="al-start-btn">Start alignment (admin)</button>
+      <span class="muted small">Randomly samples 50 items shared across all reviewers + admin.</span>
+    </div>
+  </section>
+
+  <section id="al-done-msg" class="card" hidden>
+    <h3>You're done with all 50 ✨</h3>
+    <p class="muted">All items annotated. Review others' annotations below or wait for admin finalize.</p>
+  </section>
+
+  <section id="al-item" class="card" hidden>
+    <div class="meta">
+      <span class="tag align-tag">ALIGN</span>
+      <span class="tag" id="al-dataset">—</span>
+      <span class="tag" id="al-task">—</span>
+    </div>
+    <div class="video-row">
+      <figure><figcaption>Generated</figcaption><video id="al-video" controls preload="metadata" muted playsinline></video></figure>
+    </div>
+    <div class="prompt-box"><label>Task instruction</label><p id="al-prompt">—</p></div>
+
+    <form id="al-form">
+      <fieldset class="dim-block">
+        <legend class="dim-block-title">Physical Adherence <span class="dim-help">物理真实度 · only judge what you see in the video</span></legend>
+        <div class="form-row">
+          <label for="al-physical_adherence">Score (1–5) <output for="al-physical_adherence" id="al-physical_adherence-out">3</output></label>
+          <input type="range" id="al-physical_adherence" min="1" max="5" step="1" value="3">
+        </div>
+        <div class="sub-row">
+          <label class="sub-check"><input type="checkbox" id="al-agent_consistency"> <span>Agent consistency</span><small>机械手/人手结构完整、不融化/扭曲</small></label>
+          <label class="sub-check"><input type="checkbox" id="al-scene_consistency"> <span>Scene & object consistency</span><small>背景与物体时序一致、不闪烁/瞬移/形变</small></label>
+          <label class="sub-check"><input type="checkbox" id="al-interaction_realism"> <span>Interaction realism</span><small>抓取真实闭合、无穿模、遵守重力惯性</small></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="dim-block">
+        <legend class="dim-block-title">Instruction Alignment <span class="dim-help">指令对齐 · judge with task instruction + init frame</span></legend>
+        <div class="form-row">
+          <label for="al-instruction_alignment">Score (1–5) <output for="al-instruction_alignment" id="al-instruction_alignment-out">3</output></label>
+          <input type="range" id="al-instruction_alignment" min="1" max="5" step="1" value="3">
+        </div>
+        <div class="sub-row">
+          <label class="sub-check"><input type="checkbox" id="al-agent_match"> <span>Agent match</span><small>完成任务的就是首帧那个机械手/人手</small></label>
+          <label class="sub-check"><input type="checkbox" id="al-object_correct"> <span>Object correct</span><small>操纵的 object 是指令指定的</small></label>
+          <label class="sub-check"><input type="checkbox" id="al-goal_completed"> <span>Goal completed</span><small>指令的目标已完整达成</small></label>
+        </div>
+      </fieldset>
+
+      <div class="form-row">
+        <label for="al-notes">Notes <span class="required-tag">*</span></label>
+        <textarea id="al-notes" rows="3" maxlength="500" required placeholder="Required — explain your reasoning"></textarea>
+      </div>
+      <div class="form-row actions">
+        <button type="submit">Save &amp; next →</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- After own submission, side-by-side view of all annotators on this item -->
+  <section id="al-others" class="card" hidden>
+    <h3>All annotations for this item</h3>
+    <div id="al-others-grid" class="align-others-grid"></div>
+    <div id="al-admin-finalize" hidden>
+      <h4 class="finalize-title">Admin finalize (write to gold)</h4>
+      <div id="al-finalize-form-wrap"></div>
+    </div>
+  </section>
+
+  <!-- Admin: overview of campaign (50 items + finalize state) -->
+  <section id="al-admin-overview" class="card" hidden>
+    <h3>Campaign overview <span class="muted" id="al-final-count">0 finalized / 50</span></h3>
+    <p class="muted small">Click any item to view all annotations + finalize into gold (source=alignment). <button type="button" id="al-end-btn" class="ghost">End campaign</button></p>
+    <ul id="al-admin-list" class="al-admin-list"></ul>
+  </section>
+
+  <section id="al-error" class="card error" hidden><h3>Notice</h3><p id="al-err-msg">—</p><button id="al-retry">Retry</button></section>
+</main>
+<script src="app.js" defer></script>
+</body>
+</html>

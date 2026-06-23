@@ -374,10 +374,14 @@ async function initDashboard() {
 async function loadBadges() {
   const user = localStorage.getItem(CFG.LS_USER);
   if (!user || !CFG.APPS_SCRIPT_URL) return;
-  let data;
+  let data, alignData;
   try {
-    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=badges&user=${encodeURIComponent(user)}`);
-    data = await r.json();
+    const [bRes, aRes] = await Promise.all([
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=badges&user=${encodeURIComponent(user)}`),
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_status&user=${encodeURIComponent(user)}`),
+    ]);
+    data = await bRes.json();
+    alignData = await aRes.json();
   } catch (err) { console.warn("badges fetch failed", err); return; }
   if (!data || data.error) return;
 
@@ -387,6 +391,19 @@ async function loadBadges() {
   const myreviewedNew = Math.max(0, (data.myreviewed_total || 0) - seenMy);
   const goldreviewedNew = Math.max(0, (data.goldreviewed_total || 0) - seenGold);
 
+  // Align badge: for reviewer/admin, show remaining items to annotate;
+  // for admin only, show items still needing finalize after own annotations done.
+  let alignBadge = 0;
+  if (alignData && alignData.active) {
+    const total = alignData.total ?? 50;
+    const myRemain = Math.max(0, total - (alignData.my_done ?? 0));
+    if (alignData.is_admin) {
+      const adminFinalRemain = Math.max(0, total - (alignData.n_finalized ?? 0));
+      alignBadge = Math.max(myRemain, adminFinalRemain);
+    } else {
+      alignBadge = myRemain;
+    }
+  }
   const map = {
     annotate:     data.annotate_remaining,
     myreviewed:   myreviewedNew,
@@ -394,6 +411,7 @@ async function loadBadges() {
     gold:         data.gold_remaining,
     goldreviewed: goldreviewedNew,
     goldreview:   data.goldreview_pending,
+    align:        alignBadge,
   };
   document.querySelectorAll("[data-badge]").forEach(card => {
     const badge = card.querySelector(".ac-badge");
@@ -1276,7 +1294,346 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("gl-filter")) initGoldLibrary();
   if (document.getElementById("grid-table")) initDashboard();
   if (document.getElementById("reviewer-section")) initReviewerHub();
+  if (document.getElementById("al-form")) initAlign();
 });
+
+/* ===================== Reviewer Alignment (admin-initiated 50-item shared task) ===================== */
+let ALIGN_CURRENT = null;
+let ALIGN_IS_ADMIN = false;
+
+async function initAlign() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  const role = localStorage.getItem(CFG.LS_ROLE);
+  if (!user) { window.location.href = "index.html"; return; }
+  if (role !== "reviewer" && user !== "masiyuan") {
+    renderRoleGate("审核员 (reviewer) / 管理员");
+    return;
+  }
+  ALIGN_IS_ADMIN = user === "masiyuan";
+
+  // Wire range outputs
+  for (const id of ["al-physical_adherence", "al-instruction_alignment"]) {
+    const inp = document.getElementById(id);
+    const out = document.getElementById(id + "-out");
+    if (inp && out) inp.addEventListener("input", () => out.value = inp.value);
+  }
+  document.getElementById("al-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await submitAlign();
+  });
+  document.getElementById("al-retry").addEventListener("click", () => loadAlignStatus());
+  document.getElementById("al-start-btn").addEventListener("click", async () => {
+    if (!confirm("Start a new alignment campaign? Will randomly sample 50 items shared by all reviewers + admin.")) return;
+    try {
+      const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+        method: "POST", headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ align_start: true, admin: user }),
+      });
+      const d = await r.json();
+      if (d?.ok === false) throw new Error(d.error || "start failed");
+      await loadAlignStatus();
+    } catch (err) { alert("Failed to start: " + err.message); }
+  });
+  document.getElementById("al-end-btn").addEventListener("click", async () => {
+    if (!confirm("End the current alignment campaign? All finalized items already in gold remain.")) return;
+    try {
+      const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+        method: "POST", headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ align_end: true, admin: user }),
+      });
+      const d = await r.json();
+      if (d?.ok === false) throw new Error(d.error || "end failed");
+      await loadAlignStatus();
+    } catch (err) { alert("Failed to end: " + err.message); }
+  });
+
+  await loadAlignStatus();
+}
+
+async function loadAlignStatus() {
+  hideAlignSections();
+  document.getElementById("al-loading").hidden = false;
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_status&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    document.getElementById("al-loading").hidden = true;
+    if (!d.active) {
+      document.getElementById("al-nocampaign").hidden = false;
+      if (ALIGN_IS_ADMIN) document.getElementById("al-start-block").hidden = false;
+      return;
+    }
+    document.getElementById("al-done").textContent = d.my_done ?? 0;
+    document.getElementById("al-total").textContent = d.total ?? 50;
+    if (d.by) {
+      document.getElementById("al-byline").hidden = false;
+      document.getElementById("al-by").textContent = d.by;
+    }
+    if (ALIGN_IS_ADMIN) {
+      document.getElementById("al-final-count").textContent = `${d.n_finalized ?? 0} finalized / ${d.total ?? 50}`;
+      renderAdminOverview(d.items || []);
+      document.getElementById("al-admin-overview").hidden = false;
+    }
+    // Always load next item for the current user (regardless of admin)
+    await loadAlignNext();
+  } catch (err) {
+    document.getElementById("al-loading").hidden = true;
+    document.getElementById("al-err-msg").textContent = err.message;
+    document.getElementById("al-error").hidden = false;
+  }
+}
+
+function hideAlignSections() {
+  for (const id of ["al-nocampaign", "al-done-msg", "al-item", "al-others", "al-admin-overview", "al-error"]) {
+    const el = document.getElementById(id); if (el) el.hidden = true;
+  }
+}
+
+async function loadAlignNext() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_next&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    if (d.done) {
+      document.getElementById("al-item").hidden = true;
+      document.getElementById("al-done-msg").hidden = false;
+      return;
+    }
+    ALIGN_CURRENT = d;
+    document.getElementById("al-dataset").textContent = d.dataset || "?";
+    document.getElementById("al-task").textContent = d.task || "?";
+    const vid = document.getElementById("al-video");
+    vid.src = absUrl(d.video_url || "");
+    vid.load();
+    document.getElementById("al-prompt").textContent = d.prompt || "(no instruction)";
+    // Reset form
+    for (const id of ["al-physical_adherence", "al-instruction_alignment"]) {
+      const inp = document.getElementById(id);
+      const out = document.getElementById(id + "-out");
+      if (inp) inp.value = 3; if (out) out.value = 3;
+    }
+    for (const id of ["al-agent_consistency", "al-scene_consistency", "al-interaction_realism", "al-agent_match", "al-object_correct", "al-goal_completed"]) {
+      document.getElementById(id).checked = false;
+    }
+    document.getElementById("al-notes").value = "";
+    document.getElementById("al-item").hidden = false;
+    document.getElementById("al-others").hidden = true;
+  } catch (err) {
+    document.getElementById("al-err-msg").textContent = err.message;
+    document.getElementById("al-error").hidden = false;
+  }
+}
+
+async function submitAlign() {
+  if (!ALIGN_CURRENT) return;
+  const user = localStorage.getItem(CFG.LS_USER);
+  const notes = document.getElementById("al-notes").value.trim();
+  if (!notes) { alert("Notes are required."); return; }
+  const payload = {
+    physical_adherence: Number(document.getElementById("al-physical_adherence").value),
+    instruction_alignment: Number(document.getElementById("al-instruction_alignment").value),
+    notes,
+  };
+  for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
+    payload[id] = document.getElementById("al-" + id).checked ? 1 : 0;
+  }
+  try {
+    const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ align_submit: true, user, item_id: ALIGN_CURRENT.id, payload }),
+    });
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "submit failed");
+    // Reload item with others' annotations now unlocked
+    await showAlignOthers(ALIGN_CURRENT.id);
+    // Refresh status (my_done++ / admin overview refresh)
+    await refreshAlignStatusOnly();
+  } catch (err) {
+    alert("Submit failed: " + err.message);
+  }
+}
+
+async function refreshAlignStatusOnly() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_status&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    if (d.active) {
+      document.getElementById("al-done").textContent = d.my_done ?? 0;
+      document.getElementById("al-total").textContent = d.total ?? 50;
+      if (ALIGN_IS_ADMIN) {
+        document.getElementById("al-final-count").textContent = `${d.n_finalized ?? 0} finalized / ${d.total ?? 50}`;
+        renderAdminOverview(d.items || []);
+      }
+    }
+  } catch (_) { /* silent */ }
+}
+
+async function showAlignOthers(item_id) {
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_item&user=${encodeURIComponent(user)}&item_id=${encodeURIComponent(item_id)}`);
+    const d = await r.json();
+    if (d.locked) {
+      alert("This item is still locked — submit yours first to unlock.");
+      return;
+    }
+    document.getElementById("al-item").hidden = true;
+    document.getElementById("al-others").hidden = false;
+    renderAlignOthers(d);
+  } catch (err) {
+    alert("Failed to load others' annotations: " + err.message);
+  }
+}
+
+function renderAlignOthers(d) {
+  const root = document.getElementById("al-others-grid");
+  root.innerHTML = "";
+  const subsP = ["agent_consistency","scene_consistency","interaction_realism"];
+  const subsI = ["agent_match","object_correct","goal_completed"];
+  const subBadges = (p, keys) => keys.map(k => {
+    const v = p[k]; if (v == null) return "";
+    return `<span class="sub-badge ${v ? "yes" : "no"}" title="${k}">${v ? "✓" : "✗"} ${k.replace(/_/g," ")}</span>`;
+  }).join("");
+  for (const a of (d.annotations || [])) {
+    const p = a.payload || {};
+    const isSelf = a.is_self;
+    const isAdminA = a.is_admin_author;
+    const card = document.createElement("div");
+    card.className = "align-other-card" + (isSelf ? " self" : "") + (isAdminA ? " admin-author" : "");
+    card.innerHTML = `
+      <div class="aoc-head">
+        <strong>${escapeHtml(a.reviewer)}</strong>
+        ${isSelf ? '<span class="row-badge gold">YOU</span>' : ''}
+        ${isAdminA ? '<span class="row-badge report">ADMIN</span>' : ''}
+      </div>
+      <p class="aoc-scores">Physical: <strong>${p.physical_adherence ?? "—"}</strong> · Instruction: <strong>${p.instruction_alignment ?? "—"}</strong></p>
+      <p class="sub-line">${subBadges(p, subsP)}${subBadges(p, subsI)}</p>
+      ${p.notes ? `<p class="aoc-notes">${escapeHtml(p.notes)}</p>` : ""}
+    `;
+    root.appendChild(card);
+  }
+  // Admin finalize panel
+  const finalizeWrap = document.getElementById("al-admin-finalize");
+  if (ALIGN_IS_ADMIN) {
+    finalizeWrap.hidden = false;
+    renderFinalizeForm(d);
+  } else {
+    finalizeWrap.hidden = true;
+  }
+
+  // Next button
+  let nextBtn = document.getElementById("al-next-btn");
+  if (!nextBtn) {
+    nextBtn = document.createElement("button");
+    nextBtn.id = "al-next-btn";
+    nextBtn.type = "button";
+    nextBtn.className = "primary";
+    nextBtn.textContent = "Next item →";
+    nextBtn.style.marginTop = "12px";
+    nextBtn.addEventListener("click", () => {
+      document.getElementById("al-others").hidden = true;
+      loadAlignNext();
+    });
+    document.getElementById("al-others").appendChild(nextBtn);
+  }
+}
+
+function renderFinalizeForm(d) {
+  const wrap = document.getElementById("al-finalize-form-wrap");
+  // Pre-fill with admin's own annotation if present, else first non-self
+  const myA = (d.annotations || []).find(a => a.is_self) || (d.annotations || [])[0];
+  const p = (myA && myA.payload) || {};
+  const checked = (k) => p[k] ? "checked" : "";
+  wrap.innerHTML = `
+    <form id="al-finalize-form">
+      <fieldset class="dim-block">
+        <legend class="dim-block-title">Physical Adherence (final)</legend>
+        <div class="form-row">
+          <label for="f-physical_adherence">Score (1–5) <output for="f-physical_adherence" id="f-physical_adherence-out">${p.physical_adherence ?? 3}</output></label>
+          <input type="range" id="f-physical_adherence" min="1" max="5" step="1" value="${p.physical_adherence ?? 3}">
+        </div>
+        <div class="sub-row">
+          <label class="sub-check"><input type="checkbox" id="f-agent_consistency" ${checked("agent_consistency")}> <span>Agent consistency</span></label>
+          <label class="sub-check"><input type="checkbox" id="f-scene_consistency" ${checked("scene_consistency")}> <span>Scene & object consistency</span></label>
+          <label class="sub-check"><input type="checkbox" id="f-interaction_realism" ${checked("interaction_realism")}> <span>Interaction realism</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="dim-block">
+        <legend class="dim-block-title">Instruction Alignment (final)</legend>
+        <div class="form-row">
+          <label for="f-instruction_alignment">Score (1–5) <output for="f-instruction_alignment" id="f-instruction_alignment-out">${p.instruction_alignment ?? 3}</output></label>
+          <input type="range" id="f-instruction_alignment" min="1" max="5" step="1" value="${p.instruction_alignment ?? 3}">
+        </div>
+        <div class="sub-row">
+          <label class="sub-check"><input type="checkbox" id="f-agent_match" ${checked("agent_match")}> <span>Agent match</span></label>
+          <label class="sub-check"><input type="checkbox" id="f-object_correct" ${checked("object_correct")}> <span>Object correct</span></label>
+          <label class="sub-check"><input type="checkbox" id="f-goal_completed" ${checked("goal_completed")}> <span>Goal completed</span></label>
+        </div>
+      </fieldset>
+      <div class="form-row">
+        <label for="f-notes">Finalize note <span class="required-tag">*</span></label>
+        <textarea id="f-notes" rows="2" maxlength="500" required placeholder="Required — synthesize the consensus / explain final values">${escapeHtml(p.notes || "")}</textarea>
+      </div>
+      <div class="form-row actions">
+        <button type="submit">Write to gold (source=alignment)</button>
+      </div>
+    </form>
+  `;
+  for (const id of ["f-physical_adherence", "f-instruction_alignment"]) {
+    const inp = document.getElementById(id);
+    const out = document.getElementById(id + "-out");
+    if (inp && out) inp.addEventListener("input", () => out.value = inp.value);
+  }
+  document.getElementById("al-finalize-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await submitAlignFinalize(d.item_id || ALIGN_CURRENT.id);
+  });
+}
+
+async function submitAlignFinalize(item_id) {
+  const admin = localStorage.getItem(CFG.LS_USER);
+  const notes = document.getElementById("f-notes").value.trim();
+  if (!notes) { alert("Finalize note is required."); return; }
+  const payload = {
+    physical_adherence: Number(document.getElementById("f-physical_adherence").value),
+    instruction_alignment: Number(document.getElementById("f-instruction_alignment").value),
+    notes,
+  };
+  for (const id of ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"]) {
+    payload[id] = document.getElementById("f-" + id).checked ? 1 : 0;
+  }
+  try {
+    const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ align_finalize: true, admin, item_id, payload }),
+    });
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "finalize failed");
+    alert("Finalized → gold (source=alignment).");
+    await refreshAlignStatusOnly();
+  } catch (err) {
+    alert("Finalize failed: " + err.message);
+  }
+}
+
+function renderAdminOverview(items) {
+  const root = document.getElementById("al-admin-list");
+  root.innerHTML = "";
+  for (const it of items) {
+    const li = document.createElement("li");
+    li.className = "al-admin-row" + (it.finalized ? " finalized" : "");
+    li.innerHTML = `
+      <span class="row-meta">${escapeHtml(it.dataset || "?")} · ${escapeHtml(it.task || "?")}</span>
+      <span class="muted">${it.n_annotations ?? 0} annotation(s)</span>
+      <span class="row-spacer"></span>
+      ${it.finalized ? '<span class="row-badge gold">FINALIZED</span>' : ''}
+      <button type="button" class="link al-view-btn" data-id="${escapeHtml(it.item_id)}">${it.finalized ? "Re-view" : "View / finalize"}</button>
+    `;
+    li.querySelector(".al-view-btn").addEventListener("click", () => showAlignOthers(it.item_id));
+    root.appendChild(li);
+  }
+}
 
 async function initReviewerHub() {
   const user = localStorage.getItem(CFG.LS_USER);
