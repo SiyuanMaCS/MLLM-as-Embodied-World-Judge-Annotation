@@ -21,36 +21,29 @@
     <a href="dashboard.html" class="back-link">← Back</a>
   </nav>
 
-  <section class="card">
-    <form id="gl-filter" class="gl-filter">
-      <fieldset class="dim-group">
-        <legend class="dim-legend">Quality <span class="range-value"><span id="q-min-val">1</span> – <span id="q-max-val">5</span></span></legend>
-        <div class="slider-line">
-          <span class="slider-tag">min</span>
-          <input type="range" id="q-min" min="1" max="5" step="1" value="1">
-          <span class="slider-val" id="q-min-tail">1</span>
+  <section class="card filter-card">
+    <form id="gl-filter">
+      <div class="dim-row">
+        <span class="dim-label">Quality</span>
+        <span class="dim-value"><b id="q-min-val">1</b>–<b id="q-max-val">5</b></span>
+        <div class="range-dual" data-pair="q">
+          <div class="range-track"></div>
+          <div class="range-fill" id="q-fill"></div>
+          <input type="range" id="q-min" min="1" max="5" step="1" value="1" aria-label="Quality min">
+          <input type="range" id="q-max" min="1" max="5" step="1" value="5" aria-label="Quality max">
         </div>
-        <div class="slider-line">
-          <span class="slider-tag">max</span>
-          <input type="range" id="q-max" min="1" max="5" step="1" value="5">
-          <span class="slider-val" id="q-max-tail">5</span>
+      </div>
+      <div class="dim-row">
+        <span class="dim-label">Faithful</span>
+        <span class="dim-value"><b id="f-min-val">1</b>–<b id="f-max-val">5</b></span>
+        <div class="range-dual" data-pair="f">
+          <div class="range-track"></div>
+          <div class="range-fill" id="f-fill"></div>
+          <input type="range" id="f-min" min="1" max="5" step="1" value="1" aria-label="Faithful min">
+          <input type="range" id="f-max" min="1" max="5" step="1" value="5" aria-label="Faithful max">
         </div>
-      </fieldset>
-      <fieldset class="dim-group">
-        <legend class="dim-legend">Faithful <span class="range-value"><span id="f-min-val">1</span> – <span id="f-max-val">5</span></span></legend>
-        <div class="slider-line">
-          <span class="slider-tag">min</span>
-          <input type="range" id="f-min" min="1" max="5" step="1" value="1">
-          <span class="slider-val" id="f-min-tail">1</span>
-        </div>
-        <div class="slider-line">
-          <span class="slider-tag">max</span>
-          <input type="range" id="f-max" min="1" max="5" step="1" value="5">
-          <span class="slider-val" id="f-max-tail">5</span>
-        </div>
-      </fieldset>
-      <div class="filter-actions">
-        <button type="submit">Search</button>
+      </div>
+      <div class="filter-foot">
         <span class="muted" id="gl-count">—</span>
       </div>
     </form>

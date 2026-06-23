@@ -992,35 +992,59 @@ async function adminGoldDecision(admin, r, decision, payload, card) {
 async function initGoldLibrary() {
   const form = document.getElementById("gl-filter");
   if (!form) return;
-  setupRangePair("q-min", "q-max", "q-min-val", "q-max-val", "q-min-tail", "q-max-tail");
-  setupRangePair("f-min", "f-max", "f-min-val", "f-max-val", "f-min-tail", "f-max-tail");
+  const debouncedSearch = debounce(loadGoldLibrary, 250);
+  setupDualThumb("q-min", "q-max", "q-min-val", "q-max-val", "q-fill", debouncedSearch);
+  setupDualThumb("f-min", "f-max", "f-min-val", "f-max-val", "f-fill", debouncedSearch);
+  // Submit form (Enter key) still works as a manual trigger.
   form.addEventListener("submit", (e) => { e.preventDefault(); loadGoldLibrary(); });
   await loadGoldLibrary();
 }
 
-/* Two independent sliders (min, max) for one dimension. Min auto-pushes max up
-   and vice versa so they never cross. Labels update on input. No z-index magic. */
-function setupRangePair(minId, maxId, minHeadId, maxHeadId, minTailId, maxTailId) {
+function debounce(fn, ms) {
+  let t = null;
+  return function (...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+
+/* Single-axis dual-thumb range. min on top by default; whichever is grabbed
+   gets top z-index so neither thumb can permanently hide the other.
+   Calls onChange after clamp + paint. */
+function setupDualThumb(minId, maxId, minOutId, maxOutId, fillId, onChange) {
   const minEl = document.getElementById(minId);
   const maxEl = document.getElementById(maxId);
-  const minHead = document.getElementById(minHeadId);
-  const maxHead = document.getElementById(maxHeadId);
-  const minTail = document.getElementById(minTailId);
-  const maxTail = document.getElementById(maxTailId);
+  const minOut = document.getElementById(minOutId);
+  const maxOut = document.getElementById(maxOutId);
+  const fill = document.getElementById(fillId);
+  const lo = Number(minEl.min), hi = Number(minEl.max);
+  const pct = v => ((Number(v) - lo) / (hi - lo)) * 100;
   function paint() {
-    const mn = minEl.value, mx = maxEl.value;
-    if (minHead) minHead.textContent = mn;
-    if (maxHead) maxHead.textContent = mx;
-    if (minTail) minTail.textContent = mn;
-    if (maxTail) maxTail.textContent = mx;
+    const mn = Number(minEl.value), mx = Number(maxEl.value);
+    if (minOut) minOut.textContent = mn;
+    if (maxOut) maxOut.textContent = mx;
+    if (fill) {
+      fill.style.left = pct(mn) + "%";
+      fill.style.right = (100 - pct(mx)) + "%";
+    }
   }
   minEl.addEventListener("input", () => {
     if (Number(minEl.value) > Number(maxEl.value)) maxEl.value = minEl.value;
     paint();
+    if (onChange) onChange();
   });
   maxEl.addEventListener("input", () => {
     if (Number(maxEl.value) < Number(minEl.value)) minEl.value = maxEl.value;
     paint();
+    if (onChange) onChange();
+  });
+  const grab = (top, bottom) => () => {
+    top.style.zIndex = 4;
+    bottom.style.zIndex = 3;
+  };
+  ["mousedown", "touchstart", "pointerdown"].forEach(ev => {
+    minEl.addEventListener(ev, grab(minEl, maxEl), { passive: true });
+    maxEl.addEventListener(ev, grab(maxEl, minEl), { passive: true });
   });
   paint();
 }
