@@ -117,10 +117,12 @@ async function initTask() {
   document.getElementById("who").textContent = username;
   const roleEl = document.getElementById("role");
   if (roleEl) { roleEl.textContent = role; roleEl.dataset.role = role; }
-  // Show reviewer banner if user is reviewer/admin (so they can jump to review/gold from this page).
-  const reviewerBanner = document.getElementById("reviewer-banner");
-  if (reviewerBanner && (role === "reviewer" || username === "masiyuan")) {
-    reviewerBanner.hidden = false;
+  // Reveal reviewer nav links if reviewer/admin (replaces old big yellow banner).
+  if (role === "reviewer" || username === "masiyuan") {
+    const rn = document.getElementById("nav-review");
+    const gn = document.getElementById("nav-gold-annotate");
+    if (rn) rn.hidden = false;
+    if (gn) gn.hidden = false;
   }
 
   document.getElementById("logout-btn").addEventListener("click", () => {
@@ -328,14 +330,9 @@ async function initDashboard() {
     const d = await r.json();
     if (d?.role && d.role !== role) { localStorage.setItem(CFG.LS_ROLE, d.role); role = d.role; }
   } catch (_) { /* fall through */ }
-  if (document.getElementById("who-top")) document.getElementById("who-top").textContent = user || "—";
-  if (document.getElementById("role-top")) document.getElementById("role-top").textContent = role || "—";
-  const logoutTop = document.getElementById("logout-top");
-  if (logoutTop) logoutTop.addEventListener("click", () => {
-    if (!confirm("Log out?")) return;
-    localStorage.removeItem(CFG.LS_USER); localStorage.removeItem(CFG.LS_ROLE);
-    window.location.href = "index.html";
-  });
+  // user-chip + logout wired by wireGlobalChrome on DOMContentLoaded; just set role pill here.
+  const roleEl = document.getElementById("role");
+  if (roleEl) { roleEl.textContent = role || "—"; roleEl.dataset.role = role || ""; }
   const isReviewer = role === "reviewer" || user === "masiyuan";
   const isAdmin = user === "masiyuan";
   document.querySelectorAll(".page-nav .reviewer-only").forEach(a => {

@@ -11,23 +11,21 @@
 <body>
 <main>
   <header class="bar">
-    <h1>🤖 Annotation</h1>
+    <h1>Annotate</h1>
     <div class="user-chip">
       <span id="who">—</span> <span class="role-pill" id="role">—</span>
-      <span class="quota-block">
-        today <strong id="today">0</strong> / <strong id="quota">—</strong>
-      </span>
-      <a href="dashboard.html" class="link">dashboard</a>
       <button id="logout-btn" class="link">logout</button>
     </div>
   </header>
 
-  <section id="reviewer-banner" class="card reviewer-banner" hidden>
-    <strong>⭐ You're a reviewer.</strong>
-    <a href="review.html" class="rev-btn">🔍 Review queue</a>
-    <a href="gold_annotate.html" class="rev-btn">⭐ Gold annotation</a>
-    <span class="muted-small">(or keep doing regular annotation below)</span>
-  </section>
+  <nav class="page-nav">
+    <a href="dashboard.html">Home</a>
+    <a href="my_reviews.html">My reviews</a>
+    <a href="gold_library.html">Gold library</a>
+    <span class="nav-stat">today <strong id="today">0</strong>/<strong id="quota">—</strong></span>
+    <a href="review.html" class="reviewer-only" id="nav-review" hidden>Review queue</a>
+    <a href="gold_annotate.html" class="reviewer-only" id="nav-gold-annotate" hidden>Gold annotation</a>
+  </nav>
 
   <section id="loading" class="card">
     <p>Loading next sample…</p>
