@@ -352,20 +352,6 @@ async function loadDashboard() {
     document.getElementById("t-annotators").textContent = data.totals?.annotators ?? 0;
     document.getElementById("t-today").textContent = data.totals?.today ?? 0;
     document.getElementById("t-total").textContent = data.totals?.annotations ?? 0;
-    // Show admin-vs-anon banner
-    const banner = document.getElementById("view-mode");
-    if (banner) {
-      if (data.is_admin) {
-        banner.textContent = "👁 Admin view — all real names";
-        banner.className = "view-mode admin";
-      } else if (user) {
-        banner.textContent = `🔒 Anonymized view — only "${user}" (you) shown by real name; others labeled "Annotator N".`;
-        banner.className = "view-mode anon";
-      } else {
-        banner.textContent = "🔒 Anonymized view — log in to see your own row by name.";
-        banner.className = "view-mode anon";
-      }
-    }
     renderGrid(data);
     document.getElementById("ann-loading").hidden = true;
     document.getElementById("grid-wrap").hidden = false;
