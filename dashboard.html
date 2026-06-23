@@ -20,13 +20,15 @@
 
   <section class="home-actions">
     <div class="action-row" data-row="annotator" hidden>
-      <a class="action-card primary" href="task.html">
+      <a class="action-card primary" href="task.html" data-badge="annotate">
         <span class="ac-icon">📝</span>
         <span class="ac-text"><span class="ac-title">Annotate</span><span class="ac-sub">Score generated videos</span></span>
+        <span class="ac-badge" hidden>0</span>
       </a>
-      <a class="action-card" href="my_reviews.html">
+      <a class="action-card" href="my_reviews.html" data-badge="myreviewed">
         <span class="ac-icon">👀</span>
         <span class="ac-text"><span class="ac-title">My reviewed</span><span class="ac-sub">Audit feedback on your work</span></span>
+        <span class="ac-badge" hidden>0</span>
       </a>
       <a class="action-card" href="gold_library.html">
         <span class="ac-icon">⭐</span>
@@ -38,17 +40,20 @@
       </a>
     </div>
     <div class="action-row" data-row="reviewer" hidden>
-      <a class="action-card primary" href="review.html">
+      <a class="action-card primary" href="review.html" data-badge="review">
         <span class="ac-icon">🔍</span>
         <span class="ac-text"><span class="ac-title">Review</span><span class="ac-sub">Audit annotator queue</span></span>
+        <span class="ac-badge" hidden>0</span>
       </a>
-      <a class="action-card" href="gold_annotate.html">
+      <a class="action-card" href="gold_annotate.html" data-badge="gold">
         <span class="ac-icon">✨</span>
         <span class="ac-text"><span class="ac-title">Gold annotation</span><span class="ac-sub">Your 50-item set</span></span>
+        <span class="ac-badge" hidden>0</span>
       </a>
-      <a class="action-card" href="my_reviews.html?kind=gold">
+      <a class="action-card" href="my_reviews.html?kind=gold" data-badge="goldreviewed">
         <span class="ac-icon">🛡</span>
         <span class="ac-text"><span class="ac-title">Gold reviewed</span><span class="ac-sub">Admin audits of you</span></span>
+        <span class="ac-badge" hidden>0</span>
       </a>
       <a class="action-card" href="gold_library.html">
         <span class="ac-icon">⭐</span>
@@ -60,9 +65,10 @@
       </a>
     </div>
     <div class="action-row" data-row="admin" hidden>
-      <a class="action-card primary" href="admin_review.html">
+      <a class="action-card primary" href="admin_review.html" data-badge="goldreview">
         <span class="ac-icon">🛡</span>
         <span class="ac-text"><span class="ac-title">Gold review</span><span class="ac-sub">Approve reviewer gold</span></span>
+        <span class="ac-badge" hidden>0</span>
       </a>
       <a class="action-card" href="gold_annotate.html">
         <span class="ac-icon">⭐</span>

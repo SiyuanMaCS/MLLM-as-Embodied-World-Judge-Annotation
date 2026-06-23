@@ -332,9 +332,44 @@ async function initDashboard() {
     if (!isAdmin) a.style.display = "none";
   });
   await loadDashboard();
+  await loadBadges();
   let timer = setInterval(() => {
-    if (!document.hidden) loadDashboard();
+    if (!document.hidden) { loadDashboard(); loadBadges(); }
   }, 30000);
+}
+
+async function loadBadges() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  if (!user || !CFG.APPS_SCRIPT_URL) return;
+  let data;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=badges&user=${encodeURIComponent(user)}`);
+    data = await r.json();
+  } catch (err) { console.warn("badges fetch failed", err); return; }
+  if (!data || data.error) return;
+
+  // Seen-diff counters: total minus last-seen total (stored per user in localStorage).
+  const seenMy = Number(localStorage.getItem(`ewj_seen_myreviewed_${user}`) || 0);
+  const seenGold = Number(localStorage.getItem(`ewj_seen_goldreviewed_${user}`) || 0);
+  const myreviewedNew = Math.max(0, (data.myreviewed_total || 0) - seenMy);
+  const goldreviewedNew = Math.max(0, (data.goldreviewed_total || 0) - seenGold);
+
+  const map = {
+    annotate:     data.annotate_remaining,
+    myreviewed:   myreviewedNew,
+    review:       data.review_pending,
+    gold:         data.gold_remaining,
+    goldreviewed: goldreviewedNew,
+    goldreview:   data.goldreview_pending,
+  };
+  document.querySelectorAll("[data-badge]").forEach(card => {
+    const badge = card.querySelector(".ac-badge");
+    if (!badge) return;
+    const n = Number(map[card.dataset.badge] || 0);
+    if (n <= 0) { badge.hidden = true; return; }
+    badge.hidden = false;
+    badge.textContent = n > 99 ? "99+" : String(n);
+  });
 }
 
 async function loadDashboard() {
@@ -811,6 +846,14 @@ async function initMyReviews() {
     if (kindFilter === "gold" && Array.isArray(data.reviews)) {
       data.reviews = data.reviews.filter(r => r.kind === "gold");
     }
+    // Mark current total as seen so the home-card badge clears.
+    try {
+      const total = (data.reviews || []).length;
+      const key = kindFilter === "gold"
+        ? `ewj_seen_goldreviewed_${user}`
+        : `ewj_seen_myreviewed_${user}`;
+      localStorage.setItem(key, String(total));
+    } catch (_) {}
     document.getElementById("my-loading").hidden = true;
     // Summary
     const reviewed = stats?.reviewed ?? (data.reviews ?? []).length;
