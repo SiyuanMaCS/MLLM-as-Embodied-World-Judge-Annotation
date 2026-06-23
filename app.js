@@ -438,8 +438,8 @@ async function initTask() {
   const roleEl = document.getElementById("role");
   if (roleEl) {
     const shown = displayRole(username, role);
-    roleEl.textContent = shown;
     roleEl.dataset.role = shown;
+    roleEl.textContent = tr("role." + shown);
   }
   // logout wired by wireGlobalChrome.
 
@@ -663,8 +663,8 @@ async function initDashboard() {
   const roleEl = document.getElementById("role");
   if (roleEl) {
     const shown = displayRole(user, role);
-    roleEl.textContent = shown;
     roleEl.dataset.role = shown;
+    roleEl.textContent = tr("role." + shown);
   }
   const isAdmin = user === "masiyuan";
   const isReviewer = role === "reviewer" && !isAdmin;
@@ -1030,8 +1030,8 @@ async function initGold() {
   const roleEl = document.getElementById("role");
   if (roleEl) {
     const shown = displayRole(username, role);
-    roleEl.textContent = shown;
     roleEl.dataset.role = shown;
+    roleEl.textContent = tr("role." + shown);
   }
   // Role gate: only reviewer / admin can use gold annotation page.
   if (role !== "reviewer" && username !== "masiyuan") {
@@ -1110,8 +1110,8 @@ async function initReview() {
   const roleEl = document.getElementById("role");
   if (roleEl) {
     const shown = displayRole(username, role);
-    roleEl.textContent = shown;
     roleEl.dataset.role = shown;
+    roleEl.textContent = tr("role." + shown);
   }
   // Role gate: only reviewer / admin can use the review queue.
   if (role !== "reviewer" && username !== "masiyuan") {
@@ -1600,8 +1600,8 @@ function wireGlobalChrome() {
   const roleEl = document.getElementById("role");
   if (roleEl && (!roleEl.textContent.trim() || roleEl.textContent.trim() === "—")) {
     const shown = displayRole(user, role);
-    roleEl.textContent = shown;
     roleEl.dataset.role = shown;
+    roleEl.textContent = tr("role." + shown);
   }
   // Inject lang toggle next to logout if missing.
   const chip = document.querySelector(".user-chip");
