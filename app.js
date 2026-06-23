@@ -1964,7 +1964,7 @@ function renderFinalizeForm(d) {
       </fieldset>
       <div class="form-row">
         <label for="f-notes">Finalize note <span class="required-tag">*</span></label>
-        <textarea id="f-notes" rows="2" maxlength="500" required placeholder="Required — synthesize the consensus / explain final values">${escapeHtml(p.notes || "")}</textarea>
+        <textarea id="f-notes" rows="2" maxlength="500" placeholder="Required — synthesize the consensus / explain final values">${escapeHtml(p.notes || "")}</textarea>
       </div>
       <div class="form-row actions">
         <button type="submit">Write to gold (source=alignment)</button>
