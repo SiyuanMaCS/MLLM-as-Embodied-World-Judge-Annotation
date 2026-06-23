@@ -271,6 +271,52 @@ function setLang(lang) {
   if (btn) btn.textContent = tr("lang.toggle_to");
 }
 
+/* Video load fallback — retry with cache-buster, then show inline placeholder
+   with Retry / Skip buttons so users aren't stuck on a 403/CORS dead frame. */
+function wireVideoFallback(videoEl, opts) {
+  if (!videoEl || videoEl.dataset.fallbackWired === "1") return;
+  videoEl.dataset.fallbackWired = "1";
+  const maxRetries = (opts && opts.maxRetries) || 2;
+  const onSkip = opts && opts.onSkip;
+  let retries = 0;
+  videoEl.addEventListener("error", () => {
+    if (retries < maxRetries) {
+      retries++;
+      const base = videoEl.src.split(/[?&]_cb=/)[0].replace(/[?&]$/, "");
+      const sep = base.includes("?") ? "&" : "?";
+      const newSrc = base + sep + "_cb=" + (Date.now() % 100000);
+      console.warn(`video load failed (try ${retries}/${maxRetries}):`, videoEl.src);
+      videoEl.src = newSrc;
+      videoEl.load();
+      return;
+    }
+    // Final: render inline placeholder.
+    if (videoEl.parentElement?.querySelector(".video-failed")) return;
+    const msgFail = getLang() === "cn" ? "视频加载失败" : "Video failed to load";
+    const lblRetry = getLang() === "cn" ? "重试" : "Retry";
+    const lblSkip = getLang() === "cn" ? "跳过" : "Skip";
+    const ph = document.createElement("div");
+    ph.className = "video-failed";
+    ph.innerHTML = `
+      <div class="video-failed-icon">⚠</div>
+      <div class="video-failed-msg">${msgFail}</div>
+      <div class="video-failed-actions">
+        <button type="button" class="ghost video-retry-btn">${lblRetry}</button>
+        ${onSkip ? `<button type="button" class="ghost video-skip-btn">${lblSkip}</button>` : ""}
+      </div>`;
+    ph.querySelector(".video-retry-btn").addEventListener("click", () => {
+      retries = 0;
+      ph.remove();
+      videoEl.style.display = "";
+      videoEl.src = videoEl.src.split(/[?&]_cb=/)[0];
+      videoEl.load();
+    });
+    if (onSkip) ph.querySelector(".video-skip-btn").addEventListener("click", onSkip);
+    videoEl.style.display = "none";
+    videoEl.parentElement.appendChild(ph);
+  });
+}
+
 /* ---------- index.html: login + role ---------- */
 const CAMPAIGN_TARGET = 5000;
 
@@ -427,6 +473,10 @@ async function initTask() {
       }
     });
   }
+
+  // Video fallback: retry on HF/CDN errors, then show inline placeholder w/ Skip.
+  wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => onSubmit(true) });
+  wireVideoFallback(document.getElementById("gt-video"));
 
   await refreshStats();
   await loadNext();
@@ -999,6 +1049,8 @@ async function initGold() {
   });
   document.getElementById("skip-btn").addEventListener("click", () => submitGold(true));
   document.getElementById("retry-btn").addEventListener("click", () => loadNextGold());
+  wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => submitGold(true) });
+  wireVideoFallback(document.getElementById("gt-video"));
   await loadNextGold();
 }
 
@@ -1093,6 +1145,7 @@ async function initReview() {
   });
   document.getElementById("skip-btn").addEventListener("click", () => loadNextReview());
   document.getElementById("retry-btn").addEventListener("click", () => loadNextReview());
+  wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => loadNextReview() });
   await loadNextReview();
 }
 
@@ -1297,6 +1350,11 @@ function renderReviewRow(r) {
     const open = detail.hasAttribute("hidden");
     if (open) detail.removeAttribute("hidden"); else detail.setAttribute("hidden", "");
     li.classList.toggle("expanded", open);
+    if (open) {
+      // Wire fallback on first expand so retry/skip works if video 403s.
+      const v = detail.querySelector("video");
+      if (v) wireVideoFallback(v);
+    }
   });
   return li;
 }
@@ -1326,6 +1384,10 @@ async function initAdminReview() {
       const card = document.createElement("section");
       card.className = "card adm-card";
       const p = r.payload || {};
+      const cardVideoCb = () => {
+        const v = card.querySelector("video");
+        if (v) wireVideoFallback(v);
+      };
       card.innerHTML = `
         <div class="meta"><span class="tag gold-tag">GOLD</span><span class="tag">${escapeHtml(r.dataset || "?")}</span><span class="tag">${escapeHtml(r.task || "?")}</span><span class="tag">by ${escapeHtml(r.reviewer || "?")}</span></div>
         <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline src="${absUrl(r.video_url || "")}"></video></figure></div>
@@ -1341,6 +1403,7 @@ async function initAdminReview() {
           <button type="button" class="m-submit">Confirm modified</button>
         </div>
       `;
+      cardVideoCb();
       const mq = card.querySelector(".m-q"), mqo = card.querySelector(".m-q-out");
       mq.addEventListener("input", () => mqo.value = mq.value);
       const mf = card.querySelector(".m-f"), mfo = card.querySelector(".m-f-out");
@@ -1493,6 +1556,8 @@ async function loadGoldLibrary() {
         <p class="muted">${escapeHtml(p.notes || "")}</p>
       `;
       root.appendChild(card);
+      const v = card.querySelector("video");
+      if (v) wireVideoFallback(v);
     }
   } catch (err) {
     document.getElementById("gl-loading").hidden = true;
@@ -1688,6 +1753,7 @@ async function loadAlignNext() {
     document.getElementById("al-dataset").textContent = d.dataset || "?";
     document.getElementById("al-task").textContent = d.task || "?";
     const vid = document.getElementById("al-video");
+    wireVideoFallback(vid, { onSkip: () => loadAlignNext() });
     vid.src = absUrl(d.video_url || "");
     vid.load();
     document.getElementById("al-prompt").textContent = d.prompt || "(no instruction)";
