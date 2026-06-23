@@ -768,7 +768,7 @@ function renderGrid(data) {
   }
   const thProgress = document.createElement("th");
   thProgress.className = "progress-col-head";
-  thProgress.textContent = "Progress";
+  thProgress.textContent = tr("common.progress");
   trHead.appendChild(thProgress);
   thead.appendChild(trHead);
 
