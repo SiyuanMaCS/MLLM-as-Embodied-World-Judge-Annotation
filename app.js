@@ -479,11 +479,11 @@ function renderGrid(data) {
       ? `<span class="quota-label">${a.quota ?? "—"}/day</span>`
       : "";
     const streakHTML = (isAdmin || a.is_self) && (a.streak ?? 0) > 0
-      ? `<span class="streak-mini" title="连续达标 ${a.streak} 天">🔥${a.streak}</span>`
+      ? `<span class="streak-mini" title="连续打卡 ${a.streak} 天">连续 ${a.streak} 天</span>`
       : "";
     tdUser.innerHTML = `
       <div class="user-head">
-        <span class="user-name">${escapeHtml(a.user)}${a.is_self ? ' <span class="you-badge">you</span>' : ''}</span>
+        <span class="user-name">${escapeHtml(a.user)}</span>
         ${isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ''}
         ${roleControl}
         ${quotaHTML}
@@ -571,7 +571,7 @@ function renderSelfSummary(root, me) {
   const pct = me.total_pct ?? (target > 0 ? Math.round(100 * done / target) : 0);
   const streak = me.streak ?? 0;
   const streakHTML = streak > 0
-    ? `<span class="streak"><span class="streak-flame">🔥</span> 连续达标 <strong>${streak}</strong> 天</span>`
+    ? `<span class="streak">连续打卡 <strong>${streak}</strong> 天</span>`
     : `<span class="streak streak-zero">今天开始连续打卡</span>`;
   root.innerHTML = `
     <div class="today-hero ${met ? 'met' : 'below'}">
