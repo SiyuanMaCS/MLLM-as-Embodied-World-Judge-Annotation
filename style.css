@@ -2,6 +2,10 @@
 
 * { box-sizing: border-box; }
 
+/* Global: respect the `hidden` attribute even when an element has a custom display value
+   (else `display: flex`/`block` rules override the browser default of `display: none`). */
+[hidden] { display: none !important; }
+
 :root {
   --bg: #f7f7fa;
   --card: #fff;
