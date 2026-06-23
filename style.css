@@ -700,6 +700,32 @@ td.progress-cell {
   vertical-align: middle;
 }
 
+/* Role-gate friendly panel (replaces ugly "Failed to load: reviewers only") */
+.role-gate {
+  text-align: center;
+  padding: 36px 24px;
+  max-width: 480px;
+  margin: 40px auto;
+  border: 1px solid #e8ebf3;
+  border-radius: 16px;
+}
+.role-gate .gate-icon { font-size: 36px; line-height: 1; margin-bottom: 12px; }
+.role-gate .gate-title { font-size: 18px; font-weight: 700; margin: 0 0 6px; color: var(--text); }
+.role-gate .gate-sub { font-size: 14px; color: var(--muted); margin: 0 0 18px; }
+.role-gate .gate-home {
+  display: inline-block;
+  padding: 8px 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.role-gate .gate-home:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
 /* ===== Landing page (index.html) ===== */
 body.landing {
   background: linear-gradient(180deg, #eef3fb 0%, #ffffff 320px, #ffffff 100%);

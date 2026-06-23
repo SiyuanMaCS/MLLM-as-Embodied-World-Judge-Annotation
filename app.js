@@ -688,6 +688,11 @@ async function initGold() {
     roleEl.textContent = shown;
     roleEl.dataset.role = shown;
   }
+  // Role gate: only reviewer / admin can use gold annotation page.
+  if (role !== "reviewer" && username !== "masiyuan") {
+    renderRoleGate("审核员 (reviewer) / 管理员");
+    return;
+  }
   for (const id of ["quality", "faithful"]) {
     const inp = document.getElementById(id);
     const out = document.getElementById(id + "-out");
@@ -757,6 +762,11 @@ async function initReview() {
     const shown = displayRole(username, role);
     roleEl.textContent = shown;
     roleEl.dataset.role = shown;
+  }
+  // Role gate: only reviewer / admin can use the review queue.
+  if (role !== "reviewer" && username !== "masiyuan") {
+    renderRoleGate("审核员 (reviewer) / 管理员");
+    return;
   }
   for (const id of ["m-quality", "m-faithful"]) {
     const inp = document.getElementById(id);
@@ -973,6 +983,11 @@ async function initAdminReview() {
   const admin = localStorage.getItem(CFG.LS_USER);
   if (!admin) { window.location.href = "index.html"; return; }
   document.getElementById("who").textContent = admin;
+  // Role gate: only admin (masiyuan) can use admin gold-review.
+  if (admin !== "masiyuan") {
+    renderRoleGate("管理员 (admin)");
+    return;
+  }
   try {
     const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=gold_review_queue&admin=${encodeURIComponent(admin)}`);
     const data = await res.json();
@@ -1162,6 +1177,23 @@ async function loadGoldLibrary() {
 function displayRole(user, role) {
   if (user === "masiyuan") return "admin";
   return role || "—";
+}
+
+/* Friendly role-gate panel for users without permission on a given page.
+   Hides all main sections and shows a single explanatory card with a Home link. */
+function renderRoleGate(requirement) {
+  const main = document.querySelector("main");
+  if (!main) return;
+  main.querySelectorAll(":scope > section").forEach(s => { s.hidden = true; });
+  const card = document.createElement("section");
+  card.className = "card role-gate";
+  card.innerHTML = `
+    <div class="gate-icon">🔒</div>
+    <h3 class="gate-title">此页面仅限${escapeHtml(requirement)}</h3>
+    <p class="gate-sub">如需此权限,请联系管理员升级你的角色。</p>
+    <a class="gate-home" href="dashboard.html">← 返回 Home</a>
+  `;
+  main.appendChild(card);
 }
 
 /* Generic wiring: any page with #who + #logout-btn gets user-chip + logout behavior. */
