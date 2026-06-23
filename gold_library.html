@@ -23,27 +23,27 @@
 
   <section class="card">
     <form id="gl-filter" class="gl-filter">
-      <div class="filter-row">
-        <span class="filter-label">Quality</span>
-        <select id="q-min">
-          <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
-        </select>
-        <span class="filter-sep">to</span>
-        <select id="q-max">
-          <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option>
-        </select>
+      <div class="range-group">
+        <span class="range-label">Quality</span>
+        <span class="range-value"><span id="q-min-val">1</span> – <span id="q-max-val">5</span></span>
+        <div class="range-dual">
+          <div class="range-track"></div>
+          <div class="range-fill" id="q-fill"></div>
+          <input type="range" id="q-min" min="1" max="5" step="1" value="1">
+          <input type="range" id="q-max" min="1" max="5" step="1" value="5">
+        </div>
       </div>
-      <div class="filter-row">
-        <span class="filter-label">Faithful</span>
-        <select id="f-min">
-          <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
-        </select>
-        <span class="filter-sep">to</span>
-        <select id="f-max">
-          <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option>
-        </select>
+      <div class="range-group">
+        <span class="range-label">Faithful</span>
+        <span class="range-value"><span id="f-min-val">1</span> – <span id="f-max-val">5</span></span>
+        <div class="range-dual">
+          <div class="range-track"></div>
+          <div class="range-fill" id="f-fill"></div>
+          <input type="range" id="f-min" min="1" max="5" step="1" value="1">
+          <input type="range" id="f-max" min="1" max="5" step="1" value="5">
+        </div>
       </div>
-      <div class="filter-row filter-actions">
+      <div class="filter-actions">
         <button type="submit">Search</button>
         <span class="muted" id="gl-count">—</span>
       </div>

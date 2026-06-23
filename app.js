@@ -945,20 +945,51 @@ async function adminGoldDecision(admin, r, decision, payload, card) {
 async function initGoldLibrary() {
   const form = document.getElementById("gl-filter");
   if (!form) return;
-  // Two-select min/max filters per dimension — clamp so min ≤ max.
-  const pairs = [{min: "q-min", max: "q-max"}, {min: "f-min", max: "f-max"}];
-  for (const p of pairs) {
-    const minEl = document.getElementById(p.min);
-    const maxEl = document.getElementById(p.max);
-    minEl.addEventListener("change", () => {
-      if (Number(minEl.value) > Number(maxEl.value)) maxEl.value = minEl.value;
-    });
-    maxEl.addEventListener("change", () => {
-      if (Number(maxEl.value) < Number(minEl.value)) minEl.value = maxEl.value;
-    });
-  }
+  setupDualRange("q-min", "q-max", "q-min-val", "q-max-val", "q-fill");
+  setupDualRange("f-min", "f-max", "f-min-val", "f-max-val", "f-fill");
   form.addEventListener("submit", (e) => { e.preventDefault(); loadGoldLibrary(); });
   await loadGoldLibrary();
+}
+
+/* Dual-range slider: two stacked <input type=range> with non-blocking thumbs,
+   fill bar between selected min/max, and z-index swap on grab so neither thumb
+   can permanently hide the other. */
+function setupDualRange(minId, maxId, minOutId, maxOutId, fillId) {
+  const minEl = document.getElementById(minId);
+  const maxEl = document.getElementById(maxId);
+  const minOut = document.getElementById(minOutId);
+  const maxOut = document.getElementById(maxOutId);
+  const fill = document.getElementById(fillId);
+  const lo = Number(minEl.min), hi = Number(minEl.max);
+  function pct(v) { return ((v - lo) / (hi - lo)) * 100; }
+  function paint() {
+    const mn = Number(minEl.value), mx = Number(maxEl.value);
+    if (minOut) minOut.textContent = mn;
+    if (maxOut) maxOut.textContent = mx;
+    if (fill) {
+      fill.style.left = pct(mn) + "%";
+      fill.style.right = (100 - pct(mx)) + "%";
+    }
+  }
+  minEl.addEventListener("input", () => {
+    if (Number(minEl.value) > Number(maxEl.value)) minEl.value = maxEl.value;
+    paint();
+  });
+  maxEl.addEventListener("input", () => {
+    if (Number(maxEl.value) < Number(minEl.value)) maxEl.value = minEl.value;
+    paint();
+  });
+  // Whichever thumb was last grabbed sits on top — so the user can always pull
+  // the other one out from underneath after touching it.
+  const grab = (top, bottom) => () => {
+    top.style.zIndex = 4;
+    bottom.style.zIndex = 3;
+  };
+  ["mousedown", "touchstart"].forEach(ev => {
+    minEl.addEventListener(ev, grab(minEl, maxEl), { passive: true });
+    maxEl.addEventListener(ev, grab(maxEl, minEl), { passive: true });
+  });
+  paint();
 }
 
 async function loadGoldLibrary() {

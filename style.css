@@ -752,37 +752,53 @@ ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
 }
 .gl-filter button { margin: 0; padding: 6px 16px; font-size: 14px; }
 
-/* Range slider (dual-handle) */
+/* Gold library filter — dual-handle range slider */
 .gl-filter {
   flex-direction: column;
   align-items: stretch;
 }
 .range-group {
   display: grid;
-  grid-template-columns: 110px 90px 1fr;
+  grid-template-columns: 90px 70px 1fr;
   align-items: center;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
+  gap: 14px;
+  padding: 10px 4px;
 }
-.range-group:last-of-type { border-bottom: 0; }
 .range-label { font-size: 14px; color: var(--text); font-weight: 600; }
-.range-value { font-size: 14px; color: var(--accent-dark); font-variant-numeric: tabular-nums; }
-.range-value strong { color: var(--accent-dark); }
+.range-value { font-size: 14px; color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 600; }
 .range-dual {
   position: relative;
-  height: 30px;
+  height: 28px;
+}
+.range-dual .range-track {
+  position: absolute;
+  top: 12px;
+  left: 0; right: 0;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+}
+.range-dual .range-fill {
+  position: absolute;
+  top: 12px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+  pointer-events: none;
 }
 .range-dual input[type="range"] {
   position: absolute;
+  top: 0; left: 0;
   width: 100%;
-  top: 8px;
+  height: 28px;
   margin: 0;
   pointer-events: none;
   background: transparent;
   -webkit-appearance: none;
   appearance: none;
 }
+.range-dual input[type="range"]:first-of-type { z-index: 3; }   /* min */
+.range-dual input[type="range"]:last-of-type  { z-index: 2; }   /* max — swapped on grab via JS */
 .range-dual input[type="range"]::-webkit-slider-thumb {
   pointer-events: auto;
   -webkit-appearance: none;
@@ -790,9 +806,9 @@ ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
   height: 20px;
   border-radius: 50%;
   background: var(--accent);
-  cursor: pointer;
   border: 2px solid #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
 }
 .range-dual input[type="range"]::-moz-range-thumb {
   pointer-events: auto;
@@ -800,24 +816,9 @@ ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
   height: 20px;
   border-radius: 50%;
   background: var(--accent);
-  cursor: pointer;
   border: 2px solid #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-.range-dual::before {
-  content: "";
-  position: absolute;
-  top: 14px;
-  left: 0; right: 0;
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-}
-.range-action {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding-top: 14px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
 }
 
 .hub-section-title {
@@ -1040,21 +1041,12 @@ ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
   .action-card .ac-sub { font-size: 11px; }
 }
 
-/* Gold library filter (two-select) — used when we go dropdown path; also fine if we restore sliders */
-.filter-row {
+.filter-actions {
   display: flex;
+  gap: 12px;
   align-items: center;
-  gap: 10px;
-  padding: 6px 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
 }
-.filter-label { font-weight: 600; font-size: 14px; min-width: 80px; }
-.filter-row select {
-  padding: 4px 10px;
-  font-size: 14px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #fff;
-}
-.filter-sep { color: var(--muted); font-size: 13px; }
-.filter-actions { padding-top: 8px; border-top: 1px solid var(--border); margin-top: 6px; }
 .filter-actions button { padding: 6px 18px; font-size: 14px; }
