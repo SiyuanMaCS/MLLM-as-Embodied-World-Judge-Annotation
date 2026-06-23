@@ -6,7 +6,7 @@
 <title>Review Queue — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v27">
+<link rel="stylesheet" href="style.css?v=v28">
 </head>
 <body>
 <main>
@@ -38,19 +38,44 @@
 
     <div class="prompt-box">
       <label>Annotator submission (annotator hidden)</label>
-      <p>Quality: <strong id="orig-quality">—</strong> · Faithful: <strong id="orig-faithful">—</strong></p>
+      <p>Physical: <strong id="orig-physical_adherence">—</strong> · Instruction: <strong id="orig-instruction_alignment">—</strong></p>
+      <p class="muted small">P-subs: <span id="orig-psubs">—</span> · I-subs: <span id="orig-isubs">—</span></p>
       <p>Notes: <em id="orig-notes">—</em></p>
     </div>
 
     <form id="review-form">
       <h3>Your decision</h3>
-      <div class="form-row" id="modify-fields" hidden>
-        <label for="m-quality">Modified quality (1–5) <output for="m-quality" id="m-quality-out">3</output></label>
-        <input type="range" id="m-quality" min="1" max="5" step="1" value="3">
-        <label for="m-faithful">Modified faithful (1–5) <output for="m-faithful" id="m-faithful-out">3</output></label>
-        <input type="range" id="m-faithful" min="1" max="5" step="1" value="3">
-        <label for="m-notes">Modification note</label>
-        <textarea id="m-notes" rows="2" maxlength="500" placeholder="why you changed it"></textarea>
+      <div id="modify-fields" hidden>
+        <fieldset class="dim-block">
+          <legend class="dim-block-title">Physical Adherence</legend>
+          <div class="form-row">
+            <label for="m-physical_adherence">Score (1–5) <output for="m-physical_adherence" id="m-physical_adherence-out">3</output></label>
+            <input type="range" id="m-physical_adherence" min="1" max="5" step="1" value="3">
+          </div>
+          <div class="sub-row">
+            <label class="sub-check"><input type="checkbox" id="m-agent_consistency"> <span>Agent consistency</span></label>
+            <label class="sub-check"><input type="checkbox" id="m-scene_consistency"> <span>Scene & object consistency</span></label>
+            <label class="sub-check"><input type="checkbox" id="m-interaction_realism"> <span>Interaction realism</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="dim-block">
+          <legend class="dim-block-title">Instruction Alignment</legend>
+          <div class="form-row">
+            <label for="m-instruction_alignment">Score (1–5) <output for="m-instruction_alignment" id="m-instruction_alignment-out">3</output></label>
+            <input type="range" id="m-instruction_alignment" min="1" max="5" step="1" value="3">
+          </div>
+          <div class="sub-row">
+            <label class="sub-check"><input type="checkbox" id="m-agent_match"> <span>Agent match</span></label>
+            <label class="sub-check"><input type="checkbox" id="m-object_correct"> <span>Object correct</span></label>
+            <label class="sub-check"><input type="checkbox" id="m-goal_completed"> <span>Goal completed</span></label>
+          </div>
+        </fieldset>
+
+        <div class="form-row">
+          <label for="m-notes">Modification note <span class="required-tag">*</span></label>
+          <textarea id="m-notes" rows="2" maxlength="500" required placeholder="Required — why you changed it"></textarea>
+        </div>
       </div>
       <div class="form-row actions">
         <button type="button" id="approve-btn">✅ Approve as-is</button>

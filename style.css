@@ -726,6 +726,93 @@ td.progress-cell {
 }
 .role-gate .gate-home:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
+/* 8-field annotation schema — dim block + sub checkboxes */
+.dim-block {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px 14px;
+  margin: 12px 0 0;
+}
+.dim-block-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  padding: 0 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dim-help { font-weight: 400; font-size: 12px; color: var(--muted); }
+.sub-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+.sub-check {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: #fafbfd;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  user-select: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.sub-check:hover { border-color: var(--accent); background: #fff; }
+.sub-check input[type="checkbox"] { margin-right: 6px; transform: scale(1.1); accent-color: var(--accent); }
+.sub-check small { font-weight: 400; color: var(--muted); font-size: 11.5px; line-height: 1.35; margin-top: 1px; }
+.sub-check:has(input:checked) {
+  background: #eef9ef;
+  border-color: var(--ok);
+}
+.required-tag { color: #e53935; font-weight: 700; margin-left: 2px; }
+
+/* my_reviews / gold_library — sub badges + source tags */
+.sub-line { margin: 4px 0 6px; line-height: 1.8; }
+.sub-badge {
+  display: inline-block;
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-right: 4px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
+.sub-badge.yes { background: #e6f6e6; color: #1e7a1e; }
+.sub-badge.no { background: #ffe2e2; color: #b00020; }
+.tag.source-admin_direct { background: #eef2fb; color: var(--accent); border: 1px solid var(--accent); }
+.tag.source-admin_reviewed { background: #f3e8fd; color: #5b21b6; border: 1px solid #d8c0f5; }
+.tag.source-alignment { background: #fff4e0; color: #8a5500; border: 1px solid #f0d59c; }
+
+@media (max-width: 640px) {
+  .sub-row { grid-template-columns: 1fr; }
+}
+
+/* Annotation standard doc page */
+.doc h2.doc-h2 { font-size: 18px; margin: 0 0 10px; color: var(--text); }
+.doc h3.doc-h3 { font-size: 14px; margin: 16px 0 8px; color: var(--text); }
+.doc p { margin: 6px 0; line-height: 1.55; font-size: 14px; }
+.doc ul { padding-left: 22px; margin: 6px 0; }
+.doc ul li { margin: 4px 0; font-size: 14px; line-height: 1.55; }
+.doc-dl { margin: 8px 0 14px; }
+.doc-dl dt { font-weight: 700; font-size: 14px; margin: 10px 0 4px; color: var(--text); }
+.doc-dl dd { margin: 0 0 8px 0; font-size: 13px; color: var(--text); line-height: 1.55; }
+.doc-dl dd em.ex-yes { font-style: normal; font-weight: 700; color: #1e7a1e; background: #e6f6e6; padding: 0 5px; border-radius: 4px; }
+.doc-dl dd em.ex-no { font-style: normal; font-weight: 700; color: #b00020; background: #ffe2e2; padding: 0 5px; border-radius: 4px; }
+.doc-scale { width: 100%; border-collapse: collapse; margin: 6px 0 10px; }
+.doc-scale th { width: 32px; text-align: center; font-weight: 800; color: var(--accent); background: #eef2fb; border: 1px solid var(--border); padding: 6px 0; font-size: 14px; }
+.doc-scale td { padding: 6px 10px; font-size: 13px; border: 1px solid var(--border); line-height: 1.5; }
+.doc .ex { background: #f7f9fd; border-left: 3px solid var(--accent); padding: 8px 12px; font-size: 13px; margin: 8px 0 0; }
+.doc-rules ul li { font-size: 13.5px; }
+.small { font-size: 12px; }
+
 /* ===== Landing page (index.html) ===== */
 body.landing {
   background: linear-gradient(180deg, #eef3fb 0%, #ffffff 320px, #ffffff 100%);

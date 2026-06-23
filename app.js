@@ -134,10 +134,10 @@ async function initTask() {
   }
   // logout wired by wireGlobalChrome.
 
-  for (const id of ["quality", "faithful"]) {
+  for (const id of ["physical_adherence", "instruction_alignment"]) {
     const input = document.getElementById(id);
     const out = document.getElementById(id + "-out");
-    input.addEventListener("input", () => { out.value = input.value; });
+    if (input && out) input.addEventListener("input", () => { out.value = input.value; });
   }
 
   document.getElementById("annotate-form").addEventListener("submit", async (e) => {
@@ -238,9 +238,15 @@ function renderItem(it) {
     gtFig.hidden = true;
   }
   document.getElementById("notes").value = "";
-  for (const id of ["quality", "faithful"]) {
-    document.getElementById(id).value = 3;
-    document.getElementById(id + "-out").value = 3;
+  for (const id of ["physical_adherence", "instruction_alignment"]) {
+    const inp = document.getElementById(id);
+    const out = document.getElementById(id + "-out");
+    if (inp) inp.value = 3;
+    if (out) out.value = 3;
+  }
+  for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
+    const cb = document.getElementById(id);
+    if (cb) cb.checked = false;
   }
   fetchPrompt(it);
 }
@@ -277,16 +283,22 @@ function absUrl(u) {
 async function onSubmit(skip) {
   if (!CURRENT) return;
   const role = localStorage.getItem(CFG.LS_ROLE);
+  const payload = { skip };
+  if (!skip) {
+    const notes = document.getElementById("notes").value.trim();
+    if (!notes) { alert("Notes are required — please explain your reasoning."); return; }
+    payload.physical_adherence = Number(document.getElementById("physical_adherence").value);
+    payload.instruction_alignment = Number(document.getElementById("instruction_alignment").value);
+    for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
+      payload[id] = document.getElementById(id).checked ? 1 : 0;
+    }
+    payload.notes = notes;
+  }
   const body = {
     user: localStorage.getItem(CFG.LS_USER),
     role,
     item_id: CURRENT.id,
-    payload: {
-      skip,
-      quality: skip ? null : Number(document.getElementById("quality").value),
-      faithful: skip ? null : Number(document.getElementById("faithful").value),
-      notes: skip ? null : document.getElementById("notes").value.trim(),
-    },
+    payload,
   };
   try {
     await submitAnnotation(body);
@@ -693,10 +705,10 @@ async function initGold() {
     renderRoleGate("审核员 (reviewer) / 管理员");
     return;
   }
-  for (const id of ["quality", "faithful"]) {
+  for (const id of ["physical_adherence", "instruction_alignment"]) {
     const inp = document.getElementById(id);
     const out = document.getElementById(id + "-out");
-    inp.addEventListener("input", () => out.value = inp.value);
+    if (inp && out) inp.addEventListener("input", () => out.value = inp.value);
   }
   document.getElementById("annotate-form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -726,15 +738,18 @@ async function loadNextGold() {
 async function submitGold(skip) {
   if (!GOLD_CURRENT) return;
   const user = localStorage.getItem(CFG.LS_USER);
-  const body = {
-    gold: true, user, item_id: GOLD_CURRENT.id,
-    payload: {
-      skip,
-      quality: skip ? null : Number(document.getElementById("quality").value),
-      faithful: skip ? null : Number(document.getElementById("faithful").value),
-      notes: skip ? null : document.getElementById("notes").value.trim(),
+  const payload = { skip };
+  if (!skip) {
+    const notes = document.getElementById("notes").value.trim();
+    if (!notes) { alert("Notes are required — please explain your reasoning."); return; }
+    payload.physical_adherence = Number(document.getElementById("physical_adherence").value);
+    payload.instruction_alignment = Number(document.getElementById("instruction_alignment").value);
+    for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
+      payload[id] = document.getElementById(id).checked ? 1 : 0;
     }
-  };
+    payload.notes = notes;
+  }
+  const body = { gold: true, user, item_id: GOLD_CURRENT.id, payload };
   try {
     const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
       method: "POST",
@@ -768,20 +783,24 @@ async function initReview() {
     renderRoleGate("审核员 (reviewer) / 管理员");
     return;
   }
-  for (const id of ["m-quality", "m-faithful"]) {
+  for (const id of ["m-physical_adherence", "m-instruction_alignment"]) {
     const inp = document.getElementById(id);
     const out = document.getElementById(id + "-out");
-    inp.addEventListener("input", () => out.value = inp.value);
+    if (inp && out) inp.addEventListener("input", () => out.value = inp.value);
   }
   document.getElementById("approve-btn").addEventListener("click", () => submitReview("approve"));
   document.getElementById("modify-btn").addEventListener("click", () => {
     const fields = document.getElementById("modify-fields");
     if (fields.hidden) {
       const orig = REVIEW_CURRENT?.annotation || REVIEW_CURRENT?.annotation_payload || {};
-      document.getElementById("m-quality").value = orig.quality ?? 3;
-      document.getElementById("m-quality-out").value = orig.quality ?? 3;
-      document.getElementById("m-faithful").value = orig.faithful ?? 3;
-      document.getElementById("m-faithful-out").value = orig.faithful ?? 3;
+      for (const id of ["physical_adherence", "instruction_alignment"]) {
+        const v = orig[id] ?? 3;
+        document.getElementById("m-" + id).value = v;
+        document.getElementById("m-" + id + "-out").value = v;
+      }
+      for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
+        document.getElementById("m-" + id).checked = !!orig[id];
+      }
       document.getElementById("m-notes").value = "";
       fields.hidden = false;
       document.getElementById("modify-btn").textContent = "Submit modify";
@@ -824,8 +843,12 @@ function renderReviewItem(it) {
   // Original annotator submission (annotator anon).
   // Backend field: `annotation` (was `annotation_payload` in my earlier draft).
   const payload = it.annotation || it.annotation_payload || {};
-  document.getElementById("orig-quality").textContent = payload.quality ?? "—";
-  document.getElementById("orig-faithful").textContent = payload.faithful ?? "—";
+  document.getElementById("orig-physical_adherence").textContent = payload.physical_adherence ?? payload.quality ?? "—";
+  document.getElementById("orig-instruction_alignment").textContent = payload.instruction_alignment ?? payload.faithful ?? "—";
+  const psubs = ["agent_consistency","scene_consistency","interaction_realism"].map(k => `${k.split("_")[0]}=${payload[k] ?? "—"}`).join(", ");
+  const isubs = ["agent_match","object_correct","goal_completed"].map(k => `${k.split("_")[0]}=${payload[k] ?? "—"}`).join(", ");
+  document.getElementById("orig-psubs").textContent = psubs;
+  document.getElementById("orig-isubs").textContent = isubs;
   document.getElementById("orig-notes").textContent = payload.notes || "(no notes)";
   fetchPrompt(it);
 }
@@ -839,11 +862,16 @@ async function submitReview(decision) {
   const is_report = !!REVIEW_CURRENT.is_report;
   let payload = REVIEW_CURRENT.annotation || REVIEW_CURRENT.annotation_payload || {};
   if (decision === "modify") {
+    const notes = document.getElementById("m-notes").value.trim();
+    if (!notes) { alert("Modification note is required."); return; }
     payload = {
-      quality: Number(document.getElementById("m-quality").value),
-      faithful: Number(document.getElementById("m-faithful").value),
-      notes: document.getElementById("m-notes").value.trim(),
+      physical_adherence: Number(document.getElementById("m-physical_adherence").value),
+      instruction_alignment: Number(document.getElementById("m-instruction_alignment").value),
+      notes,
     };
+    for (const id of ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"]) {
+      payload[id] = document.getElementById("m-" + id).checked ? 1 : 0;
+    }
   }
   const body = { review_submit: true, reviewer, item_id, target, decision, payload, is_report };
   try {
@@ -933,9 +961,19 @@ function renderReviewRow(r) {
   const ts = r.ts || r.created_at || "";
   const fin = r.final || r.review_payload || r.payload || {};
   const orig = r.original || r.original_payload || {};
-  const qChanged = !isApprove && orig.quality != null && fin.quality !== orig.quality;
-  const fChanged = !isApprove && orig.faithful != null && fin.faithful !== orig.faithful;
+  // Field-level diff helpers across new 8-field schema (fallback to legacy quality/faithful).
+  const physChanged = !isApprove && (fin.physical_adherence ?? fin.quality) !== (orig.physical_adherence ?? orig.quality);
+  const instChanged = !isApprove && (fin.instruction_alignment ?? fin.faithful) !== (orig.instruction_alignment ?? orig.faithful);
   const nChanged = !isApprove && (orig.notes || "") !== (fin.notes || "");
+  const subsP = ["agent_consistency","scene_consistency","interaction_realism"];
+  const subsI = ["agent_match","object_correct","goal_completed"];
+  function subBadges(p, keys) {
+    return keys.map(k => {
+      const v = p[k];
+      if (v === undefined || v === null) return "";
+      return `<span class="sub-badge ${v ? "yes" : "no"}" title="${k}">${v ? "✓" : "✗"} ${k.replace(/_/g," ")}</span>`;
+    }).join("");
+  }
 
   li.innerHTML = `
     <header class="row-head">
@@ -951,13 +989,15 @@ function renderReviewRow(r) {
       <div class="detail-grid">
         <div class="detail-card detail-orig">
           <h4>Your submission</h4>
-          <p>Quality: <strong>${orig.quality ?? "—"}</strong> · Faithful: <strong>${orig.faithful ?? "—"}</strong></p>
+          <p>Physical: <strong>${orig.physical_adherence ?? orig.quality ?? "—"}</strong> · Instruction: <strong>${orig.instruction_alignment ?? orig.faithful ?? "—"}</strong></p>
+          <p class="sub-line">${subBadges(orig, subsP)}${subBadges(orig, subsI)}</p>
           ${orig.notes ? `<p class="notes">${escapeHtml(orig.notes)}</p>` : '<p class="notes muted">(no notes)</p>'}
         </div>
         <div class="detail-arrow">→</div>
         <div class="detail-card detail-final ${isApprove ? "unchanged" : ""}">
           <h4>${isApprove ? "Reviewer (approved as-is)" : "Reviewer (modified)"}</h4>
-          <p>Quality: <strong class="${qChanged ? "diff" : ""}">${fin.quality ?? "—"}</strong> · Faithful: <strong class="${fChanged ? "diff" : ""}">${fin.faithful ?? "—"}</strong></p>
+          <p>Physical: <strong class="${physChanged ? "diff" : ""}">${fin.physical_adherence ?? fin.quality ?? "—"}</strong> · Instruction: <strong class="${instChanged ? "diff" : ""}">${fin.instruction_alignment ?? fin.faithful ?? "—"}</strong></p>
+          <p class="sub-line">${subBadges(fin, subsP)}${subBadges(fin, subsI)}</p>
           ${fin.notes ? `<p class="notes ${nChanged ? "diff" : ""}">${escapeHtml(fin.notes)}</p>` : '<p class="notes muted">(no notes)</p>'}
         </div>
       </div>
@@ -1158,10 +1198,15 @@ async function loadGoldLibrary() {
       const reviewerTag = it.reviewer && it.reviewer !== it.confirmed_by
         ? `<span class="tag" title="Original annotator">✎ ${escapeHtml(it.reviewer)}</span>`
         : "";
+      // Source tag (admin_direct / admin_reviewed / alignment) gated to reviewer/admin viewer.
+      const sourceLabel = { admin_direct: "Admin direct", admin_reviewed: "Admin reviewed", alignment: "Reviewer alignment" }[it.source] || "";
+      const sourceTag = sourceLabel ? `<span class="tag source-${it.source}">${escapeHtml(sourceLabel)}</span>` : "";
+      const phys = p.physical_adherence ?? p.quality;
+      const inst = p.instruction_alignment ?? p.faithful;
       card.innerHTML = `
-        <div class="meta"><span class="tag gold-tag">GOLD</span><span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${finalizerTag}${reviewerTag}</div>
+        <div class="meta"><span class="tag gold-tag">GOLD</span>${sourceTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${finalizerTag}${reviewerTag}</div>
         <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline src="${absUrl(it.video_url || "")}"></video></figure></div>
-        <p class="gl-scores">Quality: <strong>${p.quality ?? "—"}</strong> · Faithful: <strong>${p.faithful ?? "—"}</strong></p>
+        <p class="gl-scores">Physical: <strong>${phys ?? "—"}</strong> · Instruction: <strong>${inst ?? "—"}</strong></p>
         <p class="muted">${escapeHtml(p.notes || "")}</p>
       `;
       root.appendChild(card);

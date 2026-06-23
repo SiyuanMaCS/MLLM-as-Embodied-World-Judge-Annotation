@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Docs — Embodied World Judge</title>
+<title>Annotation Standard — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v27">
+<link rel="stylesheet" href="style.css?v=v28">
 </head>
 <body>
 <main>
   <header class="bar">
-    <h1>Docs</h1>
+    <h1>Annotation Standard</h1>
     <div class="user-chip">
       <span id="who">—</span> <span class="role-pill" id="role">—</span>
       <button id="logout-btn" class="link">logout</button>
@@ -21,15 +21,90 @@
     <a href="dashboard.html" class="back-link">← Back</a>
   </nav>
 
-  <section class="card">
-    <h3>Annotation guide</h3>
-    <p class="muted">(placeholder — full annotation guide coming soon)</p>
+  <section class="card doc">
+    <h2 class="doc-h2">Embodied World-Model Video Evaluation</h2>
+    <p><strong>对象</strong>:每条都是机械臂夹爪 / 人手做 manipulation 的短视频,配一条 instruction + init_frame(首帧=条件帧)。</p>
+    <p><strong>两个独立轴,各自独立打分</strong>:</p>
     <ul>
-      <li><strong>Quality (1–5):</strong> overall visual quality of the generated video.</li>
-      <li><strong>Faithfulness (1–5):</strong> how well the video follows the task instruction.</li>
-      <li><strong>Skip</strong> if the sample is broken or you can't judge.</li>
-      <li><strong>Report</strong> if uncertain — sends to a reviewer for second opinion.</li>
+      <li><strong>Physical Adherence(物理真实度)</strong>:视频本身物理是否真实 — <em>只看视频,不看 instruction</em>。</li>
+      <li><strong>Instruction Alignment(指令对齐)</strong>:视频是否完成了 instruction — 看 instruction + init_frame。</li>
     </ul>
+    <p>每轴 = <strong>1 个 1–5 主分</strong> + <strong>3 个 0/1 小分</strong> + <strong>必填 note</strong>(共 8 字段全标)。</p>
+  </section>
+
+  <section class="card doc">
+    <h2 class="doc-h2">Axis A — Physical Adherence (1–5)</h2>
+    <p><strong>定义</strong>:只凭视频判断是否符合物理常识,与 instruction 无关。</p>
+
+    <h3 class="doc-h3">3 个 0/1 小分(0 = 违反,1 = 成立)</h3>
+    <dl class="doc-dl">
+      <dt>agent_consistency · 机械手/人手完整性</dt>
+      <dd>夹爪/手全程结构完整、刚性、时序一致 — 不融化、手指不黏连、不多/少指、不橡皮形变、不闪烁。<br>
+          <em class="ex-yes">1</em>=手指形状稳定;<em class="ex-no">0</em>=抓取时手融成一团 / 多出一根手指。</dd>
+
+      <dt>scene_consistency · 背景与物体一致性</dt>
+      <dd>背景和被操纵物体时序连贯 — 不瞬移、相关物体不凭空出现/消失、不无故变形变色、背景不闪。<br>
+          <em class="ex-yes">1</em>=方块保持同一身份/大小/颜色;<em class="ex-no">0</em>=方块中途变色 / 凭空多一个物体。</dd>
+
+      <dt>interaction_realism · 交互真实性</dt>
+      <dd>接触与受力合理 — 夹爪/手真实闭合并支撑物体、无穿模、遵守重力惯性与合理受力传递。<br>
+          <em class="ex-yes">1</em>=物体被夹住随手移动、接触可承重;<em class="ex-no">0</em>=物体无支撑漂浮 / 手穿过杯子 / 物体逆重力跳动。</dd>
+    </dl>
+
+    <h3 class="doc-h3">1–5 主分</h3>
+    <table class="doc-scale">
+      <tr><th>1</th><td>完全不符:普遍违反,机械手/场景崩坏(融化、瞬移、严重穿模),多项小分严重 fail。</td></tr>
+      <tr><th>2</th><td>较差:部分物理成立但有<strong>重大</strong>违反(如物体无支撑漂浮,或手明显穿过物体)。</td></tr>
+      <tr><th>3</th><td>中等:大体合理但有<strong>明显</strong>不一致(短暂手指形变、短暂穿模、轻微闪烁),观者会注意到。</td></tr>
+      <tr><th>4</th><td>良好:物理上可信,仅<strong>轻微</strong>瑕疵(单个小 artifact、瞬间抖动)。</td></tr>
+      <tr><th>5</th><td>完美:无可见物理违反,机械手/场景/交互都真实。</td></tr>
+    </table>
+
+    <p class="ex"><strong>Example</strong> · <code>physical_adherence=2</code> — agent_consistency fail:抓取时夹爪融成一团;interaction_realism fail:杯子短暂穿过桌沿;scene_consistency 成立。重大违反 → 2。</p>
+  </section>
+
+  <section class="card doc">
+    <h2 class="doc-h2">Axis B — Instruction Alignment (1–5)</h2>
+    <p><strong>定义</strong>:用 instruction + init_frame 判断视频是否完成任务(评任务语义与完成度,不评画面真实度)。</p>
+
+    <h3 class="doc-h3">3 个 0/1 小分(0 = 否,1 = 是)</h3>
+    <dl class="doc-dl">
+      <dt>agent_match · 机械手匹配</dt>
+      <dd>完成任务的手/夹爪是不是 init_frame 里那个(不是新出现/瞬移的手臂,不是别的 agent)。<br>
+          <em class="ex-yes">1</em>=首帧的夹爪在做任务;<em class="ex-no">0</em>=另一只手臂出现来做。</dd>
+
+      <dt>object_correct · 物体正确</dt>
+      <dd>被操纵的是不是 instruction 指定的目标物体(物体对、属性对 — 颜色/类型)。<br>
+          <em class="ex-yes">1</em>="抓红方块"抓的就是红方块;<em class="ex-no">0</em>=抓成了蓝方块/别的物体。</dd>
+
+      <dt>goal_completed · 目标达成</dt>
+      <dd>instruction 的目标终态是否真正达成(如真把物体放<strong>进</strong>容器,而不是只是举起来靠近)。<br>
+          <em class="ex-yes">1</em>=终态在画面里达成;<em class="ex-no">0</em>=只做了一半 / 接近但没完成。</dd>
+    </dl>
+
+    <h3 class="doc-h3">1–5 主分</h3>
+    <table class="doc-scale">
+      <tr><th>1</th><td>完全不符:错的机械手 / agent 不动 / 做无关动作(agent_match 通常 0)。</td></tr>
+      <tr><th>2</th><td>错动作或错物体:对的机械手动了,但操作了<strong>错的物体</strong>或做了<strong>错的动作</strong>(如要左转却右转)。</td></tr>
+      <tr><th>3</th><td>部分完成:对的机械手在<strong>对的物体</strong>上操作,但<strong>目标只部分达成</strong>(趋向/开始但没到终态,如举起方块却没放进箱子)。</td></tr>
+      <tr><th>4</th><td>接近完成:目标基本达成,仅<strong>轻微</strong>欠缺(放了但略歪 / 没完全松爪)。</td></tr>
+      <tr><th>5</th><td>完整完成:正确机械手在正确物体上<strong>完整、准确</strong>达成目标。</td></tr>
+    </table>
+
+    <p class="ex"><strong>Example</strong> · <code>instruction_alignment=3</code> — agent_match 成立(首帧夹爪在做)、object_correct 成立(抓的是正确红方块),但 goal_completed fail:只略微抬起、从未放进箱子。部分完成 → 3。</p>
+  </section>
+
+  <section class="card doc doc-rules">
+    <h2 class="doc-h2">标注须知</h2>
+    <ul>
+      <li><strong>两轴独立</strong>:物理真实与指令对齐分开打;可以"物理完美但没按指令做"(物理高/对齐低),也可以"完成了任务但画面不真实"(对齐高/物理低)。</li>
+      <li><strong>Physical 只看视频</strong>:判物理时<strong>忽略 instruction</strong>,只问"看起来真不真实"。</li>
+      <li><strong>Instruction 以 init_frame 为参照</strong>判断 agent / 场景起点。</li>
+      <li><strong>8 字段全标</strong>(2 主 1–5 + 6 小分 0/1)。</li>
+      <li><strong>note 必填</strong>(非 optional):简述打分的视觉证据,尤其是任何标 0 的小分。</li>
+      <li><strong>小分是证据、主分是综合</strong>:主分需与小分一致(如 <code>goal_completed=0</code> 时 Instruction Alignment 一般 ≤3)。</li>
+    </ul>
+    <p class="muted small">依据:VideoPhy / VideoPhy2、VideoScore / VideoScore2、WorldModelBench、WorldArena、VBench-2.0。</p>
   </section>
 </main>
 <script src="app.js" defer></script>

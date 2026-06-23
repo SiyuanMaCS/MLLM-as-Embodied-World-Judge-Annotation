@@ -6,7 +6,7 @@
 <title>Annotate — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v27">
+<link rel="stylesheet" href="style.css?v=v28">
 </head>
 <body>
 <main>
@@ -51,19 +51,36 @@
     </div>
 
     <form id="annotate-form">
-      <h3>Annotation (placeholder — final fields TBD)</h3>
+      <fieldset class="dim-block">
+        <legend class="dim-block-title">Physical Adherence <span class="dim-help">物理真实度 · only judge what you see in the video</span></legend>
+        <div class="form-row">
+          <label for="physical_adherence">Score (1–5) <output for="physical_adherence" id="physical_adherence-out">3</output></label>
+          <input type="range" id="physical_adherence" name="physical_adherence" min="1" max="5" step="1" value="3">
+        </div>
+        <div class="sub-row">
+          <label class="sub-check"><input type="checkbox" id="agent_consistency" name="agent_consistency"> <span>Agent consistency</span><small>机械手/人手结构完整、不融化/扭曲</small></label>
+          <label class="sub-check"><input type="checkbox" id="scene_consistency" name="scene_consistency"> <span>Scene & object consistency</span><small>背景与物体时序一致、不闪烁/瞬移/形变</small></label>
+          <label class="sub-check"><input type="checkbox" id="interaction_realism" name="interaction_realism"> <span>Interaction realism</span><small>抓取真实闭合、无穿模、遵守重力惯性</small></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="dim-block">
+        <legend class="dim-block-title">Instruction Alignment <span class="dim-help">指令对齐 · judge with task instruction + init frame</span></legend>
+        <div class="form-row">
+          <label for="instruction_alignment">Score (1–5) <output for="instruction_alignment" id="instruction_alignment-out">3</output></label>
+          <input type="range" id="instruction_alignment" name="instruction_alignment" min="1" max="5" step="1" value="3">
+        </div>
+        <div class="sub-row">
+          <label class="sub-check"><input type="checkbox" id="agent_match" name="agent_match"> <span>Agent match</span><small>完成任务的就是首帧那个机械手/人手</small></label>
+          <label class="sub-check"><input type="checkbox" id="object_correct" name="object_correct"> <span>Object correct</span><small>操纵的 object 是指令指定的</small></label>
+          <label class="sub-check"><input type="checkbox" id="goal_completed" name="goal_completed"> <span>Goal completed</span><small>指令的目标已完整达成</small></label>
+        </div>
+      </fieldset>
+
       <div class="form-row">
-        <label for="quality">Overall quality (1–5) <output for="quality" id="quality-out">3</output></label>
-        <input type="range" id="quality" name="quality" min="1" max="5" step="1" value="3">
-      </div>
-      <div class="form-row">
-        <label for="faithful">Faithfulness to instruction (1–5) <output for="faithful" id="faithful-out">3</output></label>
-        <input type="range" id="faithful" name="faithful" min="1" max="5" step="1" value="3">
-      </div>
-      <div class="form-row">
-        <label for="notes">Notes (optional)</label>
-        <textarea id="notes" name="notes" rows="3" maxlength="500"
-                  placeholder="anything weird, hallucinated objects, broken motion…"></textarea>
+        <label for="notes">Notes <span class="required-tag">*</span></label>
+        <textarea id="notes" name="notes" rows="3" maxlength="500" required
+                  placeholder="Required — explain your reasoning (what you saw, key violations, key successes)…"></textarea>
       </div>
       <div class="form-row actions">
         <button type="submit" id="submit-btn">Save &amp; next →</button>
