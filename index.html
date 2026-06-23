@@ -6,51 +6,67 @@
 <title>Embodied World Judge — Annotate</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v23">
+<link rel="stylesheet" href="style.css?v=v24">
 </head>
-<body>
-<main>
-  <header>
-    <h1>🤖 Embodied World Judge — Annotation</h1>
-    <p class="sub">Help label generated videos for the <code>HuggingFriends/mllm-as-embodied-world-judge</code> benchmark.</p>
+<body class="landing">
+<main class="landing-main">
+  <header class="landing-hero">
+    <h1 class="landing-title">Embodied World Judge</h1>
+    <p class="landing-tagline">Score AI-generated robot videos · help build the benchmark</p>
   </header>
 
-  <section id="public-progress" class="card" hidden>
-    <div class="stat-row">
-      <div class="stat"><span class="stat-num" id="pub-annotators">—</span><span class="stat-label">annotators</span></div>
-      <div class="stat"><span class="stat-num" id="pub-today">—</span><span class="stat-label">today</span></div>
-      <div class="stat"><span class="stat-num" id="pub-total">—</span><span class="stat-label">total annotations</span></div>
-    </div>
-    <div class="total-progress" style="margin-top: 14px;">
-      <div class="total-progress-head">
-        <span class="total-label">总体进度 (14 天目标 5000)</span>
-        <span class="total-num"><span id="pub-done">0</span><span class="muted">/5000</span> <span class="self-pct" id="pub-pct">(0%)</span></span>
+  <section id="public-progress" class="card landing-card" hidden>
+    <div class="landing-stats">
+      <div class="landing-stat">
+        <span class="landing-stat-icon">👥</span>
+        <span class="landing-stat-num" id="pub-annotators">—</span>
+        <span class="landing-stat-label">Annotators</span>
       </div>
-      <div class="progress-bar total-bar"><div class="progress-fill" id="pub-fill" style="width:0%"></div></div>
+      <div class="landing-stat">
+        <span class="landing-stat-icon">📅</span>
+        <span class="landing-stat-num" id="pub-today">—</span>
+        <span class="landing-stat-label">Today</span>
+      </div>
+      <div class="landing-stat">
+        <span class="landing-stat-icon">✅</span>
+        <span class="landing-stat-num" id="pub-total">—</span>
+        <span class="landing-stat-label">Total annotations</span>
+      </div>
+    </div>
+    <div class="landing-progress-block">
+      <div class="landing-progress-head">
+        <span class="landing-progress-label">总体进度 · 14 天目标 5000</span>
+        <span class="landing-progress-num"><strong id="pub-done">0</strong> <span class="muted">/ 5000</span> <span class="landing-progress-pct" id="pub-pct">(0%)</span></span>
+      </div>
+      <div class="landing-progress-bar">
+        <div class="landing-progress-fill" id="pub-fill" style="width:0%"></div>
+        <span class="landing-tick" style="left:25%"></span>
+        <span class="landing-tick" style="left:50%"></span>
+        <span class="landing-tick" style="left:75%"></span>
+      </div>
     </div>
   </section>
 
-  <section class="card">
-    <h2>Step 1 — Register</h2>
-    <p>Enter a handle to start. New users default to <strong>Contributor</strong> (20/day target); ask admin to promote to Author (50/day) or Reviewer.</p>
+  <section class="card landing-card landing-register">
+    <h2 class="landing-card-title">Register</h2>
     <form id="login-form">
       <label for="username">Your handle</label>
       <input type="text" id="username" name="username" required minlength="2" maxlength="32"
              pattern="[A-Za-z0-9_\-]+" placeholder="e.g. alice_w"
              autocomplete="off">
-      <small>Letters, digits, underscore, dash. 2–32 chars.</small>
-      <button type="submit">Start annotating →</button>
+      <small>Letters, digits, underscore, dash. 2–32 chars. 默认 Contributor (20/day),可申请 Author/Reviewer。</small>
+      <button type="submit" class="landing-cta">开始标注 →</button>
     </form>
     <p id="login-msg" class="msg"></p>
   </section>
 
-  <section class="card help">
-    <h3>What you'll do</h3>
-    <ol>
-      <li>Watch a generated video (5–8s).</li>
-      <li>Rate quality + faithfulness to the original task, write optional notes.</li>
-      <li>Submit. The system auto-picks your next sample (no overlap, dynamic assignment).</li>
-    </ol>
+  <section class="card landing-card landing-steps">
+    <h3 class="landing-card-title">What you'll do</h3>
+    <div class="step-grid">
+      <div class="step-card"><span class="step-icon">🎬</span><span class="step-title">Watch</span><span class="step-sub">5–8s generated video</span></div>
+      <div class="step-card"><span class="step-icon">⭐</span><span class="step-title">Score</span><span class="step-sub">Quality + Faithfulness</span></div>
+      <div class="step-card"><span class="step-icon">✅</span><span class="step-title">Submit</span><span class="step-sub">Auto-picks next sample</span></div>
+    </div>
   </section>
 </main>
 
