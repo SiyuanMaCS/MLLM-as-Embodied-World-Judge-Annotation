@@ -6,7 +6,7 @@
 <title>Embodied World Judge — Annotate</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v25">
+<link rel="stylesheet" href="style.css?v=v26">
 </head>
 <body class="landing">
 <main class="landing-main">
@@ -14,6 +14,18 @@
     <h1 class="landing-title">Embodied World Judge</h1>
     <p class="landing-tagline">Score AI-generated robot videos · help build the benchmark</p>
   </header>
+
+  <section class="card landing-card landing-register">
+    <form id="login-form">
+      <label for="username">Your handle</label>
+      <input type="text" id="username" name="username" required minlength="2" maxlength="32"
+             pattern="[A-Za-z0-9_\-]+" placeholder="e.g. alice_w"
+             autocomplete="off">
+      <small>2–32 chars · letters / digits / _ / -</small>
+      <button type="submit" class="landing-cta">开始标注 →</button>
+    </form>
+    <p id="login-msg" class="msg"></p>
+  </section>
 
   <section id="public-progress" class="card landing-card" hidden>
     <div class="landing-stats">
@@ -45,18 +57,6 @@
         <span class="landing-tick" style="left:75%"></span>
       </div>
     </div>
-  </section>
-
-  <section class="card landing-card landing-register">
-    <form id="login-form">
-      <label for="username">Your handle</label>
-      <input type="text" id="username" name="username" required minlength="2" maxlength="32"
-             pattern="[A-Za-z0-9_\-]+" placeholder="e.g. alice_w"
-             autocomplete="off">
-      <small>2–32 chars · letters / digits / _ / -</small>
-      <button type="submit" class="landing-cta">开始标注 →</button>
-    </form>
-    <p id="login-msg" class="msg"></p>
   </section>
 </main>
 
