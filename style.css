@@ -855,6 +855,8 @@ ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
 .page-nav a:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 .page-nav a.admin-only { background: #fff4e0; border-color: #f0d59c; color: #8a5500; }
 .page-nav a.reviewer-only { background: #f3e8fd; border-color: #d8c0f5; color: #5b21b6; }
+.page-nav a.back-link { color: var(--muted); }
+.page-nav a.back-link:hover { background: var(--text); color: #fff; border-color: var(--text); }
 
 /* Reviewer hub grid */
 .hub-grid {

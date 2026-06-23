@@ -636,7 +636,11 @@ async function initGold() {
   if (!username) { window.location.href = "index.html"; return; }
   document.getElementById("who").textContent = username;
   const roleEl = document.getElementById("role");
-  if (roleEl) roleEl.textContent = role || "—";
+  if (roleEl) {
+    const shown = displayRole(username, role);
+    roleEl.textContent = shown;
+    roleEl.dataset.role = shown;
+  }
   for (const id of ["quality", "faithful"]) {
     const inp = document.getElementById(id);
     const out = document.getElementById(id + "-out");
@@ -701,7 +705,12 @@ async function initReview() {
   const role = localStorage.getItem(CFG.LS_ROLE);
   if (!username) { window.location.href = "index.html"; return; }
   document.getElementById("who").textContent = username;
-  document.getElementById("role").textContent = role || "—";
+  const roleEl = document.getElementById("role");
+  if (roleEl) {
+    const shown = displayRole(username, role);
+    roleEl.textContent = shown;
+    roleEl.dataset.role = shown;
+  }
   for (const id of ["m-quality", "m-faithful"]) {
     const inp = document.getElementById(id);
     const out = document.getElementById(id + "-out");
