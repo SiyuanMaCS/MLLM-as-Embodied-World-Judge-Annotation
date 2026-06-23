@@ -656,6 +656,50 @@ td.progress-cell {
 .self-pct { font-size: 14px; color: var(--accent); font-weight: 600; }
 .progress-col-head { background: #fff; color: var(--text); }
 
+/* BaiCiZhan-style today hero card + streak + total progress */
+.today-hero {
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eef2fb 0%, #e3eafd 100%);
+  border: 1px solid var(--accent);
+  margin-bottom: 14px;
+}
+.today-hero.met { background: linear-gradient(135deg, #e6f6e6 0%, #d3edd5 100%); border-color: var(--ok); }
+.today-head {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 10px;
+}
+.today-label { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+.streak { font-size: 14px; color: var(--text); font-weight: 600; }
+.streak-flame { font-size: 16px; }
+.streak.streak-zero { color: var(--muted); font-weight: 500; font-size: 13px; }
+.today-num { font-size: 48px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.today-num strong { color: var(--accent); }
+.met .today-num strong { color: var(--ok); }
+.today-of { font-size: 24px; color: var(--muted); margin-left: 8px; font-weight: 600; }
+.today-bar { margin: 12px 0 6px; height: 10px; }
+.today-msg { font-size: 14px; }
+.total-progress { padding: 4px 4px 0; }
+.total-progress-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.total-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+.total-num { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.total-bar { height: 8px; }
+
+/* Grid cell deficit (BaiCiZhan-style "差 N") */
+.cell-flag { display: block; font-size: 11px; font-weight: 700; margin-top: 1px; }
+.cell-deficit { display: block; font-size: 11px; font-weight: 700; margin-top: 1px; color: inherit; opacity: 0.95; }
+.streak-mini {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #d97706;
+  background: #fff4e0;
+  padding: 1px 6px;
+  border-radius: 8px;
+  vertical-align: middle;
+}
+
 .ok-text { color: var(--ok); font-weight: 700; }
 .warn-text { color: var(--err); font-weight: 700; }
 .muted { color: var(--muted); }

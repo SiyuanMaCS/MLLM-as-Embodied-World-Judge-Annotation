@@ -478,12 +478,16 @@ function renderGrid(data) {
     const quotaHTML = isAdmin
       ? `<span class="quota-label">${a.quota ?? "—"}/day</span>`
       : "";
+    const streakHTML = (isAdmin || a.is_self) && (a.streak ?? 0) > 0
+      ? `<span class="streak-mini" title="连续达标 ${a.streak} 天">🔥${a.streak}</span>`
+      : "";
     tdUser.innerHTML = `
       <div class="user-head">
         <span class="user-name">${escapeHtml(a.user)}${a.is_self ? ' <span class="you-badge">you</span>' : ''}</span>
         ${isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ''}
         ${roleControl}
         ${quotaHTML}
+        ${streakHTML}
       </div>
     `;
     tr.appendChild(tdUser);
@@ -505,7 +509,7 @@ function renderGrid(data) {
       });
     }
 
-    // Day cells (color + count only; no +/- delta)
+    // Day cells: count + deficit (BaiCiZhan-style "差 N" on miss days, ✓ on met)
     for (let i = 0; i < days.length; i++) {
       const cell = (a.week || [])[i];
       const td = document.createElement("td");
@@ -516,9 +520,15 @@ function renderGrid(data) {
       if (state === "none") {
         td.classList.add("zero");
         td.textContent = showNumbers && cell.count === 0 ? "·" : "";
+      } else if (state === "met") {
+        td.classList.add("met");
+        if (showNumbers) td.innerHTML = `<span class="cell-count">${cell.count}</span><span class="cell-flag">✓</span>`;
       } else {
-        td.classList.add(state === "met" ? "met" : "miss");
-        if (showNumbers) td.innerHTML = `<span class="cell-count">${cell.count}</span>`;
+        td.classList.add("miss");
+        if (showNumbers) {
+          const shortBy = Math.max(0, (a.quota ?? 0) - (cell.count || 0));
+          td.innerHTML = `<span class="cell-count">${cell.count}</span><span class="cell-deficit">−${shortBy}</span>`;
+        }
       }
       if (cell && showNumbers) td.title = `${cell.date}: ${cell.count}/${a.quota ?? "?"}`;
       tr.appendChild(td);
@@ -555,25 +565,34 @@ function renderSelfSummary(root, me) {
   const quota = me.quota ?? 0;
   const met = quota > 0 && today >= quota;
   const remaining = Math.max(0, quota - today);
+  const todayPct = quota > 0 ? Math.min(100, Math.round(100 * today / quota)) : 0;
   const done = me.total_done ?? me.total ?? 0;
   const target = me.total_target ?? 0;
   const pct = me.total_pct ?? (target > 0 ? Math.round(100 * done / target) : 0);
+  const streak = me.streak ?? 0;
+  const streakHTML = streak > 0
+    ? `<span class="streak"><span class="streak-flame">🔥</span> 连续达标 <strong>${streak}</strong> 天</span>`
+    : `<span class="streak streak-zero">今天开始连续打卡</span>`;
   root.innerHTML = `
-    <div class="self-summary-row">
-      <div class="self-stat ${met ? 'ok' : 'warn'}">
-        <span class="self-num">${today}<span class="self-of">/${quota}</span></span>
-        <span class="self-label">Today (${me.role ?? "—"})</span>
+    <div class="today-hero ${met ? 'met' : 'below'}">
+      <div class="today-head">
+        <span class="today-label">今日 (${me.role ?? "—"})</span>
+        ${streakHTML}
       </div>
-      <div class="self-stat self-progress">
-        <span class="self-num">${done}<span class="self-of">/${target}</span> <span class="self-pct">(${pct}%)</span></span>
-        <span class="self-label">Total progress (14-day target)</span>
-        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100, pct)}%"></div></div>
-      </div>
-      <div class="self-msg">
+      <div class="today-num"><strong>${today}</strong><span class="today-of">/ ${quota}</span></div>
+      <div class="progress-bar today-bar"><div class="progress-fill" style="width:${todayPct}%"></div></div>
+      <div class="today-msg">
         ${met
-          ? `🎉 You're at ${today}/${quota} today — quota met!`
-          : `Keep going — <strong>${remaining}</strong> more annotations to hit today's quota of ${quota}.`}
+          ? `<span class="ok-text">✓ 今日已达标</span>`
+          : `<span class="warn-text">还差 <strong>${remaining}</strong> 条</span>`}
       </div>
+    </div>
+    <div class="total-progress">
+      <div class="total-progress-head">
+        <span class="total-label">总进度 (14 天目标)</span>
+        <span class="total-num">${done}<span class="muted">/${target}</span> <span class="self-pct">(${pct}%)</span></span>
+      </div>
+      <div class="progress-bar total-bar"><div class="progress-fill" style="width:${Math.min(100, pct)}%"></div></div>
     </div>
   `;
 }
