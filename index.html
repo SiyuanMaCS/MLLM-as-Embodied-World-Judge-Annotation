@@ -6,7 +6,7 @@
 <title>Embodied World Judge — Annotate</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v22">
+<link rel="stylesheet" href="style.css?v=v23">
 </head>
 <body>
 <main>
@@ -14,6 +14,21 @@
     <h1>🤖 Embodied World Judge — Annotation</h1>
     <p class="sub">Help label generated videos for the <code>HuggingFriends/mllm-as-embodied-world-judge</code> benchmark.</p>
   </header>
+
+  <section id="public-progress" class="card" hidden>
+    <div class="stat-row">
+      <div class="stat"><span class="stat-num" id="pub-annotators">—</span><span class="stat-label">annotators</span></div>
+      <div class="stat"><span class="stat-num" id="pub-today">—</span><span class="stat-label">today</span></div>
+      <div class="stat"><span class="stat-num" id="pub-total">—</span><span class="stat-label">total annotations</span></div>
+    </div>
+    <div class="total-progress" style="margin-top: 14px;">
+      <div class="total-progress-head">
+        <span class="total-label">总体进度 (14 天目标 5000)</span>
+        <span class="total-num"><span id="pub-done">0</span><span class="muted">/5000</span> <span class="self-pct" id="pub-pct">(0%)</span></span>
+      </div>
+      <div class="progress-bar total-bar"><div class="progress-fill" id="pub-fill" style="width:0%"></div></div>
+    </div>
+  </section>
 
   <section class="card">
     <h2>Step 1 — Register</h2>

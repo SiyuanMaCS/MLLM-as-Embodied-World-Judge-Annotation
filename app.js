@@ -9,9 +9,30 @@ const CFG = {
 };
 
 /* ---------- index.html: login + role ---------- */
+const CAMPAIGN_TARGET = 5000;
+
+async function loadPublicProgress() {
+  const root = document.getElementById("public-progress");
+  if (!root || !CFG.APPS_SCRIPT_URL) return;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=progress`);
+    const d = await r.json();
+    const total = d?.totals?.annotations ?? 0;
+    document.getElementById("pub-annotators").textContent = d?.totals?.annotators ?? 0;
+    document.getElementById("pub-today").textContent = d?.totals?.today ?? 0;
+    document.getElementById("pub-total").textContent = total;
+    document.getElementById("pub-done").textContent = total;
+    const pct = Math.min(100, Math.round(100 * total / CAMPAIGN_TARGET));
+    document.getElementById("pub-pct").textContent = `(${pct}%)`;
+    document.getElementById("pub-fill").style.width = pct + "%";
+    root.hidden = false;
+  } catch (err) { console.warn("public progress fetch failed", err); }
+}
+
 function initLogin() {
   const form = document.getElementById("login-form");
   if (!form) return;
+  loadPublicProgress();
 
   // If already logged in with a role, refresh role from backend (admin may have changed it),
   // then fast-forward to the right landing.
@@ -384,9 +405,6 @@ async function loadDashboard() {
     const url = `${CFG.APPS_SCRIPT_URL}/?action=progress${user ? `&user=${encodeURIComponent(user)}` : ""}`;
     const res = await fetch(url);
     const data = await res.json();
-    document.getElementById("t-annotators").textContent = data.totals?.annotators ?? 0;
-    document.getElementById("t-today").textContent = data.totals?.today ?? 0;
-    document.getElementById("t-total").textContent = data.totals?.annotations ?? 0;
     renderGrid(data);
     document.getElementById("ann-loading").hidden = true;
     document.getElementById("grid-wrap").hidden = false;
