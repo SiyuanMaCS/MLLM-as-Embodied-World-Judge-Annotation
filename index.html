@@ -6,7 +6,7 @@
 <title>Embodied World Judge — Annotate</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v24">
+<link rel="stylesheet" href="style.css?v=v25">
 </head>
 <body class="landing">
 <main class="landing-main">
@@ -48,25 +48,15 @@
   </section>
 
   <section class="card landing-card landing-register">
-    <h2 class="landing-card-title">Register</h2>
     <form id="login-form">
       <label for="username">Your handle</label>
       <input type="text" id="username" name="username" required minlength="2" maxlength="32"
              pattern="[A-Za-z0-9_\-]+" placeholder="e.g. alice_w"
              autocomplete="off">
-      <small>Letters, digits, underscore, dash. 2–32 chars. 默认 Contributor (20/day),可申请 Author/Reviewer。</small>
+      <small>2–32 chars · letters / digits / _ / -</small>
       <button type="submit" class="landing-cta">开始标注 →</button>
     </form>
     <p id="login-msg" class="msg"></p>
-  </section>
-
-  <section class="card landing-card landing-steps">
-    <h3 class="landing-card-title">What you'll do</h3>
-    <div class="step-grid">
-      <div class="step-card"><span class="step-icon">🎬</span><span class="step-title">Watch</span><span class="step-sub">5–8s generated video</span></div>
-      <div class="step-card"><span class="step-icon">⭐</span><span class="step-title">Score</span><span class="step-sub">Quality + Faithfulness</span></div>
-      <div class="step-card"><span class="step-icon">✅</span><span class="step-title">Submit</span><span class="step-sub">Auto-picks next sample</span></div>
-    </div>
   </section>
 </main>
 
