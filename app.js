@@ -106,7 +106,11 @@ async function initTask() {
   } catch (err) { /* offline — fall through with cached role */ }
   document.getElementById("who").textContent = username;
   const roleEl = document.getElementById("role");
-  if (roleEl) { roleEl.textContent = role; roleEl.dataset.role = role; }
+  if (roleEl) {
+    const shown = displayRole(username, role);
+    roleEl.textContent = shown;
+    roleEl.dataset.role = shown;
+  }
   // logout wired by wireGlobalChrome.
 
   for (const id of ["quality", "faithful"]) {
@@ -309,7 +313,11 @@ async function initDashboard() {
   } catch (_) { /* fall through */ }
   // user-chip + logout wired by wireGlobalChrome on DOMContentLoaded; just set role pill here.
   const roleEl = document.getElementById("role");
-  if (roleEl) { roleEl.textContent = role || "—"; roleEl.dataset.role = role || ""; }
+  if (roleEl) {
+    const shown = displayRole(user, role);
+    roleEl.textContent = shown;
+    roleEl.dataset.role = shown;
+  }
   const isAdmin = user === "masiyuan";
   const isReviewer = role === "reviewer" && !isAdmin;
   // Reveal only the row matching this user's role; others stay hidden.
@@ -937,30 +945,17 @@ async function adminGoldDecision(admin, r, decision, payload, card) {
 async function initGoldLibrary() {
   const form = document.getElementById("gl-filter");
   if (!form) return;
-  // Hook up dual-range sliders: keep min ≤ max as the user drags.
-  const pairs = [
-    {min: "q-min", max: "q-max", minOut: "q-min-val", maxOut: "q-max-val"},
-    {min: "f-min", max: "f-max", minOut: "f-min-val", maxOut: "f-max-val"},
-  ];
+  // Two-select min/max filters per dimension — clamp so min ≤ max.
+  const pairs = [{min: "q-min", max: "q-max"}, {min: "f-min", max: "f-max"}];
   for (const p of pairs) {
     const minEl = document.getElementById(p.min);
     const maxEl = document.getElementById(p.max);
-    const minOut = document.getElementById(p.minOut);
-    const maxOut = document.getElementById(p.maxOut);
-    function sync() {
-      let mn = Number(minEl.value), mx = Number(maxEl.value);
-      if (mn > mx) { mn = mx; minEl.value = mn; }
-      minOut.textContent = mn;
-      maxOut.textContent = mx;
-    }
-    minEl.addEventListener("input", sync);
-    maxEl.addEventListener("input", () => {
-      let mn = Number(minEl.value), mx = Number(maxEl.value);
-      if (mx < mn) { mx = mn; maxEl.value = mx; }
-      minOut.textContent = mn;
-      maxOut.textContent = mx;
+    minEl.addEventListener("change", () => {
+      if (Number(minEl.value) > Number(maxEl.value)) maxEl.value = minEl.value;
     });
-    sync();
+    maxEl.addEventListener("change", () => {
+      if (Number(maxEl.value) < Number(minEl.value)) minEl.value = maxEl.value;
+    });
   }
   form.addEventListener("submit", (e) => { e.preventDefault(); loadGoldLibrary(); });
   await loadGoldLibrary();
@@ -1020,6 +1015,12 @@ async function loadGoldLibrary() {
   }
 }
 
+/* Always display admin pill for masiyuan, regardless of stored role. */
+function displayRole(user, role) {
+  if (user === "masiyuan") return "admin";
+  return role || "—";
+}
+
 /* Generic wiring: any page with #who + #logout-btn gets user-chip + logout behavior. */
 function wireGlobalChrome() {
   const user = localStorage.getItem(CFG.LS_USER);
@@ -1030,8 +1031,9 @@ function wireGlobalChrome() {
   }
   const roleEl = document.getElementById("role");
   if (roleEl && (!roleEl.textContent.trim() || roleEl.textContent.trim() === "—")) {
-    roleEl.textContent = role || "—";
-    if (role) roleEl.dataset.role = role;
+    const shown = displayRole(user, role);
+    roleEl.textContent = shown;
+    roleEl.dataset.role = shown;
   }
   const lo = document.getElementById("logout-btn");
   if (lo) lo.addEventListener("click", () => {
