@@ -38,30 +38,20 @@ function initLogin() {
   if (savedUser) document.getElementById("username").value = savedUser;
 
   const usernameInput = document.getElementById("username");
-  const roleFieldset = form.querySelector("fieldset.role-row");
-  let knownRole = null;  // set if backend confirms existing user
 
-  // On username blur, probe backend for existing role.
+  // On username blur, probe backend; show a "welcome back" or "new user → contributor" hint.
   usernameInput.addEventListener("blur", async () => {
     const u = usernameInput.value.trim();
-    knownRole = null;
-    roleFieldset.classList.remove("known");
     if (!/^[A-Za-z0-9_\-]{2,32}$/.test(u) || !CFG.APPS_SCRIPT_URL) return;
     try {
       const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(u)}`);
       const data = await res.json();
       if (data.role) {
-        knownRole = data.role;
-        const radio = form.querySelector(`input[name="role"][value="${data.role}"]`);
-        if (radio) radio.checked = true;
-        roleFieldset.classList.add("known");
         showLoginMsg(`Welcome back, ${u} (role: ${data.role})`, false);
       } else {
-        showLoginMsg("New annotator — pick a role to register.", false);
+        showLoginMsg("New annotator — you'll be registered as Contributor.", false);
       }
-    } catch (err) {
-      console.warn("user probe failed", err);
-    }
+    } catch (err) { console.warn("user probe failed", err); }
   });
 
   form.addEventListener("submit", async (e) => {
@@ -71,25 +61,27 @@ function initLogin() {
       showLoginMsg("Invalid handle — use 2–32 chars, letters/digits/_/-", true);
       return;
     }
-    const selected = form.querySelector('input[name="role"]:checked');
-    const role = knownRole || (selected && selected.value);
-    if (!role) {
-      showLoginMsg("Pick a role (Author or Contributor).", true);
-      return;
-    }
     try {
-      if (!knownRole && CFG.APPS_SCRIPT_URL) {
-        const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=register&user=${encodeURIComponent(u)}&role=${encodeURIComponent(role)}`);
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error || "register failed");
+      // Probe server for existing role; new users default to contributor.
+      let role = "contributor";
+      if (CFG.APPS_SCRIPT_URL) {
+        const probe = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(u)}`);
+        const probeData = await probe.json();
+        if (probeData?.role) {
+          role = probeData.role;
+        } else {
+          // Register as default contributor.
+          const reg = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=register&user=${encodeURIComponent(u)}&role=contributor`);
+          const regData = await reg.json();
+          if (!regData.ok) throw new Error(regData.error || "register failed");
+        }
       }
       localStorage.setItem(CFG.LS_USER, u);
       localStorage.setItem(CFG.LS_ROLE, role);
-      // Reviewers / admin land on the reviewer hub; regular users go straight to annotation.
       const isReviewer = role === "reviewer" || u === "masiyuan";
-      window.location.href = isReviewer ? "reviewer_home.html" : "task.html";
+      window.location.href = isReviewer ? "reviewer_home.html" : "dashboard.html";
     } catch (err) {
-      showLoginMsg("Register failed: " + err.message, true);
+      showLoginMsg("Login failed: " + err.message, true);
     }
   });
 }
@@ -327,9 +319,23 @@ function showError(text) {
 async function initDashboard() {
   const root = document.getElementById("grid-table");
   if (!root) return;
-  // Role-aware nav: show reviewer/admin links only for those roles.
+  // Top user-chip + role + logout (regular page top bar).
   const user = localStorage.getItem(CFG.LS_USER);
-  const role = localStorage.getItem(CFG.LS_ROLE);
+  let role = localStorage.getItem(CFG.LS_ROLE);
+  // Refresh role from server (admin may have changed).
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(user || "")}`);
+    const d = await r.json();
+    if (d?.role && d.role !== role) { localStorage.setItem(CFG.LS_ROLE, d.role); role = d.role; }
+  } catch (_) { /* fall through */ }
+  if (document.getElementById("who-top")) document.getElementById("who-top").textContent = user || "—";
+  if (document.getElementById("role-top")) document.getElementById("role-top").textContent = role || "—";
+  const logoutTop = document.getElementById("logout-top");
+  if (logoutTop) logoutTop.addEventListener("click", () => {
+    if (!confirm("Log out?")) return;
+    localStorage.removeItem(CFG.LS_USER); localStorage.removeItem(CFG.LS_ROLE);
+    window.location.href = "index.html";
+  });
   const isReviewer = role === "reviewer" || user === "masiyuan";
   const isAdmin = user === "masiyuan";
   document.querySelectorAll(".page-nav .reviewer-only").forEach(a => {
@@ -1015,8 +1021,23 @@ async function loadGoldLibrary() {
   }
 }
 
+/* Generic wiring: any page with #who + #logout-btn gets user-chip + logout behavior. */
+function wireGlobalChrome() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  const whoEl = document.getElementById("who");
+  if (whoEl && !whoEl.textContent.trim().replace("—", "")) whoEl.textContent = user || "—";
+  const lo = document.getElementById("logout-btn");
+  if (lo) lo.addEventListener("click", () => {
+    if (!confirm("Log out?")) return;
+    localStorage.removeItem(CFG.LS_USER);
+    localStorage.removeItem(CFG.LS_ROLE);
+    window.location.href = "index.html";
+  });
+}
+
 /* ---------- entry ---------- */
 document.addEventListener("DOMContentLoaded", () => {
+  wireGlobalChrome();
   if (document.getElementById("login-form")) initLogin();
   if (document.getElementById("annotate-form") && document.getElementById("report-btn")) initTask();
   else if (document.getElementById("annotate-form")) initGold();

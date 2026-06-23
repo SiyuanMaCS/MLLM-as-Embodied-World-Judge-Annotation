@@ -903,6 +903,25 @@ ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
 .rev-btn:hover { background: var(--accent-dark); }
 .muted-small { color: var(--muted); font-size: 12px; }
 
+/* "Start annotating" prominent block on dashboard */
+.start-annotating {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+}
+.big-btn {
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 17px;
+  padding: 14px 24px;
+  border-radius: 10px;
+  display: inline-block;
+}
+.big-btn:hover { background: var(--accent-dark); }
+
 /* met-by-day list (non-admin secondary section) */
 .met-title {
   margin: 0 0 12px;
