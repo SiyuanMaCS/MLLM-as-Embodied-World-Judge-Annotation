@@ -702,27 +702,102 @@ td.net {
 
 ul.my-list { list-style: none; padding: 0; margin: 0; }
 ul.my-list .my-row {
-  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background: #fff;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+ul.my-list .my-row:hover { border-color: var(--accent); }
+ul.my-list .my-row.expanded { box-shadow: 0 2px 10px rgba(60, 90, 200, 0.08); border-color: var(--accent); }
+ul.my-list .my-row.approved { border-left: 4px solid var(--ok); }
+ul.my-list .my-row.modified { border-left: 4px solid #d39c00; }
+ul.my-list .my-row.self-reported { background: #fffaf0; }
+
+.row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.row-decision { font-weight: 600; font-size: 14px; }
+.row-badge { font-size: 11px; padding: 2px 8px; border-radius: 8px; font-weight: 600; }
+.row-badge.gold { background: #fff3a3; color: #8a5500; }
+.row-badge.report { background: #ffe2e2; color: #b00020; }
+.row-meta { font-size: 13px; color: var(--muted); }
+.row-spacer { flex: 1; }
+.row-by, .row-ts { font-size: 12px; }
+.row-chev {
+  font-size: 14px;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+.expanded .row-chev { transform: rotate(180deg); color: var(--accent); }
+
+.row-detail {
+  padding: 0 16px 16px;
+  border-top: 1px dashed var(--border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.row-detail[hidden] { display: none; }
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 28px 1fr;
+  align-items: stretch;
+  gap: 10px;
+}
+.detail-card {
   border: 1px solid var(--border);
   border-radius: 8px;
-  margin-bottom: 10px;
+  padding: 10px 12px;
   background: #fafafd;
 }
-ul.my-list .my-row.approved { border-left: 4px solid var(--ok); }
-ul.my-list .my-row.modified { border-left: 4px solid #d39c00; background: #fff8e7; }
-ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
-.self-flag {
-  background: #fff3a3;
-  color: #8a5500;
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 8px;
-  margin-left: 6px;
+.detail-card h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
 }
-.my-line1 { font-weight: 600; margin-bottom: 4px; }
-.my-line2 { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
-.my-line3 { font-size: 13px; }
-.orig-line { font-size: 12px; color: var(--muted); margin-bottom: 4px; text-decoration: line-through; }
+.detail-card p { margin: 4px 0; font-size: 14px; }
+.detail-card .notes {
+  font-size: 13px;
+  color: var(--text);
+  font-style: italic;
+}
+.detail-card .notes.muted { color: var(--muted); font-style: italic; }
+.detail-final { background: #eef9ef; border-color: #b9e0bd; }
+.detail-final.unchanged { background: #f0f0f5; border-color: var(--border); }
+.detail-final strong.diff { color: #b00020; background: #ffe2e2; padding: 0 4px; border-radius: 4px; }
+.detail-final .notes.diff { background: #fff8db; padding: 4px 6px; border-radius: 4px; }
+.detail-arrow {
+  align-self: center;
+  text-align: center;
+  font-size: 20px;
+  color: var(--muted);
+}
+.detail-video figcaption { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.detail-video video { width: 100%; max-height: 320px; border-radius: 6px; background: #000; }
+.detail-id { font-size: 12px; margin: 0; }
+.detail-id code {
+  background: #f4f5f9;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .detail-grid { grid-template-columns: 1fr; gap: 6px; }
+  .detail-arrow { transform: rotate(90deg); }
+}
 
 .adm-card .modify-panel {
   padding: 12px;
@@ -752,73 +827,38 @@ ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
 }
 .gl-filter button { margin: 0; padding: 6px 16px; font-size: 14px; }
 
-/* Gold library filter — dual-handle range slider */
-.gl-filter {
-  flex-direction: column;
-  align-items: stretch;
+/* Gold library filter — two independent sliders (min, max) per dimension */
+.gl-filter { flex-direction: column; align-items: stretch; gap: 4px; }
+.dim-group {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 14px 12px;
+  margin: 6px 0 0;
 }
-.range-group {
+.dim-legend {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.range-value { font-size: 13px; color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 600; }
+.slider-line {
   display: grid;
-  grid-template-columns: 90px 70px 1fr;
+  grid-template-columns: 38px 1fr 28px;
   align-items: center;
-  gap: 14px;
-  padding: 10px 4px;
+  gap: 12px;
+  padding: 4px 0;
 }
-.range-label { font-size: 14px; color: var(--text); font-weight: 600; }
-.range-value { font-size: 14px; color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 600; }
-.range-dual {
-  position: relative;
-  height: 28px;
-}
-.range-dual .range-track {
-  position: absolute;
-  top: 12px;
-  left: 0; right: 0;
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-}
-.range-dual .range-fill {
-  position: absolute;
-  top: 12px;
-  height: 4px;
-  background: var(--accent);
-  border-radius: 2px;
-  pointer-events: none;
-}
-.range-dual input[type="range"] {
-  position: absolute;
-  top: 0; left: 0;
+.slider-tag { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.slider-val { font-size: 14px; color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+.slider-line input[type="range"] {
   width: 100%;
-  height: 28px;
   margin: 0;
-  pointer-events: none;
-  background: transparent;
-  -webkit-appearance: none;
-  appearance: none;
-}
-.range-dual input[type="range"]:first-of-type { z-index: 3; }   /* min */
-.range-dual input[type="range"]:last-of-type  { z-index: 2; }   /* max — swapped on grab via JS */
-.range-dual input[type="range"]::-webkit-slider-thumb {
-  pointer-events: auto;
-  -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid #fff;
+  height: 22px;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-}
-.range-dual input[type="range"]::-moz-range-thumb {
-  pointer-events: auto;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid #fff;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
 }
 
 .hub-section-title {

@@ -844,27 +844,7 @@ async function initMyReviews() {
       const ul = document.getElementById("my-list");
       ul.innerHTML = "";
       for (const r of list) {
-        const li = document.createElement("li");
-        li.className = "my-row " + (r.decision === "approve" ? "approved" : "modified");
-        if (r.is_report) li.classList.add("self-reported");
-        const reviewer = r.reviewer_label || "Reviewer";
-        const decision = r.decision === "approve" ? "✅ Approved" : "✏ Modified";
-        const flag = r.is_report ? '<span class="self-flag">⚠ self-reported</span>' : '';
-        // Backend fields are r.final (after review) and r.original (annotator's submission).
-        const fin = r.final || r.review_payload || r.payload || {};
-        const orig = r.original || r.original_payload || {};
-        const finalHTML = `Q: ${fin.quality ?? "—"} · F: ${fin.faithful ?? "—"}${fin.notes ? ` · ${escapeHtml(fin.notes)}` : ""}`;
-        const origHTML = (r.decision === "modify")
-          ? `<div class="orig-line">Original — Q: ${orig.quality ?? "—"} · F: ${orig.faithful ?? "—"}${orig.notes ? ` · ${escapeHtml(orig.notes)}` : ""}</div>`
-          : "";
-        const kindBadge = r.kind === "gold" ? '<span class="self-flag" style="background:#fff3a3;color:#8a5500">GOLD</span>' : '';
-        li.innerHTML = `
-          <div class="my-line1">${decision} ${kindBadge} ${flag} <span class="muted">by ${escapeHtml(reviewer)} · ${r.ts || r.created_at || ""}</span></div>
-          <div class="my-line2">Item: <code>${escapeHtml(r.item_id || "")}</code></div>
-          ${origHTML}
-          <div class="my-line3">Final — ${finalHTML}</div>
-        `;
-        ul.appendChild(li);
+        ul.appendChild(renderReviewRow(r));
       }
       ul.hidden = false;
     }
@@ -873,6 +853,64 @@ async function initMyReviews() {
     document.getElementById("my-err-msg").textContent = err.message;
     document.getElementById("my-error").hidden = false;
   }
+}
+
+/* Build one review-history row with a click-to-expand detail panel. */
+function renderReviewRow(r) {
+  const li = document.createElement("li");
+  const isApprove = r.decision === "approve";
+  li.className = "my-row " + (isApprove ? "approved" : "modified");
+  if (r.is_report) li.classList.add("self-reported");
+  const reviewer = r.reviewer_label || "Reviewer";
+  const decisionLbl = isApprove ? "✅ Approved" : "✏ Modified";
+  const kindBadge = r.kind === "gold" ? '<span class="row-badge gold">GOLD</span>' : "";
+  const reportBadge = r.is_report ? '<span class="row-badge report">⚠ self-reported</span>' : "";
+  const ts = r.ts || r.created_at || "";
+  const fin = r.final || r.review_payload || r.payload || {};
+  const orig = r.original || r.original_payload || {};
+  const qChanged = !isApprove && orig.quality != null && fin.quality !== orig.quality;
+  const fChanged = !isApprove && orig.faithful != null && fin.faithful !== orig.faithful;
+  const nChanged = !isApprove && (orig.notes || "") !== (fin.notes || "");
+
+  li.innerHTML = `
+    <header class="row-head">
+      <span class="row-decision">${decisionLbl}</span>
+      ${kindBadge}${reportBadge}
+      <span class="row-meta">${escapeHtml(r.dataset || "?")} · ${escapeHtml(r.task || "?")}</span>
+      <span class="row-spacer"></span>
+      <span class="row-by muted">by ${escapeHtml(reviewer)}</span>
+      <time class="row-ts muted">${escapeHtml(ts)}</time>
+      <span class="row-chev" aria-hidden="true">▾</span>
+    </header>
+    <div class="row-detail" hidden>
+      <div class="detail-grid">
+        <div class="detail-card detail-orig">
+          <h4>Your submission</h4>
+          <p>Quality: <strong>${orig.quality ?? "—"}</strong> · Faithful: <strong>${orig.faithful ?? "—"}</strong></p>
+          ${orig.notes ? `<p class="notes">${escapeHtml(orig.notes)}</p>` : '<p class="notes muted">(no notes)</p>'}
+        </div>
+        <div class="detail-arrow">→</div>
+        <div class="detail-card detail-final ${isApprove ? "unchanged" : ""}">
+          <h4>${isApprove ? "Reviewer (approved as-is)" : "Reviewer (modified)"}</h4>
+          <p>Quality: <strong class="${qChanged ? "diff" : ""}">${fin.quality ?? "—"}</strong> · Faithful: <strong class="${fChanged ? "diff" : ""}">${fin.faithful ?? "—"}</strong></p>
+          ${fin.notes ? `<p class="notes ${nChanged ? "diff" : ""}">${escapeHtml(fin.notes)}</p>` : '<p class="notes muted">(no notes)</p>'}
+        </div>
+      </div>
+      ${r.video_url ? `
+        <figure class="detail-video">
+          <figcaption>Generated video</figcaption>
+          <video controls preload="none" muted playsinline src="${absUrl(r.video_url)}"></video>
+        </figure>` : ""}
+      <p class="detail-id muted">Item: <code>${escapeHtml(r.item_id || "")}</code></p>
+    </div>
+  `;
+  li.querySelector(".row-head").addEventListener("click", () => {
+    const detail = li.querySelector(".row-detail");
+    const open = detail.hasAttribute("hidden");
+    if (open) detail.removeAttribute("hidden"); else detail.setAttribute("hidden", "");
+    li.classList.toggle("expanded", open);
+  });
+  return li;
 }
 
 /* ===================== Admin gold-review queue ===================== */
@@ -954,49 +992,35 @@ async function adminGoldDecision(admin, r, decision, payload, card) {
 async function initGoldLibrary() {
   const form = document.getElementById("gl-filter");
   if (!form) return;
-  setupDualRange("q-min", "q-max", "q-min-val", "q-max-val", "q-fill");
-  setupDualRange("f-min", "f-max", "f-min-val", "f-max-val", "f-fill");
+  setupRangePair("q-min", "q-max", "q-min-val", "q-max-val", "q-min-tail", "q-max-tail");
+  setupRangePair("f-min", "f-max", "f-min-val", "f-max-val", "f-min-tail", "f-max-tail");
   form.addEventListener("submit", (e) => { e.preventDefault(); loadGoldLibrary(); });
   await loadGoldLibrary();
 }
 
-/* Dual-range slider: two stacked <input type=range> with non-blocking thumbs,
-   fill bar between selected min/max, and z-index swap on grab so neither thumb
-   can permanently hide the other. */
-function setupDualRange(minId, maxId, minOutId, maxOutId, fillId) {
+/* Two independent sliders (min, max) for one dimension. Min auto-pushes max up
+   and vice versa so they never cross. Labels update on input. No z-index magic. */
+function setupRangePair(minId, maxId, minHeadId, maxHeadId, minTailId, maxTailId) {
   const minEl = document.getElementById(minId);
   const maxEl = document.getElementById(maxId);
-  const minOut = document.getElementById(minOutId);
-  const maxOut = document.getElementById(maxOutId);
-  const fill = document.getElementById(fillId);
-  const lo = Number(minEl.min), hi = Number(minEl.max);
-  function pct(v) { return ((v - lo) / (hi - lo)) * 100; }
+  const minHead = document.getElementById(minHeadId);
+  const maxHead = document.getElementById(maxHeadId);
+  const minTail = document.getElementById(minTailId);
+  const maxTail = document.getElementById(maxTailId);
   function paint() {
-    const mn = Number(minEl.value), mx = Number(maxEl.value);
-    if (minOut) minOut.textContent = mn;
-    if (maxOut) maxOut.textContent = mx;
-    if (fill) {
-      fill.style.left = pct(mn) + "%";
-      fill.style.right = (100 - pct(mx)) + "%";
-    }
+    const mn = minEl.value, mx = maxEl.value;
+    if (minHead) minHead.textContent = mn;
+    if (maxHead) maxHead.textContent = mx;
+    if (minTail) minTail.textContent = mn;
+    if (maxTail) maxTail.textContent = mx;
   }
   minEl.addEventListener("input", () => {
-    if (Number(minEl.value) > Number(maxEl.value)) minEl.value = maxEl.value;
+    if (Number(minEl.value) > Number(maxEl.value)) maxEl.value = minEl.value;
     paint();
   });
   maxEl.addEventListener("input", () => {
-    if (Number(maxEl.value) < Number(minEl.value)) maxEl.value = minEl.value;
+    if (Number(maxEl.value) < Number(minEl.value)) minEl.value = maxEl.value;
     paint();
-  });
-  // Whichever thumb was last grabbed sits on top — so the user can always pull
-  // the other one out from underneath after touching it.
-  const grab = (top, bottom) => () => {
-    top.style.zIndex = 4;
-    bottom.style.zIndex = 3;
-  };
-  ["mousedown", "touchstart"].forEach(ev => {
-    minEl.addEventListener(ev, grab(minEl, maxEl), { passive: true });
-    maxEl.addEventListener(ev, grab(maxEl, minEl), { passive: true });
   });
   paint();
 }
