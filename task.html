@@ -6,12 +6,12 @@
 <title>Annotate — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v29">
+<link rel="stylesheet" href="style.css?v=v30">
 </head>
 <body>
 <main>
   <header class="bar">
-    <h1>Annotate</h1>
+    <h1 data-i18n="page.annotate">Annotate</h1>
     <div class="user-chip">
       <span id="who">—</span> <span class="role-pill" id="role">—</span>
       <button id="logout-btn" class="link">logout</button>
@@ -19,8 +19,8 @@
   </header>
 
   <nav class="page-nav">
-    <a href="dashboard.html" class="back-link">← Back</a>
-    <span class="nav-stat">today <strong id="today">0</strong>/<strong id="quota">—</strong></span>
+    <a href="dashboard.html" class="back-link" data-i18n="nav.back">← Back</a>
+    <span class="nav-stat"><span data-i18n="task.today">today</span> <strong id="today">0</strong>/<strong id="quota">—</strong></span>
   </nav>
 
   <section id="loading" class="card">
@@ -46,46 +46,47 @@
     </div>
 
     <div class="prompt-box">
-      <label>Task instruction</label>
+      <label data-i18n="task.instruction">Task instruction</label>
       <p id="prompt-text">—</p>
     </div>
 
     <form id="annotate-form">
       <fieldset class="dim-block">
-        <legend class="dim-block-title">Physical Adherence <span class="dim-help">物理真实度 · only judge what you see in the video</span></legend>
+        <legend class="dim-block-title"><span data-i18n="axis.physical">Physical Adherence</span> <span class="dim-help" data-i18n="axis.physical_help">only judge what you see in the video</span></legend>
         <div class="form-row">
-          <label for="physical_adherence">Score (1–5) <output for="physical_adherence" id="physical_adherence-out">3</output></label>
+          <label for="physical_adherence"><span data-i18n="axis.score">Score (1–5)</span> <output for="physical_adherence" id="physical_adherence-out">3</output></label>
           <input type="range" id="physical_adherence" name="physical_adherence" min="1" max="5" step="1" value="3">
         </div>
         <div class="sub-row">
-          <label class="sub-check"><input type="checkbox" id="agent_consistency" name="agent_consistency"> <span>Agent consistency</span><small>机械手/人手结构完整、不融化/扭曲</small></label>
-          <label class="sub-check"><input type="checkbox" id="scene_consistency" name="scene_consistency"> <span>Scene & object consistency</span><small>背景与物体时序一致、不闪烁/瞬移/形变</small></label>
-          <label class="sub-check"><input type="checkbox" id="interaction_realism" name="interaction_realism"> <span>Interaction realism</span><small>抓取真实闭合、无穿模、遵守重力惯性</small></label>
+          <label class="sub-check"><input type="checkbox" id="agent_consistency" name="agent_consistency"> <span data-i18n="sub.agent_consistency">Agent consistency</span><small data-i18n="sub.agent_consistency_hint">机械手/人手结构完整、不融化/扭曲</small></label>
+          <label class="sub-check"><input type="checkbox" id="scene_consistency" name="scene_consistency"> <span data-i18n="sub.scene_consistency">Scene & object consistency</span><small data-i18n="sub.scene_consistency_hint">背景与物体时序一致、不闪烁/瞬移/形变</small></label>
+          <label class="sub-check"><input type="checkbox" id="interaction_realism" name="interaction_realism"> <span data-i18n="sub.interaction_realism">Interaction realism</span><small data-i18n="sub.interaction_realism_hint">抓取真实闭合、无穿模、遵守重力惯性</small></label>
         </div>
       </fieldset>
 
       <fieldset class="dim-block">
-        <legend class="dim-block-title">Instruction Alignment <span class="dim-help">指令对齐 · judge with task instruction + init frame</span></legend>
+        <legend class="dim-block-title"><span data-i18n="axis.instruction">Instruction Alignment</span> <span class="dim-help" data-i18n="axis.instruction_help">judge with task instruction + init frame</span></legend>
         <div class="form-row">
-          <label for="instruction_alignment">Score (1–5) <output for="instruction_alignment" id="instruction_alignment-out">3</output></label>
+          <label for="instruction_alignment"><span data-i18n="axis.score">Score (1–5)</span> <output for="instruction_alignment" id="instruction_alignment-out">3</output></label>
           <input type="range" id="instruction_alignment" name="instruction_alignment" min="1" max="5" step="1" value="3">
         </div>
         <div class="sub-row">
-          <label class="sub-check"><input type="checkbox" id="agent_match" name="agent_match"> <span>Agent match</span><small>完成任务的就是首帧那个机械手/人手</small></label>
-          <label class="sub-check"><input type="checkbox" id="object_correct" name="object_correct"> <span>Object correct</span><small>操纵的 object 是指令指定的</small></label>
-          <label class="sub-check"><input type="checkbox" id="goal_completed" name="goal_completed"> <span>Goal completed</span><small>指令的目标已完整达成</small></label>
+          <label class="sub-check"><input type="checkbox" id="agent_match" name="agent_match"> <span data-i18n="sub.agent_match">Agent match</span><small data-i18n="sub.agent_match_hint">完成任务的就是首帧那个机械手/人手</small></label>
+          <label class="sub-check"><input type="checkbox" id="object_correct" name="object_correct"> <span data-i18n="sub.object_correct">Object correct</span><small data-i18n="sub.object_correct_hint">操纵的 object 是指令指定的</small></label>
+          <label class="sub-check"><input type="checkbox" id="goal_completed" name="goal_completed"> <span data-i18n="sub.goal_completed">Goal completed</span><small data-i18n="sub.goal_completed_hint">指令的目标已完整达成</small></label>
         </div>
       </fieldset>
 
       <div class="form-row">
-        <label for="notes">Notes <span class="required-tag">*</span></label>
+        <label for="notes"><span data-i18n="task.notes">Notes</span> <span class="required-tag" data-i18n="task.required">*</span></label>
         <textarea id="notes" name="notes" rows="3" maxlength="500" required
+                  data-i18n-placeholder="task.notes_placeholder"
                   placeholder="Required — explain your reasoning (what you saw, key violations, key successes)…"></textarea>
       </div>
       <div class="form-row actions">
-        <button type="submit" id="submit-btn">Save &amp; next →</button>
-        <button type="button" id="skip-btn" class="ghost">Skip</button>
-        <button type="button" id="report-btn" class="ghost" title="Send this annotation to a reviewer for second opinion">⚠ Report (uncertain)</button>
+        <button type="submit" id="submit-btn" data-i18n="task.save_next">Save &amp; next →</button>
+        <button type="button" id="skip-btn" class="ghost" data-i18n="task.skip">Skip</button>
+        <button type="button" id="report-btn" class="ghost" data-i18n="task.report" title="Send this annotation to a reviewer for second opinion">⚠ Report (uncertain)</button>
       </div>
     </form>
   </section>

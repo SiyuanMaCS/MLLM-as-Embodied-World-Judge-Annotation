@@ -869,6 +869,22 @@ td.progress-cell {
 }
 #al-next-btn:hover { background: var(--accent-dark, #2a4fc5); }
 
+/* Language toggle button in user-chip */
+.user-chip .lang-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  margin-right: 4px;
+  min-width: 28px;
+  text-align: center;
+}
+.user-chip .lang-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
 /* ===== Landing page (index.html) ===== */
 body.landing {
   background: linear-gradient(180deg, #eef3fb 0%, #ffffff 320px, #ffffff 100%);

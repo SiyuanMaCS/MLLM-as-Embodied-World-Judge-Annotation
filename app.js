@@ -6,7 +6,164 @@ const CFG = {
   LS_USER: "ewj_annotator",
   LS_ROLE: "ewj_role",
   LS_DONE: "ewj_done",
+  LS_LANG: "ewj_lang",
 };
+
+/* ===================== i18n ===================== */
+const LANG = {
+  en: {
+    "nav.back": "← Back",
+    "chip.logout": "logout",
+    "lang.toggle_to": "中",
+    "page.home": "Home",
+    "page.annotate": "Annotate",
+    "page.gold_annotate": "Gold annotation",
+    "page.review": "Review queue",
+    "page.admin_review": "Admin gold review",
+    "page.my_reviews": "My reviews",
+    "page.gold_library": "Gold library",
+    "page.docs": "Annotation Standard",
+    "page.align": "Reviewer alignment",
+    "task.instruction": "Task instruction",
+    "task.notes": "Notes",
+    "task.notes_placeholder": "Required — explain your reasoning (what you saw, key violations, key successes)…",
+    "task.save_next": "Save & next →",
+    "task.skip": "Skip",
+    "task.report": "⚠ Report (uncertain)",
+    "task.required": "*",
+    "task.today": "today",
+    "axis.physical": "Physical Adherence",
+    "axis.physical_help": "only judge what you see in the video",
+    "axis.instruction": "Instruction Alignment",
+    "axis.instruction_help": "judge with task instruction + init frame",
+    "axis.score": "Score (1–5)",
+    "sub.agent_consistency": "Agent consistency",
+    "sub.agent_consistency_hint": "manipulator stays structurally complete; no melting/warping",
+    "sub.scene_consistency": "Scene & object consistency",
+    "sub.scene_consistency_hint": "background & objects stay coherent; no flicker / teleport / morphing",
+    "sub.interaction_realism": "Interaction realism",
+    "sub.interaction_realism_hint": "real grasp & contact; no penetration; obeys gravity/inertia",
+    "sub.agent_match": "Agent match",
+    "sub.agent_match_hint": "the manipulator doing the task is the one from the init frame",
+    "sub.object_correct": "Object correct",
+    "sub.object_correct_hint": "the manipulated object is the instruction's target",
+    "sub.goal_completed": "Goal completed",
+    "sub.goal_completed_hint": "the instructed goal state is fully reached",
+    "review.your_decision": "Your decision",
+    "review.approve": "✅ Approve as-is",
+    "review.modify": "✏ Modify",
+    "review.modify_note": "Modification note",
+    "review.annotator_submission": "Annotator submission (annotator hidden)",
+    "align.title": "Reviewer alignment",
+    "align.progress": "progress",
+    "align.no_campaign": "No active alignment campaign",
+    "align.no_campaign_hint": "An admin must start an alignment task before reviewers can begin.",
+    "align.start_btn": "Start alignment (admin)",
+    "align.start_hint": "Randomly samples 50 items shared across all reviewers + admin.",
+    "align.done_title": "You're done with all 50 ✨",
+    "align.done_hint": "All items annotated. Review others' annotations below or wait for admin finalize.",
+    "align.others_title": "All annotations for this item",
+    "align.finalize_title": "Admin finalize (write to gold)",
+    "align.next_btn": "Next item →",
+    "align.overview_title": "Campaign overview",
+    "align.end_btn": "End campaign",
+    "docs.title": "Annotation Standard",
+    "home.section_home": "Home",
+  },
+  cn: {
+    "nav.back": "← 返回",
+    "chip.logout": "退出",
+    "lang.toggle_to": "EN",
+    "page.home": "首页",
+    "page.annotate": "标注",
+    "page.gold_annotate": "金标标注",
+    "page.review": "审核队列",
+    "page.admin_review": "管理员金标审核",
+    "page.my_reviews": "我的审核记录",
+    "page.gold_library": "金标库",
+    "page.docs": "标注标准",
+    "page.align": "审核员对齐",
+    "task.instruction": "任务指令",
+    "task.notes": "备注",
+    "task.notes_placeholder": "必填 — 简述你的判断依据(看到了什么、关键违反、关键成功)…",
+    "task.save_next": "保存并下一条 →",
+    "task.skip": "跳过",
+    "task.report": "⚠ 上报(不确定)",
+    "task.required": "*",
+    "task.today": "今日",
+    "axis.physical": "物理真实度",
+    "axis.physical_help": "只看视频判断,忽略 instruction",
+    "axis.instruction": "指令对齐",
+    "axis.instruction_help": "用 instruction + 首帧 判断",
+    "axis.score": "评分(1–5)",
+    "sub.agent_consistency": "机械手/人手完整性",
+    "sub.agent_consistency_hint": "结构完整、不融化/扭曲",
+    "sub.scene_consistency": "背景与物体一致性",
+    "sub.scene_consistency_hint": "背景与物体时序一致、不闪烁/瞬移/形变",
+    "sub.interaction_realism": "交互真实性",
+    "sub.interaction_realism_hint": "抓取真实闭合、无穿模、遵守重力惯性",
+    "sub.agent_match": "机械手匹配",
+    "sub.agent_match_hint": "完成任务的就是首帧那个机械手/人手",
+    "sub.object_correct": "物体正确",
+    "sub.object_correct_hint": "操纵的 object 是指令指定的",
+    "sub.goal_completed": "目标达成",
+    "sub.goal_completed_hint": "指令的目标已完整达成",
+    "review.your_decision": "你的决定",
+    "review.approve": "✅ 通过原样",
+    "review.modify": "✏ 修改",
+    "review.modify_note": "修改备注",
+    "review.annotator_submission": "标注者提交(隐名)",
+    "align.title": "审核员对齐",
+    "align.progress": "进度",
+    "align.no_campaign": "暂无活动的对齐任务",
+    "align.no_campaign_hint": "管理员需先发起对齐任务,审核员才能开始。",
+    "align.start_btn": "发起对齐(管理员)",
+    "align.start_hint": "随机抽 50 条,所有审核员 + 管理员共标。",
+    "align.done_title": "你已标完全部 50 条 ✨",
+    "align.done_hint": "全部标完。可在下方查看其他人对各条的标注,等管理员定稿。",
+    "align.others_title": "本条所有标注",
+    "align.finalize_title": "管理员定稿(写入金标)",
+    "align.next_btn": "下一条 →",
+    "align.overview_title": "对齐任务总览",
+    "align.end_btn": "结束对齐",
+    "docs.title": "标注标准",
+    "home.section_home": "首页",
+  },
+};
+
+function getLang() {
+  return localStorage.getItem(CFG.LS_LANG) || "en";
+}
+
+function tr(key) {
+  const lang = getLang();
+  return (LANG[lang] && LANG[lang][key]) || (LANG.en && LANG.en[key]) || key;
+}
+
+function applyI18n(root) {
+  const scope = root || document;
+  scope.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    el.textContent = tr(key);
+  });
+  scope.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    el.setAttribute("placeholder", tr(key));
+  });
+  scope.querySelectorAll("[data-i18n-title]").forEach(el => {
+    const key = el.getAttribute("data-i18n-title");
+    el.setAttribute("title", tr(key));
+  });
+  document.documentElement.lang = getLang();
+  document.body && document.body.classList.toggle("lang-cn", getLang() === "cn");
+}
+
+function setLang(lang) {
+  localStorage.setItem(CFG.LS_LANG, lang);
+  applyI18n();
+  const btn = document.getElementById("lang-btn");
+  if (btn) btn.textContent = tr("lang.toggle_to");
+}
 
 /* ---------- index.html: login + role ---------- */
 const CAMPAIGN_TARGET = 5000;
@@ -253,14 +410,16 @@ function renderItem(it) {
 
 async function fetchPrompt(it) {
   // Original task instruction from gt_data — try instruction.txt first, fall back to prompt.txt.
-  // generated_data path:  data/<ds>/generated_data/<model>/task_X/episode_X/1/<file>.mp4
-  // → gt_data:            data/<ds>/gt_data/task_X/episode_X/prompt/{instruction.txt|prompt.txt}
+  // When lang=cn, try instruction_cn.txt first; if missing (HF not yet pushed), fall back to English.
   const base = it.video_url && it.video_url.replace(
     /generated_data\/[^\/]+\/(task_\d+)\/(episode_\d+)\/1\/[^\/]+\.mp4$/,
     "gt_data/$1/$2/prompt"
   );
   if (!base) { document.getElementById("prompt-text").textContent = "(no prompt)"; return; }
-  for (const fname of ["instruction.txt", "prompt.txt"]) {
+  const filenames = getLang() === "cn"
+    ? ["instruction_cn.txt", "instruction.txt", "prompt.txt"]
+    : ["instruction.txt", "prompt.txt"];
+  for (const fname of filenames) {
     try {
       const res = await fetch(`${base}/${fname}`);
       if (!res.ok) continue;
@@ -1259,7 +1418,7 @@ function renderRoleGate(requirement) {
   main.appendChild(card);
 }
 
-/* Generic wiring: any page with #who + #logout-btn gets user-chip + logout behavior. */
+/* Generic wiring: any page with #who + #logout-btn gets user-chip + logout behavior + lang toggle. */
 function wireGlobalChrome() {
   const user = localStorage.getItem(CFG.LS_USER);
   const role = localStorage.getItem(CFG.LS_ROLE);
@@ -1273,13 +1432,33 @@ function wireGlobalChrome() {
     roleEl.textContent = shown;
     roleEl.dataset.role = shown;
   }
+  // Inject lang toggle next to logout if missing.
+  const chip = document.querySelector(".user-chip");
+  if (chip && !document.getElementById("lang-btn")) {
+    const btn = document.createElement("button");
+    btn.id = "lang-btn";
+    btn.className = "link lang-btn";
+    btn.title = "切换语言 / Toggle language";
+    btn.textContent = tr("lang.toggle_to");
+    btn.addEventListener("click", () => {
+      const next = getLang() === "en" ? "cn" : "en";
+      setLang(next);
+    });
+    const lo = chip.querySelector("#logout-btn");
+    if (lo) chip.insertBefore(btn, lo); else chip.appendChild(btn);
+  }
   const lo = document.getElementById("logout-btn");
-  if (lo) lo.addEventListener("click", () => {
-    if (!confirm("Log out?")) return;
-    localStorage.removeItem(CFG.LS_USER);
-    localStorage.removeItem(CFG.LS_ROLE);
-    window.location.href = "index.html";
-  });
+  if (lo) {
+    lo.addEventListener("click", () => {
+      if (!confirm(getLang() === "cn" ? "退出登录?" : "Log out?")) return;
+      localStorage.removeItem(CFG.LS_USER);
+      localStorage.removeItem(CFG.LS_ROLE);
+      window.location.href = "index.html";
+    });
+    // i18n logout text if it's currently the default "logout".
+    if (lo.textContent.trim() === "logout") lo.textContent = tr("chip.logout");
+  }
+  applyI18n();
 }
 
 /* ---------- entry ---------- */
