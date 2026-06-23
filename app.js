@@ -13,12 +13,26 @@ function initLogin() {
   const form = document.getElementById("login-form");
   if (!form) return;
 
-  // If already logged in with a role, fast-forward to the right landing.
+  // If already logged in with a role, refresh role from backend (admin may have changed it),
+  // then fast-forward to the right landing.
   const savedUser = localStorage.getItem(CFG.LS_USER);
   const savedRole = localStorage.getItem(CFG.LS_ROLE);
   if (savedUser && savedRole) {
-    const isReviewer = savedRole === "reviewer" || savedUser === "masiyuan";
-    window.location.href = isReviewer ? "reviewer_home.html" : "task.html";
+    fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(savedUser)}`)
+      .then(r => r.json())
+      .then(d => {
+        const realRole = d?.role || savedRole;
+        if (realRole !== savedRole) {
+          console.log("role updated from server", savedRole, "→", realRole);
+          localStorage.setItem(CFG.LS_ROLE, realRole);
+        }
+        const isReviewer = realRole === "reviewer" || savedUser === "masiyuan";
+        window.location.href = isReviewer ? "reviewer_home.html" : "task.html";
+      })
+      .catch(() => {
+        const isReviewer = savedRole === "reviewer" || savedUser === "masiyuan";
+        window.location.href = isReviewer ? "reviewer_home.html" : "task.html";
+      });
     return;
   }
   if (savedUser) document.getElementById("username").value = savedUser;
@@ -92,8 +106,22 @@ let CURRENT = null;
 
 async function initTask() {
   const username = localStorage.getItem(CFG.LS_USER);
-  const role = localStorage.getItem(CFG.LS_ROLE);
+  let role = localStorage.getItem(CFG.LS_ROLE);
   if (!username || !role) { window.location.href = "index.html"; return; }
+  // Refresh role from server (admin may have changed it).
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(username)}`);
+    const d = await r.json();
+    if (d?.role && d.role !== role) {
+      localStorage.setItem(CFG.LS_ROLE, d.role);
+      role = d.role;
+      // Reviewer/admin shouldn't be on regular task page → redirect to hub.
+      if (role === "reviewer" || username === "masiyuan") {
+        window.location.href = "reviewer_home.html";
+        return;
+      }
+    }
+  } catch (err) { /* offline — fall through with cached role */ }
   document.getElementById("who").textContent = username;
   const roleEl = document.getElementById("role");
   if (roleEl) { roleEl.textContent = role; roleEl.dataset.role = role; }
@@ -914,6 +942,31 @@ async function adminGoldDecision(admin, r, decision, payload, card) {
 async function initGoldLibrary() {
   const form = document.getElementById("gl-filter");
   if (!form) return;
+  // Hook up dual-range sliders: keep min ≤ max as the user drags.
+  const pairs = [
+    {min: "q-min", max: "q-max", minOut: "q-min-val", maxOut: "q-max-val"},
+    {min: "f-min", max: "f-max", minOut: "f-min-val", maxOut: "f-max-val"},
+  ];
+  for (const p of pairs) {
+    const minEl = document.getElementById(p.min);
+    const maxEl = document.getElementById(p.max);
+    const minOut = document.getElementById(p.minOut);
+    const maxOut = document.getElementById(p.maxOut);
+    function sync() {
+      let mn = Number(minEl.value), mx = Number(maxEl.value);
+      if (mn > mx) { mn = mx; minEl.value = mn; }
+      minOut.textContent = mn;
+      maxOut.textContent = mx;
+    }
+    minEl.addEventListener("input", sync);
+    maxEl.addEventListener("input", () => {
+      let mn = Number(minEl.value), mx = Number(maxEl.value);
+      if (mx < mn) { mx = mn; maxEl.value = mx; }
+      minOut.textContent = mn;
+      maxOut.textContent = mx;
+    });
+    sync();
+  }
   form.addEventListener("submit", (e) => { e.preventDefault(); loadGoldLibrary(); });
   await loadGoldLibrary();
 }
@@ -922,16 +975,17 @@ async function loadGoldLibrary() {
   hide("gl-empty"); hide("gl-error");
   document.getElementById("gl-loading").hidden = false;
   document.getElementById("gl-list").innerHTML = "";
-  const qMin = document.getElementById("q-min").value;
-  const fMin = document.getElementById("f-min").value;
-  const qMax = document.getElementById("q-max").value;
-  const fMax = document.getElementById("f-max").value;
+  const qMin = Number(document.getElementById("q-min").value);
+  const fMin = Number(document.getElementById("f-min").value);
+  const qMax = Number(document.getElementById("q-max").value);
+  const fMax = Number(document.getElementById("f-max").value);
   const qs = new URLSearchParams();
   qs.set("action", "gold_library");
-  if (qMin) qs.set("quality_min", qMin);
-  if (fMin) qs.set("faithful_min", fMin);
-  if (qMax) qs.set("quality_max", qMax);
-  if (fMax) qs.set("faithful_max", fMax);
+  // Only send filter params when narrower than the full 1–5 range (to keep URLs clean).
+  if (qMin > 1) qs.set("quality_min", qMin);
+  if (qMax < 5) qs.set("quality_max", qMax);
+  if (fMin > 1) qs.set("faithful_min", fMin);
+  if (fMax < 5) qs.set("faithful_max", fMax);
   try {
     const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?${qs.toString()}`);
     const data = await res.json();
@@ -971,19 +1025,33 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("adm-list")) initAdminReview();
   if (document.getElementById("gl-filter")) initGoldLibrary();
   if (document.getElementById("grid-table")) initDashboard();
-  if (document.getElementById("admin-review-card")) initReviewerHub();
+  if (document.getElementById("reviewer-section")) initReviewerHub();
 });
 
-function initReviewerHub() {
+async function initReviewerHub() {
   const user = localStorage.getItem(CFG.LS_USER);
-  const role = localStorage.getItem(CFG.LS_ROLE);
+  let role = localStorage.getItem(CFG.LS_ROLE);
   if (!user) { window.location.href = "index.html"; return; }
+  // Refresh role from server (admin may have demoted/promoted).
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    if (d?.role && d.role !== role) {
+      localStorage.setItem(CFG.LS_ROLE, d.role);
+      role = d.role;
+    }
+    // If user is no longer reviewer/admin, redirect to regular task page.
+    if (role !== "reviewer" && user !== "masiyuan") {
+      window.location.href = "task.html";
+      return;
+    }
+  } catch (err) { /* offline — fall through */ }
   document.getElementById("who").textContent = user;
   document.getElementById("role").textContent = role || "—";
-  // Show admin-only card if masiyuan.
-  if (user === "masiyuan") {
-    document.getElementById("admin-review-card").hidden = false;
-  }
+  const adm = document.getElementById("admin-section");
+  if (adm && user === "masiyuan") adm.hidden = false;
+  // Hide reviewer section if user is admin only (masiyuan is auto-reviewer too, so keep visible).
+  // For non-reviewer/non-admin we'd never get here (redirected above).
   document.getElementById("logout-btn").addEventListener("click", () => {
     if (!confirm("Log out?")) return;
     localStorage.removeItem(CFG.LS_USER);

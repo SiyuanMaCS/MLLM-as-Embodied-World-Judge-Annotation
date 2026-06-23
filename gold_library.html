@@ -17,12 +17,26 @@
 
   <section class="card">
     <form id="gl-filter" class="gl-filter">
-      <label>Quality ≥ <select id="q-min"><option value="">any</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
-      <label>Faithful ≥ <select id="f-min"><option value="">any</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
-      <label>Quality ≤ <select id="q-max"><option value="">any</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
-      <label>Faithful ≤ <select id="f-max"><option value="">any</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
-      <button type="submit">Search</button>
-      <span class="muted" id="gl-count">—</span>
+      <div class="range-group">
+        <label class="range-label">Quality range:</label>
+        <span class="range-value"><strong id="q-min-val">1</strong> – <strong id="q-max-val">5</strong></span>
+        <div class="range-dual">
+          <input type="range" id="q-min" min="1" max="5" step="1" value="1" class="r-min">
+          <input type="range" id="q-max" min="1" max="5" step="1" value="5" class="r-max">
+        </div>
+      </div>
+      <div class="range-group">
+        <label class="range-label">Faithful range:</label>
+        <span class="range-value"><strong id="f-min-val">1</strong> – <strong id="f-max-val">5</strong></span>
+        <div class="range-dual">
+          <input type="range" id="f-min" min="1" max="5" step="1" value="1" class="r-min">
+          <input type="range" id="f-max" min="1" max="5" step="1" value="5" class="r-max">
+        </div>
+      </div>
+      <div class="range-action">
+        <button type="submit">Search</button>
+        <span class="muted" id="gl-count">—</span>
+      </div>
     </form>
   </section>
 

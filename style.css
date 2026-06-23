@@ -747,6 +747,85 @@ ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
   border-radius: 6px;
 }
 .gl-filter button { margin: 0; padding: 6px 16px; font-size: 14px; }
+
+/* Range slider (dual-handle) */
+.gl-filter {
+  flex-direction: column;
+  align-items: stretch;
+}
+.range-group {
+  display: grid;
+  grid-template-columns: 110px 90px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.range-group:last-of-type { border-bottom: 0; }
+.range-label { font-size: 14px; color: var(--text); font-weight: 600; }
+.range-value { font-size: 14px; color: var(--accent-dark); font-variant-numeric: tabular-nums; }
+.range-value strong { color: var(--accent-dark); }
+.range-dual {
+  position: relative;
+  height: 30px;
+}
+.range-dual input[type="range"] {
+  position: absolute;
+  width: 100%;
+  top: 8px;
+  margin: 0;
+  pointer-events: none;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.range-dual input[type="range"]::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.range-dual input[type="range"]::-moz-range-thumb {
+  pointer-events: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.range-dual::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: 0; right: 0;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+}
+.range-action {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-top: 14px;
+}
+
+.hub-section-title {
+  margin: 0 0 14px;
+  font-size: 16px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
 .gl-card .gl-scores { font-size: 15px; margin: 8px 0 4px; }
 
 .nav-list { font-size: 14px; }
