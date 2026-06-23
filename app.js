@@ -400,9 +400,9 @@ function renderGrid(data) {
   const days = data.days || [];
   const isAdmin = !!data.is_admin;
   const annotators = (data.annotators || []).slice().sort((a, b) => {
-    const aNet = a.net ?? 0, bNet = b.net ?? 0;
-    if (bNet !== aNet) return bNet - aNet;
-    return (b.total ?? 0) - (a.total ?? 0);
+    const aPct = a.total_pct ?? -1, bPct = b.total_pct ?? -1;
+    if (bPct !== aPct) return bPct - aPct;
+    return (b.total_done ?? b.total ?? 0) - (a.total_done ?? a.total ?? 0);
   });
 
   // Hide the "met-by-day" auxiliary block when admin; only show for non-admin.
@@ -439,7 +439,7 @@ function renderGrid(data) {
   tbody.innerHTML = "";
   tfoot.innerHTML = "";
 
-  // Header row: "..." (sliding window indicator) | day1 | day2 | ... | Today | Net
+  // Header row: "..." (sliding window) | day1 ... today | Progress
   const trHead = document.createElement("tr");
   const thSliding = document.createElement("th");
   thSliding.className = "sliding";
@@ -453,10 +453,10 @@ function renderGrid(data) {
     th.textContent = formatDayLabel(days[i], i === days.length - 1);
     trHead.appendChild(th);
   }
-  const thNet = document.createElement("th");
-  thNet.className = "net-col-head";
-  thNet.textContent = "Net";
-  trHead.appendChild(thNet);
+  const thProgress = document.createElement("th");
+  thProgress.className = "progress-col-head";
+  thProgress.textContent = "Progress";
+  trHead.appendChild(thProgress);
   thead.appendChild(trHead);
 
   // Data rows: one per annotator (full list for admin; only self for non-admin)
@@ -505,7 +505,7 @@ function renderGrid(data) {
       });
     }
 
-    // Day cells
+    // Day cells (color + count only; no +/- delta)
     for (let i = 0; i < days.length; i++) {
       const cell = (a.week || [])[i];
       const td = document.createElement("td");
@@ -516,36 +516,29 @@ function renderGrid(data) {
       if (state === "none") {
         td.classList.add("zero");
         td.textContent = showNumbers && cell.count === 0 ? "·" : "";
-      } else if (state === "met") {
-        td.classList.add("met");
-        if (showNumbers) {
-          const sign = cell.delta >= 0 ? "+" : "";
-          td.innerHTML = `<span class="cell-count">${cell.count}</span><span class="cell-delta">${sign}${cell.delta}</span>`;
-        }
       } else {
-        td.classList.add("miss");
-        if (showNumbers) {
-          const sign = cell.delta >= 0 ? "+" : "";
-          td.innerHTML = `<span class="cell-count">${cell.count}</span><span class="cell-delta">${sign}${cell.delta}</span>`;
-        }
+        td.classList.add(state === "met" ? "met" : "miss");
+        if (showNumbers) td.innerHTML = `<span class="cell-count">${cell.count}</span>`;
       }
-      if (cell && showNumbers) td.title = `${cell.date}: ${cell.count}/${a.quota ?? "?"} (delta ${cell.delta >= 0 ? "+" : ""}${cell.delta})`;
+      if (cell && showNumbers) td.title = `${cell.date}: ${cell.count}/${a.quota ?? "?"}`;
       tr.appendChild(td);
     }
 
-    // Net cell at end of row
-    const tdNet = document.createElement("td");
-    tdNet.className = "net";
-    const showNet = isAdmin || a.is_self;
-    if (!showNet || a.net == null) {
-      tdNet.innerHTML = `<span class="muted">·</span>`;
+    // Progress cell at end of row: done/target (pct%)
+    const tdProgress = document.createElement("td");
+    tdProgress.className = "progress-cell";
+    const showProgress = isAdmin || a.is_self;
+    const done = a.total_done, target = a.total_target, pct = a.total_pct;
+    if (!showProgress || done == null || target == null) {
+      tdProgress.innerHTML = `<span class="muted">·</span>`;
     } else {
-      const net = a.net;
-      if (net > 0) tdNet.innerHTML = `<span class="ok-text">+${net}</span>`;
-      else if (net < 0) tdNet.innerHTML = `<span class="warn-text">−${Math.abs(net)}</span>`;
-      else tdNet.innerHTML = `<span class="muted">0</span>`;
+      tdProgress.innerHTML = `
+        <div class="progress-cell-wrap">
+          <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100, pct ?? 0)}%"></div></div>
+          <span class="progress-text">${done}/${target}<span class="muted"> (${pct ?? 0}%)</span></span>
+        </div>`;
     }
-    tr.appendChild(tdNet);
+    tr.appendChild(tdProgress);
 
     tbody.appendChild(tr);
   }
@@ -560,25 +553,21 @@ function formatDayLabel(iso, isToday) {
 function renderSelfSummary(root, me) {
   const today = me.today ?? 0;
   const quota = me.quota ?? 0;
-  const net = me.net ?? 0;
   const met = quota > 0 && today >= quota;
   const remaining = Math.max(0, quota - today);
-  const netHTML = net > 0
-    ? `<span class="ok-text">+${net}</span>`
-    : (net < 0 ? `<span class="warn-text">−${Math.abs(net)}</span>` : `<span class="muted">0</span>`);
+  const done = me.total_done ?? me.total ?? 0;
+  const target = me.total_target ?? 0;
+  const pct = me.total_pct ?? (target > 0 ? Math.round(100 * done / target) : 0);
   root.innerHTML = `
     <div class="self-summary-row">
       <div class="self-stat ${met ? 'ok' : 'warn'}">
         <span class="self-num">${today}<span class="self-of">/${quota}</span></span>
         <span class="self-label">Today (${me.role ?? "—"})</span>
       </div>
-      <div class="self-stat">
-        <span class="self-num">${me.total ?? 0}</span>
-        <span class="self-label">Total annotations</span>
-      </div>
-      <div class="self-stat">
-        <span class="self-num">${netHTML}</span>
-        <span class="self-label">Cumulative net</span>
+      <div class="self-stat self-progress">
+        <span class="self-num">${done}<span class="self-of">/${target}</span> <span class="self-pct">(${pct}%)</span></span>
+        <span class="self-label">Total progress (14-day target)</span>
+        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100, pct)}%"></div></div>
       </div>
       <div class="self-msg">
         ${met
