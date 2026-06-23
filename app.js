@@ -65,6 +65,16 @@ const LANG = {
     "gold_library.search": "Search",
     "gold_library.no_match": "No matching items.",
     "docs.intro_title": "Embodied World-Model Video Evaluation",
+    "toast.notes_required": "Notes are required — please explain your reasoning.",
+    "toast.modify_note_required": "Modification note is required.",
+    "toast.finalize_note_required": "Finalize note is required.",
+    "toast.save_failed": "Save failed",
+    "toast.submit_failed": "Submit failed",
+    "toast.finalize_success": "Finalized — written to gold (source=alignment).",
+    "toast.finalize_failed": "Finalize failed",
+    "toast.align_start_failed": "Failed to start alignment",
+    "toast.align_end_failed": "Failed to end alignment",
+    "toast.align_locked": "This item is still locked — submit yours first to unlock.",
     "page.home": "Home",
     "page.annotate": "Annotate",
     "page.gold_annotate": "Gold annotation",
@@ -174,6 +184,16 @@ const LANG = {
     "gold_library.search": "搜索",
     "gold_library.no_match": "没有匹配的金标。",
     "docs.intro_title": "具身世界模型视频评测",
+    "toast.notes_required": "备注必填 — 请说明你的判断依据。",
+    "toast.modify_note_required": "修改备注必填。",
+    "toast.finalize_note_required": "定稿备注必填。",
+    "toast.save_failed": "保存失败",
+    "toast.submit_failed": "提交失败",
+    "toast.finalize_success": "已定稿 — 写入金标(source=alignment)。",
+    "toast.finalize_failed": "定稿失败",
+    "toast.align_start_failed": "发起对齐失败",
+    "toast.align_end_failed": "结束对齐失败",
+    "toast.align_locked": "本条仍处于锁定 — 先标完自己的再查看他人。",
     "page.home": "首页",
     "page.annotate": "标注",
     "page.gold_annotate": "金标标注",
@@ -269,6 +289,26 @@ function setLang(lang) {
   applyI18n();
   const btn = document.getElementById("lang-btn");
   if (btn) btn.textContent = tr("lang.toggle_to");
+}
+
+/* Toast — non-blocking notification (replaces noisy alert()). */
+function toast(msg, type) {
+  let host = document.getElementById("toast-host");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "toast-host";
+    document.body.appendChild(host);
+  }
+  const t = document.createElement("div");
+  t.className = "toast toast-" + (type || "info");
+  t.textContent = msg;
+  host.appendChild(t);
+  requestAnimationFrame(() => t.classList.add("show"));
+  const ms = (type === "err") ? 5000 : 3500;
+  setTimeout(() => {
+    t.classList.remove("show");
+    setTimeout(() => t.remove(), 280);
+  }, ms);
 }
 
 /* Video load fallback — retry with cache-buster, then show inline placeholder
@@ -601,7 +641,7 @@ async function onSubmit(skip) {
   const payload = { skip };
   if (!skip) {
     const notes = document.getElementById("notes").value.trim();
-    if (!notes) { alert("Notes are required — please explain your reasoning."); return; }
+    if (!notes) { toast(tr("toast.notes_required"), "err"); return; }
     payload.physical_adherence = Number(document.getElementById("physical_adherence").value);
     payload.instruction_alignment = Number(document.getElementById("instruction_alignment").value);
     for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
@@ -1076,7 +1116,7 @@ async function submitGold(skip) {
   const payload = { skip };
   if (!skip) {
     const notes = document.getElementById("notes").value.trim();
-    if (!notes) { alert("Notes are required — please explain your reasoning."); return; }
+    if (!notes) { toast(tr("toast.notes_required"), "err"); return; }
     payload.physical_adherence = Number(document.getElementById("physical_adherence").value);
     payload.instruction_alignment = Number(document.getElementById("instruction_alignment").value);
     for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
@@ -1199,7 +1239,7 @@ async function submitReview(decision) {
   let payload = REVIEW_CURRENT.annotation || REVIEW_CURRENT.annotation_payload || {};
   if (decision === "modify") {
     const notes = document.getElementById("m-notes").value.trim();
-    if (!notes) { alert("Modification note is required."); return; }
+    if (!notes) { toast(tr("toast.modify_note_required"), "err"); return; }
     payload = {
       physical_adherence: Number(document.getElementById("m-physical_adherence").value),
       instruction_alignment: Number(document.getElementById("m-instruction_alignment").value),
@@ -1682,7 +1722,7 @@ async function initAlign() {
       const d = await r.json();
       if (d?.ok === false) throw new Error(d.error || "start failed");
       await loadAlignStatus();
-    } catch (err) { alert("Failed to start: " + err.message); }
+    } catch (err) { toast(tr("toast.align_start_failed") + ": " + err.message, "err"); }
   });
   document.getElementById("al-end-btn").addEventListener("click", async () => {
     if (!confirm("End the current alignment campaign? All finalized items already in gold remain.")) return;
@@ -1694,7 +1734,7 @@ async function initAlign() {
       const d = await r.json();
       if (d?.ok === false) throw new Error(d.error || "end failed");
       await loadAlignStatus();
-    } catch (err) { alert("Failed to end: " + err.message); }
+    } catch (err) { toast(tr("toast.align_end_failed") + ": " + err.message, "err"); }
   });
 
   await loadAlignStatus();
@@ -1779,7 +1819,7 @@ async function submitAlign() {
   if (!ALIGN_CURRENT) return;
   const user = localStorage.getItem(CFG.LS_USER);
   const notes = document.getElementById("al-notes").value.trim();
-  if (!notes) { alert("Notes are required."); return; }
+  if (!notes) { toast(tr("toast.notes_required"), "err"); return; }
   const payload = {
     physical_adherence: Number(document.getElementById("al-physical_adherence").value),
     instruction_alignment: Number(document.getElementById("al-instruction_alignment").value),
@@ -1800,7 +1840,7 @@ async function submitAlign() {
     // Refresh status (my_done++ / admin overview refresh)
     await refreshAlignStatusOnly();
   } catch (err) {
-    alert("Submit failed: " + err.message);
+    toast(tr("toast.submit_failed") + ": " + err.message, "err");
   }
 }
 
@@ -1826,14 +1866,14 @@ async function showAlignOthers(item_id) {
     const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_item&user=${encodeURIComponent(user)}&item_id=${encodeURIComponent(item_id)}`);
     const d = await r.json();
     if (d.locked) {
-      alert("This item is still locked — submit yours first to unlock.");
+      toast(tr("toast.align_locked"), "err");
       return;
     }
     document.getElementById("al-item").hidden = true;
     document.getElementById("al-others").hidden = false;
     renderAlignOthers(d);
   } catch (err) {
-    alert("Failed to load others' annotations: " + err.message);
+    toast("Failed to load others' annotations: " + err.message, "err");
   }
 }
 
@@ -1945,7 +1985,7 @@ function renderFinalizeForm(d) {
 async function submitAlignFinalize(item_id) {
   const admin = localStorage.getItem(CFG.LS_USER);
   const notes = document.getElementById("f-notes").value.trim();
-  if (!notes) { alert("Finalize note is required."); return; }
+  if (!notes) { toast(tr("toast.finalize_note_required"), "err"); return; }
   const payload = {
     physical_adherence: Number(document.getElementById("f-physical_adherence").value),
     instruction_alignment: Number(document.getElementById("f-instruction_alignment").value),
@@ -1961,17 +2001,23 @@ async function submitAlignFinalize(item_id) {
     });
     const d = await r.json();
     if (d?.ok === false) throw new Error(d.error || "finalize failed");
-    alert("Finalized → gold (source=alignment).");
+    toast(tr("toast.finalize_success"), "ok");
     await refreshAlignStatusOnly();
   } catch (err) {
-    alert("Finalize failed: " + err.message);
+    toast(tr("toast.finalize_failed") + ": " + err.message, "err");
   }
 }
 
 function renderAdminOverview(items) {
   const root = document.getElementById("al-admin-list");
   root.innerHTML = "";
-  for (const it of items) {
+  // Sort: unfinalized first (admin needs to act); within each group, more annotations first (ready to finalize).
+  const sorted = items.slice().sort((a, b) => {
+    const fa = a.finalized ? 1 : 0, fb = b.finalized ? 1 : 0;
+    if (fa !== fb) return fa - fb;
+    return (b.n_annotations ?? 0) - (a.n_annotations ?? 0);
+  });
+  for (const it of sorted) {
     const li = document.createElement("li");
     li.className = "al-admin-row" + (it.finalized ? " finalized" : "");
     li.innerHTML = `
