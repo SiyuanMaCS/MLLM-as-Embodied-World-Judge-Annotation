@@ -1021,8 +1021,16 @@ async function loadGoldLibrary() {
 /* Generic wiring: any page with #who + #logout-btn gets user-chip + logout behavior. */
 function wireGlobalChrome() {
   const user = localStorage.getItem(CFG.LS_USER);
+  const role = localStorage.getItem(CFG.LS_ROLE);
   const whoEl = document.getElementById("who");
-  if (whoEl && !whoEl.textContent.trim().replace("—", "")) whoEl.textContent = user || "—";
+  if (whoEl && (!whoEl.textContent.trim() || whoEl.textContent.trim() === "—")) {
+    whoEl.textContent = user || "—";
+  }
+  const roleEl = document.getElementById("role");
+  if (roleEl && (!roleEl.textContent.trim() || roleEl.textContent.trim() === "—")) {
+    roleEl.textContent = role || "—";
+    if (role) roleEl.dataset.role = role;
+  }
   const lo = document.getElementById("logout-btn");
   if (lo) lo.addEventListener("click", () => {
     if (!confirm("Log out?")) return;
