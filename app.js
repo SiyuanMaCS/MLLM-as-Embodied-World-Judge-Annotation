@@ -26,13 +26,9 @@ function initLogin() {
           console.log("role updated from server", savedRole, "→", realRole);
           localStorage.setItem(CFG.LS_ROLE, realRole);
         }
-        const isReviewer = realRole === "reviewer" || savedUser === "masiyuan";
-        window.location.href = isReviewer ? "reviewer_home.html" : "task.html";
+        window.location.href = "dashboard.html";
       })
-      .catch(() => {
-        const isReviewer = savedRole === "reviewer" || savedUser === "masiyuan";
-        window.location.href = isReviewer ? "reviewer_home.html" : "task.html";
-      });
+      .catch(() => { window.location.href = "dashboard.html"; });
     return;
   }
   if (savedUser) document.getElementById("username").value = savedUser;
@@ -78,8 +74,7 @@ function initLogin() {
       }
       localStorage.setItem(CFG.LS_USER, u);
       localStorage.setItem(CFG.LS_ROLE, role);
-      const isReviewer = role === "reviewer" || u === "masiyuan";
-      window.location.href = isReviewer ? "reviewer_home.html" : "dashboard.html";
+      window.location.href = "dashboard.html";
     } catch (err) {
       showLoginMsg("Login failed: " + err.message, true);
     }
@@ -107,30 +102,12 @@ async function initTask() {
     if (d?.role && d.role !== role) {
       localStorage.setItem(CFG.LS_ROLE, d.role);
       role = d.role;
-      // Reviewer/admin shouldn't be on regular task page → redirect to hub.
-      if (role === "reviewer" || username === "masiyuan") {
-        window.location.href = "reviewer_home.html";
-        return;
-      }
     }
   } catch (err) { /* offline — fall through with cached role */ }
   document.getElementById("who").textContent = username;
   const roleEl = document.getElementById("role");
   if (roleEl) { roleEl.textContent = role; roleEl.dataset.role = role; }
-  // Reveal reviewer nav links if reviewer/admin (replaces old big yellow banner).
-  if (role === "reviewer" || username === "masiyuan") {
-    const rn = document.getElementById("nav-review");
-    const gn = document.getElementById("nav-gold-annotate");
-    if (rn) rn.hidden = false;
-    if (gn) gn.hidden = false;
-  }
-
-  document.getElementById("logout-btn").addEventListener("click", () => {
-    if (!confirm("Log out? Your handle/role stays registered on the server.")) return;
-    localStorage.removeItem(CFG.LS_USER);
-    localStorage.removeItem(CFG.LS_ROLE);
-    window.location.href = "index.html";
-  });
+  // logout wired by wireGlobalChrome.
 
   for (const id of ["quality", "faithful"]) {
     const input = document.getElementById(id);
@@ -333,10 +310,15 @@ async function initDashboard() {
   // user-chip + logout wired by wireGlobalChrome on DOMContentLoaded; just set role pill here.
   const roleEl = document.getElementById("role");
   if (roleEl) { roleEl.textContent = role || "—"; roleEl.dataset.role = role || ""; }
-  const isReviewer = role === "reviewer" || user === "masiyuan";
   const isAdmin = user === "masiyuan";
+  const isReviewer = role === "reviewer" && !isAdmin;
+  // Reveal only the row matching this user's role; others stay hidden.
+  const rowKey = isAdmin ? "admin" : (isReviewer ? "reviewer" : "annotator");
+  document.querySelectorAll(".home-actions .action-row").forEach(r => {
+    r.hidden = r.dataset.row !== rowKey;
+  });
   document.querySelectorAll(".page-nav .reviewer-only").forEach(a => {
-    if (!isReviewer) a.style.display = "none";
+    if (rowKey !== "reviewer") a.style.display = "none";
   });
   document.querySelectorAll(".page-nav .admin-only").forEach(a => {
     if (!isAdmin) a.style.display = "none";
@@ -809,13 +791,23 @@ async function initMyReviews() {
   const user = localStorage.getItem(CFG.LS_USER);
   if (!user) { window.location.href = "index.html"; return; }
   document.getElementById("who").textContent = user;
+  // Optional ?kind=gold filter — shows only gold-meta-reviewed entries.
+  const kindFilter = new URLSearchParams(window.location.search).get("kind");
+  if (kindFilter === "gold") {
+    const h1 = document.querySelector("header.bar h1");
+    if (h1) h1.textContent = "Gold reviewed";
+  }
   try {
     const [revRes, statsRes] = await Promise.all([
-      fetch(`${CFG.APPS_SCRIPT_URL}/?action=my_reviews&user=${encodeURIComponent(user)}`),
-      fetch(`${CFG.APPS_SCRIPT_URL}/?action=review_stats&user=${encodeURIComponent(user)}`),
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=my_reviews&user=${encodeURIComponent(user)}${kindFilter ? `&kind=${encodeURIComponent(kindFilter)}` : ""}`),
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=review_stats&user=${encodeURIComponent(user)}${kindFilter ? `&kind=${encodeURIComponent(kindFilter)}` : ""}`),
     ]);
     const data = await revRes.json();
     const stats = await statsRes.json();
+    // Client-side fallback filter when backend doesn't honor &kind.
+    if (kindFilter === "gold" && Array.isArray(data.reviews)) {
+      data.reviews = data.reviews.filter(r => r.kind === "gold");
+    }
     document.getElementById("my-loading").hidden = true;
     // Summary
     const reviewed = stats?.reviewed ?? (data.reviews ?? []).length;
@@ -984,6 +976,9 @@ async function loadGoldLibrary() {
   const fMax = Number(document.getElementById("f-max").value);
   const qs = new URLSearchParams();
   qs.set("action", "gold_library");
+  // Pass viewer so backend can gate finalizer/reviewer fields by role.
+  const viewer = localStorage.getItem(CFG.LS_USER);
+  if (viewer) qs.set("user", viewer);
   // Only send filter params when narrower than the full 1–5 range (to keep URLs clean).
   if (qMin > 1) qs.set("quality_min", qMin);
   if (qMax < 5) qs.set("quality_max", qMax);
@@ -1003,8 +998,15 @@ async function loadGoldLibrary() {
       card.className = "card gl-card";
       // Backend returns final scores at `item.final` (not `item.payload`).
       const p = it.final || it.payload || {};
+      // confirmed_by / reviewer only returned to reviewer/admin viewers (backend gated).
+      const finalizerTag = it.confirmed_by
+        ? `<span class="tag" title="Finalized by">✓ ${escapeHtml(it.confirmed_by)}</span>`
+        : "";
+      const reviewerTag = it.reviewer && it.reviewer !== it.confirmed_by
+        ? `<span class="tag" title="Original annotator">✎ ${escapeHtml(it.reviewer)}</span>`
+        : "";
       card.innerHTML = `
-        <div class="meta"><span class="tag gold-tag">GOLD</span><span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${it.confirmed_by ? `<span class="tag">by ${escapeHtml(it.confirmed_by)}</span>` : ""}</div>
+        <div class="meta"><span class="tag gold-tag">GOLD</span><span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${finalizerTag}${reviewerTag}</div>
         <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline src="${absUrl(it.video_url || "")}"></video></figure></div>
         <p class="gl-scores">Quality: <strong>${p.quality ?? "—"}</strong> · Faithful: <strong>${p.faithful ?? "—"}</strong></p>
         <p class="muted">${escapeHtml(p.notes || "")}</p>

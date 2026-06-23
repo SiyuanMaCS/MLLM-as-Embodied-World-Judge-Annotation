@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Gold Review — Embodied World Judge</title>
+<title>Docs — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="style.css">
@@ -11,7 +11,7 @@
 <body>
 <main>
   <header class="bar">
-    <h1>Admin gold review</h1>
+    <h1>Docs</h1>
     <div class="user-chip">
       <span id="who">—</span> <span class="role-pill" id="role">—</span>
       <button id="logout-btn" class="link">logout</button>
@@ -19,14 +19,18 @@
   </header>
   <nav class="page-nav">
     <a href="dashboard.html">Home</a>
-    <a href="gold_library.html">Gold library</a>
   </nav>
 
-  <section id="adm-loading" class="card"><p>Loading queue…</p></section>
-  <section id="adm-empty" class="card" hidden><p>Queue empty — no pending reviewer gold annotations 🎉</p></section>
-  <section id="adm-error" class="card error" hidden><h3>Failed</h3><p id="adm-err-msg">—</p></section>
-
-  <div id="adm-list"></div>
+  <section class="card">
+    <h3>Annotation guide</h3>
+    <p class="muted">(placeholder — full annotation guide coming soon)</p>
+    <ul>
+      <li><strong>Quality (1–5):</strong> overall visual quality of the generated video.</li>
+      <li><strong>Faithfulness (1–5):</strong> how well the video follows the task instruction.</li>
+      <li><strong>Skip</strong> if the sample is broken or you can't judge.</li>
+      <li><strong>Report</strong> if uncertain — sends to a reviewer for second opinion.</li>
+    </ul>
+  </section>
 </main>
 <script src="app.js" defer></script>
 </body>

@@ -988,3 +988,35 @@ ul.my-list .my-row.self-reported { outline: 1px dashed #d39c00; }
   #ann-table th, #ann-table td { padding: 8px 8px; font-size: 13px; }
   .progress-bar { width: 80px; }
 }
+
+/* Home action rows — one row per role */
+.home-actions { margin: 12px 0 18px; }
+.action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.action-card {
+  flex: 1 1 160px;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+  background: #fafafd;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 12px;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s, transform 0.08s;
+}
+.action-card:hover { border-color: var(--accent); background: #fff; transform: translateY(-1px); }
+.action-card.primary { background: #eef2fb; border-color: var(--accent); }
+.action-card.primary:hover { background: #dbe5fb; }
+.action-card[hidden] { display: none !important; }
+.action-row[hidden] { display: none !important; }
+@media (max-width: 640px) {
+  .action-card { flex: 1 1 45%; min-height: 56px; padding: 12px 10px; font-size: 14px; }
+}
