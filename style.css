@@ -874,28 +874,41 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
   -webkit-appearance: none;
   appearance: none;
 }
-.range-dual input[type="range"]:first-of-type { z-index: 4; }
-.range-dual input[type="range"]:last-of-type { z-index: 3; }
+.range-dual input[type="range"]:first-of-type { z-index: 4; transform: translateZ(0); }
+.range-dual input[type="range"]:last-of-type { z-index: 3; transform: translateZ(0); }
 .range-dual input[type="range"]::-webkit-slider-thumb {
   pointer-events: auto;
   -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--accent);
   border: 2px solid #fff;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  position: relative;
+  z-index: 5;
 }
 .range-dual input[type="range"]::-moz-range-thumb {
   pointer-events: auto;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--accent);
   border: 2px solid #fff;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  z-index: 5;
+}
+.range-dual input[type="range"]::-webkit-slider-runnable-track {
+  background: transparent;
+  border: none;
+  height: 4px;
+}
+.range-dual input[type="range"]::-moz-range-track {
+  background: transparent;
+  border: none;
+  height: 4px;
 }
 .filter-foot {
   padding-top: 4px;
@@ -1122,16 +1135,16 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
 .action-row[hidden] { display: none !important; }
 .ac-badge {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
+  top: -10px;
+  right: -10px;
+  min-width: 26px;
+  height: 26px;
+  padding: 2px 8px 3px;
   background: #e53935;
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  border-radius: 11px;
+  border-radius: 13px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   border: 2px solid #fff;
   z-index: 2;
@@ -1140,6 +1153,10 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
   justify-content: center;
   box-sizing: border-box;
   line-height: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: visible;
 }
 .ac-badge[hidden] { display: none; }
 @media (max-width: 640px) {
