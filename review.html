@@ -6,7 +6,7 @@
 <title>Review Queue — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v31">
+<link rel="stylesheet" href="style.css?v=v32">
 </head>
 <body>
 <main>
@@ -21,7 +21,7 @@
     <a href="dashboard.html" class="back-link" data-i18n="nav.back">← Back</a>
   </nav>
 
-  <section id="loading" class="card"><p>Loading next review task…</p></section>
+  <section id="loading" class="card"><p data-i18n="review.loading_next">Loading next review task…</p></section>
 
   <section id="item" class="card" hidden>
     <div class="meta">
@@ -34,20 +34,20 @@
     <div class="video-row">
       <figure><figcaption>Generated</figcaption><video id="gen-video" controls preload="metadata" muted playsinline></video></figure>
     </div>
-    <div class="prompt-box"><label>Task instruction</label><p id="prompt-text">—</p></div>
+    <div class="prompt-box"><label data-i18n="task.instruction">Task instruction</label><p id="prompt-text">—</p></div>
 
     <div class="prompt-box">
-      <label>Annotator submission (annotator hidden)</label>
+      <label data-i18n="review.annotator_submission">Annotator submission (annotator hidden)</label>
       <p>Physical: <strong id="orig-physical_adherence">—</strong> · Instruction: <strong id="orig-instruction_alignment">—</strong></p>
       <p class="muted small">P-subs: <span id="orig-psubs">—</span> · I-subs: <span id="orig-isubs">—</span></p>
       <p>Notes: <em id="orig-notes">—</em></p>
     </div>
 
     <form id="review-form">
-      <h3>Your decision</h3>
+      <h3 data-i18n="review.your_decision">Your decision</h3>
       <div id="modify-fields" hidden>
         <fieldset class="dim-block">
-          <legend class="dim-block-title">Physical Adherence</legend>
+          <legend class="dim-block-title" data-i18n="axis.physical">Physical Adherence</legend>
           <div class="form-row">
             <label for="m-physical_adherence">Score (1–5) <output for="m-physical_adherence" id="m-physical_adherence-out">3</output></label>
             <input type="range" id="m-physical_adherence" min="1" max="5" step="1" value="3">
@@ -60,7 +60,7 @@
         </fieldset>
 
         <fieldset class="dim-block">
-          <legend class="dim-block-title">Instruction Alignment</legend>
+          <legend class="dim-block-title" data-i18n="axis.instruction">Instruction Alignment</legend>
           <div class="form-row">
             <label for="m-instruction_alignment">Score (1–5) <output for="m-instruction_alignment" id="m-instruction_alignment-out">3</output></label>
             <input type="range" id="m-instruction_alignment" min="1" max="5" step="1" value="3">
@@ -73,19 +73,19 @@
         </fieldset>
 
         <div class="form-row">
-          <label for="m-notes">Modification note <span class="required-tag">*</span></label>
-          <textarea id="m-notes" rows="2" maxlength="500" required placeholder="Required — why you changed it"></textarea>
+          <label for="m-notes"><span data-i18n="review.modify_note">Modification note</span> <span class="required-tag" data-i18n="task.required">*</span></label>
+          <textarea id="m-notes" rows="2" maxlength="500" required data-i18n-placeholder="review.modify_note_placeholder" placeholder="Required — why you changed it"></textarea>
         </div>
       </div>
       <div class="form-row actions">
-        <button type="button" id="approve-btn">✅ Approve as-is</button>
-        <button type="button" id="modify-btn" class="ghost">✏ Modify</button>
-        <button type="button" id="skip-btn" class="ghost">Skip</button>
+        <button type="button" id="approve-btn" data-i18n="review.approve">✅ Approve as-is</button>
+        <button type="button" id="modify-btn" class="ghost" data-i18n="review.modify">✏ Modify</button>
+        <button type="button" id="skip-btn" class="ghost" data-i18n="task.skip">Skip</button>
       </div>
     </form>
   </section>
 
-  <section id="error" class="card error" hidden><h3>Notice</h3><p id="error-msg">—</p><button id="retry-btn">Retry</button></section>
+  <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
 <script src="app.js" defer></script>
 </body>

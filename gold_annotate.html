@@ -6,7 +6,7 @@
 <title>Gold Annotation — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v31">
+<link rel="stylesheet" href="style.css?v=v32">
 </head>
 <body>
 <main>
@@ -21,7 +21,7 @@
     <a href="dashboard.html" class="back-link" data-i18n="nav.back">← Back</a>
   </nav>
 
-  <section id="loading" class="card"><p>Loading next gold item…</p></section>
+  <section id="loading" class="card"><p data-i18n="gold.loading_next">Loading next gold item…</p></section>
 
   <section id="item" class="card" hidden>
     <div class="meta"><span class="tag gold-tag">GOLD</span><span class="tag" id="meta-dataset">—</span><span class="tag" id="meta-task">—</span></div>
@@ -29,7 +29,7 @@
       <figure><figcaption>Generated</figcaption><video id="gen-video" controls preload="metadata" muted playsinline></video></figure>
       <figure id="gt-fig" hidden><figcaption>Ground truth</figcaption><video id="gt-video" controls preload="metadata" muted playsinline></video></figure>
     </div>
-    <div class="prompt-box"><label>Task instruction</label><p id="prompt-text">—</p></div>
+    <div class="prompt-box"><label data-i18n="task.instruction">Task instruction</label><p id="prompt-text">—</p></div>
     <form id="annotate-form">
       <fieldset class="dim-block">
         <legend class="dim-block-title">Physical Adherence <span class="dim-help">物理真实度 · only judge what you see in the video</span></legend>
@@ -63,13 +63,13 @@
                   placeholder="Required — explain your reasoning…"></textarea>
       </div>
       <div class="form-row actions">
-        <button type="submit">Save &amp; next →</button>
-        <button type="button" id="skip-btn" class="ghost">Skip</button>
+        <button type="submit" data-i18n="task.save_next">Save &amp; next →</button>
+        <button type="button" id="skip-btn" class="ghost" data-i18n="task.skip">Skip</button>
       </div>
     </form>
   </section>
 
-  <section id="error" class="card error" hidden><h3>Notice</h3><p id="error-msg">—</p><button id="retry-btn">Retry</button></section>
+  <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
 <script src="app.js" defer></script>
 </body>

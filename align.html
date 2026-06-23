@@ -6,7 +6,7 @@
 <title>Reviewer Alignment — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v31">
+<link rel="stylesheet" href="style.css?v=v32">
 </head>
 <body>
 <main>
@@ -23,20 +23,20 @@
     <span class="nav-stat" id="al-byline" hidden>by <strong id="al-by">—</strong></span>
   </nav>
 
-  <section id="al-loading" class="card"><p>Loading alignment status…</p></section>
+  <section id="al-loading" class="card"><p data-i18n="align.loading_status">Loading alignment status…</p></section>
 
   <section id="al-nocampaign" class="card" hidden>
-    <h3>No active alignment campaign</h3>
-    <p class="muted">An admin must start an alignment task before reviewers can begin.</p>
+    <h3 data-i18n="align.no_campaign">No active alignment campaign</h3>
+    <p class="muted" data-i18n="align.no_campaign_hint">An admin must start an alignment task before reviewers can begin.</p>
     <div id="al-start-block" class="form-row actions" hidden>
-      <button type="button" id="al-start-btn">Start alignment (admin)</button>
-      <span class="muted small">Randomly samples 50 items shared across all reviewers + admin.</span>
+      <button type="button" id="al-start-btn" data-i18n="align.start_btn">Start alignment (admin)</button>
+      <span class="muted small" data-i18n="align.start_hint">Randomly samples 50 items shared across all reviewers + admin.</span>
     </div>
   </section>
 
   <section id="al-done-msg" class="card" hidden>
-    <h3>You're done with all 50 ✨</h3>
-    <p class="muted">All items annotated. Review others' annotations below or wait for admin finalize.</p>
+    <h3 data-i18n="align.done_title">You're done with all 50 ✨</h3>
+    <p class="muted" data-i18n="align.done_hint">All items annotated. Review others' annotations below or wait for admin finalize.</p>
   </section>
 
   <section id="al-item" class="card" hidden>
@@ -48,7 +48,7 @@
     <div class="video-row">
       <figure><figcaption>Generated</figcaption><video id="al-video" controls preload="metadata" muted playsinline></video></figure>
     </div>
-    <div class="prompt-box"><label>Task instruction</label><p id="al-prompt">—</p></div>
+    <div class="prompt-box"><label data-i18n="task.instruction">Task instruction</label><p id="al-prompt">—</p></div>
 
     <form id="al-form">
       <fieldset class="dim-block">
@@ -82,17 +82,17 @@
         <textarea id="al-notes" rows="3" maxlength="500" required placeholder="Required — explain your reasoning"></textarea>
       </div>
       <div class="form-row actions">
-        <button type="submit">Save &amp; next →</button>
+        <button type="submit" data-i18n="task.save_next">Save &amp; next →</button>
       </div>
     </form>
   </section>
 
   <!-- After own submission, side-by-side view of all annotators on this item -->
   <section id="al-others" class="card" hidden>
-    <h3>All annotations for this item</h3>
+    <h3 data-i18n="align.others_title">All annotations for this item</h3>
     <div id="al-others-grid" class="align-others-grid"></div>
     <div id="al-admin-finalize" hidden>
-      <h4 class="finalize-title">Admin finalize (write to gold)</h4>
+      <h4 class="finalize-title" data-i18n="align.finalize_title">Admin finalize (write to gold)</h4>
       <div id="al-finalize-form-wrap"></div>
     </div>
   </section>
@@ -100,11 +100,11 @@
   <!-- Admin: overview of campaign (50 items + finalize state) -->
   <section id="al-admin-overview" class="card" hidden>
     <h3>Campaign overview <span class="muted" id="al-final-count">0 finalized / 50</span></h3>
-    <p class="muted small">Click any item to view all annotations + finalize into gold (source=alignment). <button type="button" id="al-end-btn" class="ghost">End campaign</button></p>
+    <p class="muted small">Click any item to view all annotations + finalize into gold (source=alignment). <button type="button" id="al-end-btn" class="ghost" data-i18n="align.end_btn">End campaign</button></p>
     <ul id="al-admin-list" class="al-admin-list"></ul>
   </section>
 
-  <section id="al-error" class="card error" hidden><h3>Notice</h3><p id="al-err-msg">—</p><button id="al-retry">Retry</button></section>
+  <section id="al-error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="al-err-msg">—</p><button id="al-retry" data-i18n="common.retry">Retry</button></section>
 </main>
 <script src="app.js" defer></script>
 </body>
