@@ -15,6 +15,31 @@ const LANG = {
     "nav.back": "← Back",
     "chip.logout": "logout",
     "lang.toggle_to": "中",
+    "role.author": "AUTHOR",
+    "role.contributor": "CONTRIBUTOR",
+    "role.reviewer": "REVIEWER",
+    "role.admin": "ADMIN",
+    "home.card.annotate.title": "Annotate",
+    "home.card.annotate.sub": "Score generated videos",
+    "home.card.my_reviewed.title": "My reviewed",
+    "home.card.my_reviewed.sub": "Audit feedback on your work",
+    "home.card.gold_library.title": "Gold library",
+    "home.card.gold_library.sub": "Finalized references",
+    "home.card.docs.title": "Docs",
+    "home.card.docs.sub": "Annotation guide",
+    "home.card.review.title": "Review",
+    "home.card.review.sub": "Audit annotator queue",
+    "home.card.gold_annotation.title": "Gold annotation",
+    "home.card.gold_annotation.sub": "Your 50-item set",
+    "home.card.gold_reviewed.title": "Gold reviewed",
+    "home.card.gold_reviewed.sub": "Admin audits of you",
+    "home.card.alignment.title": "Alignment",
+    "home.card.alignment.sub": "Shared 50-item alignment task",
+    "home.card.alignment_admin.sub": "Start / manage reviewer alignment",
+    "home.card.gold_review.title": "Gold review",
+    "home.card.gold_review.sub": "Approve reviewer gold",
+    "home.card.gold_direct.title": "Gold (direct)",
+    "home.card.gold_direct.sub": "No-audit fast path",
     "page.home": "Home",
     "page.annotate": "Annotate",
     "page.gold_annotate": "Gold annotation",
@@ -74,6 +99,31 @@ const LANG = {
     "nav.back": "← 返回",
     "chip.logout": "退出",
     "lang.toggle_to": "EN",
+    "role.author": "作者",
+    "role.contributor": "标注员",
+    "role.reviewer": "审核员",
+    "role.admin": "管理员",
+    "home.card.annotate.title": "标注",
+    "home.card.annotate.sub": "对生成视频打分",
+    "home.card.my_reviewed.title": "我的被审核",
+    "home.card.my_reviewed.sub": "查看审核员对你工作的反馈",
+    "home.card.gold_library.title": "金标库",
+    "home.card.gold_library.sub": "已定稿的金标参考",
+    "home.card.docs.title": "标注文档",
+    "home.card.docs.sub": "标注指南",
+    "home.card.review.title": "审核",
+    "home.card.review.sub": "审核标注员队列",
+    "home.card.gold_annotation.title": "金标标注",
+    "home.card.gold_annotation.sub": "你的 50 条金标集",
+    "home.card.gold_reviewed.title": "金标被审核",
+    "home.card.gold_reviewed.sub": "管理员对你金标的审核",
+    "home.card.alignment.title": "对齐任务",
+    "home.card.alignment.sub": "全员共享的 50 条对齐任务",
+    "home.card.alignment_admin.sub": "发起 / 管理审核员对齐",
+    "home.card.gold_review.title": "金标审核",
+    "home.card.gold_review.sub": "审核审核员金标",
+    "home.card.gold_direct.title": "金标(直接)",
+    "home.card.gold_direct.sub": "免审快路径",
     "page.home": "首页",
     "page.annotate": "标注",
     "page.gold_annotate": "金标标注",
@@ -153,6 +203,12 @@ function applyI18n(root) {
   scope.querySelectorAll("[data-i18n-title]").forEach(el => {
     const key = el.getAttribute("data-i18n-title");
     el.setAttribute("title", tr(key));
+  });
+  // Re-translate any role pill whose data-role attribute is set.
+  scope.querySelectorAll(".role-pill[data-role]").forEach(el => {
+    const role = el.dataset.role;
+    if (!role || role === "—") return;
+    el.textContent = tr("role." + role);
   });
   document.documentElement.lang = getLang();
   document.body && document.body.classList.toggle("lang-cn", getLang() === "cn");
