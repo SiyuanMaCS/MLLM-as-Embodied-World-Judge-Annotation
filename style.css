@@ -594,7 +594,6 @@ select.role-select {
   background: #fff;
   color: var(--text);
   cursor: pointer;
-  text-transform: lowercase;
 }
 select.role-select:disabled { opacity: 0.6; cursor: wait; }
 
