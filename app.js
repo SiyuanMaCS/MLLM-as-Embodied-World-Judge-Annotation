@@ -872,7 +872,13 @@ async function loadDashboard() {
 function renderGrid(data) {
   const days = data.days || [];
   const isAdmin = !!data.is_admin;
+  // Sort by role rank (admin → reviewer → author → contributor), then total_pct desc, then done desc.
+  const roleRank = { admin: 0, reviewer: 1, contributor: 2, author: 3 };
   const annotators = (data.annotators || []).slice().sort((a, b) => {
+    const aRole = (a.user === "masiyuan") ? "admin" : (a.role || "contributor");
+    const bRole = (b.user === "masiyuan") ? "admin" : (b.role || "contributor");
+    const rDiff = (roleRank[aRole] ?? 99) - (roleRank[bRole] ?? 99);
+    if (rDiff !== 0) return rDiff;
     const aPct = a.total_pct ?? -1, bPct = b.total_pct ?? -1;
     if (bPct !== aPct) return bPct - aPct;
     return (b.total_done ?? b.total ?? 0) - (a.total_done ?? a.total ?? 0);
@@ -942,12 +948,12 @@ function renderGrid(data) {
     tdUser.className = "user-cell";
     const isMaSiyuan = a.user === "masiyuan";
     const roleControl = isAdmin && !isMaSiyuan
-      ? `<select class="role-select" data-target="${escapeHtml(a.user)}">
-           <option value="author"${a.role === "author" ? " selected" : ""}>author</option>
-           <option value="contributor"${a.role === "contributor" ? " selected" : ""}>contributor</option>
-           <option value="reviewer"${a.role === "reviewer" ? " selected" : ""}>reviewer</option>
+      ? `<select class="role-select" data-role="${escapeHtml(a.role || '')}" data-target="${escapeHtml(a.user)}">
+           <option value="author"${a.role === "author" ? " selected" : ""}>Author</option>
+           <option value="contributor"${a.role === "contributor" ? " selected" : ""}>Contributor</option>
+           <option value="reviewer"${a.role === "reviewer" ? " selected" : ""}>Reviewer</option>
          </select>`
-      : (a.role ? `<span class="role-pill" data-role="${a.role}">${a.role}</span>` : "");
+      : (a.role ? `<span class="role-pill" data-role="${a.role}">${capitalizeFirst(a.role)}</span>` : "");
     const quotaHTML = isAdmin
       ? `<span class="quota-label">${a.quota ?? "—"}/day</span>`
       : "";
@@ -957,7 +963,7 @@ function renderGrid(data) {
     tdUser.innerHTML = `
       <div class="user-head">
         <span class="user-name">${escapeHtml(a.user)}</span>
-        ${isMaSiyuan ? '<span class="role-pill" data-role="admin">admin</span>' : ''}
+        ${isMaSiyuan ? '<span class="role-pill" data-role="admin">Admin</span>' : ''}
         ${roleControl}
         ${quotaHTML}
         ${streakHTML}
@@ -1686,6 +1692,11 @@ function displayRole(user, role) {
   return role || "—";
 }
 
+function capitalizeFirst(s) {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 /* Friendly role-gate panel for users without permission on a given page.
    Hides all main sections and shows a single explanatory card with a Home link. */
 function renderRoleGate(requirement) {
@@ -1861,7 +1872,7 @@ function renderCustomUserList() {
       <label>
         <input type="checkbox" class="al-custom-cb" value="${escapeHtml(u.user)}" data-role="${escapeHtml(u.role || '')}">
         <strong>${escapeHtml(u.user)}</strong>
-        <span class="role-pill" data-role="${escapeHtml(u.role || '')}">${escapeHtml(u.role || '—')}</span>
+        <span class="role-pill" data-role="${escapeHtml(u.role || '')}">${escapeHtml(capitalizeFirst(u.role) || '—')}</span>
       </label>`;
     root.appendChild(li);
   }

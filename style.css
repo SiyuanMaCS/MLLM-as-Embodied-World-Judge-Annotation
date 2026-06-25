@@ -403,10 +403,24 @@ fieldset.role-row.known .role-opt:has(input:checked) {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.role-pill[data-role="author"] { background: #fdecea; color: #b00020; }
-.role-pill[data-role="contributor"] { background: #e8f0fd; color: var(--accent-dark); }
-.role-pill[data-role="reviewer"] { background: #f3e8fd; color: #5b21b6; }
-.role-pill[data-role="admin"] { background: #fff3a3; color: #8a5500; }
+.role-pill[data-role="author"] { background: #fdecea; color: #b00020; border: 1px solid #f4b8b4; }
+.role-pill[data-role="contributor"] { background: #e8f0fd; color: var(--accent-dark); border: 1px solid #b9cdf3; }
+.role-pill[data-role="reviewer"] { background: #f3e8fd; color: #5b21b6; border: 1px solid #d8c0f5; }
+.role-pill[data-role="admin"] { background: #fff3a3; color: #8a5500; border: 1px solid #f4d76a; }
+
+/* role-select dropdown shares the same color coding as role-pill */
+.role-select {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+.role-select[data-role="author"] { background: #fdecea; color: #b00020; border-color: #f4b8b4; }
+.role-select[data-role="contributor"] { background: #e8f0fd; color: var(--accent-dark); border-color: #b9cdf3; }
+.role-select[data-role="reviewer"] { background: #f3e8fd; color: #5b21b6; border-color: #d8c0f5; }
+.role-select[data-role="admin"] { background: #fff3a3; color: #8a5500; border-color: #f4d76a; }
 
 /* ---------- quota progress in task chip ---------- */
 .quota-block {
