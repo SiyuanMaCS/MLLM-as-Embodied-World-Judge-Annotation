@@ -1106,12 +1106,38 @@ function renderSelfSummary(root, me) {
           : `<span class="warn-text">还差 <strong>${remaining}</strong> 条</span>`}
       </div>
     </div>
+    ${renderEarningsCard(me)}
     <div class="total-progress">
       <div class="total-progress-head">
-        <span class="total-label">总进度 (14 天目标)</span>
+        <span class="total-label">总进度 (21 天目标)</span>
         <span class="total-num">${done}<span class="muted">/${target}</span> <span class="self-pct">(${pct}%)</span></span>
       </div>
       <div class="progress-bar total-bar"><div class="progress-fill" style="width:${Math.min(100, pct)}%"></div></div>
+    </div>
+  `;
+}
+
+/* Contributor earnings card (only renders if pay_rate set — i.e. contributor role).
+   Shows 💰 大字累计金额 + 今日新增 + 上限进度条 (warm gold/green). */
+function renderEarningsCard(me) {
+  if (!me || me.pay_rate == null) return "";
+  const earned = Number(me.earned ?? 0);
+  const earnTarget = Number(me.earn_target ?? 0);
+  const earnedToday = Number(me.earned_today ?? 0);
+  const pct = earnTarget > 0 ? Math.min(100, Math.round(100 * earned / earnTarget)) : 0;
+  const rate = Number(me.pay_rate ?? 1);
+  const fmt = (n) => "¥" + (Number.isInteger(n) ? n.toString() : n.toFixed(2));
+  return `
+    <div class="earnings-card">
+      <div class="earnings-head">
+        <span class="earnings-icon">💰</span>
+        <div class="earnings-meta">
+          <div class="earnings-label">已挣(本期累计 · ¥${rate}/条)</div>
+          <div class="earnings-amount"><strong>${fmt(earned)}</strong><span class="earnings-of"> / ${fmt(earnTarget)}</span></div>
+        </div>
+        ${earnedToday > 0 ? `<div class="earnings-today">+${fmt(earnedToday)} 今日</div>` : ""}
+      </div>
+      <div class="progress-bar earnings-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
     </div>
   `;
 }

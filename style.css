@@ -696,6 +696,61 @@ td.progress-cell {
 .self-pct { font-size: 14px; color: var(--accent); font-weight: 600; }
 .progress-col-head { background: #fff; color: var(--text); }
 
+/* v55 Contributor earnings card — warm gold/green, prominent */
+.earnings-card {
+  margin: 12px 0;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff7d6 0%, #ffe9a3 100%);
+  border: 1px solid #f4d76a;
+  box-shadow: 0 2px 10px rgba(220, 170, 30, 0.12);
+}
+.earnings-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.earnings-icon {
+  font-size: 36px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+}
+.earnings-meta { flex: 1; min-width: 0; }
+.earnings-label {
+  font-size: 12px;
+  color: #8a5500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+.earnings-amount {
+  font-size: 28px;
+  font-weight: 800;
+  color: #8a4600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  margin-top: 2px;
+}
+.earnings-amount strong { color: #b87200; font-size: 32px; }
+.earnings-of { font-size: 18px; color: #8a5500; font-weight: 600; }
+.earnings-today {
+  background: rgba(255,255,255,0.7);
+  color: #1e7a1e;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+.earnings-bar {
+  height: 8px;
+  margin-top: 12px;
+  background: rgba(255,255,255,0.6);
+}
+.earnings-bar .progress-fill {
+  background: linear-gradient(90deg, #f4c443 0%, #4caf91 100%);
+}
+
 /* BaiCiZhan-style today hero card + streak + total progress */
 .today-hero {
   padding: 18px 20px;
