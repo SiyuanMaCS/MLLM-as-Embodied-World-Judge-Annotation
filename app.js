@@ -56,6 +56,27 @@ const LANG = {
     "review.notes_label": "Notes",
     "align.loading_status": "Loading alignment status…",
     "align.queue_empty": "Queue empty — no pending reviewer gold annotations 🎉",
+    "align.your_campaigns": "Your alignment campaigns",
+    "align.no_campaigns_mine": "You are not currently enrolled in any active alignment campaign.",
+    "align.start_form_title": "Start a new alignment campaign",
+    "align.name_label": "Campaign name",
+    "align.audience_label": "Participants",
+    "align.aud_reviewers": "Reviewers + Admin",
+    "align.aud_all": "All users",
+    "align.aud_custom": "Custom selection",
+    "align.custom_label": "Select users (admin always included)",
+    "align.start_submit": "Start campaign",
+    "align.start_cancel": "Cancel",
+    "align.back_to_picker": "↩ Back to campaigns",
+    "align.select_btn": "Enter",
+    "align.audience_tag.reviewers": "Reviewers + Admin",
+    "align.audience_tag.all": "All users",
+    "align.audience_tag.custom": "Custom",
+    "align.toast.campaign_created": "Campaign created.",
+    "align.toast.campaign_ended": "Campaign ended.",
+    "align.toast.name_required": "Please give the campaign a name.",
+    "align.toast.no_participants": "Please select at least one participant.",
+    "align.toast.not_a_participant": "You are not a participant in this campaign.",
     "my_reviews.history": "Reviewed history",
     "my_reviews.empty": "No reviews yet for you. Submit some annotations and they'll be sampled or self-reportable.",
     "my_reviews.stats.reviewed": "reviewed",
@@ -175,6 +196,27 @@ const LANG = {
     "review.notes_label": "备注",
     "align.loading_status": "加载对齐状态…",
     "align.queue_empty": "队列为空 — 暂无待审核员金标 🎉",
+    "align.your_campaigns": "你的对齐任务",
+    "align.no_campaigns_mine": "你目前没有参与任何活动的对齐任务。",
+    "align.start_form_title": "发起新的对齐任务",
+    "align.name_label": "任务名称",
+    "align.audience_label": "参与者",
+    "align.aud_reviewers": "审核员 + 管理员",
+    "align.aud_all": "所有用户",
+    "align.aud_custom": "自定义选择",
+    "align.custom_label": "选择用户(管理员始终包含)",
+    "align.start_submit": "发起任务",
+    "align.start_cancel": "取消",
+    "align.back_to_picker": "↩ 返回任务列表",
+    "align.select_btn": "进入",
+    "align.audience_tag.reviewers": "审核员 + 管理员",
+    "align.audience_tag.all": "所有用户",
+    "align.audience_tag.custom": "自定义",
+    "align.toast.campaign_created": "对齐任务已创建。",
+    "align.toast.campaign_ended": "对齐任务已结束。",
+    "align.toast.name_required": "请填写任务名称。",
+    "align.toast.no_participants": "请至少选择一位参与者。",
+    "align.toast.not_a_participant": "你不在该对齐任务的参与者列表中。",
     "my_reviews.history": "审核历史",
     "my_reviews.empty": "你还没有审核记录。提交一些标注,会被抽样或自报告。",
     "my_reviews.stats.reviewed": "已审核",
@@ -729,14 +771,14 @@ async function initDashboard() {
 async function loadBadges() {
   const user = localStorage.getItem(CFG.LS_USER);
   if (!user || !CFG.APPS_SCRIPT_URL) return;
-  let data, alignData;
+  let data, alignListData;
   try {
     const [bRes, aRes] = await Promise.all([
       fetch(`${CFG.APPS_SCRIPT_URL}/?action=badges&user=${encodeURIComponent(user)}`),
-      fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_status&user=${encodeURIComponent(user)}`),
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_list&user=${encodeURIComponent(user)}`),
     ]);
     data = await bRes.json();
-    alignData = await aRes.json();
+    alignListData = await aRes.json();
   } catch (err) { console.warn("badges fetch failed", err); return; }
   if (!data || data.error) return;
 
@@ -746,17 +788,21 @@ async function loadBadges() {
   const myreviewedNew = Math.max(0, (data.myreviewed_total || 0) - seenMy);
   const goldreviewedNew = Math.max(0, (data.goldreviewed_total || 0) - seenGold);
 
-  // Align badge: for reviewer/admin, show remaining items to annotate;
-  // for admin only, show items still needing finalize after own annotations done.
+  // Align badge: sum across all active campaigns the user is enrolled in.
+  // Admin: take max(myRemain, adminFinalRemain) per campaign, then sum.
   let alignBadge = 0;
-  if (alignData && alignData.active) {
-    const total = alignData.total ?? 50;
-    const myRemain = Math.max(0, total - (alignData.my_done ?? 0));
-    if (alignData.is_admin) {
-      const adminFinalRemain = Math.max(0, total - (alignData.n_finalized ?? 0));
-      alignBadge = Math.max(myRemain, adminFinalRemain);
-    } else {
-      alignBadge = myRemain;
+  const isAdminBadge = !!(alignListData && alignListData.is_admin);
+  if (alignListData && Array.isArray(alignListData.campaigns)) {
+    for (const c of alignListData.campaigns) {
+      if (!c.is_participant && !isAdminBadge) continue;
+      const total = c.total ?? 50;
+      const myRemain = (c.is_participant) ? Math.max(0, total - (c.my_done ?? 0)) : 0;
+      if (isAdminBadge) {
+        const adminFinalRemain = Math.max(0, total - (c.n_finalized ?? 0));
+        alignBadge += Math.max(myRemain, adminFinalRemain);
+      } else {
+        alignBadge += myRemain;
+      }
     }
   }
   const map = {
@@ -1585,8 +1631,12 @@ async function loadGoldLibrary() {
         ? `<span class="tag" title="Original annotator">✎ ${escapeHtml(it.reviewer)}</span>`
         : "";
       // Source tag (admin_direct / admin_reviewed / alignment) gated to reviewer/admin viewer.
-      const sourceLabel = { admin_direct: "Admin direct", admin_reviewed: "Admin reviewed", alignment: "Reviewer alignment" }[it.source] || "";
-      const sourceTag = sourceLabel ? `<span class="tag source-${it.source}">${escapeHtml(sourceLabel)}</span>` : "";
+      // Alignment gold also carries campaign_name (multi-campaign provenance).
+      const sourceBase = { admin_direct: "Admin direct", admin_reviewed: "Admin reviewed", alignment: "Alignment" }[it.source] || "";
+      const sourceFull = (it.source === "alignment" && it.campaign_name)
+        ? `${sourceBase} · ${it.campaign_name}`
+        : sourceBase;
+      const sourceTag = sourceFull ? `<span class="tag source-${it.source}" title="${escapeHtml(it.campaign_id || it.source)}">${escapeHtml(sourceFull)}</span>` : "";
       const phys = p.physical_adherence ?? p.quality;
       const inst = p.instruction_alignment ?? p.faithful;
       card.innerHTML = `
@@ -1687,19 +1737,18 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("al-form")) initAlign();
 });
 
-/* ===================== Reviewer Alignment (admin-initiated 50-item shared task) ===================== */
-let ALIGN_CURRENT = null;
+/* ===================== Reviewer Alignment v2 (multi-campaign concurrent) ===================== */
+let ALIGN_CURRENT = null;       // currently-rendered item
+let ALIGN_CAMPAIGN_ID = null;   // currently-selected campaign id
+let ALIGN_CAMPAIGN_NAME = "";   // currently-selected campaign name
 let ALIGN_IS_ADMIN = false;
+let ALIGN_USER_LIST = [];       // for custom-audience multi-select
 
 async function initAlign() {
   const user = localStorage.getItem(CFG.LS_USER);
-  const role = localStorage.getItem(CFG.LS_ROLE);
   if (!user) { window.location.href = "index.html"; return; }
-  if (role !== "reviewer" && user !== "masiyuan") {
-    renderRoleGate("审核员 (reviewer) / 管理员");
-    return;
-  }
   ALIGN_IS_ADMIN = user === "masiyuan";
+  // No upfront role gate — anyone can land here; participant-gate runs per-campaign.
 
   // Wire range outputs
   for (const id of ["al-physical_adherence", "al-instruction_alignment"]) {
@@ -1711,78 +1760,217 @@ async function initAlign() {
     e.preventDefault();
     await submitAlign();
   });
-  document.getElementById("al-retry").addEventListener("click", () => loadAlignStatus());
-  document.getElementById("al-start-btn").addEventListener("click", async () => {
-    if (!confirm("Start a new alignment campaign? Will randomly sample 50 items shared by all reviewers + admin.")) return;
-    try {
-      const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
-        method: "POST", headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ align_start: true, admin: user }),
-      });
-      const d = await r.json();
-      if (d?.ok === false) throw new Error(d.error || "start failed");
-      await loadAlignStatus();
-    } catch (err) { toast(tr("toast.align_start_failed") + ": " + err.message, "err"); }
+  document.getElementById("al-retry").addEventListener("click", () => loadAlignList());
+  document.getElementById("al-back-picker").addEventListener("click", () => {
+    ALIGN_CAMPAIGN_ID = null; ALIGN_CAMPAIGN_NAME = ""; ALIGN_CURRENT = null;
+    loadAlignList();
   });
   document.getElementById("al-end-btn").addEventListener("click", async () => {
-    if (!confirm("End the current alignment campaign? All finalized items already in gold remain.")) return;
+    if (!ALIGN_CAMPAIGN_ID) return;
+    if (!confirm("End this alignment campaign? Already-finalized gold remains.")) return;
     try {
       const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
         method: "POST", headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ align_end: true, admin: user }),
+        body: JSON.stringify({ align_end: true, admin: user, campaign_id: ALIGN_CAMPAIGN_ID }),
       });
       const d = await r.json();
       if (d?.ok === false) throw new Error(d.error || "end failed");
-      await loadAlignStatus();
+      toast(tr("align.toast.campaign_ended"), "ok");
+      ALIGN_CAMPAIGN_ID = null; ALIGN_CAMPAIGN_NAME = "";
+      await loadAlignList();
     } catch (err) { toast(tr("toast.align_end_failed") + ": " + err.message, "err"); }
   });
 
+  // Admin: Start new campaign form
+  if (ALIGN_IS_ADMIN) {
+    document.getElementById("al-start-toggle").hidden = false;
+    document.getElementById("al-start-toggle").addEventListener("click", () => {
+      const form = document.getElementById("al-start-form");
+      form.hidden = !form.hidden;
+      if (!form.hidden) loadAlignUsersForCustom();
+    });
+    document.getElementById("al-start-cancel").addEventListener("click", () => {
+      document.getElementById("al-start-form").hidden = true;
+    });
+    document.getElementsByName("al-audience").forEach(r => {
+      r.addEventListener("change", () => {
+        document.getElementById("al-custom-wrap").hidden = (r.value !== "custom" || !r.checked);
+        // show only when "custom" radio is currently checked
+        const chosen = document.querySelector('input[name="al-audience"]:checked');
+        document.getElementById("al-custom-wrap").hidden = (chosen?.value !== "custom");
+      });
+    });
+    document.getElementById("al-start-submit").addEventListener("click", submitAlignStart);
+  }
+
+  await loadAlignList();
+}
+
+async function loadAlignUsersForCustom() {
+  const admin = localStorage.getItem(CFG.LS_USER);
+  if (ALIGN_USER_LIST.length > 0) { renderCustomUserList(); return; }
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_users&admin=${encodeURIComponent(admin)}`);
+    const d = await r.json();
+    ALIGN_USER_LIST = d.users || [];
+    renderCustomUserList();
+  } catch (err) {
+    toast("Failed to load user list: " + err.message, "err");
+  }
+}
+
+function renderCustomUserList() {
+  const root = document.getElementById("al-custom-list");
+  root.innerHTML = "";
+  for (const u of ALIGN_USER_LIST) {
+    if (u.user === "masiyuan") continue;  // admin always included
+    const li = document.createElement("li");
+    li.className = "custom-user-row";
+    li.innerHTML = `
+      <label>
+        <input type="checkbox" class="al-custom-cb" value="${escapeHtml(u.user)}" data-role="${escapeHtml(u.role || '')}">
+        <strong>${escapeHtml(u.user)}</strong>
+        <span class="role-pill" data-role="${escapeHtml(u.role || '')}">${escapeHtml(u.role || '—')}</span>
+      </label>`;
+    root.appendChild(li);
+  }
+}
+
+async function submitAlignStart() {
+  const admin = localStorage.getItem(CFG.LS_USER);
+  const name = document.getElementById("al-new-name").value.trim();
+  if (!name) { toast(tr("align.toast.name_required"), "err"); return; }
+  const audienceEl = document.querySelector('input[name="al-audience"]:checked');
+  const audience = audienceEl ? audienceEl.value : "reviewers";
+  let participants;
+  if (audience === "custom") {
+    participants = Array.from(document.querySelectorAll(".al-custom-cb:checked")).map(cb => cb.value);
+    if (participants.length === 0) { toast(tr("align.toast.no_participants"), "err"); return; }
+  }
+  try {
+    const body = { align_start: true, admin, name, audience };
+    if (participants) body.participants = participants;
+    const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "start failed");
+    toast(tr("align.toast.campaign_created"), "ok");
+    document.getElementById("al-start-form").hidden = true;
+    document.getElementById("al-new-name").value = "";
+    document.querySelectorAll(".al-custom-cb").forEach(cb => cb.checked = false);
+    await loadAlignList();
+  } catch (err) {
+    toast(tr("toast.align_start_failed") + ": " + err.message, "err");
+  }
+}
+
+async function loadAlignList() {
+  hideAlignSections();
+  document.getElementById("al-list-loading").hidden = false;
+  document.getElementById("al-progress-stat").hidden = true;
+  document.getElementById("al-current-name").hidden = true;
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_list&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    document.getElementById("al-list-loading").hidden = true;
+    renderCampaignList(d.campaigns || []);
+    document.getElementById("al-picker").hidden = false;
+  } catch (err) {
+    document.getElementById("al-list-loading").hidden = true;
+    document.getElementById("al-err-msg").textContent = err.message;
+    document.getElementById("al-error").hidden = false;
+  }
+}
+
+function renderCampaignList(campaigns) {
+  const ul = document.getElementById("al-campaign-list");
+  ul.innerHTML = "";
+  const noMsg = document.getElementById("al-no-campaigns");
+  // Filter: participant only (admin sees all)
+  const visible = campaigns.filter(c => ALIGN_IS_ADMIN || c.is_participant);
+  if (visible.length === 0) {
+    noMsg.hidden = false;
+    return;
+  }
+  noMsg.hidden = true;
+  for (const c of visible) {
+    const li = document.createElement("li");
+    li.className = "campaign-row";
+    const audKey = "align.audience_tag." + (c.audience || "custom");
+    const progressTxt = (c.is_participant || ALIGN_IS_ADMIN)
+      ? `${c.my_done ?? 0}/${c.total ?? 50}`
+      : "—";
+    const finalizedTxt = ALIGN_IS_ADMIN ? ` · ${c.n_finalized ?? 0} finalized` : "";
+    li.innerHTML = `
+      <div class="campaign-head">
+        <span class="campaign-name"><strong>${escapeHtml(c.name || ("Campaign #" + (c.campaign_id || "").slice(0,6)))}</strong></span>
+        <span class="tag aud-tag">${tr(audKey)}</span>
+        <span class="campaign-spacer"></span>
+        <span class="muted">by ${escapeHtml(c.by || "—")} · ${progressTxt}${finalizedTxt}</span>
+        <button type="button" class="al-enter-btn" data-cid="${escapeHtml(c.campaign_id)}" data-cname="${escapeHtml(c.name || '')}">${tr("align.select_btn")}</button>
+      </div>
+    `;
+    li.querySelector(".al-enter-btn").addEventListener("click", (e) => {
+      const cid = e.target.dataset.cid;
+      const cname = e.target.dataset.cname;
+      selectCampaign(cid, cname);
+    });
+    ul.appendChild(li);
+  }
+}
+
+async function selectCampaign(campaign_id, name) {
+  ALIGN_CAMPAIGN_ID = campaign_id;
+  ALIGN_CAMPAIGN_NAME = name;
+  document.getElementById("al-name").textContent = name || campaign_id.slice(0, 6);
+  document.getElementById("al-current-name").hidden = false;
+  document.getElementById("al-picker").hidden = true;
+  document.getElementById("al-start-form").hidden = true;
   await loadAlignStatus();
 }
 
 async function loadAlignStatus() {
   hideAlignSections();
-  document.getElementById("al-loading").hidden = false;
+  document.getElementById("al-progress-stat").hidden = true;
   const user = localStorage.getItem(CFG.LS_USER);
+  if (!ALIGN_CAMPAIGN_ID) return;
   try {
-    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_status&user=${encodeURIComponent(user)}`);
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_status&user=${encodeURIComponent(user)}&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}`);
     const d = await r.json();
-    document.getElementById("al-loading").hidden = true;
-    if (!d.active) {
-      document.getElementById("al-nocampaign").hidden = false;
-      if (ALIGN_IS_ADMIN) document.getElementById("al-start-block").hidden = false;
+    if (d.error === "not a participant" || d.error === "not_a_participant") {
+      toast(tr("align.toast.not_a_participant"), "err");
+      ALIGN_CAMPAIGN_ID = null;
+      await loadAlignList();
       return;
     }
     document.getElementById("al-done").textContent = d.my_done ?? 0;
     document.getElementById("al-total").textContent = d.total ?? 50;
-    if (d.by) {
-      document.getElementById("al-byline").hidden = false;
-      document.getElementById("al-by").textContent = d.by;
-    }
+    document.getElementById("al-progress-stat").hidden = false;
     if (ALIGN_IS_ADMIN) {
       document.getElementById("al-final-count").textContent = `${d.n_finalized ?? 0} finalized / ${d.total ?? 50}`;
       renderAdminOverview(d.items || []);
       document.getElementById("al-admin-overview").hidden = false;
     }
-    // Always load next item for the current user (regardless of admin)
     await loadAlignNext();
   } catch (err) {
-    document.getElementById("al-loading").hidden = true;
     document.getElementById("al-err-msg").textContent = err.message;
     document.getElementById("al-error").hidden = false;
   }
 }
 
 function hideAlignSections() {
-  for (const id of ["al-nocampaign", "al-done-msg", "al-item", "al-others", "al-admin-overview", "al-error"]) {
+  for (const id of ["al-picker", "al-done-msg", "al-item", "al-others", "al-admin-overview", "al-error", "al-start-form"]) {
     const el = document.getElementById(id); if (el) el.hidden = true;
   }
 }
 
 async function loadAlignNext() {
   const user = localStorage.getItem(CFG.LS_USER);
+  if (!ALIGN_CAMPAIGN_ID) return;
   try {
-    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_next&user=${encodeURIComponent(user)}`);
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_next&user=${encodeURIComponent(user)}&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}`);
     const d = await r.json();
     if (d.done) {
       document.getElementById("al-item").hidden = true;
@@ -1831,7 +2019,7 @@ async function submitAlign() {
   try {
     const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
       method: "POST", headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ align_submit: true, user, item_id: ALIGN_CURRENT.id, payload }),
+      body: JSON.stringify({ align_submit: true, user, campaign_id: ALIGN_CAMPAIGN_ID, item_id: ALIGN_CURRENT.id, payload }),
     });
     const d = await r.json();
     if (d?.ok === false) throw new Error(d.error || "submit failed");
@@ -1846,10 +2034,11 @@ async function submitAlign() {
 
 async function refreshAlignStatusOnly() {
   const user = localStorage.getItem(CFG.LS_USER);
+  if (!ALIGN_CAMPAIGN_ID) return;
   try {
-    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_status&user=${encodeURIComponent(user)}`);
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_status&user=${encodeURIComponent(user)}&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}`);
     const d = await r.json();
-    if (d.active) {
+    if (d && !d.error) {
       document.getElementById("al-done").textContent = d.my_done ?? 0;
       document.getElementById("al-total").textContent = d.total ?? 50;
       if (ALIGN_IS_ADMIN) {
@@ -1862,8 +2051,9 @@ async function refreshAlignStatusOnly() {
 
 async function showAlignOthers(item_id) {
   const user = localStorage.getItem(CFG.LS_USER);
+  if (!ALIGN_CAMPAIGN_ID) return;
   try {
-    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_item&user=${encodeURIComponent(user)}&item_id=${encodeURIComponent(item_id)}`);
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_item&user=${encodeURIComponent(user)}&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}&item_id=${encodeURIComponent(item_id)}`);
     const d = await r.json();
     if (d.locked) {
       toast(tr("toast.align_locked"), "err");
@@ -1997,7 +2187,7 @@ async function submitAlignFinalize(item_id) {
   try {
     const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
       method: "POST", headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ align_finalize: true, admin, item_id, payload }),
+      body: JSON.stringify({ align_finalize: true, admin, campaign_id: ALIGN_CAMPAIGN_ID, item_id, payload }),
     });
     const d = await r.json();
     if (d?.ok === false) throw new Error(d.error || "finalize failed");

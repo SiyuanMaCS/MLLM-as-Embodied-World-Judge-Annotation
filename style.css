@@ -869,6 +869,61 @@ td.progress-cell {
 }
 #al-next-btn:hover { background: var(--accent-dark, #2a4fc5); }
 
+/* Multi-campaign picker (v40) */
+.picker-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.picker-head h3 { margin: 0; }
+.campaign-list { list-style: none; padding: 0; margin: 0 0 12px; }
+.campaign-row {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: #fff;
+  transition: border-color 0.15s, background 0.15s;
+}
+.campaign-row:hover { border-color: var(--accent); background: #fafbfd; }
+.campaign-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.campaign-name { font-size: 14px; }
+.campaign-spacer { flex: 1; }
+.tag.aud-tag { background: #eef2fb; color: var(--accent); border: 1px solid #c6d2f0; }
+.al-enter-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.al-enter-btn:hover { background: var(--accent-dark, #2a4fc5); }
+
+.start-form { background: #fafbfd; border: 1px solid var(--border); padding: 14px 18px; margin-top: 12px; }
+.start-form h4 { margin: 0 0 12px; font-size: 15px; }
+.audience-row { display: flex; flex-wrap: wrap; gap: 14px; }
+.aud-opt { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+.custom-list {
+  list-style: none;
+  padding: 8px 10px;
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.custom-user-row { padding: 4px 0; }
+.custom-user-row label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+#al-new-name {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+#al-new-name:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(60,90,200,0.15); }
+
 /* Language toggle button in user-chip */
 .user-chip .lang-btn {
   background: var(--card);

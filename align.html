@@ -6,7 +6,7 @@
 <title>Reviewer Alignment — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v38">
+<link rel="stylesheet" href="style.css?v=v40">
 </head>
 <body>
 <main>
@@ -19,23 +19,49 @@
   </header>
   <nav class="page-nav">
     <a href="dashboard.html" class="back-link" data-i18n="nav.back">← Back</a>
-    <span class="nav-stat">progress <strong id="al-done">0</strong>/<strong id="al-total">50</strong></span>
-    <span class="nav-stat" id="al-byline" hidden>by <strong id="al-by">—</strong></span>
+    <span class="nav-stat" id="al-progress-stat" hidden><span data-i18n="align.progress">progress</span> <strong id="al-done">0</strong>/<strong id="al-total">50</strong></span>
+    <span class="nav-stat" id="al-current-name" hidden><strong id="al-name">—</strong></span>
   </nav>
 
-  <section id="al-loading" class="card"><p data-i18n="align.loading_status">Loading alignment status…</p></section>
+  <section id="al-list-loading" class="card"><p data-i18n="align.loading_status">Loading alignment status…</p></section>
 
-  <section id="al-nocampaign" class="card" hidden>
-    <h3 data-i18n="align.no_campaign">No active alignment campaign</h3>
-    <p class="muted" data-i18n="align.no_campaign_hint">An admin must start an alignment task before reviewers can begin.</p>
-    <div id="al-start-block" class="form-row actions" hidden>
-      <button type="button" id="al-start-btn" data-i18n="align.start_btn">Start alignment (admin)</button>
-      <span class="muted small" data-i18n="align.start_hint">Randomly samples 50 items shared across all reviewers + admin.</span>
+  <!-- Campaign picker / admin start panel -->
+  <section id="al-picker" class="card" hidden>
+    <div class="picker-head">
+      <h3 data-i18n="align.your_campaigns">Your alignment campaigns</h3>
+      <button type="button" id="al-start-toggle" class="ghost" hidden data-i18n="align.start_btn">+ Start new campaign</button>
+    </div>
+    <ul id="al-campaign-list" class="campaign-list"></ul>
+    <p id="al-no-campaigns" class="muted" hidden data-i18n="align.no_campaigns_mine">You are not currently enrolled in any active alignment campaign.</p>
+
+    <!-- Admin start form -->
+    <div id="al-start-form" class="card start-form" hidden>
+      <h4 data-i18n="align.start_form_title">Start a new alignment campaign</h4>
+      <div class="form-row">
+        <label for="al-new-name" data-i18n="align.name_label">Campaign name</label>
+        <input type="text" id="al-new-name" maxlength="60" placeholder="e.g. Reviewer-only Round 1">
+      </div>
+      <div class="form-row">
+        <label data-i18n="align.audience_label">Participants</label>
+        <div class="audience-row">
+          <label class="aud-opt"><input type="radio" name="al-audience" value="reviewers" checked> <span data-i18n="align.aud_reviewers">Reviewers + Admin</span></label>
+          <label class="aud-opt"><input type="radio" name="al-audience" value="all"> <span data-i18n="align.aud_all">All users</span></label>
+          <label class="aud-opt"><input type="radio" name="al-audience" value="custom"> <span data-i18n="align.aud_custom">Custom selection</span></label>
+        </div>
+      </div>
+      <div class="form-row" id="al-custom-wrap" hidden>
+        <label data-i18n="align.custom_label">Select users (admin always included)</label>
+        <ul id="al-custom-list" class="custom-list"></ul>
+      </div>
+      <div class="form-row actions">
+        <button type="button" id="al-start-submit" data-i18n="align.start_submit">Start campaign</button>
+        <button type="button" id="al-start-cancel" class="ghost" data-i18n="align.start_cancel">Cancel</button>
+      </div>
     </div>
   </section>
 
   <section id="al-done-msg" class="card" hidden>
-    <h3 data-i18n="align.done_title">You're done with all 50 ✨</h3>
+    <h3 data-i18n="align.done_title">You're done with all items ✨</h3>
     <p class="muted" data-i18n="align.done_hint">All items annotated. Review others' annotations below or wait for admin finalize.</p>
   </section>
 
@@ -52,37 +78,38 @@
 
     <form id="al-form">
       <fieldset class="dim-block">
-        <legend class="dim-block-title">Physical Adherence <span class="dim-help">物理真实度 · only judge what you see in the video</span></legend>
+        <legend class="dim-block-title"><span data-i18n="axis.physical">Physical Adherence</span> <span class="dim-help" data-i18n="axis.physical_help">only judge what you see in the video</span></legend>
         <div class="form-row">
-          <label for="al-physical_adherence">Score (1–5) <output for="al-physical_adherence" id="al-physical_adherence-out">3</output></label>
+          <label for="al-physical_adherence"><span data-i18n="axis.score">Score (1–5)</span> <output for="al-physical_adherence" id="al-physical_adherence-out">3</output></label>
           <input type="range" id="al-physical_adherence" min="1" max="5" step="1" value="3">
         </div>
         <div class="sub-row">
-          <label class="sub-check"><input type="checkbox" id="al-agent_consistency"> <span>Agent consistency</span><small>机械手/人手结构完整、不融化/扭曲</small></label>
-          <label class="sub-check"><input type="checkbox" id="al-scene_consistency"> <span>Scene & object consistency</span><small>背景与物体时序一致、不闪烁/瞬移/形变</small></label>
-          <label class="sub-check"><input type="checkbox" id="al-interaction_realism"> <span>Interaction realism</span><small>抓取真实闭合、无穿模、遵守重力惯性</small></label>
+          <label class="sub-check"><input type="checkbox" id="al-agent_consistency"> <span data-i18n="sub.agent_consistency">Agent consistency</span><small data-i18n="sub.agent_consistency_hint">manipulator stays structurally complete</small></label>
+          <label class="sub-check"><input type="checkbox" id="al-scene_consistency"> <span data-i18n="sub.scene_consistency">Scene & object consistency</span><small data-i18n="sub.scene_consistency_hint">background & objects stay coherent</small></label>
+          <label class="sub-check"><input type="checkbox" id="al-interaction_realism"> <span data-i18n="sub.interaction_realism">Interaction realism</span><small data-i18n="sub.interaction_realism_hint">real grasp & contact, no penetration</small></label>
         </div>
       </fieldset>
 
       <fieldset class="dim-block">
-        <legend class="dim-block-title">Instruction Alignment <span class="dim-help">指令对齐 · judge with task instruction + init frame</span></legend>
+        <legend class="dim-block-title"><span data-i18n="axis.instruction">Instruction Alignment</span> <span class="dim-help" data-i18n="axis.instruction_help">judge with task instruction + init frame</span></legend>
         <div class="form-row">
-          <label for="al-instruction_alignment">Score (1–5) <output for="al-instruction_alignment" id="al-instruction_alignment-out">3</output></label>
+          <label for="al-instruction_alignment"><span data-i18n="axis.score">Score (1–5)</span> <output for="al-instruction_alignment" id="al-instruction_alignment-out">3</output></label>
           <input type="range" id="al-instruction_alignment" min="1" max="5" step="1" value="3">
         </div>
         <div class="sub-row">
-          <label class="sub-check"><input type="checkbox" id="al-agent_match"> <span>Agent match</span><small>完成任务的就是首帧那个机械手/人手</small></label>
-          <label class="sub-check"><input type="checkbox" id="al-object_correct"> <span>Object correct</span><small>操纵的 object 是指令指定的</small></label>
-          <label class="sub-check"><input type="checkbox" id="al-goal_completed"> <span>Goal completed</span><small>指令的目标已完整达成</small></label>
+          <label class="sub-check"><input type="checkbox" id="al-agent_match"> <span data-i18n="sub.agent_match">Agent match</span><small data-i18n="sub.agent_match_hint">manipulator matches init frame</small></label>
+          <label class="sub-check"><input type="checkbox" id="al-object_correct"> <span data-i18n="sub.object_correct">Object correct</span><small data-i18n="sub.object_correct_hint">manipulated object matches instruction</small></label>
+          <label class="sub-check"><input type="checkbox" id="al-goal_completed"> <span data-i18n="sub.goal_completed">Goal completed</span><small data-i18n="sub.goal_completed_hint">instructed goal fully reached</small></label>
         </div>
       </fieldset>
 
       <div class="form-row">
-        <label for="al-notes">Notes <span class="required-tag">*</span></label>
+        <label for="al-notes"><span data-i18n="task.notes">Notes</span> <span class="required-tag" data-i18n="task.required">*</span></label>
         <textarea id="al-notes" rows="3" maxlength="500" placeholder="Required — explain your reasoning"></textarea>
       </div>
       <div class="form-row actions">
         <button type="submit" data-i18n="task.save_next">Save &amp; next →</button>
+        <button type="button" id="al-back-picker" class="ghost" data-i18n="align.back_to_picker">↩ Back to campaigns</button>
       </div>
     </form>
   </section>
@@ -97,9 +124,9 @@
     </div>
   </section>
 
-  <!-- Admin: overview of campaign (50 items + finalize state) -->
+  <!-- Admin: overview of current campaign (50 items + finalize state) -->
   <section id="al-admin-overview" class="card" hidden>
-    <h3>Campaign overview <span class="muted" id="al-final-count">0 finalized / 50</span></h3>
+    <h3><span data-i18n="align.overview_title">Campaign overview</span> <span class="muted" id="al-final-count">0 finalized / 50</span></h3>
     <p class="muted small">Click any item to view all annotations + finalize into gold (source=alignment). <button type="button" id="al-end-btn" class="ghost" data-i18n="align.end_btn">End campaign</button></p>
     <ul id="al-admin-list" class="al-admin-list"></ul>
   </section>
