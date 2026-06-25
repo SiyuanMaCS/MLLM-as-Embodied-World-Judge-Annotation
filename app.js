@@ -385,6 +385,28 @@ function setLang(lang) {
   applyI18n();
   const btn = document.getElementById("lang-btn");
   if (btn) btn.textContent = tr("lang.toggle_to");
+  // Immediately swap the currently-displayed instruction to the new language.
+  applyCurrentInstruction();
+}
+
+// Track the currently-displayed instruction (both languages cached) so language toggle is instant.
+let CURRENT_INSTRUCTION = null;
+
+/* Render the cached instruction into its target element according to current lang.
+   Prefers backend-provided `instruction`/`instruction_cn` (no HTTP); only falls back
+   to HF file fetch if neither was supplied. */
+function applyCurrentInstruction() {
+  const ci = CURRENT_INSTRUCTION;
+  if (!ci) return;
+  const target = document.getElementById(ci.targetId);
+  if (!target) return;
+  const lang = getLang();
+  if (lang === "cn" && ci.cn) { target.textContent = ci.cn; return; }
+  if (lang === "en" && ci.en) { target.textContent = ci.en; return; }
+  if (ci.en) { target.textContent = ci.en; return; }
+  if (ci.cn) { target.textContent = ci.cn; return; }
+  // No cached text → fall back to fetching from HF.
+  if (ci.video_url) fetchInstructionInto(ci.video_url, ci.targetId);
 }
 
 /* Toast — non-blocking notification (replaces noisy alert()). */
@@ -730,6 +752,18 @@ async function fetchInstructionInto(video_url, targetElId) {
 }
 
 async function fetchPrompt(it) {
+  // Cache both languages from backend payload (no extra HTTP) so lang toggle is instant.
+  CURRENT_INSTRUCTION = {
+    video_url: it.video_url,
+    targetId: "prompt-text",
+    en: it.instruction || "",
+    cn: it.instruction_cn || "",
+  };
+  // If backend already supplied the text, render from cache; else HF fetch.
+  if (CURRENT_INSTRUCTION.en || CURRENT_INSTRUCTION.cn) {
+    applyCurrentInstruction();
+    return;
+  }
   return fetchInstructionInto(it.video_url, "prompt-text");
 }
 
@@ -1540,7 +1574,7 @@ function renderReviewRow(r) {
       ${r.video_url ? `
         <figure class="detail-video">
           <figcaption>Generated video</figcaption>
-          <video controls preload="none" muted playsinline src="${absUrl(r.video_url)}"></video>
+          <video controls preload="none" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${absUrl(r.video_url)}"></video>
         </figure>` : ""}
       <p class="detail-id muted">Item: <code>${escapeHtml(r.item_id || "")}</code></p>
     </div>
@@ -1590,7 +1624,7 @@ async function initAdminReview() {
       };
       card.innerHTML = `
         <div class="meta"><span class="tag gold-tag">GOLD</span><span class="tag">${escapeHtml(r.dataset || "?")}</span><span class="tag">${escapeHtml(r.task || "?")}</span><span class="tag">by ${escapeHtml(r.reviewer || "?")}</span></div>
-        <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline src="${absUrl(r.video_url || "")}"></video></figure></div>
+        <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${absUrl(r.video_url || "")}"></video></figure></div>
         <div class="prompt-box"><label>Reviewer payload</label><p>Q: <strong>${p.quality ?? "—"}</strong> · F: <strong>${p.faithful ?? "—"}</strong> · ${escapeHtml(p.notes || "(no notes)")}</p></div>
         <div class="form-row actions">
           <button type="button" class="approve-btn">✅ Approve as gold</button>
@@ -1755,7 +1789,7 @@ async function loadGoldLibrary() {
       const inst = p.instruction_alignment ?? p.faithful;
       card.innerHTML = `
         <div class="meta"><span class="tag gold-tag">GOLD</span>${sourceTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${finalizerTag}${reviewerTag}</div>
-        <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline src="${absUrl(it.video_url || "")}"></video></figure></div>
+        <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${absUrl(it.video_url || "")}"></video></figure></div>
         <p class="gl-scores">Physical: <strong>${phys ?? "—"}</strong> · Instruction: <strong>${inst ?? "—"}</strong></p>
         ${(p.physical_notes || p.instruction_notes)
           ? `<p class="muted"><strong>P:</strong> ${escapeHtml(p.physical_notes || "—")} <strong>· I:</strong> ${escapeHtml(p.instruction_notes || "—")}</p>`
@@ -2300,8 +2334,15 @@ async function loadAlignNext() {
     wireVideoFallback(vid, { onSkip: () => loadAlignNext() });
     vid.src = absUrl(d.video_url || "");
     vid.load();
-    // Ignore d.prompt (may be prefix/rewrite version) — always fetch canonical instruction.txt from HF.
-    fetchInstructionInto(d.video_url, "al-prompt");
+    // Ignore d.prompt (may be prefix/rewrite version) — always use canonical instruction.
+    CURRENT_INSTRUCTION = {
+      video_url: d.video_url,
+      targetId: "al-prompt",
+      en: d.instruction || "",
+      cn: d.instruction_cn || "",
+    };
+    if (CURRENT_INSTRUCTION.en || CURRENT_INSTRUCTION.cn) applyCurrentInstruction();
+    else fetchInstructionInto(d.video_url, "al-prompt");
     // Reset form
     for (const id of ["al-physical_adherence", "al-instruction_alignment"]) {
       const inp = document.getElementById(id);
