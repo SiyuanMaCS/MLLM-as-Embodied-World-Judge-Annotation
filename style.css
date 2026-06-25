@@ -786,19 +786,45 @@ td.progress-cell {
   transition: border-color 0.15s, background 0.15s;
 }
 .sub-check:hover { border-color: var(--accent); background: #fff; }
-.sub-check input[type="checkbox"] { margin-right: 6px; transform: scale(1.1); accent-color: #e53935; }
+/* Custom checkbox: shows ✗ inside the box when checked (instead of native ✓), to match the inverted semantic. */
+.sub-check input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #b9c0cc;
+  border-radius: 4px;
+  background: #fff;
+  margin-right: 8px;
+  cursor: pointer;
+  position: relative;
+  flex: 0 0 18px;
+  vertical-align: middle;
+  transition: background 0.12s, border-color 0.12s;
+}
+.sub-check input[type="checkbox"]:hover { border-color: #e53935; }
+.sub-check input[type="checkbox"]:checked {
+  background: #e53935;
+  border-color: #e53935;
+}
+.sub-check input[type="checkbox"]:checked::after {
+  content: "✗";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
 .sub-check small { font-weight: 400; color: var(--muted); font-size: 11.5px; line-height: 1.35; margin-top: 1px; }
-/* Inverted semantics: checking the box marks the criterion as VIOLATED (red ✗). */
+/* When checked: card border + bg turn red to reinforce "violated" state. */
 .sub-check:has(input:checked) {
   background: #ffe2e2;
   border-color: #e53935;
   color: #b00020;
-}
-.sub-check:has(input:checked) span::before {
-  content: "✗ ";
-  font-weight: 800;
-  color: #e53935;
-  margin-right: 2px;
 }
 .sub-check:has(input:checked) small { color: #b00020; }
 .required-tag { color: #e53935; font-weight: 700; margin-left: 2px; }

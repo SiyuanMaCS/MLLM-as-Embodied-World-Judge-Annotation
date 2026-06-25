@@ -2401,7 +2401,6 @@ function renderFinalizeForm(d) {
   const checked = (k) => p[k] === 0 ? "checked" : "";
   wrap.innerHTML = `
     <form id="al-finalize-form">
-      <p class="violation-notice">${tr("sub.violation_notice")}</p>
       <fieldset class="dim-block">
         <legend class="dim-block-title">Physical Adherence (final)</legend>
         <div class="form-row">
