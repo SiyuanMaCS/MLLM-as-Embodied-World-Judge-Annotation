@@ -6,7 +6,7 @@
 <title>Reviewer Alignment — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v53">
+<link rel="stylesheet" href="style.css?v=v54">
 </head>
 <body>
 <main>
@@ -89,6 +89,10 @@
           <label class="sub-check"><input type="checkbox" id="al-scene_consistency"> <span data-i18n="sub.scene_consistency">Scene & object consistency</span><small data-i18n="sub.scene_consistency_hint">background & objects stay coherent</small></label>
           <label class="sub-check"><input type="checkbox" id="al-interaction_realism"> <span data-i18n="sub.interaction_realism">Interaction realism</span><small data-i18n="sub.interaction_realism_hint">real grasp & contact, no penetration</small></label>
         </div>
+        <div class="form-row">
+          <label for="al-physical_notes"><span data-i18n="task.physical_notes">Physical evidence</span> <span class="required-tag" data-i18n="task.required">*</span></label>
+          <textarea id="al-physical_notes" rows="2" maxlength="500" data-i18n-placeholder="task.physical_notes_placeholder" placeholder="Required — visual evidence for the physical score"></textarea>
+        </div>
       </fieldset>
 
       <fieldset class="dim-block">
@@ -103,12 +107,11 @@
           <label class="sub-check"><input type="checkbox" id="al-object_correct"> <span data-i18n="sub.object_correct">Object correct</span><small data-i18n="sub.object_correct_hint">manipulated object matches instruction</small></label>
           <label class="sub-check"><input type="checkbox" id="al-goal_completed"> <span data-i18n="sub.goal_completed">Goal completed</span><small data-i18n="sub.goal_completed_hint">instructed goal fully reached</small></label>
         </div>
+        <div class="form-row">
+          <label for="al-instruction_notes"><span data-i18n="task.instruction_notes">Instruction-alignment evidence</span> <span class="required-tag" data-i18n="task.required">*</span></label>
+          <textarea id="al-instruction_notes" rows="2" maxlength="500" data-i18n-placeholder="task.instruction_notes_placeholder" placeholder="Required — visual evidence for the instruction score"></textarea>
+        </div>
       </fieldset>
-
-      <div class="form-row">
-        <label for="al-notes"><span data-i18n="task.notes">Notes</span> <span class="required-tag" data-i18n="task.required">*</span></label>
-        <textarea id="al-notes" rows="3" maxlength="500" placeholder="Required — explain your reasoning"></textarea>
-      </div>
       <div class="form-row actions">
         <button type="submit" data-i18n="task.save_next">Save &amp; next →</button>
         <button type="button" id="al-back-picker" class="ghost" data-i18n="align.back_to_picker">↩ Back to campaigns</button>
@@ -147,6 +150,6 @@
 
   <section id="al-error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="al-err-msg">—</p><button id="al-retry" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v53" defer></script>
+<script src="app.js?v=v54" defer></script>
 </body>
 </html>

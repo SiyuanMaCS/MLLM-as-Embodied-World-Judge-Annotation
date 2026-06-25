@@ -6,7 +6,7 @@
 <title>Annotate — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v53">
+<link rel="stylesheet" href="style.css?v=v54">
 </head>
 <body>
 <main>
@@ -63,6 +63,10 @@
           <label class="sub-check"><input type="checkbox" id="scene_consistency" name="scene_consistency"> <span data-i18n="sub.scene_consistency">Scene & object consistency</span><small data-i18n="sub.scene_consistency_hint">背景与物体时序一致、不闪烁/瞬移/形变</small></label>
           <label class="sub-check"><input type="checkbox" id="interaction_realism" name="interaction_realism"> <span data-i18n="sub.interaction_realism">Interaction realism</span><small data-i18n="sub.interaction_realism_hint">抓取真实闭合、无穿模、遵守重力惯性</small></label>
         </div>
+        <div class="form-row">
+          <label for="physical_notes"><span data-i18n="task.physical_notes">Physical evidence</span> <span class="required-tag" data-i18n="task.required">*</span></label>
+          <textarea id="physical_notes" rows="2" maxlength="500" data-i18n-placeholder="task.physical_notes_placeholder" placeholder="Required — visual evidence for the physical score (any violation observed)"></textarea>
+        </div>
       </fieldset>
 
       <fieldset class="dim-block">
@@ -77,14 +81,11 @@
           <label class="sub-check"><input type="checkbox" id="object_correct" name="object_correct"> <span data-i18n="sub.object_correct">Object correct</span><small data-i18n="sub.object_correct_hint">操纵的 object 是指令指定的</small></label>
           <label class="sub-check"><input type="checkbox" id="goal_completed" name="goal_completed"> <span data-i18n="sub.goal_completed">Goal completed</span><small data-i18n="sub.goal_completed_hint">指令的目标已完整达成</small></label>
         </div>
+        <div class="form-row">
+          <label for="instruction_notes"><span data-i18n="task.instruction_notes">Instruction-alignment evidence</span> <span class="required-tag" data-i18n="task.required">*</span></label>
+          <textarea id="instruction_notes" rows="2" maxlength="500" data-i18n-placeholder="task.instruction_notes_placeholder" placeholder="Required — visual evidence for the instruction score (what was / wasn't done)"></textarea>
+        </div>
       </fieldset>
-
-      <div class="form-row">
-        <label for="notes"><span data-i18n="task.notes">Notes</span> <span class="required-tag" data-i18n="task.required">*</span></label>
-        <textarea id="notes" name="notes" rows="3" maxlength="500"
-                  data-i18n-placeholder="task.notes_placeholder"
-                  placeholder="Required — explain your reasoning (what you saw, key violations, key successes)…"></textarea>
-      </div>
       <div class="form-row actions">
         <button type="submit" id="submit-btn" data-i18n="task.save_next">Save &amp; next →</button>
         <button type="button" id="skip-btn" class="ghost" data-i18n="task.skip">Skip</button>
@@ -99,6 +100,6 @@
     <button id="retry-btn" data-i18n="common.retry">Retry</button>
   </section>
 </main>
-<script src="app.js?v=v53" defer></script>
+<script src="app.js?v=v54" defer></script>
 </body>
 </html>

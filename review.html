@@ -6,7 +6,7 @@
 <title>Review Queue — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v53">
+<link rel="stylesheet" href="style.css?v=v54">
 </head>
 <body>
 <main>
@@ -58,6 +58,10 @@
             <label class="sub-check"><input type="checkbox" id="m-scene_consistency"> <span>Scene & object consistency</span></label>
             <label class="sub-check"><input type="checkbox" id="m-interaction_realism"> <span>Interaction realism</span></label>
           </div>
+          <div class="form-row">
+            <label for="m-physical_notes"><span data-i18n="task.physical_notes">Physical evidence</span> <span class="required-tag">*</span></label>
+            <textarea id="m-physical_notes" rows="2" maxlength="500" placeholder="Required — why you changed the physical score"></textarea>
+          </div>
         </fieldset>
 
         <fieldset class="dim-block">
@@ -72,12 +76,11 @@
             <label class="sub-check"><input type="checkbox" id="m-object_correct"> <span>Object correct</span></label>
             <label class="sub-check"><input type="checkbox" id="m-goal_completed"> <span>Goal completed</span></label>
           </div>
+          <div class="form-row">
+            <label for="m-instruction_notes"><span data-i18n="task.instruction_notes">Instruction-alignment evidence</span> <span class="required-tag">*</span></label>
+            <textarea id="m-instruction_notes" rows="2" maxlength="500" placeholder="Required — why you changed the instruction score"></textarea>
+          </div>
         </fieldset>
-
-        <div class="form-row">
-          <label for="m-notes"><span data-i18n="review.modify_note">Modification note</span> <span class="required-tag" data-i18n="task.required">*</span></label>
-          <textarea id="m-notes" rows="2" maxlength="500" data-i18n-placeholder="review.modify_note_placeholder" placeholder="Required — why you changed it"></textarea>
-        </div>
       </div>
       <div class="form-row actions">
         <button type="button" id="approve-btn" data-i18n="review.approve">✅ Approve as-is</button>
@@ -89,6 +92,6 @@
 
   <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v53" defer></script>
+<script src="app.js?v=v54" defer></script>
 </body>
 </html>

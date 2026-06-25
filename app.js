@@ -120,6 +120,10 @@ const LANG = {
     "task.instruction": "Task instruction",
     "task.notes": "Notes",
     "task.notes_placeholder": "Required — explain your reasoning (what you saw, key violations, key successes)…",
+    "task.physical_notes": "Physical evidence",
+    "task.physical_notes_placeholder": "Required — visual evidence for the physical score (any violation observed)",
+    "task.instruction_notes": "Instruction-alignment evidence",
+    "task.instruction_notes_placeholder": "Required — visual evidence for the instruction score (what was / wasn't done)",
     "task.save_next": "Save & next →",
     "task.skip": "Skip",
     "task.report": "⚠ Report (uncertain)",
@@ -283,6 +287,10 @@ const LANG = {
     "task.instruction": "任务指令",
     "task.notes": "备注",
     "task.notes_placeholder": "必填 — 简述你的判断依据(看到了什么、关键违反、关键成功)…",
+    "task.physical_notes": "物理证据",
+    "task.physical_notes_placeholder": "必填 — 物理评分的视觉证据(观察到的任何违反)",
+    "task.instruction_notes": "指令对齐证据",
+    "task.instruction_notes_placeholder": "必填 — 指令评分的视觉证据(做了 / 没做什么)",
     "task.save_next": "保存并下一条 →",
     "task.skip": "跳过",
     "task.report": "⚠ 上报(不确定)",
@@ -680,7 +688,8 @@ function renderItem(it) {
     gt.removeAttribute("src");
     gtFig.hidden = true;
   }
-  document.getElementById("notes").value = "";
+  document.getElementById("physical_notes").value = "";
+  document.getElementById("instruction_notes").value = "";
   for (const id of ["physical_adherence", "instruction_alignment"]) {
     const inp = document.getElementById(id);
     const out = document.getElementById(id + "-out");
@@ -735,14 +744,16 @@ async function onSubmit(skip) {
   const role = localStorage.getItem(CFG.LS_ROLE);
   const payload = { skip };
   if (!skip) {
-    const notes = document.getElementById("notes").value.trim();
-    if (!notes) { toast(tr("toast.notes_required"), "err"); return; }
+    const physical_notes = document.getElementById("physical_notes").value.trim();
+    const instruction_notes = document.getElementById("instruction_notes").value.trim();
+    if (!physical_notes || !instruction_notes) { toast(tr("toast.notes_required"), "err"); return; }
     payload.physical_adherence = Number(document.getElementById("physical_adherence").value);
     payload.instruction_alignment = Number(document.getElementById("instruction_alignment").value);
     for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
       payload[id] = document.getElementById(id).checked ? 0 : 1;
     }
-    payload.notes = notes;
+    payload.physical_notes = physical_notes;
+    payload.instruction_notes = instruction_notes;
   }
   const body = {
     user: localStorage.getItem(CFG.LS_USER),
@@ -1222,14 +1233,16 @@ async function submitGold(skip) {
   const user = localStorage.getItem(CFG.LS_USER);
   const payload = { skip };
   if (!skip) {
-    const notes = document.getElementById("notes").value.trim();
-    if (!notes) { toast(tr("toast.notes_required"), "err"); return; }
+    const physical_notes = document.getElementById("physical_notes").value.trim();
+    const instruction_notes = document.getElementById("instruction_notes").value.trim();
+    if (!physical_notes || !instruction_notes) { toast(tr("toast.notes_required"), "err"); return; }
     payload.physical_adherence = Number(document.getElementById("physical_adherence").value);
     payload.instruction_alignment = Number(document.getElementById("instruction_alignment").value);
     for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
       payload[id] = document.getElementById(id).checked ? 0 : 1;
     }
-    payload.notes = notes;
+    payload.physical_notes = physical_notes;
+    payload.instruction_notes = instruction_notes;
   }
   const body = { gold: true, user, item_id: GOLD_CURRENT.id, payload };
   try {
@@ -1286,7 +1299,8 @@ async function initReview() {
         // Inverted: stored 0 (violated) → checkbox checked (red ✗); stored 1 (pass) → unchecked.
         document.getElementById("m-" + id).checked = orig[id] === 0;
       }
-      document.getElementById("m-notes").value = "";
+      document.getElementById("m-physical_notes").value = "";
+      document.getElementById("m-instruction_notes").value = "";
       fields.hidden = false;
       document.getElementById("modify-btn").textContent = "Submit modify";
     } else {
@@ -1335,7 +1349,12 @@ function renderReviewItem(it) {
   const isubs = ["agent_match","object_correct","goal_completed"].map(k => `${k.split("_")[0]}=${payload[k] ?? "—"}`).join(", ");
   document.getElementById("orig-psubs").textContent = psubs;
   document.getElementById("orig-isubs").textContent = isubs;
-  document.getElementById("orig-notes").textContent = payload.notes || "(no notes)";
+  // Split per-axis notes with fallback to legacy single `notes` field.
+  const pNote = payload.physical_notes || payload.notes || "";
+  const iNote = payload.instruction_notes || (payload.physical_notes ? "" : payload.notes) || "";
+  document.getElementById("orig-notes").innerHTML = (pNote || iNote)
+    ? `<strong>Physical:</strong> ${escapeHtml(pNote || "—")}<br><strong>Instruction:</strong> ${escapeHtml(iNote || "—")}`
+    : "(no notes)";
   fetchPrompt(it);
 }
 
@@ -1348,12 +1367,14 @@ async function submitReview(decision) {
   const is_report = !!REVIEW_CURRENT.is_report;
   let payload = REVIEW_CURRENT.annotation || REVIEW_CURRENT.annotation_payload || {};
   if (decision === "modify") {
-    const notes = document.getElementById("m-notes").value.trim();
-    if (!notes) { toast(tr("toast.modify_note_required"), "err"); return; }
+    const physical_notes = document.getElementById("m-physical_notes").value.trim();
+    const instruction_notes = document.getElementById("m-instruction_notes").value.trim();
+    if (!physical_notes || !instruction_notes) { toast(tr("toast.modify_note_required"), "err"); return; }
     payload = {
       physical_adherence: Number(document.getElementById("m-physical_adherence").value),
       instruction_alignment: Number(document.getElementById("m-instruction_alignment").value),
-      notes,
+      physical_notes,
+      instruction_notes,
     };
     for (const id of ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"]) {
       payload[id] = document.getElementById("m-" + id).checked ? 0 : 1;
@@ -1450,7 +1471,10 @@ function renderReviewRow(r) {
   // Field-level diff helpers across new 8-field schema (fallback to legacy quality/faithful).
   const physChanged = !isApprove && (fin.physical_adherence ?? fin.quality) !== (orig.physical_adherence ?? orig.quality);
   const instChanged = !isApprove && (fin.instruction_alignment ?? fin.faithful) !== (orig.instruction_alignment ?? orig.faithful);
-  const nChanged = !isApprove && (orig.notes || "") !== (fin.notes || "");
+  const nChanged = !isApprove && (
+    (orig.physical_notes || orig.notes || "") !== (fin.physical_notes || fin.notes || "") ||
+    (orig.instruction_notes || "") !== (fin.instruction_notes || "")
+  );
   const subsP = ["agent_consistency","scene_consistency","interaction_realism"];
   const subsI = ["agent_match","object_correct","goal_completed"];
   function subBadges(p, keys) {
@@ -1477,14 +1501,14 @@ function renderReviewRow(r) {
           <h4>Your submission</h4>
           <p>Physical: <strong>${orig.physical_adherence ?? orig.quality ?? "—"}</strong> · Instruction: <strong>${orig.instruction_alignment ?? orig.faithful ?? "—"}</strong></p>
           <p class="sub-line">${subBadges(orig, subsP)}${subBadges(orig, subsI)}</p>
-          ${orig.notes ? `<p class="notes">${escapeHtml(orig.notes)}</p>` : '<p class="notes muted">(no notes)</p>'}
+          ${renderNotesBlock(orig)}
         </div>
         <div class="detail-arrow">→</div>
         <div class="detail-card detail-final ${isApprove ? "unchanged" : ""}">
           <h4>${isApprove ? "Reviewer (approved as-is)" : "Reviewer (modified)"}</h4>
           <p>Physical: <strong class="${physChanged ? "diff" : ""}">${fin.physical_adherence ?? fin.quality ?? "—"}</strong> · Instruction: <strong class="${instChanged ? "diff" : ""}">${fin.instruction_alignment ?? fin.faithful ?? "—"}</strong></p>
           <p class="sub-line">${subBadges(fin, subsP)}${subBadges(fin, subsI)}</p>
-          ${fin.notes ? `<p class="notes ${nChanged ? "diff" : ""}">${escapeHtml(fin.notes)}</p>` : '<p class="notes muted">(no notes)</p>'}
+          ${renderNotesBlock(fin, nChanged)}
         </div>
       </div>
       ${r.video_url ? `
@@ -1707,7 +1731,9 @@ async function loadGoldLibrary() {
         <div class="meta"><span class="tag gold-tag">GOLD</span>${sourceTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${finalizerTag}${reviewerTag}</div>
         <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline src="${absUrl(it.video_url || "")}"></video></figure></div>
         <p class="gl-scores">Physical: <strong>${phys ?? "—"}</strong> · Instruction: <strong>${inst ?? "—"}</strong></p>
-        <p class="muted">${escapeHtml(p.notes || "")}</p>
+        ${(p.physical_notes || p.instruction_notes)
+          ? `<p class="muted"><strong>P:</strong> ${escapeHtml(p.physical_notes || "—")} <strong>· I:</strong> ${escapeHtml(p.instruction_notes || "—")}</p>`
+          : `<p class="muted">${escapeHtml(p.notes || "")}</p>`}
       `;
       root.appendChild(card);
       const v = card.querySelector("video");
@@ -1729,6 +1755,19 @@ function displayRole(user, role) {
 function capitalizeFirst(s) {
   if (!s) return s;
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/* Render split per-axis notes block (physical_notes + instruction_notes) with
+   fallback to legacy single `notes` field if either modern field is missing. */
+function renderNotesBlock(p, diff) {
+  if (!p) return '<p class="notes muted">(no notes)</p>';
+  const pn = p.physical_notes || "";
+  const inote = p.instruction_notes || "";
+  if (pn || inote) {
+    return `<p class="notes ${diff ? "diff" : ""}"><strong>P:</strong> ${escapeHtml(pn || "—")}<br><strong>I:</strong> ${escapeHtml(inote || "—")}</p>`;
+  }
+  if (p.notes) return `<p class="notes ${diff ? "diff" : ""}">${escapeHtml(p.notes)}</p>`;
+  return '<p class="notes muted">(no notes)</p>';
 }
 
 /* Wire a score hint chip below a slider — updates per-level text + color class as user drags.
@@ -2246,7 +2285,8 @@ async function loadAlignNext() {
     for (const id of ["al-agent_consistency", "al-scene_consistency", "al-interaction_realism", "al-agent_match", "al-object_correct", "al-goal_completed"]) {
       document.getElementById(id).checked = false;
     }
-    document.getElementById("al-notes").value = "";
+    document.getElementById("al-physical_notes").value = "";
+    document.getElementById("al-instruction_notes").value = "";
     document.getElementById("al-item").hidden = false;
     document.getElementById("al-others").hidden = true;
   } catch (err) {
@@ -2258,12 +2298,14 @@ async function loadAlignNext() {
 async function submitAlign() {
   if (!ALIGN_CURRENT) return;
   const user = localStorage.getItem(CFG.LS_USER);
-  const notes = document.getElementById("al-notes").value.trim();
-  if (!notes) { toast(tr("toast.notes_required"), "err"); return; }
+  const physical_notes = document.getElementById("al-physical_notes").value.trim();
+  const instruction_notes = document.getElementById("al-instruction_notes").value.trim();
+  if (!physical_notes || !instruction_notes) { toast(tr("toast.notes_required"), "err"); return; }
   const payload = {
     physical_adherence: Number(document.getElementById("al-physical_adherence").value),
     instruction_alignment: Number(document.getElementById("al-instruction_alignment").value),
-    notes,
+    physical_notes,
+    instruction_notes,
   };
   for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
     payload[id] = document.getElementById("al-" + id).checked ? 0 : 1;
@@ -2362,7 +2404,9 @@ function renderAlignOthers(d) {
       </div>
       <p class="aoc-scores">Physical: <strong class="${isOutlierPA ? 'conflict-score' : ''}">${p.physical_adherence ?? "—"}</strong> · Instruction: <strong class="${isOutlierIA ? 'conflict-score' : ''}">${p.instruction_alignment ?? "—"}</strong></p>
       <p class="sub-line">${subBadges(p, subsP)}${subBadges(p, subsI)}</p>
-      ${p.notes ? `<p class="aoc-notes">${escapeHtml(p.notes)}</p>` : ""}
+      ${(p.physical_notes || p.instruction_notes)
+        ? `<p class="aoc-notes"><strong>P:</strong> ${escapeHtml(p.physical_notes || "—")}<br><strong>I:</strong> ${escapeHtml(p.instruction_notes || "—")}</p>`
+        : (p.notes ? `<p class="aoc-notes">${escapeHtml(p.notes)}</p>` : "")}
     `;
     root.appendChild(card);
   }
@@ -2428,8 +2472,12 @@ function renderFinalizeForm(d) {
         </div>
       </fieldset>
       <div class="form-row">
-        <label for="f-notes">Finalize note <span class="required-tag">*</span></label>
-        <textarea id="f-notes" rows="2" maxlength="500" placeholder="Required — synthesize the consensus / explain final values">${escapeHtml(p.notes || "")}</textarea>
+        <label for="f-physical_notes">Physical evidence (final) <span class="required-tag">*</span></label>
+        <textarea id="f-physical_notes" rows="2" maxlength="500" placeholder="Required — synthesize consensus on physical score">${escapeHtml(p.physical_notes || p.notes || "")}</textarea>
+      </div>
+      <div class="form-row">
+        <label for="f-instruction_notes">Instruction-alignment evidence (final) <span class="required-tag">*</span></label>
+        <textarea id="f-instruction_notes" rows="2" maxlength="500" placeholder="Required — synthesize consensus on instruction score">${escapeHtml(p.instruction_notes || "")}</textarea>
       </div>
       <div class="form-row actions">
         <button type="submit">Write to gold (source=alignment)</button>
@@ -2451,12 +2499,14 @@ function renderFinalizeForm(d) {
 
 async function submitAlignFinalize(item_id) {
   const admin = localStorage.getItem(CFG.LS_USER);
-  const notes = document.getElementById("f-notes").value.trim();
-  if (!notes) { toast(tr("toast.finalize_note_required"), "err"); return; }
+  const physical_notes = document.getElementById("f-physical_notes").value.trim();
+  const instruction_notes = document.getElementById("f-instruction_notes").value.trim();
+  if (!physical_notes || !instruction_notes) { toast(tr("toast.finalize_note_required"), "err"); return; }
   const payload = {
     physical_adherence: Number(document.getElementById("f-physical_adherence").value),
     instruction_alignment: Number(document.getElementById("f-instruction_alignment").value),
-    notes,
+    physical_notes,
+    instruction_notes,
   };
   for (const id of ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"]) {
     payload[id] = document.getElementById("f-" + id).checked ? 0 : 1;

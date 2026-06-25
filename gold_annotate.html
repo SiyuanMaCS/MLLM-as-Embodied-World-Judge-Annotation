@@ -6,7 +6,7 @@
 <title>Gold Annotation — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v53">
+<link rel="stylesheet" href="style.css?v=v54">
 </head>
 <body>
 <main>
@@ -43,6 +43,10 @@
           <label class="sub-check"><input type="checkbox" id="scene_consistency" name="scene_consistency"> <span>Scene & object consistency</span><small>背景与物体时序一致、不闪烁/瞬移/形变</small></label>
           <label class="sub-check"><input type="checkbox" id="interaction_realism" name="interaction_realism"> <span>Interaction realism</span><small>抓取真实闭合、无穿模、遵守重力惯性</small></label>
         </div>
+        <div class="form-row">
+          <label for="physical_notes"><span data-i18n="task.physical_notes">Physical evidence</span> <span class="required-tag">*</span></label>
+          <textarea id="physical_notes" rows="2" maxlength="500" placeholder="Required — visual evidence for the physical score"></textarea>
+        </div>
       </fieldset>
 
       <fieldset class="dim-block">
@@ -57,13 +61,11 @@
           <label class="sub-check"><input type="checkbox" id="object_correct" name="object_correct"> <span>Object correct</span><small>操纵的 object 是指令指定的</small></label>
           <label class="sub-check"><input type="checkbox" id="goal_completed" name="goal_completed"> <span>Goal completed</span><small>指令的目标已完整达成</small></label>
         </div>
+        <div class="form-row">
+          <label for="instruction_notes"><span data-i18n="task.instruction_notes">Instruction-alignment evidence</span> <span class="required-tag">*</span></label>
+          <textarea id="instruction_notes" rows="2" maxlength="500" placeholder="Required — visual evidence for the instruction score"></textarea>
+        </div>
       </fieldset>
-
-      <div class="form-row">
-        <label for="notes">Notes <span class="required-tag">*</span></label>
-        <textarea id="notes" name="notes" rows="3" maxlength="500"
-                  placeholder="Required — explain your reasoning…"></textarea>
-      </div>
       <div class="form-row actions">
         <button type="submit" data-i18n="task.save_next">Save &amp; next →</button>
         <button type="button" id="skip-btn" class="ghost" data-i18n="task.skip">Skip</button>
@@ -73,6 +75,6 @@
 
   <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v53" defer></script>
+<script src="app.js?v=v54" defer></script>
 </body>
 </html>
