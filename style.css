@@ -222,6 +222,33 @@ input[type="range"]::-moz-range-thumb {
   gap: 14px;
   flex-wrap: wrap;
   margin-bottom: 16px;
+  /* Sticky video — follows scroll so reviewer keeps the clip visible while filling the form below. */
+  position: sticky;
+  top: 12px;
+  z-index: 5;
+  background: #fff;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+/* my_reviews detail card has its own .video-row variant — keep non-sticky there. */
+.row-detail .video-row, .detail-video {
+  position: static;
+  background: transparent;
+  padding: 0;
+  border-bottom: none;
+}
+.adm-card .video-row, .gl-card .video-row {
+  position: static;
+  background: transparent;
+  padding: 0;
+  border-bottom: none;
+}
+/* Cap sticky video height so the form below remains accessible while video stays pinned. */
+.video-row video { max-height: 40vh; width: 100%; height: auto; }
+@media (max-width: 640px) {
+  /* On phones the form needs the full screen — disable sticky to avoid blocking inputs. */
+  .video-row { position: static; padding: 0; border-bottom: none; }
+  .video-row video { max-height: none; }
 }
 .video-row figure {
   margin: 0;
