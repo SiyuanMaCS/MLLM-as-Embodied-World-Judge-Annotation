@@ -672,16 +672,17 @@ function renderItem(it) {
   fetchPrompt(it);
 }
 
-async function fetchPrompt(it) {
-  // Original task instruction from gt_data — try instruction.txt first, fall back to prompt.txt.
-  // When lang=cn, try instruction_cn.txt first; if missing (HF not yet pushed), fall back to English.
-  const base = it.video_url && it.video_url.replace(
+/* Fetch the canonical task instruction (instruction.txt; instruction_cn.txt in CN mode)
+   from the HF gt_data prompt directory derived from the generated video URL.
+   Never falls back to prompt.txt — that's the generator rewrite, not the canonical task. */
+async function fetchInstructionInto(video_url, targetElId) {
+  const target = document.getElementById(targetElId);
+  if (!target) return;
+  const base = video_url && video_url.replace(
     /generated_data\/[^\/]+\/(task_\d+)\/(episode_\d+)\/1\/[^\/]+\.mp4$/,
     "gt_data/$1/$2/prompt"
   );
-  if (!base) { document.getElementById("prompt-text").textContent = "(no prompt)"; return; }
-  // ONLY use instruction.txt (the canonical task instruction). prompt.txt is the
-  // rewrite/refined prompt fed to the generator and would be misleading for annotators.
+  if (!base) { target.textContent = "(no prompt)"; return; }
   const filenames = getLang() === "cn"
     ? ["instruction_cn.txt", "instruction.txt"]
     : ["instruction.txt"];
@@ -690,13 +691,15 @@ async function fetchPrompt(it) {
       const res = await fetch(`${base}/${fname}`);
       if (!res.ok) continue;
       const text = await res.text();
-      document.getElementById("prompt-text").textContent = text.trim() || "(empty)";
+      target.textContent = text.trim() || "(empty)";
       return;
-    } catch (err) {
-      // try next filename
-    }
+    } catch (err) { /* try next */ }
   }
-  document.getElementById("prompt-text").textContent = "(prompt unavailable)";
+  target.textContent = "(prompt unavailable)";
+}
+
+async function fetchPrompt(it) {
+  return fetchInstructionInto(it.video_url, "prompt-text");
 }
 
 function absUrl(u) {
@@ -2189,7 +2192,8 @@ async function loadAlignNext() {
     wireVideoFallback(vid, { onSkip: () => loadAlignNext() });
     vid.src = absUrl(d.video_url || "");
     vid.load();
-    document.getElementById("al-prompt").textContent = d.prompt || "(no instruction)";
+    // Ignore d.prompt (may be prefix/rewrite version) — always fetch canonical instruction.txt from HF.
+    fetchInstructionInto(d.video_url, "al-prompt");
     // Reset form
     for (const id of ["al-physical_adherence", "al-instruction_alignment"]) {
       const inp = document.getElementById(id);
