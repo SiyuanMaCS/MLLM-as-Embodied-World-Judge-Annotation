@@ -804,6 +804,20 @@ td.progress-cell {
 .sub-check:has(input:checked) small { color: #b00020; }
 .required-tag { color: #e53935; font-weight: 700; margin-left: 2px; }
 
+/* v47 Violation notice strip above all sub-checkboxes */
+.violation-notice {
+  margin: 8px 0 4px;
+  padding: 8px 12px;
+  background: #fff4f4;
+  border: 1px solid #ffb3b3;
+  border-left: 4px solid #e53935;
+  border-radius: 6px;
+  color: #b00020;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
 /* my_reviews / gold_library — sub badges + source tags */
 .sub-line { margin: 4px 0 6px; line-height: 1.8; }
 .sub-badge {

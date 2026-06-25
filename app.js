@@ -126,9 +126,10 @@ const LANG = {
     "task.required": "*",
     "task.today": "today",
     "axis.physical": "Physical Adherence",
-    "axis.physical_help": "only judge what you see in the video · check any item that is VIOLATED",
+    "axis.physical_help": "only judge what you see in the video",
+    "sub.violation_notice": "⚠ Check a box to flag a VIOLATION (red ✗). Default unchecked = passes. Only check when you spot a problem.",
     "axis.instruction": "Instruction Alignment",
-    "axis.instruction_help": "judge with task instruction + init frame · check any item that is VIOLATED",
+    "axis.instruction_help": "judge with task instruction + init frame",
     "axis.score": "Score (1–5)",
     "sub.agent_consistency": "Agent consistency",
     "sub.agent_consistency_hint": "manipulator stays structurally complete; no melting/warping",
@@ -278,9 +279,10 @@ const LANG = {
     "task.required": "*",
     "task.today": "今日",
     "axis.physical": "物理真实度",
-    "axis.physical_help": "只看视频判断 · 勾选 = 此项被违背 ✗",
+    "axis.physical_help": "只看视频判断",
+    "sub.violation_notice": "⚠ 勾选 = 标记该项【被违背】(红 ✗);默认不勾 = 通过。只在发现问题时勾选。",
     "axis.instruction": "指令对齐",
-    "axis.instruction_help": "用 instruction + 首帧 判断 · 勾选 = 此项被违背 ✗",
+    "axis.instruction_help": "用 instruction + 首帧 判断",
     "axis.score": "评分(1–5)",
     "sub.agent_consistency": "机械手/人手完整性",
     "sub.agent_consistency_hint": "结构完整、不融化/扭曲",
@@ -2350,6 +2352,7 @@ function renderFinalizeForm(d) {
   const checked = (k) => p[k] === 0 ? "checked" : "";
   wrap.innerHTML = `
     <form id="al-finalize-form">
+      <p class="violation-notice">${tr("sub.violation_notice")}</p>
       <fieldset class="dim-block">
         <legend class="dim-block-title">Physical Adherence (final)</legend>
         <div class="form-row">
