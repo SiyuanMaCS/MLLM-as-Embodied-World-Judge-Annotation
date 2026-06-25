@@ -1062,6 +1062,58 @@ td.progress-cell {
   .campaign-row .al-enter-btn { grid-column: 1 / -1; width: 100%; padding: 10px; }
 }
 
+/* v43 IAA table + history + export */
+.overview-actions {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.overview-actions button { font-size: 12px; padding: 5px 12px; }
+.iaa-panel {
+  background: #fafbfd;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 12px 0;
+}
+.iaa-title { margin: 0 0 8px; font-size: 14px; }
+.iaa-subtitle { margin: 14px 0 6px; font-size: 13px; color: var(--text); font-weight: 700; }
+.iaa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 6px;
+}
+.iaa-table th, .iaa-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.iaa-table th {
+  background: #f4f5f9;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.iaa-table td { font-variant-numeric: tabular-nums; }
+.iaa-table tr:last-child td { border-bottom: none; }
+.iaa-top-list {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+}
+.iaa-top-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 12.5px;
+  border-bottom: 1px dashed var(--border);
+}
+.iaa-top-list li:last-child { border-bottom: none; }
+.tag.ended-tag { background: #eef0f5; color: var(--muted); border: 1px solid var(--border); }
+.campaign-row.ended { opacity: 0.85; }
+.campaign-row.ended:hover { opacity: 1; }
+
 /* Language toggle button in user-chip */
 .user-chip .lang-btn {
   background: var(--card);

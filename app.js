@@ -77,6 +77,18 @@ const LANG = {
     "align.toast.name_required": "Please give the campaign a name.",
     "align.toast.no_participants": "Please select at least one participant.",
     "align.toast.not_a_participant": "You are not a participant in this campaign.",
+    "align.iaa_btn": "📊 Agreement",
+    "align.export_btn": "⬇ Export JSONL",
+    "align.history_title": "Ended campaigns (history)",
+    "align.iaa.dim": "Dimension",
+    "align.iaa.alpha": "Krippendorff α",
+    "align.iaa.exact": "Exact agree",
+    "align.iaa.mean_diff": "Mean pairwise diff",
+    "align.iaa.n_items": "Items",
+    "align.iaa.title": "Inter-annotator agreement",
+    "align.iaa.no_data": "Not enough multi-rater items to compute agreement yet.",
+    "align.iaa.top_items": "Top divergent items",
+    "align.toast.export_failed": "Export failed",
     "my_reviews.history": "Reviewed history",
     "my_reviews.empty": "No reviews yet for you. Submit some annotations and they'll be sampled or self-reportable.",
     "my_reviews.stats.reviewed": "reviewed",
@@ -217,6 +229,18 @@ const LANG = {
     "align.toast.name_required": "请填写任务名称。",
     "align.toast.no_participants": "请至少选择一位参与者。",
     "align.toast.not_a_participant": "你不在该对齐任务的参与者列表中。",
+    "align.iaa_btn": "📊 一致性",
+    "align.export_btn": "⬇ 导出 JSONL",
+    "align.history_title": "已结束的对齐任务(历史)",
+    "align.iaa.dim": "维度",
+    "align.iaa.alpha": "Krippendorff α",
+    "align.iaa.exact": "完全一致率",
+    "align.iaa.mean_diff": "平均两两差",
+    "align.iaa.n_items": "样本数",
+    "align.iaa.title": "标注者间一致性",
+    "align.iaa.no_data": "尚无足够多人标的样本计算一致性。",
+    "align.iaa.top_items": "分歧最大的样本",
+    "align.toast.export_failed": "导出失败",
     "my_reviews.history": "审核历史",
     "my_reviews.empty": "你还没有审核记录。提交一些标注,会被抽样或自报告。",
     "my_reviews.stats.reviewed": "已审核",
@@ -1781,6 +1805,13 @@ async function initAlign() {
     } catch (err) { toast(tr("toast.align_end_failed") + ": " + err.message, "err"); }
   });
 
+  // Admin extras: IAA toggle + export + history
+  if (ALIGN_IS_ADMIN) {
+    const iaaBtn = document.getElementById("al-iaa-btn");
+    if (iaaBtn) iaaBtn.addEventListener("click", () => toggleIAAPanel());
+    const exportBtn = document.getElementById("al-export-btn");
+    if (exportBtn) exportBtn.addEventListener("click", () => exportCampaign());
+  }
   // Admin: Start new campaign form
   if (ALIGN_IS_ADMIN) {
     document.getElementById("al-start-toggle").hidden = false;
@@ -1877,10 +1908,146 @@ async function loadAlignList() {
     document.getElementById("al-list-loading").hidden = true;
     renderCampaignList(d.campaigns || []);
     document.getElementById("al-picker").hidden = false;
+    if (ALIGN_IS_ADMIN) await loadAlignHistory();
   } catch (err) {
     document.getElementById("al-list-loading").hidden = true;
     document.getElementById("al-err-msg").textContent = err.message;
     document.getElementById("al-error").hidden = false;
+  }
+}
+
+async function loadAlignHistory() {
+  const admin = localStorage.getItem(CFG.LS_USER);
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_history&admin=${encodeURIComponent(admin)}`);
+    const d = await r.json();
+    const ended = (d.campaigns || d || []).filter(c => c.status === "ended" || c.ended);
+    const section = document.getElementById("al-history");
+    const list = document.getElementById("al-history-list");
+    list.innerHTML = "";
+    if (!ended.length) { section.hidden = true; return; }
+    for (const c of ended) {
+      const li = document.createElement("li");
+      li.className = "campaign-row aud-" + (c.audience || "custom") + " ended";
+      const audIcon = { reviewers: "🛡", all: "🌐", custom: "🎯" }[c.audience] || "🎯";
+      li.innerHTML = `
+        <div class="campaign-head">
+          <span class="campaign-icon">${audIcon}</span>
+          <div class="campaign-meta">
+            <div class="campaign-name-row">
+              <strong>${escapeHtml(c.name || ("Campaign #" + (c.campaign_id || "").slice(0,6)))}</strong>
+              <span class="tag aud-tag tag-${escapeHtml(c.audience || 'custom')}">${tr("align.audience_tag." + (c.audience || "custom"))}</span>
+              <span class="tag ended-tag">ENDED</span>
+            </div>
+            <div class="campaign-sub muted">by ${escapeHtml(c.by || "—")} · ${c.n_finalized ?? 0}/${c.total ?? 50} finalized</div>
+          </div>
+          <div class="campaign-progress"></div>
+          <button type="button" class="al-enter-btn ghost" data-cid="${escapeHtml(c.campaign_id)}" data-cname="${escapeHtml(c.name || '')}">View</button>
+        </div>`;
+      li.querySelector(".al-enter-btn").addEventListener("click", (e) => {
+        const cid = e.currentTarget.dataset.cid;
+        const cname = e.currentTarget.dataset.cname;
+        selectCampaign(cid, cname);
+      });
+      list.appendChild(li);
+    }
+    section.hidden = false;
+  } catch (_) { /* silent — endpoint may be optional */ }
+}
+
+async function toggleIAAPanel() {
+  const panel = document.getElementById("al-iaa-panel");
+  if (!panel.hidden) { panel.hidden = true; return; }
+  if (!ALIGN_CAMPAIGN_ID) return;
+  panel.hidden = false;
+  panel.innerHTML = `<p class="muted">${tr("common.loading")}</p>`;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_agreement&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}`);
+    const d = await r.json();
+    renderIAAPanel(panel, d);
+  } catch (err) {
+    panel.innerHTML = `<p class="warn-text">Failed to load agreement: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderIAAPanel(panel, d) {
+  const perDim = d.per_dim || {};
+  const items = d.items || [];
+  const nMulti = d.n_items_multi ?? 0;
+  if (nMulti === 0) {
+    panel.innerHTML = `<p class="muted">${tr("align.iaa.no_data")}</p>`;
+    return;
+  }
+  const dimOrder = ["physical_adherence", "instruction_alignment", "agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"];
+  const dimLabel = {
+    physical_adherence: tr("axis.physical"),
+    instruction_alignment: tr("axis.instruction"),
+    agent_consistency: tr("sub.agent_consistency"),
+    scene_consistency: tr("sub.scene_consistency"),
+    interaction_realism: tr("sub.interaction_realism"),
+    agent_match: tr("sub.agent_match"),
+    object_correct: tr("sub.object_correct"),
+    goal_completed: tr("sub.goal_completed"),
+  };
+  function alphaCell(a) {
+    if (a == null) return `<td class="muted">—</td>`;
+    const cls = a >= 0.8 ? "ok-text" : (a >= 0.4 ? "" : "warn-text");
+    return `<td class="${cls}"><strong>${a.toFixed(3)}</strong></td>`;
+  }
+  let rows = "";
+  for (const k of dimOrder) {
+    const dim = perDim[k] || {};
+    rows += `<tr>
+      <td>${escapeHtml(dimLabel[k] || k)}</td>
+      ${alphaCell(dim.krippendorff_alpha)}
+      <td>${dim.exact_agree_rate != null ? (dim.exact_agree_rate * 100).toFixed(1) + "%" : "—"}</td>
+      <td>${dim.mean_pairwise_diff != null ? dim.mean_pairwise_diff.toFixed(2) : "—"}</td>
+      <td class="muted">${dim.n_items ?? "—"}</td>
+    </tr>`;
+  }
+  const topItems = items.slice(0, 5).map(it => {
+    const pa = it.physical_adherence_spread ?? 0;
+    const ia = it.instruction_alignment_spread ?? 0;
+    const total = pa + ia;
+    return `<li><span class="muted">${escapeHtml(it.dataset || "?")} · ${escapeHtml(it.task || "?")}</span>
+              <span class="muted small">PA Δ${pa} · IA Δ${ia}${total >= 6 ? ' <span class="conflict-tag">⚠ 高分歧</span>' : ''}</span></li>`;
+  }).join("");
+  panel.innerHTML = `
+    <h4 class="iaa-title">${tr("align.iaa.title")} <span class="muted small">· ${d.n_raters || "?"} raters · ${nMulti} multi-rater items</span></h4>
+    <table class="iaa-table">
+      <thead><tr>
+        <th>${tr("align.iaa.dim")}</th>
+        <th>${tr("align.iaa.alpha")}</th>
+        <th>${tr("align.iaa.exact")}</th>
+        <th>${tr("align.iaa.mean_diff")}</th>
+        <th>${tr("align.iaa.n_items")}</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${topItems ? `<h5 class="iaa-subtitle">${tr("align.iaa.top_items")}</h5><ul class="iaa-top-list">${topItems}</ul>` : ""}
+  `;
+}
+
+async function exportCampaign() {
+  if (!ALIGN_CAMPAIGN_ID) return;
+  const admin = localStorage.getItem(CFG.LS_USER);
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_export&admin=${encodeURIComponent(admin)}&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}`);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    // Convert items[] to JSONL (one item per line).
+    const lines = (d.items || []).map(x => JSON.stringify(x)).join("\n");
+    const blob = new Blob([lines], { type: "application/x-ndjson" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const safeName = (ALIGN_CAMPAIGN_NAME || ALIGN_CAMPAIGN_ID).replace(/[^a-zA-Z0-9._-]/g, "_");
+    a.download = `alignment_${safeName}.jsonl`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+  } catch (err) {
+    toast(tr("align.toast.export_failed") + ": " + err.message, "err");
   }
 }
 
