@@ -6,7 +6,7 @@
 <title>Gold Library — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v40">
+<link rel="stylesheet" href="style.css?v=v41">
 </head>
 <body>
 <main>
@@ -24,23 +24,23 @@
   <section class="card filter-card">
     <form id="gl-filter">
       <div class="dim-row">
-        <span class="dim-label">Quality</span>
-        <span class="dim-value"><b id="q-min-val">1</b>–<b id="q-max-val">5</b></span>
-        <div class="range-dual" data-pair="q">
+        <span class="dim-label" data-i18n="axis.physical">Physical Adherence</span>
+        <span class="dim-value"><b id="pa-min-val">1</b>–<b id="pa-max-val">5</b></span>
+        <div class="range-dual" data-pair="pa">
           <div class="range-track"></div>
-          <div class="range-fill" id="q-fill"></div>
-          <input type="range" id="q-min" min="1" max="5" step="1" value="1" aria-label="Quality min">
-          <input type="range" id="q-max" min="1" max="5" step="1" value="5" aria-label="Quality max">
+          <div class="range-fill" id="pa-fill"></div>
+          <input type="range" id="pa-min" min="1" max="5" step="1" value="1" aria-label="Physical adherence min">
+          <input type="range" id="pa-max" min="1" max="5" step="1" value="5" aria-label="Physical adherence max">
         </div>
       </div>
       <div class="dim-row">
-        <span class="dim-label">Faithful</span>
-        <span class="dim-value"><b id="f-min-val">1</b>–<b id="f-max-val">5</b></span>
-        <div class="range-dual" data-pair="f">
+        <span class="dim-label" data-i18n="axis.instruction">Instruction Alignment</span>
+        <span class="dim-value"><b id="ia-min-val">1</b>–<b id="ia-max-val">5</b></span>
+        <div class="range-dual" data-pair="ia">
           <div class="range-track"></div>
-          <div class="range-fill" id="f-fill"></div>
-          <input type="range" id="f-min" min="1" max="5" step="1" value="1" aria-label="Faithful min">
-          <input type="range" id="f-max" min="1" max="5" step="1" value="5" aria-label="Faithful max">
+          <div class="range-fill" id="ia-fill"></div>
+          <input type="range" id="ia-min" min="1" max="5" step="1" value="1" aria-label="Instruction alignment min">
+          <input type="range" id="ia-max" min="1" max="5" step="1" value="5" aria-label="Instruction alignment max">
         </div>
       </div>
       <div class="filter-foot">

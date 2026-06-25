@@ -1535,8 +1535,8 @@ async function initGoldLibrary() {
   const form = document.getElementById("gl-filter");
   if (!form) return;
   const debouncedSearch = debounce(loadGoldLibrary, 250);
-  setupDualThumb("q-min", "q-max", "q-min-val", "q-max-val", "q-fill", debouncedSearch);
-  setupDualThumb("f-min", "f-max", "f-min-val", "f-max-val", "f-fill", debouncedSearch);
+  setupDualThumb("pa-min", "pa-max", "pa-min-val", "pa-max-val", "pa-fill", debouncedSearch);
+  setupDualThumb("ia-min", "ia-max", "ia-min-val", "ia-max-val", "ia-fill", debouncedSearch);
   // Submit form (Enter key) still works as a manual trigger.
   form.addEventListener("submit", (e) => { e.preventDefault(); loadGoldLibrary(); });
   await loadGoldLibrary();
@@ -1595,20 +1595,20 @@ async function loadGoldLibrary() {
   hide("gl-empty"); hide("gl-error");
   document.getElementById("gl-loading").hidden = false;
   document.getElementById("gl-list").innerHTML = "";
-  const qMin = Number(document.getElementById("q-min").value);
-  const fMin = Number(document.getElementById("f-min").value);
-  const qMax = Number(document.getElementById("q-max").value);
-  const fMax = Number(document.getElementById("f-max").value);
+  const paMin = Number(document.getElementById("pa-min").value);
+  const paMax = Number(document.getElementById("pa-max").value);
+  const iaMin = Number(document.getElementById("ia-min").value);
+  const iaMax = Number(document.getElementById("ia-max").value);
   const qs = new URLSearchParams();
   qs.set("action", "gold_library");
   // Pass viewer so backend can gate finalizer/reviewer fields by role.
   const viewer = localStorage.getItem(CFG.LS_USER);
   if (viewer) qs.set("user", viewer);
-  // Only send filter params when narrower than the full 1–5 range (to keep URLs clean).
-  if (qMin > 1) qs.set("quality_min", qMin);
-  if (qMax < 5) qs.set("quality_max", qMax);
-  if (fMin > 1) qs.set("faithful_min", fMin);
-  if (fMax < 5) qs.set("faithful_max", fMax);
+  // Send filter params for the new 8-field schema (backend DIM_ALIAS maps pa→physical_adherence, ia→instruction_alignment).
+  if (paMin > 1) qs.set("pa_min", paMin);
+  if (paMax < 5) qs.set("pa_max", paMax);
+  if (iaMin > 1) qs.set("ia_min", iaMin);
+  if (iaMax < 5) qs.set("ia_max", iaMax);
   try {
     const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?${qs.toString()}`);
     const data = await res.json();
