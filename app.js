@@ -1897,24 +1897,46 @@ function renderCampaignList(campaigns) {
   noMsg.hidden = true;
   for (const c of visible) {
     const li = document.createElement("li");
-    li.className = "campaign-row";
+    li.className = "campaign-row" + (c.audience ? " aud-" + c.audience : "");
     const audKey = "align.audience_tag." + (c.audience || "custom");
-    const progressTxt = (c.is_participant || ALIGN_IS_ADMIN)
-      ? `${c.my_done ?? 0}/${c.total ?? 50}`
-      : "—";
-    const finalizedTxt = ALIGN_IS_ADMIN ? ` · ${c.n_finalized ?? 0} finalized` : "";
+    const audIcon = { reviewers: "🛡", all: "🌐", custom: "🎯" }[c.audience] || "🎯";
+    const total = c.total ?? 50;
+    const myDone = c.my_done ?? 0;
+    const myPct = total ? Math.round(100 * myDone / total) : 0;
+    const nFin = c.n_finalized ?? 0;
+    const finPct = total ? Math.round(100 * nFin / total) : 0;
     li.innerHTML = `
       <div class="campaign-head">
-        <span class="campaign-name"><strong>${escapeHtml(c.name || ("Campaign #" + (c.campaign_id || "").slice(0,6)))}</strong></span>
-        <span class="tag aud-tag">${tr(audKey)}</span>
-        <span class="campaign-spacer"></span>
-        <span class="muted">by ${escapeHtml(c.by || "—")} · ${progressTxt}${finalizedTxt}</span>
-        <button type="button" class="al-enter-btn" data-cid="${escapeHtml(c.campaign_id)}" data-cname="${escapeHtml(c.name || '')}">${tr("align.select_btn")}</button>
+        <span class="campaign-icon">${audIcon}</span>
+        <div class="campaign-meta">
+          <div class="campaign-name-row">
+            <strong>${escapeHtml(c.name || ("Campaign #" + (c.campaign_id || "").slice(0,6)))}</strong>
+            <span class="tag aud-tag tag-${escapeHtml(c.audience || 'custom')}">${tr(audKey)}</span>
+          </div>
+          <div class="campaign-sub muted">by ${escapeHtml(c.by || "—")}</div>
+        </div>
+        <div class="campaign-progress">
+          ${(c.is_participant || ALIGN_IS_ADMIN) ? `
+            <div class="mini-progress" title="Your progress">
+              <span class="mini-label">me</span>
+              <div class="mini-bar"><div class="mini-fill" style="width:${myPct}%"></div></div>
+              <span class="mini-num">${myDone}/${total}</span>
+            </div>
+          ` : ""}
+          ${ALIGN_IS_ADMIN ? `
+            <div class="mini-progress" title="Finalized by admin">
+              <span class="mini-label">final</span>
+              <div class="mini-bar"><div class="mini-fill fin" style="width:${finPct}%"></div></div>
+              <span class="mini-num">${nFin}/${total}</span>
+            </div>
+          ` : ""}
+        </div>
+        <button type="button" class="al-enter-btn" data-cid="${escapeHtml(c.campaign_id)}" data-cname="${escapeHtml(c.name || '')}">${tr("align.select_btn")} →</button>
       </div>
     `;
     li.querySelector(".al-enter-btn").addEventListener("click", (e) => {
-      const cid = e.target.dataset.cid;
-      const cname = e.target.dataset.cname;
+      const cid = e.currentTarget.dataset.cid;
+      const cname = e.currentTarget.dataset.cname;
       selectCampaign(cid, cname);
     });
     ul.appendChild(li);
@@ -2076,19 +2098,39 @@ function renderAlignOthers(d) {
     const v = p[k]; if (v == null) return "";
     return `<span class="sub-badge ${v ? "yes" : "no"}" title="${k}">${v ? "✓" : "✗"} ${k.replace(/_/g," ")}</span>`;
   }).join("");
-  for (const a of (d.annotations || [])) {
+  // Conflict detection: max-min spread on each main score across all annotators.
+  const annots = d.annotations || [];
+  const paVals = annots.map(a => a.payload?.physical_adherence).filter(v => v != null);
+  const iaVals = annots.map(a => a.payload?.instruction_alignment).filter(v => v != null);
+  const paSpread = paVals.length >= 2 ? Math.max(...paVals) - Math.min(...paVals) : 0;
+  const iaSpread = iaVals.length >= 2 ? Math.max(...iaVals) - Math.min(...iaVals) : 0;
+  const paConflict = paSpread >= 3;
+  const iaConflict = iaSpread >= 3;
+  if (paConflict || iaConflict) {
+    const banner = document.createElement("div");
+    banner.className = "conflict-banner";
+    const parts = [];
+    if (paConflict) parts.push(`<span class="conflict-tag">⚠ Physical 分歧 Δ=${paSpread}</span>`);
+    if (iaConflict) parts.push(`<span class="conflict-tag">⚠ Instruction 分歧 Δ=${iaSpread}</span>`);
+    banner.innerHTML = `<strong>大幅分歧</strong> · ${parts.join(" · ")} <span class="muted small">— 请重点讨论</span>`;
+    root.appendChild(banner);
+  }
+  for (const a of annots) {
     const p = a.payload || {};
     const isSelf = a.is_self;
     const isAdminA = a.is_admin_author;
     const card = document.createElement("div");
     card.className = "align-other-card" + (isSelf ? " self" : "") + (isAdminA ? " admin-author" : "");
+    // Per-card outlier marker if this annotator's score is the max or min of a conflicting axis.
+    const isOutlierPA = paConflict && (p.physical_adherence === Math.max(...paVals) || p.physical_adherence === Math.min(...paVals));
+    const isOutlierIA = iaConflict && (p.instruction_alignment === Math.max(...iaVals) || p.instruction_alignment === Math.min(...iaVals));
     card.innerHTML = `
       <div class="aoc-head">
         <strong>${escapeHtml(a.reviewer)}</strong>
         ${isSelf ? '<span class="row-badge gold">YOU</span>' : ''}
         ${isAdminA ? '<span class="row-badge report">ADMIN</span>' : ''}
       </div>
-      <p class="aoc-scores">Physical: <strong>${p.physical_adherence ?? "—"}</strong> · Instruction: <strong>${p.instruction_alignment ?? "—"}</strong></p>
+      <p class="aoc-scores">Physical: <strong class="${isOutlierPA ? 'conflict-score' : ''}">${p.physical_adherence ?? "—"}</strong> · Instruction: <strong class="${isOutlierIA ? 'conflict-score' : ''}">${p.instruction_alignment ?? "—"}</strong></p>
       <p class="sub-line">${subBadges(p, subsP)}${subBadges(p, subsI)}</p>
       ${p.notes ? `<p class="aoc-notes">${escapeHtml(p.notes)}</p>` : ""}
     `;

@@ -924,6 +924,144 @@ td.progress-cell {
 }
 #al-new-name:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(60,90,200,0.15); }
 
+/* v42 picker polish */
+.campaign-row {
+  display: block;
+  cursor: default;
+}
+.campaign-row .campaign-head {
+  display: grid;
+  grid-template-columns: 36px 1fr auto auto;
+  gap: 14px;
+  align-items: center;
+}
+.campaign-icon {
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #f4f5f9;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+}
+.campaign-row.aud-all .campaign-icon { background: #eef9ef; }
+.campaign-row.aud-reviewers .campaign-icon { background: #eef2fb; }
+.campaign-row.aud-custom .campaign-icon { background: #fff4e0; }
+.campaign-meta { min-width: 0; }
+.campaign-name-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.campaign-name-row strong { font-size: 14.5px; }
+.campaign-sub { font-size: 12px; margin-top: 2px; }
+.tag.aud-tag.tag-all { background: #eef9ef; color: #1e7a1e; border: 1px solid #b9e0bd; }
+.tag.aud-tag.tag-reviewers { background: #eef2fb; color: var(--accent); border: 1px solid #c6d2f0; }
+.tag.aud-tag.tag-custom { background: #fff4e0; color: #8a5500; border: 1px solid #f0d59c; }
+
+.campaign-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+.mini-progress {
+  display: grid;
+  grid-template-columns: 36px 1fr 56px;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+}
+.mini-label {
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.mini-bar {
+  background: #eef0f5;
+  border-radius: 4px;
+  height: 4px;
+  overflow: hidden;
+}
+.mini-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+.mini-fill.fin { background: var(--ok); }
+.mini-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 11.5px;
+  text-align: right;
+}
+
+/* Conflict highlighting in admin finalize side-by-side */
+.conflict-banner {
+  background: linear-gradient(135deg, #ffe2e2, #fff0e0);
+  border: 1px solid #ffb3b3;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: #b00020;
+}
+.conflict-tag {
+  display: inline-block;
+  background: #b00020;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0 4px;
+}
+.conflict-score {
+  background: #ffe2e2;
+  color: #b00020;
+  padding: 0 6px;
+  border-radius: 4px;
+  outline: 2px solid #ffb3b3;
+}
+
+/* Empty state for no campaigns */
+#al-no-campaigns {
+  text-align: center;
+  padding: 32px 20px;
+  font-size: 14px;
+}
+#al-no-campaigns::before {
+  content: "🧭";
+  display: block;
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+/* Loading skeleton (subtle shimmer) */
+#al-list-loading, #al-loading {
+  position: relative;
+}
+#al-list-loading::after {
+  content: "";
+  display: block;
+  margin: 12px 0 0;
+  height: 60px;
+  background: linear-gradient(90deg, #f0f2f7 0%, #fafbfd 50%, #f0f2f7 100%);
+  background-size: 200% 100%;
+  border-radius: 8px;
+  animation: shimmer 1.4s ease infinite;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+@media (max-width: 640px) {
+  .campaign-row .campaign-head {
+    grid-template-columns: 36px 1fr;
+    gap: 10px;
+  }
+  .campaign-progress { grid-column: 1 / -1; width: 100%; }
+  .campaign-row .al-enter-btn { grid-column: 1 / -1; width: 100%; padding: 10px; }
+}
+
 /* Language toggle button in user-chip */
 .user-chip .lang-btn {
   background: var(--card);
