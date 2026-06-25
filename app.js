@@ -7,6 +7,11 @@ const CFG = {
   LS_ROLE: "ewj_role",
   LS_DONE: "ewj_done",
   LS_LANG: "ewj_lang",
+  LS_VIDEO_HOST: "ewj_video_host",
+  VIDEO_HOSTS: [
+    { key: "huggingface.co", label: "HF", title: "HuggingFace (默认)" },
+    { key: "hf-mirror.com",  label: "镜像", title: "hf-mirror.com (国内镜像)" },
+  ],
 };
 
 /* ===================== i18n ===================== */
@@ -434,25 +439,34 @@ function toast(msg, type) {
 function wireVideoFallback(videoEl, opts) {
   if (!videoEl || videoEl.dataset.fallbackWired === "1") return;
   videoEl.dataset.fallbackWired = "1";
-  const maxRetries = (opts && opts.maxRetries) || 2;
+  const HOST_KEYS = CFG.VIDEO_HOSTS.map(h => h.key);
+  // 1 retry per alternate host (cache-bust + host swap), then final placeholder.
+  const maxRetries = (opts && opts.maxRetries) || HOST_KEYS.length;
   const onSkip = opts && opts.onSkip;
   let retries = 0;
+  let hostCursor = Math.max(0, HOST_KEYS.indexOf(getVideoHost()));
   videoEl.addEventListener("error", () => {
     if (retries < maxRetries) {
       retries++;
+      // Strip any prior cache-buster, then swap host to the next entry in VIDEO_HOSTS.
       const base = videoEl.src.split(/[?&]_cb=/)[0].replace(/[?&]$/, "");
-      const sep = base.includes("?") ? "&" : "?";
-      const newSrc = base + sep + "_cb=" + (Date.now() % 100000);
-      console.warn(`video load failed (try ${retries}/${maxRetries}):`, videoEl.src);
+      hostCursor = (hostCursor + 1) % HOST_KEYS.length;
+      const swapped = base.replace(/^https?:\/\/[^\/]+\//i, `https://${HOST_KEYS[hostCursor]}/`);
+      const sep = swapped.includes("?") ? "&" : "?";
+      const newSrc = swapped + sep + "_cb=" + (Date.now() % 100000);
+      console.warn(`video load failed (try ${retries}/${maxRetries}) — auto-swap to ${HOST_KEYS[hostCursor]}:`, videoEl.src);
       videoEl.src = newSrc;
       videoEl.load();
       return;
     }
     // Final: render inline placeholder.
     if (videoEl.parentElement?.querySelector(".video-failed")) return;
-    const msgFail = getLang() === "cn" ? "视频加载失败" : "Video failed to load";
-    const lblRetry = getLang() === "cn" ? "重试" : "Retry";
-    const lblSkip = getLang() === "cn" ? "跳过" : "Skip";
+    const cn = getLang() === "cn";
+    const msgFail = cn ? "视频加载失败" : "Video failed to load";
+    const lblRetry = cn ? "重试" : "Retry";
+    const lblSkip = cn ? "跳过" : "Skip";
+    const otherHost = CFG.VIDEO_HOSTS.find(h => h.key !== getVideoHost()) || CFG.VIDEO_HOSTS[1];
+    const lblSwap = cn ? `换 ${otherHost.label} 源` : `Switch to ${otherHost.label}`;
     const ph = document.createElement("div");
     ph.className = "video-failed";
     ph.innerHTML = `
@@ -460,14 +474,26 @@ function wireVideoFallback(videoEl, opts) {
       <div class="video-failed-msg">${msgFail}</div>
       <div class="video-failed-actions">
         <button type="button" class="ghost video-retry-btn">${lblRetry}</button>
+        <button type="button" class="ghost video-swap-btn" title="${escapeHtml(otherHost.title)}">${lblSwap}</button>
         ${onSkip ? `<button type="button" class="ghost video-skip-btn">${lblSkip}</button>` : ""}
       </div>`;
     ph.querySelector(".video-retry-btn").addEventListener("click", () => {
       retries = 0;
+      hostCursor = Math.max(0, HOST_KEYS.indexOf(getVideoHost()));
       ph.remove();
       videoEl.style.display = "";
-      videoEl.src = videoEl.src.split(/[?&]_cb=/)[0];
+      const base = videoEl.src.split(/[?&]_cb=/)[0];
+      videoEl.src = base.replace(/^https?:\/\/[^\/]+\//i, `https://${HOST_KEYS[hostCursor]}/`);
       videoEl.load();
+    });
+    ph.querySelector(".video-swap-btn").addEventListener("click", () => {
+      setVideoHost(otherHost.key);  // swaps all videos page-wide
+      retries = 0;
+      ph.remove();
+      videoEl.style.display = "";
+      // setVideoHost already triggered .load(); kick once more in case this element was hidden.
+      videoEl.load();
+      toast(cn ? `已切换到 ${otherHost.label} 源` : `Switched to ${otherHost.label}`, "ok");
     });
     if (onSkip) ph.querySelector(".video-skip-btn").addEventListener("click", onSkip);
     videoEl.style.display = "none";
@@ -731,11 +757,13 @@ function renderItem(it) {
 async function fetchInstructionInto(video_url, targetElId) {
   const target = document.getElementById(targetElId);
   if (!target) return;
-  const base = video_url && video_url.replace(
+  const baseRaw = video_url && video_url.replace(
     /generated_data\/[^\/]+\/(task_\d+)\/(episode_\d+)\/1\/[^\/]+\.mp4$/,
     "gt_data/$1/$2/prompt"
   );
-  if (!base) { target.textContent = "(no prompt)"; return; }
+  if (!baseRaw) { target.textContent = "(no prompt)"; return; }
+  // Apply current video-host preference so instruction also follows hf-mirror switch.
+  const base = applyVideoHost(baseRaw);
   const filenames = getLang() === "cn"
     ? ["instruction_cn.txt", "instruction.txt"]
     : ["instruction.txt"];
@@ -769,8 +797,39 @@ async function fetchPrompt(it) {
 
 function absUrl(u) {
   if (!u) return "";
-  if (/^https?:\/\//.test(u)) return u;
-  return CFG.HF_RESOLVE_BASE + "/" + u.replace(/^\/+/, "");
+  if (/^https?:\/\//.test(u)) return applyVideoHost(u);
+  return applyVideoHost(CFG.HF_RESOLVE_BASE + "/" + u.replace(/^\/+/, ""));
+}
+
+/* Per-user video host preference. Lets a user behind a slow/blocked HF route
+   switch all video + instruction fetches to a mirror without backend changes. */
+function getVideoHost() {
+  return localStorage.getItem(CFG.LS_VIDEO_HOST) || "huggingface.co";
+}
+function setVideoHost(host) {
+  localStorage.setItem(CFG.LS_VIDEO_HOST, host);
+  refreshAllVideoSources();
+  // Re-fetch instruction in case cache is empty and fall-through hit HF.
+  applyCurrentInstruction();
+}
+function applyVideoHost(url) {
+  if (!url) return "";
+  const host = getVideoHost();
+  if (host === "huggingface.co") return url;
+  return url.replace(/^https?:\/\/(?:www\.)?huggingface\.co\//i, `https://${host}/`);
+}
+/* Swap host on every <video> on the page (preserves currentTime when possible). */
+function refreshAllVideoSources() {
+  document.querySelectorAll("video[src]").forEach(v => {
+    const original = v.dataset.originalSrc || v.getAttribute("src");
+    v.dataset.originalSrc = original;
+    const swapped = applyVideoHost(original);
+    if (v.src !== swapped) {
+      const t = v.currentTime;
+      v.src = swapped;
+      try { v.load(); v.currentTime = t; } catch {}
+    }
+  });
 }
 
 async function onSubmit(skip) {
@@ -1890,6 +1949,29 @@ function wireGlobalChrome() {
     });
     const lo = chip.querySelector("#logout-btn");
     if (lo) chip.insertBefore(btn, lo); else chip.appendChild(btn);
+  }
+  // Inject video-source toggle next to lang button if missing.
+  if (chip && !document.getElementById("vsrc-btn")) {
+    const btn = document.createElement("button");
+    btn.id = "vsrc-btn";
+    btn.className = "link vsrc-btn";
+    const refresh = () => {
+      const cur = CFG.VIDEO_HOSTS.find(h => h.key === getVideoHost()) || CFG.VIDEO_HOSTS[0];
+      btn.textContent = `🌐 ${cur.label}`;
+      btn.title = `视频源: ${cur.title} — 点击切换 / Video source: click to switch`;
+    };
+    refresh();
+    btn.addEventListener("click", () => {
+      const cur = getVideoHost();
+      const next = (CFG.VIDEO_HOSTS.find(h => h.key !== cur) || CFG.VIDEO_HOSTS[0]).key;
+      setVideoHost(next);
+      refresh();
+      const cn = getLang() === "cn";
+      const label = CFG.VIDEO_HOSTS.find(h => h.key === next).label;
+      toast(cn ? `视频源已切换到 ${label}` : `Video source: ${label}`, "ok");
+    });
+    const langBtn = chip.querySelector("#lang-btn");
+    if (langBtn) chip.insertBefore(btn, langBtn); else chip.appendChild(btn);
   }
   const lo = document.getElementById("logout-btn");
   if (lo) {

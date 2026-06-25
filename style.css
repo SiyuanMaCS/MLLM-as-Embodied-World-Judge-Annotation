@@ -1301,6 +1301,22 @@ td.progress-cell {
 }
 .user-chip .lang-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
+.user-chip .vsrc-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  margin-right: 4px;
+}
+.user-chip .vsrc-btn:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+.video-failed .video-swap-btn { border-color: #2563eb; color: #2563eb; }
+.video-failed .video-swap-btn:hover { background: #2563eb; color: #fff; }
+
 /* Video failed-to-load fallback placeholder */
 .video-failed {
   display: flex;
