@@ -680,9 +680,11 @@ async function fetchPrompt(it) {
     "gt_data/$1/$2/prompt"
   );
   if (!base) { document.getElementById("prompt-text").textContent = "(no prompt)"; return; }
+  // ONLY use instruction.txt (the canonical task instruction). prompt.txt is the
+  // rewrite/refined prompt fed to the generator and would be misleading for annotators.
   const filenames = getLang() === "cn"
-    ? ["instruction_cn.txt", "instruction.txt", "prompt.txt"]
-    : ["instruction.txt", "prompt.txt"];
+    ? ["instruction_cn.txt", "instruction.txt"]
+    : ["instruction.txt"];
   for (const fname of filenames) {
     try {
       const res = await fetch(`${base}/${fname}`);
