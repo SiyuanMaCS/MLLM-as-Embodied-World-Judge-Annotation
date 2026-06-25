@@ -6,7 +6,7 @@
 <title>Annotation Standard — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v45">
+<link rel="stylesheet" href="style.css?v=v46">
 </head>
 <body>
 <main>
@@ -101,12 +101,13 @@
       <li><strong>Physical 只看视频</strong>:判物理时<strong>忽略 instruction</strong>,只问"看起来真不真实"。</li>
       <li><strong>Instruction 以 init_frame 为参照</strong>判断 agent / 场景起点。</li>
       <li><strong>8 字段全标</strong>(2 主 1–5 + 6 小分 0/1)。</li>
+      <li><strong>⚠ 小分交互方向</strong>:**勾选 = 此项被违背**(红 ✗);默认不勾 = 通过。底层存值仍 <code>1 = 通过 / 0 = 违背</code>(unchanged),只是输入方向倒过来让"标违背"更轻松。</li>
       <li><strong>note 必填</strong>(非 optional):简述打分的视觉证据,尤其是任何标 0 的小分。</li>
       <li><strong>小分是证据、主分是综合</strong>:主分需与小分一致(如 <code>goal_completed=0</code> 时 Instruction Alignment 一般 ≤3)。</li>
     </ul>
     <p class="muted small">依据:VideoPhy / VideoPhy2、VideoScore / VideoScore2、WorldModelBench、WorldArena、VBench-2.0。</p>
   </section>
 </main>
-<script src="app.js?v=v45" defer></script>
+<script src="app.js?v=v46" defer></script>
 </body>
 </html>

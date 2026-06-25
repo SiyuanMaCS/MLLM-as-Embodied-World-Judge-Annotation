@@ -126,9 +126,9 @@ const LANG = {
     "task.required": "*",
     "task.today": "today",
     "axis.physical": "Physical Adherence",
-    "axis.physical_help": "only judge what you see in the video",
+    "axis.physical_help": "only judge what you see in the video · check any item that is VIOLATED",
     "axis.instruction": "Instruction Alignment",
-    "axis.instruction_help": "judge with task instruction + init frame",
+    "axis.instruction_help": "judge with task instruction + init frame · check any item that is VIOLATED",
     "axis.score": "Score (1–5)",
     "sub.agent_consistency": "Agent consistency",
     "sub.agent_consistency_hint": "manipulator stays structurally complete; no melting/warping",
@@ -278,9 +278,9 @@ const LANG = {
     "task.required": "*",
     "task.today": "今日",
     "axis.physical": "物理真实度",
-    "axis.physical_help": "只看视频判断,忽略 instruction",
+    "axis.physical_help": "只看视频判断 · 勾选 = 此项被违背 ✗",
     "axis.instruction": "指令对齐",
-    "axis.instruction_help": "用 instruction + 首帧 判断",
+    "axis.instruction_help": "用 instruction + 首帧 判断 · 勾选 = 此项被违背 ✗",
     "axis.score": "评分(1–5)",
     "sub.agent_consistency": "机械手/人手完整性",
     "sub.agent_consistency_hint": "结构完整、不融化/扭曲",
@@ -711,7 +711,7 @@ async function onSubmit(skip) {
     payload.physical_adherence = Number(document.getElementById("physical_adherence").value);
     payload.instruction_alignment = Number(document.getElementById("instruction_alignment").value);
     for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-      payload[id] = document.getElementById(id).checked ? 1 : 0;
+      payload[id] = document.getElementById(id).checked ? 0 : 1;
     }
     payload.notes = notes;
   }
@@ -1196,7 +1196,7 @@ async function submitGold(skip) {
     payload.physical_adherence = Number(document.getElementById("physical_adherence").value);
     payload.instruction_alignment = Number(document.getElementById("instruction_alignment").value);
     for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-      payload[id] = document.getElementById(id).checked ? 1 : 0;
+      payload[id] = document.getElementById(id).checked ? 0 : 1;
     }
     payload.notes = notes;
   }
@@ -1250,7 +1250,8 @@ async function initReview() {
         document.getElementById("m-" + id + "-out").value = v;
       }
       for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-        document.getElementById("m-" + id).checked = !!orig[id];
+        // Inverted: stored 0 (violated) → checkbox checked (red ✗); stored 1 (pass) → unchecked.
+        document.getElementById("m-" + id).checked = orig[id] === 0;
       }
       document.getElementById("m-notes").value = "";
       fields.hidden = false;
@@ -1322,7 +1323,7 @@ async function submitReview(decision) {
       notes,
     };
     for (const id of ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"]) {
-      payload[id] = document.getElementById("m-" + id).checked ? 1 : 0;
+      payload[id] = document.getElementById("m-" + id).checked ? 0 : 1;
     }
   }
   const body = { review_submit: true, reviewer, item_id, target, decision, payload, is_report };
@@ -2214,7 +2215,7 @@ async function submitAlign() {
     notes,
   };
   for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-    payload[id] = document.getElementById("al-" + id).checked ? 1 : 0;
+    payload[id] = document.getElementById("al-" + id).checked ? 0 : 1;
   }
   try {
     const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
@@ -2345,7 +2346,8 @@ function renderFinalizeForm(d) {
   // Pre-fill with admin's own annotation if present, else first non-self
   const myA = (d.annotations || []).find(a => a.is_self) || (d.annotations || [])[0];
   const p = (myA && myA.payload) || {};
-  const checked = (k) => p[k] ? "checked" : "";
+  // Inverted: stored 0 = violated = checkbox checked (red ✗); stored 1 = pass = unchecked.
+  const checked = (k) => p[k] === 0 ? "checked" : "";
   wrap.innerHTML = `
     <form id="al-finalize-form">
       <fieldset class="dim-block">
@@ -2402,7 +2404,7 @@ async function submitAlignFinalize(item_id) {
     notes,
   };
   for (const id of ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"]) {
-    payload[id] = document.getElementById("f-" + id).checked ? 1 : 0;
+    payload[id] = document.getElementById("f-" + id).checked ? 0 : 1;
   }
   try {
     const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
