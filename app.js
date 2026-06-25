@@ -128,6 +128,16 @@ const LANG = {
     "axis.physical": "Physical Adherence",
     "axis.physical_help": "only judge what you see in the video",
     "sub.violation_notice": "⚠ Check a box to flag a VIOLATION (red ✗). Default unchecked = passes. Only check when you spot a problem.",
+    "axis.pa.level.1": "Gross physics violations throughout",
+    "axis.pa.level.2": "Physics frequently broken, ≥1 criterion clearly fails",
+    "axis.pa.level.3": "Mostly plausible, noticeable local issues",
+    "axis.pa.level.4": "Largely physical, minor overlookable issues",
+    "axis.pa.level.5": "Consistently physical, no visible violations",
+    "axis.ia.level.1": "Wrong / unrelated action or agent absent",
+    "axis.ia.level.2": "Correct agent, wrong object / action",
+    "axis.ia.level.3": "Right agent & object, goal partially achieved",
+    "axis.ia.level.4": "Task correct, minor issues only",
+    "axis.ia.level.5": "Correct agent & object, goal fully completed",
     "axis.instruction": "Instruction Alignment",
     "axis.instruction_help": "judge with task instruction + init frame",
     "axis.score": "Score (1–5)",
@@ -281,6 +291,16 @@ const LANG = {
     "axis.physical": "物理真实度",
     "axis.physical_help": "只看视频判断",
     "sub.violation_notice": "⚠ 勾选 = 标记该项【被违背】(红 ✗);默认不勾 = 通过。只在发现问题时勾选。",
+    "axis.pa.level.1": "整体崩坏 — 普遍物理违反",
+    "axis.pa.level.2": "重大违反(漂浮 / 穿模)",
+    "axis.pa.level.3": "明显不一致(短暂形变 / 闪烁)",
+    "axis.pa.level.4": "轻微瑕疵",
+    "axis.pa.level.5": "完美无违反",
+    "axis.ia.level.1": "错 agent 或 agent 不动",
+    "axis.ia.level.2": "错动作或错物体",
+    "axis.ia.level.3": "部分完成,未达终态",
+    "axis.ia.level.4": "基本达成,轻微欠缺",
+    "axis.ia.level.5": "完整准确达成",
     "axis.instruction": "指令对齐",
     "axis.instruction_help": "用 instruction + 首帧 判断",
     "axis.score": "评分(1–5)",
@@ -556,6 +576,8 @@ async function initTask() {
     const out = document.getElementById(id + "-out");
     if (input && out) input.addEventListener("input", () => { out.value = input.value; });
   }
+  wireScoreHint("physical_adherence", "physical_adherence-hint", "pa");
+  wireScoreHint("instruction_alignment", "instruction_alignment-hint", "ia");
 
   document.getElementById("annotate-form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -1166,6 +1188,8 @@ async function initGold() {
     const out = document.getElementById(id + "-out");
     if (inp && out) inp.addEventListener("input", () => out.value = inp.value);
   }
+  wireScoreHint("physical_adherence", "physical_adherence-hint", "pa");
+  wireScoreHint("instruction_alignment", "instruction_alignment-hint", "ia");
   document.getElementById("annotate-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     await submitGold(false);
@@ -1246,6 +1270,8 @@ async function initReview() {
     const out = document.getElementById(id + "-out");
     if (inp && out) inp.addEventListener("input", () => out.value = inp.value);
   }
+  wireScoreHint("m-physical_adherence", "m-physical_adherence-hint", "pa");
+  wireScoreHint("m-instruction_alignment", "m-instruction_alignment-hint", "ia");
   document.getElementById("approve-btn").addEventListener("click", () => submitReview("approve"));
   document.getElementById("modify-btn").addEventListener("click", () => {
     const fields = document.getElementById("modify-fields");
@@ -1705,6 +1731,21 @@ function capitalizeFirst(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/* Wire a score hint chip below a slider — updates per-level text + color class as user drags.
+   axisKey = "pa" | "ia"; sliderId = the <input type=range> id; hintId = the chip element id. */
+function wireScoreHint(sliderId, hintId, axisKey) {
+  const slider = document.getElementById(sliderId);
+  const hint = document.getElementById(hintId);
+  if (!slider || !hint) return;
+  function update() {
+    const v = Number(slider.value) || 0;
+    hint.textContent = tr(`axis.${axisKey}.level.${v}`);
+    hint.className = "score-hint level-" + v;
+  }
+  slider.addEventListener("input", update);
+  update();
+}
+
 /* Friendly role-gate panel for users without permission on a given page.
    Hides all main sections and shows a single explanatory card with a Home link. */
 function renderRoleGate(requirement) {
@@ -1799,6 +1840,8 @@ async function initAlign() {
     const out = document.getElementById(id + "-out");
     if (inp && out) inp.addEventListener("input", () => out.value = inp.value);
   }
+  wireScoreHint("al-physical_adherence", "al-physical_adherence-hint", "pa");
+  wireScoreHint("al-instruction_alignment", "al-instruction_alignment-hint", "ia");
   document.getElementById("al-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     await submitAlign();
@@ -2364,6 +2407,7 @@ function renderFinalizeForm(d) {
         <div class="form-row">
           <label for="f-physical_adherence">Score (1–5) <output for="f-physical_adherence" id="f-physical_adherence-out">${p.physical_adherence ?? 3}</output></label>
           <input type="range" id="f-physical_adherence" min="1" max="5" step="1" value="${p.physical_adherence ?? 3}">
+          <p class="score-hint level-${p.physical_adherence ?? 3}" id="f-physical_adherence-hint">—</p>
         </div>
         <div class="sub-row">
           <label class="sub-check"><input type="checkbox" id="f-agent_consistency" ${checked("agent_consistency")}> <span>Agent consistency</span></label>
@@ -2376,6 +2420,7 @@ function renderFinalizeForm(d) {
         <div class="form-row">
           <label for="f-instruction_alignment">Score (1–5) <output for="f-instruction_alignment" id="f-instruction_alignment-out">${p.instruction_alignment ?? 3}</output></label>
           <input type="range" id="f-instruction_alignment" min="1" max="5" step="1" value="${p.instruction_alignment ?? 3}">
+          <p class="score-hint level-${p.instruction_alignment ?? 3}" id="f-instruction_alignment-hint">—</p>
         </div>
         <div class="sub-row">
           <label class="sub-check"><input type="checkbox" id="f-agent_match" ${checked("agent_match")}> <span>Agent match</span></label>
@@ -2397,6 +2442,8 @@ function renderFinalizeForm(d) {
     const out = document.getElementById(id + "-out");
     if (inp && out) inp.addEventListener("input", () => out.value = inp.value);
   }
+  wireScoreHint("f-physical_adherence", "f-physical_adherence-hint", "pa");
+  wireScoreHint("f-instruction_alignment", "f-instruction_alignment-hint", "ia");
   document.getElementById("al-finalize-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     await submitAlignFinalize(d.item_id || ALIGN_CURRENT.id);

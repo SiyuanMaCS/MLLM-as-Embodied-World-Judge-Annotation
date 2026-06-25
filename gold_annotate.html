@@ -6,7 +6,7 @@
 <title>Gold Annotation — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v49">
+<link rel="stylesheet" href="style.css?v=v50">
 </head>
 <body>
 <main>
@@ -37,6 +37,7 @@
         <div class="form-row">
           <label for="physical_adherence">Score (1–5) <output for="physical_adherence" id="physical_adherence-out">3</output></label>
           <input type="range" id="physical_adherence" name="physical_adherence" min="1" max="5" step="1" value="3">
+          <p class="score-hint level-3" id="physical_adherence-hint">—</p>
         </div>
         <div class="sub-row">
           <label class="sub-check"><input type="checkbox" id="agent_consistency" name="agent_consistency"> <span>Agent consistency</span><small>机械手/人手结构完整、不融化/扭曲</small></label>
@@ -50,6 +51,7 @@
         <div class="form-row">
           <label for="instruction_alignment">Score (1–5) <output for="instruction_alignment" id="instruction_alignment-out">3</output></label>
           <input type="range" id="instruction_alignment" name="instruction_alignment" min="1" max="5" step="1" value="3">
+          <p class="score-hint level-3" id="instruction_alignment-hint">—</p>
         </div>
         <div class="sub-row">
           <label class="sub-check"><input type="checkbox" id="agent_match" name="agent_match"> <span>Agent match</span><small>完成任务的就是首帧那个机械手/人手</small></label>
@@ -72,6 +74,6 @@
 
   <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v49" defer></script>
+<script src="app.js?v=v50" defer></script>
 </body>
 </html>

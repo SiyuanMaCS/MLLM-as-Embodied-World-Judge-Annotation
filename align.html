@@ -6,7 +6,7 @@
 <title>Reviewer Alignment — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v49">
+<link rel="stylesheet" href="style.css?v=v50">
 </head>
 <body>
 <main>
@@ -83,6 +83,7 @@
         <div class="form-row">
           <label for="al-physical_adherence"><span data-i18n="axis.score">Score (1–5)</span> <output for="al-physical_adherence" id="al-physical_adherence-out">3</output></label>
           <input type="range" id="al-physical_adherence" min="1" max="5" step="1" value="3">
+          <p class="score-hint level-3" id="al-physical_adherence-hint">—</p>
         </div>
         <div class="sub-row">
           <label class="sub-check"><input type="checkbox" id="al-agent_consistency"> <span data-i18n="sub.agent_consistency">Agent consistency</span><small data-i18n="sub.agent_consistency_hint">manipulator stays structurally complete</small></label>
@@ -96,6 +97,7 @@
         <div class="form-row">
           <label for="al-instruction_alignment"><span data-i18n="axis.score">Score (1–5)</span> <output for="al-instruction_alignment" id="al-instruction_alignment-out">3</output></label>
           <input type="range" id="al-instruction_alignment" min="1" max="5" step="1" value="3">
+          <p class="score-hint level-3" id="al-instruction_alignment-hint">—</p>
         </div>
         <div class="sub-row">
           <label class="sub-check"><input type="checkbox" id="al-agent_match"> <span data-i18n="sub.agent_match">Agent match</span><small data-i18n="sub.agent_match_hint">manipulator matches init frame</small></label>
@@ -146,6 +148,6 @@
 
   <section id="al-error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="al-err-msg">—</p><button id="al-retry" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v49" defer></script>
+<script src="app.js?v=v50" defer></script>
 </body>
 </html>
