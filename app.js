@@ -8,9 +8,14 @@ const CFG = {
   LS_DONE: "ewj_done",
   LS_LANG: "ewj_lang",
   LS_VIDEO_HOST: "ewj_video_host",
+  // Only list hosts that ACTUALLY proxy bytes. hf-mirror.com is a 308-redirector
+  // for /datasets/ paths (bounces to huggingface.co → same blocked Xet CDN), so
+  // including it gives users a misleading "I switched sources" placebo. Removed
+  // until a real China-reachable host (reverse proxy or OSS) is provisioned;
+  // architecture preserved so the chip + onerror cycle re-engage automatically
+  // when a second host is added here (or supplied via it.video_sources in v58).
   VIDEO_HOSTS: [
     { key: "huggingface.co", label: "HF", title: "HuggingFace (默认)" },
-    { key: "hf-mirror.com",  label: "镜像", title: "hf-mirror.com (国内镜像)" },
   ],
 };
 
@@ -465,8 +470,13 @@ function wireVideoFallback(videoEl, opts) {
     const msgFail = cn ? "视频加载失败" : "Video failed to load";
     const lblRetry = cn ? "重试" : "Retry";
     const lblSkip = cn ? "跳过" : "Skip";
-    const otherHost = CFG.VIDEO_HOSTS.find(h => h.key !== getVideoHost()) || CFG.VIDEO_HOSTS[1];
-    const lblSwap = cn ? `换 ${otherHost.label} 源` : `Switch to ${otherHost.label}`;
+    // Only show swap button if there's another real host to swap to.
+    const otherHost = CFG.VIDEO_HOSTS.length >= 2
+      ? CFG.VIDEO_HOSTS.find(h => h.key !== getVideoHost())
+      : null;
+    const lblSwap = otherHost
+      ? (cn ? `换 ${otherHost.label} 源` : `Switch to ${otherHost.label}`)
+      : null;
     const ph = document.createElement("div");
     ph.className = "video-failed";
     ph.innerHTML = `
@@ -474,7 +484,7 @@ function wireVideoFallback(videoEl, opts) {
       <div class="video-failed-msg">${msgFail}</div>
       <div class="video-failed-actions">
         <button type="button" class="ghost video-retry-btn">${lblRetry}</button>
-        <button type="button" class="ghost video-swap-btn" title="${escapeHtml(otherHost.title)}">${lblSwap}</button>
+        ${otherHost ? `<button type="button" class="ghost video-swap-btn" title="${escapeHtml(otherHost.title)}">${lblSwap}</button>` : ""}
         ${onSkip ? `<button type="button" class="ghost video-skip-btn">${lblSkip}</button>` : ""}
       </div>`;
     ph.querySelector(".video-retry-btn").addEventListener("click", () => {
@@ -486,15 +496,16 @@ function wireVideoFallback(videoEl, opts) {
       videoEl.src = base.replace(/^https?:\/\/[^\/]+\//i, `https://${HOST_KEYS[hostCursor]}/`);
       videoEl.load();
     });
-    ph.querySelector(".video-swap-btn").addEventListener("click", () => {
-      setVideoHost(otherHost.key);  // swaps all videos page-wide
-      retries = 0;
-      ph.remove();
-      videoEl.style.display = "";
-      // setVideoHost already triggered .load(); kick once more in case this element was hidden.
-      videoEl.load();
-      toast(cn ? `已切换到 ${otherHost.label} 源` : `Switched to ${otherHost.label}`, "ok");
-    });
+    if (otherHost) {
+      ph.querySelector(".video-swap-btn").addEventListener("click", () => {
+        setVideoHost(otherHost.key);  // swaps all videos page-wide
+        retries = 0;
+        ph.remove();
+        videoEl.style.display = "";
+        videoEl.load();
+        toast(cn ? `已切换到 ${otherHost.label} 源` : `Switched to ${otherHost.label}`, "ok");
+      });
+    }
     if (onSkip) ph.querySelector(".video-skip-btn").addEventListener("click", onSkip);
     videoEl.style.display = "none";
     videoEl.parentElement.appendChild(ph);
@@ -1951,7 +1962,8 @@ function wireGlobalChrome() {
     if (lo) chip.insertBefore(btn, lo); else chip.appendChild(btn);
   }
   // Inject video-source toggle next to lang button if missing.
-  if (chip && !document.getElementById("vsrc-btn")) {
+  // Only render when there's something to switch to (>=2 hosts in VIDEO_HOSTS).
+  if (chip && !document.getElementById("vsrc-btn") && CFG.VIDEO_HOSTS.length >= 2) {
     const btn = document.createElement("button");
     btn.id = "vsrc-btn";
     btn.className = "link vsrc-btn";
