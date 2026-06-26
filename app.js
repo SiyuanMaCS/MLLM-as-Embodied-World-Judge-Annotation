@@ -955,9 +955,7 @@ function refreshVsrcChip() {
   }
   // Chip not yet rendered (e.g. backend just expanded sources) → trigger the same
   // idempotent injection path used at page bootstrap.
-  const user = localStorage.getItem(CFG.LS_USER);
-  const role = localStorage.getItem(CFG.LS_ROLE);
-  if (typeof ensureAuthChrome === "function") ensureAuthChrome(user, role);
+  if (typeof wireGlobalChrome === "function") wireGlobalChrome();
 }
 
 async function onSubmit(skip) {
