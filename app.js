@@ -180,6 +180,9 @@ const LANG = {
     "align.start_hint": "Randomly samples 50 items shared across all reviewers + admin.",
     "align.done_title": "You're done with all 50 ✨",
     "align.done_hint": "All items annotated. Review others' annotations below or wait for admin finalize.",
+    "align.view_results_btn": "📊 View alignment results (read-only)",
+    "align.view_results_short": "📊 View results (read-only)",
+    "align.read_only_badge": "read-only",
     "align.others_title": "All annotations for this item",
     "align.finalize_title": "Admin finalize (write to gold)",
     "align.next_btn": "Next item →",
@@ -347,6 +350,9 @@ const LANG = {
     "align.start_hint": "随机抽 50 条,所有审核员 + 管理员共标。",
     "align.done_title": "你已标完全部 50 条 ✨",
     "align.done_hint": "全部标完。可在下方查看其他人对各条的标注,等管理员定稿。",
+    "align.view_results_btn": "📊 查看 alignment 结果(只读)",
+    "align.view_results_short": "📊 查看结果(只读)",
+    "align.read_only_badge": "只读",
     "align.others_title": "本条所有标注",
     "align.finalize_title": "管理员定稿(写入金标)",
     "align.next_btn": "下一条 →",
@@ -2143,6 +2149,7 @@ let ALIGN_CURRENT = null;       // currently-rendered item
 let ALIGN_CAMPAIGN_ID = null;   // currently-selected campaign id
 let ALIGN_CAMPAIGN_NAME = "";   // currently-selected campaign name
 let ALIGN_IS_ADMIN = false;
+let ALIGN_READ_ONLY = false;    // set when backend returns read_only:true for a completed non-admin participant
 let ALIGN_USER_LIST = [];       // for custom-audience multi-select
 
 async function initAlign() {
@@ -2184,13 +2191,15 @@ async function initAlign() {
     } catch (err) { toast(tr("toast.align_end_failed") + ": " + err.message, "err"); }
   });
 
-  // Admin extras: IAA toggle + export + history
-  if (ALIGN_IS_ADMIN) {
-    const iaaBtn = document.getElementById("al-iaa-btn");
-    if (iaaBtn) iaaBtn.addEventListener("click", () => toggleIAAPanel());
-    const exportBtn = document.getElementById("al-export-btn");
-    if (exportBtn) exportBtn.addEventListener("click", () => exportCampaign());
-  }
+  // IAA + Export are useful for completed participants too (read-only mode).
+  // Backend gates the actual data (align_agreement 403s for non-completed non-admin).
+  const iaaBtn = document.getElementById("al-iaa-btn");
+  if (iaaBtn) iaaBtn.addEventListener("click", () => toggleIAAPanel());
+  const exportBtn = document.getElementById("al-export-btn");
+  if (exportBtn) exportBtn.addEventListener("click", () => exportCampaign());
+  // Wire "View results (read-only)" button on done page — re-renders the overview.
+  const viewResultsBtn = document.getElementById("al-view-results-btn");
+  if (viewResultsBtn) viewResultsBtn.addEventListener("click", () => loadAlignStatus());
   // Admin: Start new campaign form
   if (ALIGN_IS_ADMIN) {
     document.getElementById("al-start-toggle").hidden = false;
@@ -2479,11 +2488,22 @@ function renderCampaignList(campaigns) {
         </div>
         <button type="button" class="al-enter-btn" data-cid="${escapeHtml(c.campaign_id)}" data-cname="${escapeHtml(c.name || '')}">${tr("align.select_btn")} →</button>
       </div>
+      ${(c.can_view_results && !ALIGN_IS_ADMIN) ? `
+        <div class="campaign-readonly-row">
+          <button type="button" class="link al-view-readonly-btn" data-cid="${escapeHtml(c.campaign_id)}" data-cname="${escapeHtml(c.name || '')}">${tr("align.view_results_short")}</button>
+        </div>
+      ` : ""}
     `;
     li.querySelector(".al-enter-btn").addEventListener("click", (e) => {
       const cid = e.currentTarget.dataset.cid;
       const cname = e.currentTarget.dataset.cname;
       selectCampaign(cid, cname);
+    });
+    const roBtn = li.querySelector(".al-view-readonly-btn");
+    if (roBtn) roBtn.addEventListener("click", (e) => {
+      const cid = e.currentTarget.dataset.cid;
+      const cname = e.currentTarget.dataset.cname;
+      selectCampaign(cid, cname);  // selectCampaign → loadAlignStatus, which detects read_only from backend
     });
     ul.appendChild(li);
   }
@@ -2516,10 +2536,24 @@ async function loadAlignStatus() {
     document.getElementById("al-done").textContent = d.my_done ?? 0;
     document.getElementById("al-total").textContent = d.total ?? 50;
     document.getElementById("al-progress-stat").hidden = false;
-    if (ALIGN_IS_ADMIN) {
-      document.getElementById("al-final-count").textContent = `${d.n_finalized ?? 0} finalized / ${d.total ?? 50}`;
+    // Backend marks completed non-admin participants with read_only:true and returns the same
+    // items[] payload that admins see. Render the overview panel for them too, mutations gated server-side.
+    ALIGN_READ_ONLY = !!(d.read_only && !ALIGN_IS_ADMIN);
+    if (ALIGN_IS_ADMIN || ALIGN_READ_ONLY) {
+      document.getElementById("al-final-count").textContent = ALIGN_IS_ADMIN
+        ? `${d.n_finalized ?? 0} finalized / ${d.total ?? 50}`
+        : `${d.n_finalized ?? 0} finalized · ${tr("align.read_only_badge")}`;
       renderAdminOverview(d.items || []);
       document.getElementById("al-admin-overview").hidden = false;
+      // End-campaign button is admin-only.
+      const endBtn = document.getElementById("al-end-btn");
+      if (endBtn) endBtn.hidden = !ALIGN_IS_ADMIN;
+    }
+    if (ALIGN_READ_ONLY) {
+      // Read-only viewer: no more annotation form, no loadAlignNext.
+      document.getElementById("al-done-msg").hidden = false;
+      document.getElementById("al-item").hidden = true;
+      return;
     }
     await loadAlignNext();
   } catch (err) {
@@ -2543,6 +2577,8 @@ async function loadAlignNext() {
     if (d.done) {
       document.getElementById("al-item").hidden = true;
       document.getElementById("al-done-msg").hidden = false;
+      // Just finished: refresh status so backend's read_only:true engages → admin-overview panel renders.
+      if (!ALIGN_IS_ADMIN && !ALIGN_READ_ONLY) await loadAlignStatus();
       return;
     }
     setVideoSourcesFromItem(d);
@@ -2824,12 +2860,16 @@ function renderAdminOverview(items) {
   for (const it of sorted) {
     const li = document.createElement("li");
     li.className = "al-admin-row" + (it.finalized ? " finalized" : "");
+    // Read-only viewer: button is "View" (admin actions like finalize live behind 403).
+    const btnLabel = ALIGN_READ_ONLY
+      ? "View"
+      : (it.finalized ? "Re-view" : "View / finalize");
     li.innerHTML = `
       <span class="row-meta">${escapeHtml(it.dataset || "?")} · ${escapeHtml(it.task || "?")}</span>
       <span class="muted">${it.n_annotations ?? 0} annotation(s)</span>
       <span class="row-spacer"></span>
       ${it.finalized ? '<span class="row-badge gold">FINALIZED</span>' : ''}
-      <button type="button" class="link al-view-btn" data-id="${escapeHtml(it.item_id)}">${it.finalized ? "Re-view" : "View / finalize"}</button>
+      <button type="button" class="link al-view-btn" data-id="${escapeHtml(it.item_id)}">${btnLabel}</button>
     `;
     li.querySelector(".al-view-btn").addEventListener("click", () => showAlignOthers(it.item_id));
     root.appendChild(li);
