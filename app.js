@@ -2548,6 +2548,10 @@ async function loadAlignStatus() {
       // End-campaign button is admin-only.
       const endBtn = document.getElementById("al-end-btn");
       if (endBtn) endBtn.hidden = !ALIGN_IS_ADMIN;
+      // Export JSONL contains real usernames (anonymity-breaking) AND is backend admin-only (403 for others).
+      // Hide for read-only participants; admin sees it.
+      const exportBtn = document.getElementById("al-export-btn");
+      if (exportBtn) exportBtn.hidden = ALIGN_READ_ONLY;
     }
     if (ALIGN_READ_ONLY) {
       // Read-only viewer: no more annotation form, no loadAlignNext.
