@@ -444,16 +444,16 @@ function toast(msg, type) {
 function wireVideoFallback(videoEl, opts) {
   if (!videoEl || videoEl.dataset.fallbackWired === "1") return;
   videoEl.dataset.fallbackWired = "1";
-  const HOST_KEYS = CFG.VIDEO_HOSTS.map(h => h.key);
-  // 1 retry per alternate host (cache-bust + host swap), then final placeholder.
-  const maxRetries = (opts && opts.maxRetries) || HOST_KEYS.length;
   const onSkip = opts && opts.onSkip;
   let retries = 0;
-  let hostCursor = Math.max(0, HOST_KEYS.indexOf(getVideoHost()));
+  let hostCursor = -1;  // initialized lazily so it picks up runtime VIDEO_HOSTS updates
   videoEl.addEventListener("error", () => {
+    // Always read hosts from getVideoHosts() so backend-driven changes take effect.
+    const HOST_KEYS = getVideoHosts().map(h => h.key);
+    const maxRetries = (opts && opts.maxRetries) || HOST_KEYS.length;
+    if (hostCursor < 0) hostCursor = Math.max(0, HOST_KEYS.indexOf(getVideoHost()));
     if (retries < maxRetries) {
       retries++;
-      // Strip any prior cache-buster, then swap host to the next entry in VIDEO_HOSTS.
       const base = videoEl.src.split(/[?&]_cb=/)[0].replace(/[?&]$/, "");
       hostCursor = (hostCursor + 1) % HOST_KEYS.length;
       const swapped = base.replace(/^https?:\/\/[^\/]+\//i, `https://${HOST_KEYS[hostCursor]}/`);
@@ -471,8 +471,9 @@ function wireVideoFallback(videoEl, opts) {
     const lblRetry = cn ? "重试" : "Retry";
     const lblSkip = cn ? "跳过" : "Skip";
     // Only show swap button if there's another real host to swap to.
-    const otherHost = CFG.VIDEO_HOSTS.length >= 2
-      ? CFG.VIDEO_HOSTS.find(h => h.key !== getVideoHost())
+    const hosts = getVideoHosts();
+    const otherHost = hosts.length >= 2
+      ? hosts.find(h => h.key !== getVideoHost())
       : null;
     const lblSwap = otherHost
       ? (cn ? `换 ${otherHost.label} 源` : `Switch to ${otherHost.label}`)
@@ -489,11 +490,12 @@ function wireVideoFallback(videoEl, opts) {
       </div>`;
     ph.querySelector(".video-retry-btn").addEventListener("click", () => {
       retries = 0;
-      hostCursor = Math.max(0, HOST_KEYS.indexOf(getVideoHost()));
+      const hk = getVideoHosts().map(h => h.key);
+      hostCursor = Math.max(0, hk.indexOf(getVideoHost()));
       ph.remove();
       videoEl.style.display = "";
       const base = videoEl.src.split(/[?&]_cb=/)[0];
-      videoEl.src = base.replace(/^https?:\/\/[^\/]+\//i, `https://${HOST_KEYS[hostCursor]}/`);
+      videoEl.src = base.replace(/^https?:\/\/[^\/]+\//i, `https://${hk[hostCursor]}/`);
       videoEl.load();
     });
     if (otherHost) {
@@ -725,6 +727,7 @@ async function loadNext() {
 }
 
 function renderItem(it) {
+  setVideoSourcesFromItem(it);
   document.getElementById("meta-dataset").textContent = it.dataset || "?";
   document.getElementById("meta-task").textContent = it.task || "?";
   // model name intentionally NOT shown — annotators should be blind.
@@ -841,6 +844,51 @@ function refreshAllVideoSources() {
       try { v.load(); v.currentTime = t; } catch {}
     }
   });
+}
+
+/* Backend-driven host list. Item payloads may carry `video_sources = [{host, label, ...}]`
+   (Ham's backend on 8787 / 8790 returns this). When present, we use it as the live list
+   so adding/changing hosts is a backend-only change. Falls back to CFG.VIDEO_HOSTS. */
+let VIDEO_HOSTS_RUNTIME = null;
+function getVideoHosts() {
+  return (VIDEO_HOSTS_RUNTIME && VIDEO_HOSTS_RUNTIME.length) ? VIDEO_HOSTS_RUNTIME : CFG.VIDEO_HOSTS;
+}
+function setVideoSourcesFromItem(it) {
+  if (!it || !Array.isArray(it.video_sources) || !it.video_sources.length) return;
+  VIDEO_HOSTS_RUNTIME = it.video_sources
+    .filter(s => s && s.host)
+    .map(s => ({
+      key: s.host,
+      label: s.label || s.host,
+      title: s.label ? `${s.label} (${s.host})` : s.host,
+    }));
+  // If the user's saved host isn't in the new runtime list, reset to primary.
+  const cur = getVideoHost();
+  const hosts = getVideoHosts();
+  if (!hosts.find(h => h.key === cur)) {
+    localStorage.setItem(CFG.LS_VIDEO_HOST, hosts[0].key);
+  }
+  refreshVsrcChip();
+}
+/* Refresh the header video-source chip in place (label + visibility). Called whenever
+   the runtime host list changes — show when >=2 hosts, hide when only 1. */
+function refreshVsrcChip() {
+  const chip = document.querySelector(".user-chip");
+  if (!chip) return;
+  const hosts = getVideoHosts();
+  const btn = document.getElementById("vsrc-btn");
+  if (hosts.length < 2) { if (btn) btn.remove(); return; }
+  if (btn) {
+    const cur = hosts.find(h => h.key === getVideoHost()) || hosts[0];
+    btn.textContent = `🌐 ${cur.label}`;
+    btn.title = `视频源: ${cur.title} — 点击切换 / Video source: click to switch`;
+    return;
+  }
+  // Chip not yet rendered (e.g. backend just expanded sources) → trigger the same
+  // idempotent injection path used at page bootstrap.
+  const user = localStorage.getItem(CFG.LS_USER);
+  const role = localStorage.getItem(CFG.LS_ROLE);
+  if (typeof ensureAuthChrome === "function") ensureAuthChrome(user, role);
 }
 
 async function onSubmit(skip) {
@@ -1463,6 +1511,7 @@ async function loadNextReview() {
 }
 
 function renderReviewItem(it) {
+  setVideoSourcesFromItem(it);
   document.getElementById("meta-kind").textContent = it.is_report ? "SELF-REPORTED" : "DAILY";
   document.getElementById("meta-dataset").textContent = it.dataset || "?";
   document.getElementById("meta-task").textContent = it.task || "?";
@@ -1571,6 +1620,7 @@ async function initMyReviews() {
     if (list.length === 0) {
       document.getElementById("my-empty").hidden = false;
     } else {
+      if (list[0]) setVideoSourcesFromItem(list[0]);
       const ul = document.getElementById("my-list");
       ul.innerHTML = "";
       for (const r of list) {
@@ -1683,6 +1733,7 @@ async function initAdminReview() {
       document.getElementById("adm-empty").hidden = false;
       return;
     }
+    if (list[0]) setVideoSourcesFromItem(list[0]);
     const root = document.getElementById("adm-list");
     for (const r of list) {
       const card = document.createElement("section");
@@ -1835,6 +1886,7 @@ async function loadGoldLibrary() {
     const items = data.items || [];
     document.getElementById("gl-count").textContent = `${items.length} item(s)`;
     if (items.length === 0) { document.getElementById("gl-empty").hidden = false; return; }
+    if (items[0]) setVideoSourcesFromItem(items[0]);
     const root = document.getElementById("gl-list");
     for (const it of items) {
       const card = document.createElement("section");
@@ -1962,25 +2014,28 @@ function wireGlobalChrome() {
     if (lo) chip.insertBefore(btn, lo); else chip.appendChild(btn);
   }
   // Inject video-source toggle next to lang button if missing.
-  // Only render when there's something to switch to (>=2 hosts in VIDEO_HOSTS).
-  if (chip && !document.getElementById("vsrc-btn") && CFG.VIDEO_HOSTS.length >= 2) {
+  // Only render when there's something to switch to (>=2 hosts in runtime list).
+  if (chip && !document.getElementById("vsrc-btn") && getVideoHosts().length >= 2) {
     const btn = document.createElement("button");
     btn.id = "vsrc-btn";
     btn.className = "link vsrc-btn";
     const refresh = () => {
-      const cur = CFG.VIDEO_HOSTS.find(h => h.key === getVideoHost()) || CFG.VIDEO_HOSTS[0];
+      const hosts = getVideoHosts();
+      const cur = hosts.find(h => h.key === getVideoHost()) || hosts[0];
       btn.textContent = `🌐 ${cur.label}`;
       btn.title = `视频源: ${cur.title} — 点击切换 / Video source: click to switch`;
     };
     refresh();
     btn.addEventListener("click", () => {
+      const hosts = getVideoHosts();
       const cur = getVideoHost();
-      const next = (CFG.VIDEO_HOSTS.find(h => h.key !== cur) || CFG.VIDEO_HOSTS[0]).key;
-      setVideoHost(next);
+      // Cycle to next host in the runtime list.
+      const idx = Math.max(0, hosts.findIndex(h => h.key === cur));
+      const next = hosts[(idx + 1) % hosts.length];
+      setVideoHost(next.key);
       refresh();
       const cn = getLang() === "cn";
-      const label = CFG.VIDEO_HOSTS.find(h => h.key === next).label;
-      toast(cn ? `视频源已切换到 ${label}` : `Video source: ${label}`, "ok");
+      toast(cn ? `视频源已切换到 ${next.label}` : `Video source: ${next.label}`, "ok");
     });
     const langBtn = chip.querySelector("#lang-btn");
     if (langBtn) chip.insertBefore(btn, langBtn); else chip.appendChild(btn);
@@ -2421,6 +2476,7 @@ async function loadAlignNext() {
       document.getElementById("al-done-msg").hidden = false;
       return;
     }
+    setVideoSourcesFromItem(d);
     ALIGN_CURRENT = d;
     document.getElementById("al-dataset").textContent = d.dataset || "?";
     document.getElementById("al-task").textContent = d.task || "?";
