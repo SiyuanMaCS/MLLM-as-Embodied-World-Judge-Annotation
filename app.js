@@ -2350,7 +2350,10 @@ async function toggleIAAPanel() {
   panel.hidden = false;
   panel.innerHTML = `<p class="muted">${tr("common.loading")}</p>`;
   try {
-    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_agreement&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}`);
+    // Ham's completed-only gate (Alice's IAA-validity guard #1) is keyed on `user` — pass it
+    // explicitly so admin AND completed participants both get 200 (regression caught by v63 QA).
+    const user = localStorage.getItem(CFG.LS_USER) || "";
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_agreement&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}&user=${encodeURIComponent(user)}`);
     const d = await r.json();
     renderIAAPanel(panel, d);
   } catch (err) {
