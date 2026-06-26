@@ -446,23 +446,49 @@ function wireVideoFallback(videoEl, opts) {
   videoEl.dataset.fallbackWired = "1";
   const onSkip = opts && opts.onSkip;
   let retries = 0;
-  let hostCursor = -1;  // initialized lazily so it picks up runtime VIDEO_HOSTS updates
+  let srcCursor = -1;  // initialized lazily
   videoEl.addEventListener("error", () => {
-    // Always read hosts from getVideoHosts() so backend-driven changes take effect.
-    const HOST_KEYS = getVideoHosts().map(h => h.key);
-    const maxRetries = (opts && opts.maxRetries) || HOST_KEYS.length;
-    if (hostCursor < 0) hostCursor = Math.max(0, HOST_KEYS.indexOf(getVideoHost()));
-    if (retries < maxRetries) {
-      retries++;
-      const base = videoEl.src.split(/[?&]_cb=/)[0].replace(/[?&]$/, "");
-      hostCursor = (hostCursor + 1) % HOST_KEYS.length;
-      const swapped = base.replace(/^https?:\/\/[^\/]+\//i, `https://${HOST_KEYS[hostCursor]}/`);
-      const sep = swapped.includes("?") ? "&" : "?";
-      const newSrc = swapped + sep + "_cb=" + (Date.now() % 100000);
-      console.warn(`video load failed (try ${retries}/${maxRetries}) — auto-swap to ${HOST_KEYS[hostCursor]}:`, videoEl.src);
-      videoEl.src = newSrc;
-      videoEl.load();
-      return;
+    // Prefer per-element stored sources (correct for OSS + HF + any future host).
+    let sources = null;
+    if (videoEl.dataset.sourcesJson) {
+      try { sources = JSON.parse(videoEl.dataset.sourcesJson); } catch {}
+    }
+    if (sources && sources.length) {
+      const maxRetries = (opts && opts.maxRetries) || sources.length;
+      if (srcCursor < 0) {
+        const curBase = (videoEl.src || "").split(/[?&]_cb=/)[0];
+        srcCursor = Math.max(0, sources.findIndex(s => s && s.url && s.url.split(/[?&]_cb=/)[0] === curBase));
+      }
+      if (retries < maxRetries) {
+        retries++;
+        srcCursor = (srcCursor + 1) % sources.length;
+        const next = sources[srcCursor];
+        if (next && next.url) {
+          const sep = next.url.includes("?") ? "&" : "?";
+          const newSrc = next.url + sep + "_cb=" + (Date.now() % 100000);
+          console.warn(`video load failed (try ${retries}/${maxRetries}) — auto-swap to ${next.label || next.host}:`, videoEl.src);
+          videoEl.src = newSrc;
+          videoEl.load();
+          return;
+        }
+      }
+    } else {
+      // Legacy host-swap path for elements without per-element sources.
+      const HOST_KEYS = getVideoHosts().map(h => h.key);
+      const maxRetries = (opts && opts.maxRetries) || HOST_KEYS.length;
+      if (srcCursor < 0) srcCursor = Math.max(0, HOST_KEYS.indexOf(getVideoHost()));
+      if (retries < maxRetries) {
+        retries++;
+        const base = videoEl.src.split(/[?&]_cb=/)[0].replace(/[?&]$/, "");
+        srcCursor = (srcCursor + 1) % HOST_KEYS.length;
+        const swapped = base.replace(/^https?:\/\/[^\/]+\//i, `https://${HOST_KEYS[srcCursor]}/`);
+        const sep = swapped.includes("?") ? "&" : "?";
+        const newSrc = swapped + sep + "_cb=" + (Date.now() % 100000);
+        console.warn(`video load failed (try ${retries}/${maxRetries}) — auto-swap to ${HOST_KEYS[srcCursor]}:`, videoEl.src);
+        videoEl.src = newSrc;
+        videoEl.load();
+        return;
+      }
     }
     // Final: render inline placeholder.
     if (videoEl.parentElement?.querySelector(".video-failed")) return;
@@ -490,12 +516,16 @@ function wireVideoFallback(videoEl, opts) {
       </div>`;
     ph.querySelector(".video-retry-btn").addEventListener("click", () => {
       retries = 0;
-      const hk = getVideoHosts().map(h => h.key);
-      hostCursor = Math.max(0, hk.indexOf(getVideoHost()));
+      srcCursor = -1;  // will reinit on next error
       ph.remove();
       videoEl.style.display = "";
-      const base = videoEl.src.split(/[?&]_cb=/)[0];
-      videoEl.src = base.replace(/^https?:\/\/[^\/]+\//i, `https://${hk[hostCursor]}/`);
+      // Reset to current selection's URL (prefer per-element sources, else legacy host-swap).
+      let sources = null;
+      try { sources = videoEl.dataset.sourcesJson ? JSON.parse(videoEl.dataset.sourcesJson) : null; } catch {}
+      const original = videoEl.dataset.originalSrc || videoEl.src.split(/[?&]_cb=/)[0];
+      videoEl.src = (sources && sources.length)
+        ? pickVideoUrl(sources, original)
+        : applyVideoHost(original);
       videoEl.load();
     });
     if (otherHost) {
@@ -739,12 +769,16 @@ function renderItem(it) {
   if (variantEl) variantEl.textContent = "prompt: " + variant;
   document.getElementById("prompt-text").textContent = "(loading task instruction…)";
   const gen = document.getElementById("gen-video");
-  gen.src = absUrl(it.video_url);
+  gen.src = pickVideoUrl(it.video_sources, it.video_url);
+  bindVideoSources(gen, it.video_sources);
   gen.load();
   const gtFig = document.getElementById("gt-fig");
   const gt = document.getElementById("gt-video");
   if (it.gt_url) {
-    gt.src = absUrl(it.gt_url); gt.load();
+    // GT-side sources may be a separate field; fall back to host-swap on the gt_url.
+    gt.src = pickVideoUrl(it.gt_video_sources, it.gt_url);
+    bindVideoSources(gt, it.gt_video_sources);
+    gt.load();
     gtFig.hidden = false;
   } else {
     gt.removeAttribute("src");
@@ -832,12 +866,19 @@ function applyVideoHost(url) {
   if (host === "huggingface.co") return url;
   return url.replace(/^https?:\/\/(?:www\.)?huggingface\.co\//i, `https://${host}/`);
 }
-/* Swap host on every <video> on the page (preserves currentTime when possible). */
+/* Swap source on every <video> on the page (preserves currentTime when possible).
+   Prefers each element's stored video_sources (data-sources-json) so OSS / mirror /
+   HF URLs with different path structures all work. Falls back to legacy host-swap
+   on the originalSrc when no per-element sources are stored. */
 function refreshAllVideoSources() {
   document.querySelectorAll("video[src]").forEach(v => {
     const original = v.dataset.originalSrc || v.getAttribute("src");
     v.dataset.originalSrc = original;
-    const swapped = applyVideoHost(original);
+    let sources = null;
+    if (v.dataset.sourcesJson) {
+      try { sources = JSON.parse(v.dataset.sourcesJson); } catch {}
+    }
+    const swapped = (sources && sources.length) ? pickVideoUrl(sources, original) : applyVideoHost(original);
     if (v.src !== swapped) {
       const t = v.currentTime;
       v.src = swapped;
@@ -846,9 +887,19 @@ function refreshAllVideoSources() {
   });
 }
 
-/* Backend-driven host list. Item payloads may carry `video_sources = [{host, label, ...}]`
-   (Ham's backend on 8787 / 8790 returns this). When present, we use it as the live list
-   so adding/changing hosts is a backend-only change. Falls back to CFG.VIDEO_HOSTS. */
+/* Bind an item's video_sources to a <video> element so refresh/cycle can find them.
+   Pass after setting src — paired use is the rule. */
+function bindVideoSources(videoEl, sources) {
+  if (!videoEl) return;
+  videoEl.dataset.sourcesJson = JSON.stringify(Array.isArray(sources) ? sources : []);
+  videoEl.dataset.originalSrc = videoEl.getAttribute("src") || "";
+}
+
+/* Backend-driven source list. Item payloads carry `video_sources = [{label, url, ...}]`
+   (Ham's backend on 8787 / 8790 returns this; OSS-rebased URLs have different path
+   structure than HF, so we can't just swap host — we use each source's own `url`).
+   When present, used as the live list so adding/changing sources is backend-only.
+   Falls back to CFG.VIDEO_HOSTS for legacy payloads. */
 let VIDEO_HOSTS_RUNTIME = null;
 function getVideoHosts() {
   return (VIDEO_HOSTS_RUNTIME && VIDEO_HOSTS_RUNTIME.length) ? VIDEO_HOSTS_RUNTIME : CFG.VIDEO_HOSTS;
@@ -856,19 +907,37 @@ function getVideoHosts() {
 function setVideoSourcesFromItem(it) {
   if (!it || !Array.isArray(it.video_sources) || !it.video_sources.length) return;
   VIDEO_HOSTS_RUNTIME = it.video_sources
-    .filter(s => s && s.host)
-    .map(s => ({
-      key: s.host,
-      label: s.label || s.host,
-      title: s.label ? `${s.label} (${s.host})` : s.host,
-    }));
-  // If the user's saved host isn't in the new runtime list, reset to primary.
+    .filter(s => s && (s.url || s.host))
+    .map((s, i) => {
+      // Key on label primarily (user-facing, stable across items). Fall back to host or index.
+      let host = s.host;
+      if (!host && s.url) { try { host = new URL(s.url).host; } catch {} }
+      const key = s.label || host || `src${i}`;
+      return {
+        key,
+        label: s.label || host || `src${i}`,
+        title: s.label ? `${s.label} (${host || s.url || ""})` : (host || s.url || key),
+      };
+    });
   const cur = getVideoHost();
   const hosts = getVideoHosts();
   if (!hosts.find(h => h.key === cur)) {
     localStorage.setItem(CFG.LS_VIDEO_HOST, hosts[0].key);
   }
   refreshVsrcChip();
+}
+
+/* Resolve the URL to use for a video, given current host selection + an item's video_sources.
+   - sources: array of {label, url, host?} from backend (per-item); when empty/absent, falls back
+     to applyVideoHost(fallbackUrl) which handles legacy host-swap on HF URLs.
+   - The selected source is matched by label (the key stored in LS_VIDEO_HOST), then by host.
+   - If selection isn't present in this item's sources, picks primary (sources[0]). */
+function pickVideoUrl(sources, fallbackUrl) {
+  if (!Array.isArray(sources) || !sources.length) return applyVideoHost(fallbackUrl || "");
+  const want = getVideoHost();
+  const hit = sources.find(s => s && (s.label === want || s.host === want));
+  const chosen = hit || sources[0];
+  return (chosen && chosen.url) || applyVideoHost(fallbackUrl || "");
 }
 /* Refresh the header video-source chip in place (label + visibility). Called whenever
    the runtime host list changes — show when >=2 hosts, hide when only 1. */
@@ -1516,8 +1585,10 @@ function renderReviewItem(it) {
   document.getElementById("meta-dataset").textContent = it.dataset || "?";
   document.getElementById("meta-task").textContent = it.task || "?";
   document.getElementById("meta-self-report").hidden = !it.is_report;
-  document.getElementById("gen-video").src = absUrl(it.video_url);
-  document.getElementById("gen-video").load();
+  const reviewGen = document.getElementById("gen-video");
+  reviewGen.src = pickVideoUrl(it.video_sources, it.video_url);
+  bindVideoSources(reviewGen, it.video_sources);
+  reviewGen.load();
   document.getElementById("prompt-text").textContent = "(loading instruction…)";
   // Original annotator submission (annotator anon).
   // Backend field: `annotation` (was `annotation_payload` in my earlier draft).
@@ -1694,7 +1765,7 @@ function renderReviewRow(r) {
       ${r.video_url ? `
         <figure class="detail-video">
           <figcaption>Generated video</figcaption>
-          <video controls preload="none" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${absUrl(r.video_url)}"></video>
+          <video controls preload="none" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${pickVideoUrl(r.video_sources, r.video_url)}" data-sources-json='${escapeHtml(JSON.stringify(r.video_sources || []))}'></video>
         </figure>` : ""}
       <p class="detail-id muted">Item: <code>${escapeHtml(r.item_id || "")}</code></p>
     </div>
@@ -1745,7 +1816,7 @@ async function initAdminReview() {
       };
       card.innerHTML = `
         <div class="meta"><span class="tag gold-tag">GOLD</span><span class="tag">${escapeHtml(r.dataset || "?")}</span><span class="tag">${escapeHtml(r.task || "?")}</span><span class="tag">by ${escapeHtml(r.reviewer || "?")}</span></div>
-        <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${absUrl(r.video_url || "")}"></video></figure></div>
+        <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${pickVideoUrl(r.video_sources, r.video_url || "")}" data-sources-json='${escapeHtml(JSON.stringify(r.video_sources || []))}'></video></figure></div>
         <div class="prompt-box"><label>Reviewer payload</label><p>Q: <strong>${p.quality ?? "—"}</strong> · F: <strong>${p.faithful ?? "—"}</strong> · ${escapeHtml(p.notes || "(no notes)")}</p></div>
         <div class="form-row actions">
           <button type="button" class="approve-btn">✅ Approve as gold</button>
@@ -1911,7 +1982,7 @@ async function loadGoldLibrary() {
       const inst = p.instruction_alignment ?? p.faithful;
       card.innerHTML = `
         <div class="meta"><span class="tag gold-tag">GOLD</span>${sourceTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${finalizerTag}${reviewerTag}</div>
-        <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${absUrl(it.video_url || "")}"></video></figure></div>
+        <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${pickVideoUrl(it.video_sources, it.video_url || "")}" data-sources-json='${escapeHtml(JSON.stringify(it.video_sources || []))}'></video></figure></div>
         <p class="gl-scores">Physical: <strong>${phys ?? "—"}</strong> · Instruction: <strong>${inst ?? "—"}</strong></p>
         ${(p.physical_notes || p.instruction_notes)
           ? `<p class="muted"><strong>P:</strong> ${escapeHtml(p.physical_notes || "—")} <strong>· I:</strong> ${escapeHtml(p.instruction_notes || "—")}</p>`
@@ -2482,7 +2553,8 @@ async function loadAlignNext() {
     document.getElementById("al-task").textContent = d.task || "?";
     const vid = document.getElementById("al-video");
     wireVideoFallback(vid, { onSkip: () => loadAlignNext() });
-    vid.src = absUrl(d.video_url || "");
+    vid.src = pickVideoUrl(d.video_sources, d.video_url || "");
+    bindVideoSources(vid, d.video_sources);
     vid.load();
     // Ignore d.prompt (may be prefix/rewrite version) — always use canonical instruction.
     CURRENT_INSTRUCTION = {
