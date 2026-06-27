@@ -101,6 +101,9 @@ const LANG = {
     "align.iaa.main_scores": "Main scores (1–5)",
     "align.iaa.sub_scores": "Sub-items (0/1 violation flags)",
     "align.iaa.open_item": "open item",
+    "align.disclose.confirm": "Submitted ✓\n\nSee how others scored this? You will permanently lock this item — re-edit no longer allowed.\n\nOK = see + lock\nCancel = continue annotating, this item stays editable",
+    "align.disclose.locked_toast": "Item disclosed and locked.",
+    "align.disclose.label": "🔒 disclosed:",
     "align.toast.export_failed": "Export failed",
     "my_reviews.history": "Reviewed history",
     "my_reviews.empty": "No reviews yet for you. Submit some annotations and they'll be sampled or self-reportable.",
@@ -298,6 +301,9 @@ const LANG = {
     "align.iaa.main_scores": "主分(1–5)",
     "align.iaa.sub_scores": "子项(0=违背 / 1=通过)",
     "align.iaa.open_item": "打开",
+    "align.disclose.confirm": "已提交 ✓\n\n要现在看大家怎么标吗?**看了这条就永久锁定**,不能再改。\n\n确定 = 看 + 锁\n取消 = 继续标下一条,这条仍可改",
+    "align.disclose.locked_toast": "已锁定该条。",
+    "align.disclose.label": "🔒 已锁:",
     "align.toast.export_failed": "导出失败",
     "my_reviews.history": "审核历史",
     "my_reviews.empty": "你还没有审核记录。提交一些标注,会被抽样或自报告。",
@@ -2892,8 +2898,11 @@ async function loadAlignStatus() {
     document.getElementById("al-done").textContent = d.my_done ?? 0;
     document.getElementById("al-total").textContent = d.total ?? 50;
     document.getElementById("al-progress-stat").hidden = false;
+    // Render the disclosed count next to submitted count for participants — IAA closure
+    // (Alice's guard) requires all-disclosed before aggregate views unlock.
+    renderDiscloseProgress(d);
     // Backend marks completed non-admin participants with read_only:true and returns the same
-    // items[] payload that admins see. Render the overview panel for them too, mutations gated server-side.
+    // items[] payload that admins see. read_only now reflects all_disclosed (not all_submitted).
     ALIGN_READ_ONLY = !!(d.read_only && !ALIGN_IS_ADMIN);
     if (ALIGN_IS_ADMIN || ALIGN_READ_ONLY) {
       document.getElementById("al-final-count").textContent = ALIGN_IS_ADMIN
@@ -2993,19 +3002,76 @@ async function submitAlign() {
   for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
     payload[id] = document.getElementById("al-" + id).checked ? 0 : 1;
   }
+  const submittedItemId = ALIGN_CURRENT.id;
   try {
     const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
       method: "POST", headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ align_submit: true, user, campaign_id: ALIGN_CAMPAIGN_ID, item_id: ALIGN_CURRENT.id, payload }),
+      body: JSON.stringify({ align_submit: true, user, campaign_id: ALIGN_CAMPAIGN_ID, item_id: submittedItemId, payload }),
     });
     const d = await r.json();
     if (d?.ok === false) throw new Error(d.error || "submit failed");
-    // Reload item with others' annotations now unlocked
-    await showAlignOthers(ALIGN_CURRENT.id);
-    // Refresh status (my_done++ / admin overview refresh)
     await refreshAlignStatusOnly();
+    // IAA-independence rule (Alice's guard): seeing others requires explicit "disclose" action,
+    // which permanently LOCKS this item — re-edit no longer allowed. Default = advance to next.
+    if (ALIGN_IS_ADMIN) {
+      // Admin doesn't need the disclose lock (independence rule applies to participants only).
+      // Keep the existing "see others immediately" UX for admin.
+      await showAlignOthers(submittedItemId);
+      return;
+    }
+    const wantSee = confirm(tr("align.disclose.confirm"));
+    if (wantSee) {
+      await discloseAndShowOthers(submittedItemId);
+    } else {
+      // Advance to next un-annotated item; this one remains submitted-but-editable until later disclose.
+      await loadAlignNext();
+    }
   } catch (err) {
     toast(tr("toast.submit_failed") + ": " + err.message, "err");
+  }
+}
+
+/* Render an inline progress chip showing submitted vs disclosed counts under the main
+   "X/Y annotated" stat, and gate the "View results (read-only)" button on all_disclosed.
+   Alice's guard: aggregate views unlock only when every item the user submitted has been
+   explicitly disclosed (no IAA-contamination path via "submit all then peek at panel"). */
+function renderDiscloseProgress(d) {
+  const stat = document.getElementById("al-progress-stat");
+  if (!stat) return;
+  let chip = document.getElementById("al-disclose-chip");
+  const myDisclosed = d.my_disclosed ?? 0;
+  const total = d.total ?? 50;
+  const allDisclosed = !!d.all_disclosed;
+  if (!chip) {
+    chip = document.createElement("span");
+    chip.id = "al-disclose-chip";
+    chip.className = "nav-stat";
+    chip.style.marginLeft = "10px";
+    stat.parentNode.insertBefore(chip, stat.nextSibling);
+  }
+  chip.innerHTML = `<span class="muted">${tr("align.disclose.label")}</span> <strong>${myDisclosed}</strong>/<strong>${total}</strong>` +
+    (allDisclosed ? ` <span class="ok-text">✓</span>` : "");
+  // Gate the "View results (read-only)" button on al-done-msg: only visible when all_disclosed.
+  const viewBtn = document.getElementById("al-view-results-btn");
+  if (viewBtn) viewBtn.hidden = !allDisclosed && !ALIGN_IS_ADMIN;
+}
+
+/* Explicitly disclose an item (locking re-edit) then show the side-by-side view.
+   Backend enforces the lock: subsequent align_submit on this item returns 409. */
+async function discloseAndShowOthers(item_id) {
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ align_disclose_item: true, user, campaign_id: ALIGN_CAMPAIGN_ID, item_id }),
+    });
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "disclose failed");
+    toast(tr("align.disclose.locked_toast"), "ok");
+    await showAlignOthers(item_id);
+    await refreshAlignStatusOnly();
+  } catch (err) {
+    toast("Disclose failed: " + err.message, "err");
   }
 }
 
