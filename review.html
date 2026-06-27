@@ -6,7 +6,7 @@
 <title>Review Queue — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v71">
+<link rel="stylesheet" href="style.css?v=v72">
 </head>
 <body>
 <main>
@@ -54,9 +54,21 @@
             <p class="score-hint level-3" id="m-physical_adherence-hint">—</p>
           </div>
           <div class="sub-row">
-            <label class="sub-check"><input type="checkbox" id="m-agent_consistency"> <span>Agent consistency</span></label>
-            <label class="sub-check"><input type="checkbox" id="m-scene_consistency"> <span>Scene & object consistency</span></label>
-            <label class="sub-check"><input type="checkbox" id="m-interaction_realism"> <span>Interaction realism</span></label>
+            <div class="sub-tri" data-key="m-agent_consistency">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.agent_consistency">Agent consistency</span></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="m-agent_consistency" value="2">
+          </div>
+            <div class="sub-tri" data-key="m-scene_consistency">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.scene_consistency">Scene & object consistency</span></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="m-scene_consistency" value="2">
+          </div>
+            <div class="sub-tri" data-key="m-interaction_realism">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.interaction_realism">Interaction realism</span></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="m-interaction_realism" value="2">
+          </div>
           </div>
           <div class="form-row">
             <label for="m-physical_notes"><span data-i18n="task.physical_notes">Physical evidence</span> <span class="required-tag">*</span></label>
@@ -72,9 +84,21 @@
             <p class="score-hint level-3" id="m-instruction_alignment-hint">—</p>
           </div>
           <div class="sub-row">
-            <label class="sub-check"><input type="checkbox" id="m-agent_match"> <span>Agent match</span></label>
-            <label class="sub-check"><input type="checkbox" id="m-object_correct"> <span>Object correct</span></label>
-            <label class="sub-check"><input type="checkbox" id="m-goal_completed"> <span>Goal completed</span></label>
+            <div class="sub-tri" data-key="m-agent_match">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.agent_match">Agent match</span></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="m-agent_match" value="2">
+          </div>
+            <div class="sub-tri" data-key="m-object_correct">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.object_correct">Object correct</span></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="m-object_correct" value="2">
+          </div>
+            <div class="sub-tri" data-key="m-goal_completed">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.goal_completed">Goal completed</span></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="m-goal_completed" value="2">
+          </div>
           </div>
           <div class="form-row">
             <label for="m-instruction_notes"><span data-i18n="task.instruction_notes">Instruction-alignment evidence</span> <span class="required-tag">*</span></label>
@@ -92,6 +116,6 @@
 
   <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v71" defer></script>
+<script src="app.js?v=v72" defer></script>
 </body>
 </html>

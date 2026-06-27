@@ -120,6 +120,9 @@ const LANG = {
     "align.disclose_all_btn": "✅ See everyone (lock all my items)",
     "align.disclose_all.confirm": "This will permanently LOCK all your submitted items in this campaign — you cannot re-edit any of them after this.\n\nIn return, you'll see all annotators' scores (real names) + IAA + Export — same view as admin (minus finalize).\n\nProceed?",
     "align.disclose_all.done_toast": "All items disclosed. Opening results panel…",
+    "sub.tri.violated": "0 — Clear violation",
+    "sub.tri.partial": "1 — Partial / minor issue",
+    "sub.tri.passes": "2 — Holds / passes",
     "align.toast.export_failed": "Export failed",
     "my_reviews.history": "Reviewed history",
     "my_reviews.empty": "No reviews yet for you. Submit some annotations and they'll be sampled or self-reportable.",
@@ -336,6 +339,9 @@ const LANG = {
     "align.disclose_all_btn": "✅ 看所有人(锁我全部条目)",
     "align.disclose_all.confirm": "此操作会永久锁定你在这个 campaign 里所有已提交的条目 — 之后**任何一条都不能再改**。\n\n作为交换,你会看到所有标注者的分数(真名)+ IAA + Export — 跟 admin 同款视图(只是不能 finalize)。\n\n继续吗?",
     "align.disclose_all.done_toast": "全部已锁定,打开结果面板…",
+    "sub.tri.violated": "0 严重违背",
+    "sub.tri.partial": "1 部分·轻微",
+    "sub.tri.passes": "2 完全通过",
     "align.toast.export_failed": "导出失败",
     "my_reviews.history": "审核历史",
     "my_reviews.empty": "你还没有审核记录。提交一些标注,会被抽样或自报告。",
@@ -804,6 +810,7 @@ async function initTask() {
   // Video fallback: retry on HF/CDN errors, then show inline placeholder w/ Skip.
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => onSubmit(true) });
   wireVideoFallback(document.getElementById("gt-video"));
+  wireSubTriButtons();  // 6 sub-tri groups in task form
 
   await refreshStats();
   // Edit mode: ?edit=<item_id> loads the existing annotation and prefills the form.
@@ -860,10 +867,9 @@ function prefillAnnotateForm(p) {
   };
   if (p.physical_adherence != null) set("physical_adherence", p.physical_adherence);
   if (p.instruction_alignment != null) set("instruction_alignment", p.instruction_alignment);
-  // Sub-checkboxes: stored 1=pass / 0=violated. UI inverted (v46): checked = violated.
+  // Sub-tri (3-class): stored 0=violated / 1=partial / 2=passes. Default fresh = 2.
   for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-    const cb = document.getElementById(id);
-    if (cb) cb.checked = (p[id] === 0);
+    setSubTri(id, p[id] ?? 2);
   }
   const pn = document.getElementById("physical_notes"); if (pn) pn.value = p.physical_notes || "";
   const ins = document.getElementById("instruction_notes"); if (ins) ins.value = p.instruction_notes || "";
@@ -955,9 +961,9 @@ function renderItem(it) {
     if (inp) inp.value = 3;
     if (out) out.value = 3;
   }
+  // Reset fresh item to all "passes" (2) by default.
   for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-    const cb = document.getElementById(id);
-    if (cb) cb.checked = false;
+    setSubTri(id, 2);
   }
   fetchPrompt(it);
 }
@@ -1132,8 +1138,9 @@ async function onSubmit(skip) {
     payload.physical_adherence = Number(document.getElementById("physical_adherence").value);
     payload.instruction_alignment = Number(document.getElementById("instruction_alignment").value);
     for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-      payload[id] = document.getElementById(id).checked ? 0 : 1;
+      payload[id] = getSubTri(id);  // 3-class 0|1|2 (was binary 0|1)
     }
+    payload.subs_v = 2;  // schema marker: migration script skips records already at v2
     payload.physical_notes = physical_notes;
     payload.instruction_notes = instruction_notes;
   }
@@ -1590,6 +1597,47 @@ function escapeHtml(s) {
   }[c]));
 }
 
+/* === 3-class sub-item button group helpers (replaces old binary checkbox) === */
+
+/* Wire any .sub-tri inside `root` (defaults to document) so clicking a button updates the
+   hidden input value + .active state on its siblings. Idempotent (uses dataset flag). */
+function wireSubTriButtons(root) {
+  (root || document).querySelectorAll(".sub-tri").forEach(tri => {
+    if (tri.dataset.wired === "1") return;
+    tri.dataset.wired = "1";
+    const input = tri.querySelector('input[type="hidden"]');
+    const btns = tri.querySelectorAll(".sub-tri-btn");
+    btns.forEach(b => {
+      b.addEventListener("click", () => {
+        const v = b.dataset.val;
+        if (input) input.value = v;
+        btns.forEach(x => x.classList.toggle("active", x === b));
+      });
+    });
+  });
+}
+
+/* Set a sub-tri value programmatically (used by prefill + reset). Value: 0|1|2. */
+function setSubTri(id, val) {
+  const input = document.getElementById(id);
+  if (!input) return;
+  const v = Number(val);
+  input.value = String(v);
+  const wrapper = input.closest(".sub-tri");
+  if (!wrapper) return;
+  wrapper.querySelectorAll(".sub-tri-btn").forEach(b => {
+    b.classList.toggle("active", Number(b.dataset.val) === v);
+  });
+}
+
+/* Read sub-tri value as Number (0/1/2). */
+function getSubTri(id) {
+  const input = document.getElementById(id);
+  if (!input) return 2;
+  const v = Number(input.value);
+  return Number.isFinite(v) ? v : 2;
+}
+
 /* ===================== Gold annotation page ===================== */
 let GOLD_CURRENT = null;
 
@@ -1624,6 +1672,7 @@ async function initGold() {
   document.getElementById("retry-btn").addEventListener("click", () => loadNextGold());
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => submitGold(true) });
   wireVideoFallback(document.getElementById("gt-video"));
+  wireSubTriButtons();  // 6 sub-tri groups in gold form
   // Edit mode: ?edit=<item_id> loads the existing gold annotation and prefills the form.
   // Override mode: ?override=<item_id> admin-only path that loads a finalized gold from
   // gold_library and lets admin rewrite it (writes audit log on submit).
@@ -1737,8 +1786,9 @@ async function submitGold(skip) {
     payload.physical_adherence = Number(document.getElementById("physical_adherence").value);
     payload.instruction_alignment = Number(document.getElementById("instruction_alignment").value);
     for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-      payload[id] = document.getElementById(id).checked ? 0 : 1;
+      payload[id] = getSubTri(id);  // 3-class 0|1|2
     }
+    payload.subs_v = 2;
     payload.physical_notes = physical_notes;
     payload.instruction_notes = instruction_notes;
   }
@@ -1830,6 +1880,7 @@ async function initReview() {
   document.getElementById("skip-btn").addEventListener("click", () => loadNextReview());
   document.getElementById("retry-btn").addEventListener("click", () => loadNextReview());
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => loadNextReview() });
+  wireSubTriButtons();  // 6 sub-tri groups in review modify form
   await loadNextReview();
 }
 
@@ -1900,8 +1951,9 @@ async function submitReview(decision) {
       instruction_notes,
     };
     for (const id of ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"]) {
-      payload[id] = document.getElementById("m-" + id).checked ? 0 : 1;
+      payload[id] = getSubTri("m-" + id);  // 3-class
     }
+    payload.subs_v = 2;
   }
   const body = { review_submit: true, reviewer, item_id, target, decision, payload, is_report };
   try {
@@ -2005,7 +2057,10 @@ function renderReviewRow(r) {
     return keys.map(k => {
       const v = p[k];
       if (v === undefined || v === null) return "";
-      return `<span class="sub-badge ${v ? "yes" : "no"}" title="${k}">${v ? "✓" : "✗"} ${k.replace(/_/g," ")}</span>`;
+      // 3-class: 0=✗ violated / 1=⚠ partial / 2=✓ passes. Legacy 0/1 already migrated to 0/2.
+      const glyph = v === 0 ? "✗" : (v === 1 ? "⚠" : "✓");
+      const cls = v === 0 ? "no" : (v === 1 ? "partial" : "yes");
+      return `<span class="sub-badge ${cls}" title="${k}">${glyph} ${k.replace(/_/g," ")}</span>`;
     }).join("");
   }
 
@@ -2596,7 +2651,7 @@ async function initAlign() {
     });
     document.getElementById("al-start-submit").addEventListener("click", submitAlignStart);
   }
-
+  wireSubTriButtons();  // 6 sub-tri groups in the align form
   await loadAlignList();
 }
 
@@ -3021,7 +3076,7 @@ async function loadAlignNext() {
       if (inp) inp.value = 3; if (out) out.value = 3;
     }
     for (const id of ["al-agent_consistency", "al-scene_consistency", "al-interaction_realism", "al-agent_match", "al-object_correct", "al-goal_completed"]) {
-      document.getElementById(id).checked = false;
+      setSubTri(id, 2);  // fresh item → all "passes"
     }
     document.getElementById("al-physical_notes").value = "";
     document.getElementById("al-instruction_notes").value = "";
@@ -3046,8 +3101,9 @@ async function submitAlign() {
     instruction_notes,
   };
   for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-    payload[id] = document.getElementById("al-" + id).checked ? 0 : 1;
+    payload[id] = getSubTri("al-" + id);  // 3-class
   }
+  payload.subs_v = 2;
   const submittedItemId = ALIGN_CURRENT.id;
   try {
     const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
@@ -3209,8 +3265,7 @@ function loadAlignItemForEdit(it) {
     if (inp) inp.dispatchEvent(new Event("input"));
   }
   for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-    const cb = document.getElementById("al-" + id);
-    if (cb) cb.checked = (p[id] === 0);
+    setSubTri("al-" + id, p[id] ?? 2);
   }
   document.getElementById("al-physical_notes").value = p.physical_notes || "";
   document.getElementById("al-instruction_notes").value = p.instruction_notes || "";
@@ -3244,7 +3299,7 @@ function loadAlignItemForAnnotate(it) {
     if (inp) inp.value = 3; if (out) out.value = 3;
   }
   for (const id of ["al-agent_consistency", "al-scene_consistency", "al-interaction_realism", "al-agent_match", "al-object_correct", "al-goal_completed"]) {
-    document.getElementById(id).checked = false;
+    setSubTri(id, 2);  // fresh item → all "passes"
   }
   document.getElementById("al-physical_notes").value = "";
   document.getElementById("al-instruction_notes").value = "";
@@ -3336,7 +3391,10 @@ function renderAlignOthers(d) {
   const subsI = ["agent_match","object_correct","goal_completed"];
   const subBadges = (p, keys) => keys.map(k => {
     const v = p[k]; if (v == null) return "";
-    return `<span class="sub-badge ${v ? "yes" : "no"}" title="${k}">${v ? "✓" : "✗"} ${k.replace(/_/g," ")}</span>`;
+    // 3-class: 0=✗ / 1=⚠ / 2=✓
+    const glyph = v === 0 ? "✗" : (v === 1 ? "⚠" : "✓");
+    const cls = v === 0 ? "no" : (v === 1 ? "partial" : "yes");
+    return `<span class="sub-badge ${cls}" title="${k}">${glyph} ${k.replace(/_/g," ")}</span>`;
   }).join("");
   // Conflict detection: max-min spread on each main score across all annotators.
   const annots = d.annotations || [];
@@ -3409,8 +3467,17 @@ function renderFinalizeForm(d) {
   // Pre-fill with admin's own annotation if present, else first non-self
   const myA = (d.annotations || []).find(a => a.is_self) || (d.annotations || [])[0];
   const p = (myA && myA.payload) || {};
-  // Inverted: stored 0 = violated = checkbox checked (red ✗); stored 1 = pass = unchecked.
-  const checked = (k) => p[k] === 0 ? "checked" : "";
+  // 3-class semantic: stored 0=violated/1=partial/2=passes. Legacy 0/1 already migrated by Ham.
+  function subTriHtml(prefix, key, label) {
+    const v = p[key] ?? 2;
+    const btn = (val, glyph, title) =>
+      `<button type="button" class="sub-tri-btn val-${val}${v === val ? " active" : ""}" data-val="${val}" title="${title}">${glyph}</button>`;
+    return `<div class="sub-tri" data-key="${prefix}${key}">
+      <div class="sub-tri-head"><span class="sub-tri-label">${escapeHtml(label)}</span></div>
+      <div class="sub-tri-buttons" role="radiogroup">${btn(0,"✗","violated")}${btn(1,"⚠","partial")}${btn(2,"✓","passes")}</div>
+      <input type="hidden" id="${prefix}${key}" value="${v}">
+    </div>`;
+  }
   wrap.innerHTML = `
     <form id="al-finalize-form">
       <fieldset class="dim-block">
@@ -3421,9 +3488,9 @@ function renderFinalizeForm(d) {
           <p class="score-hint level-${p.physical_adherence ?? 3}" id="f-physical_adherence-hint">—</p>
         </div>
         <div class="sub-row">
-          <label class="sub-check"><input type="checkbox" id="f-agent_consistency" ${checked("agent_consistency")}> <span>Agent consistency</span></label>
-          <label class="sub-check"><input type="checkbox" id="f-scene_consistency" ${checked("scene_consistency")}> <span>Scene & object consistency</span></label>
-          <label class="sub-check"><input type="checkbox" id="f-interaction_realism" ${checked("interaction_realism")}> <span>Interaction realism</span></label>
+          ${subTriHtml("f-", "agent_consistency", "Agent consistency")}
+          ${subTriHtml("f-", "scene_consistency", "Scene & object consistency")}
+          ${subTriHtml("f-", "interaction_realism", "Interaction realism")}
         </div>
       </fieldset>
       <fieldset class="dim-block">
@@ -3434,9 +3501,9 @@ function renderFinalizeForm(d) {
           <p class="score-hint level-${p.instruction_alignment ?? 3}" id="f-instruction_alignment-hint">—</p>
         </div>
         <div class="sub-row">
-          <label class="sub-check"><input type="checkbox" id="f-agent_match" ${checked("agent_match")}> <span>Agent match</span></label>
-          <label class="sub-check"><input type="checkbox" id="f-object_correct" ${checked("object_correct")}> <span>Object correct</span></label>
-          <label class="sub-check"><input type="checkbox" id="f-goal_completed" ${checked("goal_completed")}> <span>Goal completed</span></label>
+          ${subTriHtml("f-", "agent_match", "Agent match")}
+          ${subTriHtml("f-", "object_correct", "Object correct")}
+          ${subTriHtml("f-", "goal_completed", "Goal completed")}
         </div>
       </fieldset>
       <div class="form-row">
@@ -3459,6 +3526,7 @@ function renderFinalizeForm(d) {
   }
   wireScoreHint("f-physical_adherence", "f-physical_adherence-hint", "pa");
   wireScoreHint("f-instruction_alignment", "f-instruction_alignment-hint", "ia");
+  wireSubTriButtons(wrap);  // 6 sub-tri groups in the freshly-injected finalize form
   document.getElementById("al-finalize-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     await submitAlignFinalize(d.item_id || ALIGN_CURRENT.id);
@@ -3477,8 +3545,9 @@ async function submitAlignFinalize(item_id) {
     instruction_notes,
   };
   for (const id of ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"]) {
-    payload[id] = document.getElementById("f-" + id).checked ? 0 : 1;
+    payload[id] = getSubTri("f-" + id);  // 3-class
   }
+  payload.subs_v = 2;
   try {
     const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
       method: "POST", headers: { "Content-Type": "text/plain" },

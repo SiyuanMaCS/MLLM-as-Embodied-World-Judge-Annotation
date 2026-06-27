@@ -957,6 +957,7 @@ td.progress-cell {
   vertical-align: middle;
 }
 .sub-badge.yes { background: #e6f6e6; color: #1e7a1e; }
+.sub-badge.partial { background: #fef3c7; color: #b45309; }
 .sub-badge.no { background: #ffe2e2; color: #b00020; }
 .tag.source-admin_direct { background: #eef2fb; color: var(--accent); border: 1px solid var(--accent); }
 .tag.source-admin_reviewed { background: #f3e8fd; color: #5b21b6; border: 1px solid #d8c0f5; }
@@ -1284,6 +1285,44 @@ td.progress-cell {
 .tag.ended-tag { background: #eef0f5; color: var(--muted); border: 1px solid var(--border); }
 .campaign-row.ended { opacity: 0.85; }
 .campaign-row.ended:hover { opacity: 1; }
+
+/* 3-button sub-item rating (replaces old sub-check checkbox).
+   Value semantic: 0 = clear violation (red), 1 = partial / minor (amber), 2 = passes (green).
+   Default = 2; user can click to change. */
+.sub-tri {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fafbfd;
+  min-width: 0;
+}
+.sub-tri-head { display: flex; flex-direction: column; gap: 2px; }
+.sub-tri-label { font-weight: 600; font-size: 13px; }
+.sub-tri-hint { color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+.sub-tri-buttons {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+.sub-tri-btn {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 15px;
+  font-weight: 700;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background-color 0.1s, border-color 0.1s, color 0.1s;
+}
+.sub-tri-btn:hover { background: #f3f5fa; }
+.sub-tri-btn.active.val-0 { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+.sub-tri-btn.active.val-1 { background: #fef3c7; border-color: #f59e0b; color: #b45309; }
+.sub-tri-btn.active.val-2 { background: #dcfce7; border-color: #16a34a; color: #15803d; }
 
 /* Admin gold override footer on gold_library cards. */
 .gl-card .gl-foot {

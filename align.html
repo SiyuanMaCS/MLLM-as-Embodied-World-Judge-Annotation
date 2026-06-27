@@ -6,7 +6,7 @@
 <title>Reviewer Alignment — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v71">
+<link rel="stylesheet" href="style.css?v=v72">
 </head>
 <body>
 <main>
@@ -97,9 +97,21 @@
           <p class="score-hint level-3" id="al-physical_adherence-hint">—</p>
         </div>
         <div class="sub-row">
-          <label class="sub-check"><input type="checkbox" id="al-agent_consistency"> <span data-i18n="sub.agent_consistency">Agent consistency</span><small data-i18n="sub.agent_consistency_hint">manipulator stays structurally complete</small></label>
-          <label class="sub-check"><input type="checkbox" id="al-scene_consistency"> <span data-i18n="sub.scene_consistency">Scene & object consistency</span><small data-i18n="sub.scene_consistency_hint">background & objects stay coherent</small></label>
-          <label class="sub-check"><input type="checkbox" id="al-interaction_realism"> <span data-i18n="sub.interaction_realism">Interaction realism</span><small data-i18n="sub.interaction_realism_hint">real grasp & contact, no penetration</small></label>
+          <div class="sub-tri" data-key="al-agent_consistency">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.agent_consistency">Agent consistency</span><small class="sub-tri-hint" data-i18n="sub.agent_consistency_hint">manipulator stays structurally complete</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="al-agent_consistency" value="2">
+          </div>
+          <div class="sub-tri" data-key="al-scene_consistency">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.scene_consistency">Scene & object consistency</span><small class="sub-tri-hint" data-i18n="sub.scene_consistency_hint">background & objects stay coherent</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="al-scene_consistency" value="2">
+          </div>
+          <div class="sub-tri" data-key="al-interaction_realism">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.interaction_realism">Interaction realism</span><small class="sub-tri-hint" data-i18n="sub.interaction_realism_hint">real grasp & contact, no penetration</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="al-interaction_realism" value="2">
+          </div>
         </div>
         <div class="form-row">
           <label for="al-physical_notes"><span data-i18n="task.physical_notes">Physical evidence</span> <span class="required-tag" data-i18n="task.required">*</span></label>
@@ -115,9 +127,21 @@
           <p class="score-hint level-3" id="al-instruction_alignment-hint">—</p>
         </div>
         <div class="sub-row">
-          <label class="sub-check"><input type="checkbox" id="al-agent_match"> <span data-i18n="sub.agent_match">Agent match</span><small data-i18n="sub.agent_match_hint">manipulator matches init frame</small></label>
-          <label class="sub-check"><input type="checkbox" id="al-object_correct"> <span data-i18n="sub.object_correct">Object correct</span><small data-i18n="sub.object_correct_hint">manipulated object matches instruction</small></label>
-          <label class="sub-check"><input type="checkbox" id="al-goal_completed"> <span data-i18n="sub.goal_completed">Goal completed</span><small data-i18n="sub.goal_completed_hint">instructed goal fully reached</small></label>
+          <div class="sub-tri" data-key="al-agent_match">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.agent_match">Agent match</span><small class="sub-tri-hint" data-i18n="sub.agent_match_hint">manipulator matches init frame</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="al-agent_match" value="2">
+          </div>
+          <div class="sub-tri" data-key="al-object_correct">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.object_correct">Object correct</span><small class="sub-tri-hint" data-i18n="sub.object_correct_hint">manipulated object matches instruction</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="al-object_correct" value="2">
+          </div>
+          <div class="sub-tri" data-key="al-goal_completed">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.goal_completed">Goal completed</span><small class="sub-tri-hint" data-i18n="sub.goal_completed_hint">instructed goal fully reached</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="al-goal_completed" value="2">
+          </div>
         </div>
         <div class="form-row">
           <label for="al-instruction_notes"><span data-i18n="task.instruction_notes">Instruction-alignment evidence</span> <span class="required-tag" data-i18n="task.required">*</span></label>
@@ -162,6 +186,6 @@
 
   <section id="al-error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="al-err-msg">—</p><button id="al-retry" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v71" defer></script>
+<script src="app.js?v=v72" defer></script>
 </body>
 </html>

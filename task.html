@@ -6,7 +6,7 @@
 <title>Annotate — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v71">
+<link rel="stylesheet" href="style.css?v=v72">
 </head>
 <body>
 <main>
@@ -59,9 +59,21 @@
           <p class="score-hint level-3" id="physical_adherence-hint">—</p>
         </div>
         <div class="sub-row">
-          <label class="sub-check"><input type="checkbox" id="agent_consistency" name="agent_consistency"> <span data-i18n="sub.agent_consistency">Agent consistency</span><small data-i18n="sub.agent_consistency_hint">机械手/人手结构完整、不融化/扭曲</small></label>
-          <label class="sub-check"><input type="checkbox" id="scene_consistency" name="scene_consistency"> <span data-i18n="sub.scene_consistency">Scene & object consistency</span><small data-i18n="sub.scene_consistency_hint">背景与物体时序一致、不闪烁/瞬移/形变</small></label>
-          <label class="sub-check"><input type="checkbox" id="interaction_realism" name="interaction_realism"> <span data-i18n="sub.interaction_realism">Interaction realism</span><small data-i18n="sub.interaction_realism_hint">抓取真实闭合、无穿模、遵守重力惯性</small></label>
+          <div class="sub-tri" data-key="agent_consistency">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.agent_consistency">Agent consistency</span><small class="sub-tri-hint" data-i18n="sub.agent_consistency_hint">机械手/人手结构完整、不融化/扭曲</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="agent_consistency" value="2">
+          </div>
+          <div class="sub-tri" data-key="scene_consistency">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.scene_consistency">Scene & object consistency</span><small class="sub-tri-hint" data-i18n="sub.scene_consistency_hint">背景与物体时序一致、不闪烁/瞬移/形变</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="scene_consistency" value="2">
+          </div>
+          <div class="sub-tri" data-key="interaction_realism">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.interaction_realism">Interaction realism</span><small class="sub-tri-hint" data-i18n="sub.interaction_realism_hint">抓取真实闭合、无穿模、遵守重力惯性</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="interaction_realism" value="2">
+          </div>
         </div>
         <div class="form-row">
           <label for="physical_notes"><span data-i18n="task.physical_notes">Physical evidence</span> <span class="required-tag" data-i18n="task.required">*</span></label>
@@ -77,9 +89,21 @@
           <p class="score-hint level-3" id="instruction_alignment-hint">—</p>
         </div>
         <div class="sub-row">
-          <label class="sub-check"><input type="checkbox" id="agent_match" name="agent_match"> <span data-i18n="sub.agent_match">Agent match</span><small data-i18n="sub.agent_match_hint">完成任务的就是首帧那个机械手/人手</small></label>
-          <label class="sub-check"><input type="checkbox" id="object_correct" name="object_correct"> <span data-i18n="sub.object_correct">Object correct</span><small data-i18n="sub.object_correct_hint">操纵的 object 是指令指定的</small></label>
-          <label class="sub-check"><input type="checkbox" id="goal_completed" name="goal_completed"> <span data-i18n="sub.goal_completed">Goal completed</span><small data-i18n="sub.goal_completed_hint">指令的目标已完整达成</small></label>
+          <div class="sub-tri" data-key="agent_match">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.agent_match">Agent match</span><small class="sub-tri-hint" data-i18n="sub.agent_match_hint">完成任务的就是首帧那个机械手/人手</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="agent_match" value="2">
+          </div>
+          <div class="sub-tri" data-key="object_correct">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.object_correct">Object correct</span><small class="sub-tri-hint" data-i18n="sub.object_correct_hint">操纵的 object 是指令指定的</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="object_correct" value="2">
+          </div>
+          <div class="sub-tri" data-key="goal_completed">
+            <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.goal_completed">Goal completed</span><small class="sub-tri-hint" data-i18n="sub.goal_completed_hint">指令的目标已完整达成</small></div>
+            <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0" title="违背 / violated">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1" title="部分/轻微 / partial">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2" title="完全满足 / passes">✓</button></div>
+            <input type="hidden" id="goal_completed" value="2">
+          </div>
         </div>
         <div class="form-row">
           <label for="instruction_notes"><span data-i18n="task.instruction_notes">Instruction-alignment evidence</span> <span class="required-tag" data-i18n="task.required">*</span></label>
@@ -100,6 +124,6 @@
     <button id="retry-btn" data-i18n="common.retry">Retry</button>
   </section>
 </main>
-<script src="app.js?v=v71" defer></script>
+<script src="app.js?v=v72" defer></script>
 </body>
 </html>
