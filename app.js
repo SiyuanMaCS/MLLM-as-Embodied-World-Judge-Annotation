@@ -199,6 +199,14 @@ const LANG = {
     "my_annotations.not_found": "Annotation not found or already reviewed.",
     "my_annotations.already_reviewed": "This annotation has been reviewed and can no longer be edited.",
     "my_annotations.updated_toast": "Updated.",
+    "gold_library.edit_gold": "Edit gold",
+    "gold_library.audit_tip": "Override history",
+    "gold_library.override_btn": "Save override",
+    "gold_library.override_done_toast": "Gold overridden + audit logged.",
+    "gold_library.reason_label": "Reason for override",
+    "gold_library.reason_placeholder": "Required — why you're changing this gold (e.g. corrects misjudged interaction physics)",
+    "gold_library.reason_required": "Override reason is required.",
+    "gold_library.not_found": "Gold item not found.",
     "align.others_title": "All annotations for this item",
     "align.finalize_title": "Admin finalize (write to gold)",
     "align.next_btn": "Next item →",
@@ -385,6 +393,14 @@ const LANG = {
     "my_annotations.not_found": "标注不存在或已被审核。",
     "my_annotations.already_reviewed": "此标注已被审核,不能再修改。",
     "my_annotations.updated_toast": "已更新。",
+    "gold_library.edit_gold": "编辑金标",
+    "gold_library.audit_tip": "编辑历史",
+    "gold_library.override_btn": "保存覆盖",
+    "gold_library.override_done_toast": "金标已覆盖, audit 已记录。",
+    "gold_library.reason_label": "覆盖原因",
+    "gold_library.reason_placeholder": "必填 — 为什么改这条金标(例:原 interaction 物理判断有误)",
+    "gold_library.reason_required": "覆盖原因必填。",
+    "gold_library.not_found": "金标条目未找到。",
     "align.others_title": "本条所有标注",
     "align.finalize_title": "管理员定稿(写入金标)",
     "align.next_btn": "下一条 →",
@@ -1565,12 +1581,62 @@ async function initGold() {
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => submitGold(true) });
   wireVideoFallback(document.getElementById("gt-video"));
   // Edit mode: ?edit=<item_id> loads the existing gold annotation and prefills the form.
-  const editId = new URLSearchParams(window.location.search).get("edit");
-  if (editId) {
+  // Override mode: ?override=<item_id> admin-only path that loads a finalized gold from
+  // gold_library and lets admin rewrite it (writes audit log on submit).
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get("edit");
+  const overrideId = params.get("override");
+  if (overrideId) {
+    if (username !== "masiyuan") { renderRoleGate("管理员 (admin)"); return; }
+    await loadForOverrideGold(overrideId);
+  } else if (editId) {
     await loadForEditGold(editId);
   } else {
     await loadNextGold();
   }
+}
+
+async function loadForOverrideGold(item_id) {
+  hide("error"); hide("item"); show("loading");
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const url = `${CFG.APPS_SCRIPT_URL}/?action=gold_library&user=${encodeURIComponent(user)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data?.ok === false) throw new Error(data.error || "fetch failed");
+    const it = (data.items || []).find(x => x.item_id === item_id);
+    if (!it) { showError(tr("gold_library.not_found")); return; }
+    EDIT_MODE = { kind: "override", item_id };
+    GOLD_CURRENT = { id: it.item_id, video_url: it.video_url, dataset: it.dataset, task: it.task,
+                     video_sources: it.video_sources, instruction: it.instruction, instruction_cn: it.instruction_cn,
+                     gt_url: it.gt_url };
+    renderItem(GOLD_CURRENT);
+    prefillAnnotateForm(it.final || it.payload || {});
+    const submitBtn = document.querySelector('#annotate-form button[type="submit"]');
+    if (submitBtn) submitBtn.textContent = tr("gold_library.override_btn");
+    const skipBtn = document.getElementById("skip-btn");
+    if (skipBtn) skipBtn.hidden = true;
+    // Inject reason field above submit (audit log requires it).
+    injectOverrideReasonField();
+    hide("loading"); show("item");
+  } catch (err) {
+    showError("Failed to load gold for override: " + err.message);
+  }
+}
+
+function injectOverrideReasonField() {
+  if (document.getElementById("override-reason-wrap")) return;
+  const form = document.getElementById("annotate-form");
+  if (!form) return;
+  const submitRow = form.querySelector(".form-row.actions");
+  const wrap = document.createElement("div");
+  wrap.id = "override-reason-wrap";
+  wrap.className = "form-row";
+  wrap.innerHTML = `
+    <label for="override-reason"><span>${tr("gold_library.reason_label")}</span> <span class="required-tag">*</span></label>
+    <textarea id="override-reason" rows="2" maxlength="300" placeholder="${tr("gold_library.reason_placeholder")}"></textarea>
+  `;
+  if (submitRow) form.insertBefore(wrap, submitRow);
 }
 
 async function loadForEditGold(item_id) {
@@ -1632,16 +1698,32 @@ async function submitGold(skip) {
     payload.physical_notes = physical_notes;
     payload.instruction_notes = instruction_notes;
   }
-  const body = { gold: true, user, item_id: GOLD_CURRENT.id, payload };
-  if (EDIT_MODE && EDIT_MODE.kind === "gold" && EDIT_MODE.item_id === GOLD_CURRENT.id) body.edit = true;
+  // Override mode (admin rewriting a gold_library entry) uses a different endpoint + payload shape.
+  const isOverride = EDIT_MODE && EDIT_MODE.kind === "override" && EDIT_MODE.item_id === GOLD_CURRENT.id;
+  let body, endpoint;
+  if (isOverride) {
+    const reason = (document.getElementById("override-reason")?.value || "").trim();
+    if (!reason) { toast(tr("gold_library.reason_required"), "err"); return; }
+    body = { gold_override: true, admin: user, item_id: GOLD_CURRENT.id, payload, reason };
+    endpoint = CFG.APPS_SCRIPT_URL + "/";
+  } else {
+    body = { gold: true, user, item_id: GOLD_CURRENT.id, payload };
+    if (EDIT_MODE && EDIT_MODE.kind === "gold" && EDIT_MODE.item_id === GOLD_CURRENT.id) body.edit = true;
+    endpoint = CFG.APPS_SCRIPT_URL + "/";
+  }
   try {
-    const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(body)
     });
     const data = await res.json();
     if (data && data.ok === false) throw new Error(data.error || "save failed");
+    if (isOverride) {
+      toast(tr("gold_library.override_done_toast"), "ok");
+      window.location.href = "gold_library.html";
+      return;
+    }
     if (EDIT_MODE) {
       toast(tr("my_annotations.updated_toast"), "ok");
       window.location.href = "my_annotations.html";
@@ -2211,13 +2293,23 @@ async function loadGoldLibrary() {
       const sourceTag = sourceFull ? `<span class="tag source-${it.source}" title="${escapeHtml(it.campaign_id || it.source)}">${escapeHtml(sourceFull)}</span>` : "";
       const phys = p.physical_adherence ?? p.quality;
       const inst = p.instruction_alignment ?? p.faithful;
+      // Admin-only override entry; audit count badge if backend supplies it.
+      const isAdmin = localStorage.getItem(CFG.LS_USER) === "masiyuan";
+      const auditCount = Array.isArray(it.audit) ? it.audit.length : (it.audit_count || 0);
+      const overrideBtn = isAdmin
+        ? `<a class="link gl-override-btn" href="gold_annotate.html?override=${encodeURIComponent(it.item_id)}">✏ ${tr("gold_library.edit_gold")}</a>`
+        : "";
+      const auditTag = (isAdmin && auditCount > 0)
+        ? `<span class="tag" title="${tr("gold_library.audit_tip")}">📜 ${auditCount}</span>`
+        : "";
       card.innerHTML = `
-        <div class="meta"><span class="tag gold-tag">GOLD</span>${sourceTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${finalizerTag}${reviewerTag}</div>
+        <div class="meta"><span class="tag gold-tag">GOLD</span>${sourceTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${finalizerTag}${reviewerTag}${auditTag}</div>
         <div class="video-row"><figure><figcaption>Generated</figcaption><video controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${pickVideoUrl(it.video_sources, it.video_url || "")}" data-sources-json='${escapeHtml(JSON.stringify(it.video_sources || []))}'></video></figure></div>
         <p class="gl-scores">Physical: <strong>${phys ?? "—"}</strong> · Instruction: <strong>${inst ?? "—"}</strong></p>
         ${(p.physical_notes || p.instruction_notes)
           ? `<p class="muted"><strong>P:</strong> ${escapeHtml(p.physical_notes || "—")} <strong>· I:</strong> ${escapeHtml(p.instruction_notes || "—")}</p>`
           : `<p class="muted">${escapeHtml(p.notes || "")}</p>`}
+        ${overrideBtn ? `<div class="gl-foot">${overrideBtn}</div>` : ""}
       `;
       root.appendChild(card);
       const v = card.querySelector("video");

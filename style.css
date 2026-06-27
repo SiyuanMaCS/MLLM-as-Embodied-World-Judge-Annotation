@@ -1285,6 +1285,19 @@ td.progress-cell {
 .campaign-row.ended { opacity: 0.85; }
 .campaign-row.ended:hover { opacity: 1; }
 
+/* Admin gold override footer on gold_library cards. */
+.gl-card .gl-foot {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  text-align: right;
+}
+.gl-card .gl-override-btn {
+  font-size: 12.5px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* My annotations page — tab row + card list. */
 .tab-row { display: flex; gap: 8px; margin-bottom: 8px; }
 .tab-btn {
