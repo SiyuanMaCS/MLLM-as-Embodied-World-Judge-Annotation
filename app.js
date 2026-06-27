@@ -183,6 +183,22 @@ const LANG = {
     "align.view_results_btn": "📊 View alignment results (read-only)",
     "align.view_results_short": "📊 View results (read-only)",
     "align.read_only_badge": "read-only",
+    "page.my_annotations": "My annotations",
+    "home.card.my_annotations.title": "My annotations",
+    "home.card.my_annotations.sub": "Edit unreviewed entries",
+    "my_annotations.tab.all": "All",
+    "my_annotations.tab.task": "Task",
+    "my_annotations.tab.gold": "Gold",
+    "my_annotations.hint": "Unreviewed entries can be edited. Once a reviewer/admin acts on them, they are locked.",
+    "my_annotations.empty": "No annotations yet.",
+    "my_annotations.reviewed_badge": "reviewed",
+    "my_annotations.editable_badge": "editable",
+    "my_annotations.locked": "locked",
+    "my_annotations.edit_btn": "Edit",
+    "my_annotations.update_btn": "Update",
+    "my_annotations.not_found": "Annotation not found or already reviewed.",
+    "my_annotations.already_reviewed": "This annotation has been reviewed and can no longer be edited.",
+    "my_annotations.updated_toast": "Updated.",
     "align.others_title": "All annotations for this item",
     "align.finalize_title": "Admin finalize (write to gold)",
     "align.next_btn": "Next item →",
@@ -353,6 +369,22 @@ const LANG = {
     "align.view_results_btn": "📊 查看 alignment 结果(只读)",
     "align.view_results_short": "📊 查看结果(只读)",
     "align.read_only_badge": "只读",
+    "page.my_annotations": "我的标注",
+    "home.card.my_annotations.title": "我的标注",
+    "home.card.my_annotations.sub": "编辑未被审核的条目",
+    "my_annotations.tab.all": "全部",
+    "my_annotations.tab.task": "Task",
+    "my_annotations.tab.gold": "Gold",
+    "my_annotations.hint": "未被审核的条目可编辑;一旦 reviewer/admin 介入(approve/modify/finalize)就锁定。",
+    "my_annotations.empty": "暂无标注。",
+    "my_annotations.reviewed_badge": "已审核",
+    "my_annotations.editable_badge": "可编辑",
+    "my_annotations.locked": "已锁",
+    "my_annotations.edit_btn": "编辑",
+    "my_annotations.update_btn": "更新",
+    "my_annotations.not_found": "标注不存在或已被审核。",
+    "my_annotations.already_reviewed": "此标注已被审核,不能再修改。",
+    "my_annotations.updated_toast": "已更新。",
     "align.others_title": "本条所有标注",
     "align.finalize_title": "管理员定稿(写入金标)",
     "align.next_btn": "下一条 →",
@@ -714,7 +746,72 @@ async function initTask() {
   wireVideoFallback(document.getElementById("gt-video"));
 
   await refreshStats();
-  await loadNext();
+  // Edit mode: ?edit=<item_id> loads the existing annotation and prefills the form.
+  const editId = new URLSearchParams(window.location.search).get("edit");
+  if (editId) {
+    await loadForEdit(editId, "task");
+  } else {
+    await loadNext();
+  }
+}
+
+/* Currently-being-edited annotation (task or gold). When set, submit goes back to my_annotations.html
+   instead of advancing to the next item. */
+let EDIT_MODE = null;  // { kind: "task"|"gold", item_id }
+
+async function loadForEdit(item_id, kind) {
+  hide("error"); hide("item"); show("loading");
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const url = `${CFG.APPS_SCRIPT_URL}/?action=my_annotations&user=${encodeURIComponent(user)}&kind=${encodeURIComponent(kind)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data?.ok === false) throw new Error(data.error || "fetch failed");
+    const it = (data.items || []).find(x => x.item_id === item_id);
+    if (!it) { showError(tr("my_annotations.not_found")); return; }
+    if (it.reviewed) { showError(tr("my_annotations.already_reviewed")); return; }
+    EDIT_MODE = { kind, item_id };
+    CURRENT = { id: it.item_id, video_url: it.video_url, dataset: it.dataset, task: it.task,
+                video_sources: it.video_sources, instruction: it.instruction, instruction_cn: it.instruction_cn,
+                gt_url: it.gt_url };
+    renderItem(CURRENT);
+    prefillAnnotateForm(it.payload || {});
+    // Re-label submit button + show an "edit mode" banner.
+    const submitBtn = document.querySelector('#annotate-form button[type="submit"]');
+    if (submitBtn) submitBtn.textContent = tr("my_annotations.update_btn");
+    // Skip button doesn't make sense in edit mode — hide it.
+    const skipBtn = document.getElementById("skip-btn");
+    if (skipBtn) skipBtn.hidden = true;
+    hide("loading"); show("item");
+  } catch (err) {
+    showError("Failed to load for edit: " + err.message);
+  }
+}
+
+/* Prefill the task/gold annotate form from an existing payload (used in edit mode). */
+function prefillAnnotateForm(p) {
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el != null && val != null) {
+      el.value = val;
+      const out = document.getElementById(id + "-out");
+      if (out) out.value = val;
+    }
+  };
+  if (p.physical_adherence != null) set("physical_adherence", p.physical_adherence);
+  if (p.instruction_alignment != null) set("instruction_alignment", p.instruction_alignment);
+  // Sub-checkboxes: stored 1=pass / 0=violated. UI inverted (v46): checked = violated.
+  for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
+    const cb = document.getElementById(id);
+    if (cb) cb.checked = (p[id] === 0);
+  }
+  const pn = document.getElementById("physical_notes"); if (pn) pn.value = p.physical_notes || "";
+  const ins = document.getElementById("instruction_notes"); if (ins) ins.value = p.instruction_notes || "";
+  // Trigger hint updates by firing input on each slider.
+  for (const id of ["physical_adherence", "instruction_alignment"]) {
+    const slider = document.getElementById(id);
+    if (slider) slider.dispatchEvent(new Event("input"));
+  }
 }
 
 async function refreshStats() {
@@ -986,8 +1083,15 @@ async function onSubmit(skip) {
     item_id: CURRENT.id,
     payload,
   };
+  // Edit-mode flag: backend uses it to disambiguate update vs append on re-submit of same item_id.
+  if (EDIT_MODE && EDIT_MODE.item_id === CURRENT.id) body.edit = true;
   try {
     await submitAnnotation(body);
+    if (EDIT_MODE) {
+      toast(tr("my_annotations.updated_toast"), "ok");
+      window.location.href = "my_annotations.html";
+      return;
+    }
     await refreshStats();
     await loadNext();
   } catch (err) {
@@ -1460,7 +1564,40 @@ async function initGold() {
   document.getElementById("retry-btn").addEventListener("click", () => loadNextGold());
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => submitGold(true) });
   wireVideoFallback(document.getElementById("gt-video"));
-  await loadNextGold();
+  // Edit mode: ?edit=<item_id> loads the existing gold annotation and prefills the form.
+  const editId = new URLSearchParams(window.location.search).get("edit");
+  if (editId) {
+    await loadForEditGold(editId);
+  } else {
+    await loadNextGold();
+  }
+}
+
+async function loadForEditGold(item_id) {
+  hide("error"); hide("item"); show("loading");
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const url = `${CFG.APPS_SCRIPT_URL}/?action=my_annotations&user=${encodeURIComponent(user)}&kind=gold`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data?.ok === false) throw new Error(data.error || "fetch failed");
+    const it = (data.items || []).find(x => x.item_id === item_id);
+    if (!it) { showError(tr("my_annotations.not_found")); return; }
+    if (it.reviewed) { showError(tr("my_annotations.already_reviewed")); return; }
+    EDIT_MODE = { kind: "gold", item_id };
+    GOLD_CURRENT = { id: it.item_id, video_url: it.video_url, dataset: it.dataset, task: it.task,
+                     video_sources: it.video_sources, instruction: it.instruction, instruction_cn: it.instruction_cn,
+                     gt_url: it.gt_url };
+    renderItem(GOLD_CURRENT);
+    prefillAnnotateForm(it.payload || {});
+    const submitBtn = document.querySelector('#annotate-form button[type="submit"]');
+    if (submitBtn) submitBtn.textContent = tr("my_annotations.update_btn");
+    const skipBtn = document.getElementById("skip-btn");
+    if (skipBtn) skipBtn.hidden = true;
+    hide("loading"); show("item");
+  } catch (err) {
+    showError("Failed to load gold for edit: " + err.message);
+  }
 }
 
 async function loadNextGold() {
@@ -1496,6 +1633,7 @@ async function submitGold(skip) {
     payload.instruction_notes = instruction_notes;
   }
   const body = { gold: true, user, item_id: GOLD_CURRENT.id, payload };
+  if (EDIT_MODE && EDIT_MODE.kind === "gold" && EDIT_MODE.item_id === GOLD_CURRENT.id) body.edit = true;
   try {
     const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
       method: "POST",
@@ -1504,6 +1642,11 @@ async function submitGold(skip) {
     });
     const data = await res.json();
     if (data && data.ok === false) throw new Error(data.error || "save failed");
+    if (EDIT_MODE) {
+      toast(tr("my_annotations.updated_toast"), "ok");
+      window.location.href = "my_annotations.html";
+      return;
+    }
     await loadNextGold();
   } catch (err) {
     showError("Save failed: " + err.message);
@@ -1785,6 +1928,90 @@ function renderReviewRow(r) {
       if (v) wireVideoFallback(v);
     }
   });
+  return li;
+}
+
+/* ===================== My annotations (edit-if-unreviewed) ===================== */
+let MA_CURRENT_KIND = "all";
+
+async function initMyAnnotations() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  if (!user) { window.location.href = "index.html"; return; }
+  document.getElementById("who").textContent = user;
+  const role = localStorage.getItem(CFG.LS_ROLE) || "—";
+  const roleEl = document.getElementById("role");
+  if (roleEl) { roleEl.textContent = tr("role." + role); roleEl.dataset.role = role; }
+
+  // Tab wiring
+  document.querySelectorAll("#ma-tabs .tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#ma-tabs .tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      MA_CURRENT_KIND = btn.dataset.kind;
+      loadMyAnnotations();
+    });
+  });
+  await loadMyAnnotations();
+}
+
+async function loadMyAnnotations() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  const loading = document.getElementById("ma-loading");
+  const empty = document.getElementById("ma-empty");
+  const list = document.getElementById("ma-list");
+  const err = document.getElementById("ma-error");
+  loading.hidden = false; empty.hidden = true; list.hidden = true; err.hidden = true;
+  list.innerHTML = "";
+  try {
+    const url = `${CFG.APPS_SCRIPT_URL}/?action=my_annotations&user=${encodeURIComponent(user)}&kind=${encodeURIComponent(MA_CURRENT_KIND)}`;
+    const r = await fetch(url);
+    const d = await r.json();
+    loading.hidden = true;
+    if (d?.ok === false) throw new Error(d.error || "fetch failed");
+    const items = d.items || [];
+    if (items.length === 0) { empty.hidden = false; return; }
+    if (items[0]) setVideoSourcesFromItem(items[0]);
+    // Newest first.
+    items.sort((a, b) => (b.submitted_ts || 0) - (a.submitted_ts || 0));
+    for (const it of items) list.appendChild(renderMyAnnotationCard(it));
+    list.hidden = false;
+  } catch (e) {
+    loading.hidden = true;
+    err.hidden = false;
+    document.getElementById("ma-err-msg").textContent = e.message;
+  }
+}
+
+function renderMyAnnotationCard(it) {
+  const li = document.createElement("li");
+  li.className = "my-annot-card" + (it.reviewed ? " reviewed" : " editable");
+  const p = it.payload || {};
+  const phys = p.physical_adherence ?? "—";
+  const inst = p.instruction_alignment ?? "—";
+  const kindTag = it.kind === "gold"
+    ? `<span class="tag gold-tag">GOLD</span>`
+    : `<span class="tag">TASK</span>`;
+  const reviewedBadge = it.reviewed
+    ? `<span class="tag" title="${escapeHtml(it.reviewed_by || "")} · ${escapeHtml(String(it.reviewed_ts || ""))}">✓ ${tr("my_annotations.reviewed_badge")}</span>`
+    : `<span class="tag aud-tag tag-custom">${tr("my_annotations.editable_badge")}</span>`;
+  // Edit target page depends on kind.
+  const editHref = it.kind === "gold"
+    ? `gold_annotate.html?edit=${encodeURIComponent(it.item_id)}`
+    : `task.html?edit=${encodeURIComponent(it.item_id)}`;
+  const actionBtn = it.reviewed
+    ? `<span class="muted small">${tr("my_annotations.locked")}</span>`
+    : `<a class="link ma-edit-btn" href="${editHref}">✏ ${tr("my_annotations.edit_btn")}</a>`;
+  li.innerHTML = `
+    <div class="meta">${kindTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${reviewedBadge}</div>
+    ${it.video_url ? `<video class="ma-thumb" controls preload="none" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${pickVideoUrl(it.video_sources, it.video_url)}" data-sources-json='${escapeHtml(JSON.stringify(it.video_sources || []))}'></video>` : ""}
+    <p class="ma-scores">Physical: <strong>${phys}</strong> · Instruction: <strong>${inst}</strong></p>
+    ${(p.physical_notes || p.instruction_notes)
+      ? `<p class="muted small"><strong>P:</strong> ${escapeHtml(p.physical_notes || "—")}<br><strong>I:</strong> ${escapeHtml(p.instruction_notes || "—")}</p>`
+      : ""}
+    <div class="ma-foot">${actionBtn}</div>
+  `;
+  const v = li.querySelector("video");
+  if (v) wireVideoFallback(v);
   return li;
 }
 
@@ -2142,6 +2369,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("grid-table")) initDashboard();
   if (document.getElementById("reviewer-section")) initReviewerHub();
   if (document.getElementById("al-form")) initAlign();
+  if (document.getElementById("ma-list")) initMyAnnotations();
 });
 
 /* ===================== Reviewer Alignment v2 (multi-campaign concurrent) ===================== */

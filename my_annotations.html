@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Annotations — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css?v=v65">
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1 data-i18n="page.my_annotations">My annotations</h1>
+    <div class="user-chip">
+      <span id="who">—</span> <span class="role-pill" id="role">—</span>
+      <button id="logout-btn" class="link" data-i18n="chip.logout">logout</button>
+    </div>
+  </header>
+  <nav class="page-nav">
+    <a href="dashboard.html" class="back-link" data-i18n="nav.back">← Back</a>
+  </nav>
+
+  <section id="ma-tabs" class="card">
+    <div class="tab-row">
+      <button type="button" class="tab-btn active" data-kind="all" data-i18n="my_annotations.tab.all">All</button>
+      <button type="button" class="tab-btn" data-kind="task" data-i18n="my_annotations.tab.task">Task</button>
+      <button type="button" class="tab-btn" data-kind="gold" data-i18n="my_annotations.tab.gold">Gold</button>
+    </div>
+    <p class="muted small" data-i18n="my_annotations.hint">Unreviewed entries can be edited. Once a reviewer/admin acts on them, they are locked.</p>
+  </section>
+
+  <section class="card">
+    <p id="ma-loading" data-i18n="common.loading">Loading…</p>
+    <p id="ma-empty" hidden data-i18n="my_annotations.empty">No annotations yet.</p>
+    <ul id="ma-list" class="my-annot-list" hidden></ul>
+  </section>
+
+  <section id="ma-error" class="card error" hidden><h3 data-i18n="common.failed">Failed</h3><p id="ma-err-msg">—</p></section>
+</main>
+<script src="app.js?v=v65" defer></script>
+</body>
+</html>
