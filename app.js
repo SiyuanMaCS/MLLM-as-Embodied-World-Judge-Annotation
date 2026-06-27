@@ -2956,10 +2956,13 @@ async function loadAlignStatus() {
       // End-campaign button is admin-only.
       const endBtn = document.getElementById("al-end-btn");
       if (endBtn) endBtn.hidden = !ALIGN_IS_ADMIN;
-      // Export JSONL contains real usernames (anonymity-breaking) AND is backend admin-only (403 for others).
-      // Hide for read-only participants; admin sees it.
+      // Export JSONL is now available to all_disclosed completed participants too
+      // (Ham opened it after de-anonymization — they already see all real names via align_item,
+      // exporting the same data adds no new leak; siyuan's task 1 = "admin-equivalent view").
+      // Backend gates by role + all_disclosed; frontend just shows the button to anyone
+      // viewing the admin/read-only panel.
       const exportBtn = document.getElementById("al-export-btn");
-      if (exportBtn) exportBtn.hidden = ALIGN_READ_ONLY;
+      if (exportBtn) exportBtn.hidden = false;
     }
     if (ALIGN_READ_ONLY) {
       // Read-only viewer: no more annotation form, no loadAlignNext.
