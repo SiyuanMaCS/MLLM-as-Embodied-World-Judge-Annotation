@@ -117,6 +117,9 @@ const LANG = {
     "align.row.disclose": "👁 See others (locks)",
     "align.row.view_disclosed": "👁 View",
     "align.row.view_finalized": "✓ View finalized",
+    "align.disclose_all_btn": "✅ See everyone (lock all my items)",
+    "align.disclose_all.confirm": "This will permanently LOCK all your submitted items in this campaign — you cannot re-edit any of them after this.\n\nIn return, you'll see all annotators' scores (real names) + IAA + Export — same view as admin (minus finalize).\n\nProceed?",
+    "align.disclose_all.done_toast": "All items disclosed. Opening results panel…",
     "align.toast.export_failed": "Export failed",
     "my_reviews.history": "Reviewed history",
     "my_reviews.empty": "No reviews yet for you. Submit some annotations and they'll be sampled or self-reportable.",
@@ -330,6 +333,9 @@ const LANG = {
     "align.row.disclose": "👁 看大家(会锁)",
     "align.row.view_disclosed": "👁 查看",
     "align.row.view_finalized": "✓ 查看金标",
+    "align.disclose_all_btn": "✅ 看所有人(锁我全部条目)",
+    "align.disclose_all.confirm": "此操作会永久锁定你在这个 campaign 里所有已提交的条目 — 之后**任何一条都不能再改**。\n\n作为交换,你会看到所有标注者的分数(真名)+ IAA + Export — 跟 admin 同款视图(只是不能 finalize)。\n\n继续吗?",
+    "align.disclose_all.done_toast": "全部已锁定,打开结果面板…",
     "align.toast.export_failed": "导出失败",
     "my_reviews.history": "审核历史",
     "my_reviews.empty": "你还没有审核记录。提交一些标注,会被抽样或自报告。",
@@ -2561,6 +2567,9 @@ async function initAlign() {
   // Wire "Browse my items" — opens the my_alignment grid (mixed-state per-item view).
   const browseMineBtn = document.getElementById("al-browse-mine-btn");
   if (browseMineBtn) browseMineBtn.addEventListener("click", () => loadMyAlignment());
+  // Wire bulk-disclose-all (one-click "see everyone, lock all my items") — task 1 core.
+  const discloseAllBtn = document.getElementById("al-disclose-all-btn");
+  if (discloseAllBtn) discloseAllBtn.addEventListener("click", () => discloseAllAndOpenResults());
   const myBackBtn = document.getElementById("al-my-back-btn");
   if (myBackBtn) myBackBtn.addEventListener("click", () => {
     document.getElementById("al-my-alignment").hidden = true;
@@ -3088,6 +3097,11 @@ function renderDiscloseProgress(d) {
   // Gate the "View results (read-only)" button on al-done-msg: only visible when all_disclosed.
   const viewBtn = document.getElementById("al-view-results-btn");
   if (viewBtn) viewBtn.hidden = !allDisclosed && !ALIGN_IS_ADMIN;
+  // Gate the bulk-disclose-all button: useful only when user has submitted but not all-disclosed.
+  // (admin doesn't need it — they see everything regardless.)
+  const myDone = d.my_done ?? 0;
+  const discloseAllBtn = document.getElementById("al-disclose-all-btn");
+  if (discloseAllBtn) discloseAllBtn.hidden = ALIGN_IS_ADMIN || allDisclosed || myDone === 0;
 }
 
 /* Load the mixed-state grid of all my items in this campaign (Ham's my_alignment endpoint).
@@ -3233,6 +3247,29 @@ function loadAlignItemForAnnotate(it) {
   document.getElementById("al-instruction_notes").value = "";
   document.getElementById("al-item").hidden = false;
   document.getElementById("al-others").hidden = true;
+}
+
+/* Bulk-disclose all of the user's submitted items in this campaign, then immediately
+   open the read-only aggregate panel. Solves task 1: "completed users should see everyone
+   just like admin, without 50 clicks". Permanent lock — confirm dialog warns. */
+async function discloseAllAndOpenResults() {
+  if (!ALIGN_CAMPAIGN_ID) return;
+  const user = localStorage.getItem(CFG.LS_USER);
+  if (!confirm(tr("align.disclose_all.confirm"))) return;
+  try {
+    const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ align_disclose_all: true, user, campaign_id: ALIGN_CAMPAIGN_ID }),
+    });
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "bulk disclose failed");
+    toast(tr("align.disclose_all.done_toast"), "ok");
+    // Reload status — backend now flags all_disclosed=true → read-only panel auto-renders
+    // with admin-equivalent visibility (real names, participants, IAA, Export per Ham's #1).
+    await loadAlignStatus();
+  } catch (err) {
+    toast("Bulk disclose failed: " + err.message, "err");
+  }
 }
 
 /* Explicitly disclose an item (locking re-edit) then show the side-by-side view.
