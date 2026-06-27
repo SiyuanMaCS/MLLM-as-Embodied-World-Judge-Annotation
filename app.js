@@ -104,6 +104,19 @@ const LANG = {
     "align.disclose.confirm": "Submitted ✓\n\nSee how others scored this? You will permanently lock this item — re-edit no longer allowed.\n\nOK = see + lock\nCancel = continue annotating, this item stays editable",
     "align.disclose.locked_toast": "Item disclosed and locked.",
     "align.disclose.label": "🔒 disclosed:",
+    "align.browse_mine_btn": "📋 Browse my items",
+    "align.my_items_title": "My items in this campaign",
+    "align.my_items_hint": "Mixed states: submitted-editable items can still be re-scored; disclosed items are locked. Click 「👁 See others」 to disclose + lock an item.",
+    "align.my_back_btn": "← Back",
+    "align.state.todo": "TODO",
+    "align.state.editable": "EDITABLE",
+    "align.state.disclosed": "DISCLOSED",
+    "align.state.finalized": "FINALIZED",
+    "align.row.annotate": "📝 Annotate",
+    "align.row.edit": "✏ Edit",
+    "align.row.disclose": "👁 See others (locks)",
+    "align.row.view_disclosed": "👁 View",
+    "align.row.view_finalized": "✓ View finalized",
     "align.toast.export_failed": "Export failed",
     "my_reviews.history": "Reviewed history",
     "my_reviews.empty": "No reviews yet for you. Submit some annotations and they'll be sampled or self-reportable.",
@@ -304,6 +317,19 @@ const LANG = {
     "align.disclose.confirm": "已提交 ✓\n\n要现在看大家怎么标吗?**看了这条就永久锁定**,不能再改。\n\n确定 = 看 + 锁\n取消 = 继续标下一条,这条仍可改",
     "align.disclose.locked_toast": "已锁定该条。",
     "align.disclose.label": "🔒 已锁:",
+    "align.browse_mine_btn": "📋 浏览我标的条目",
+    "align.my_items_title": "我在这个 campaign 的条目",
+    "align.my_items_hint": "混合态:提交但未 disclose 的条目可改;disclose 后锁定。点「👁 看大家(会锁)」可 disclose + 锁定。",
+    "align.my_back_btn": "← 返回",
+    "align.state.todo": "未标",
+    "align.state.editable": "可改",
+    "align.state.disclosed": "已锁",
+    "align.state.finalized": "已 final",
+    "align.row.annotate": "📝 标注",
+    "align.row.edit": "✏ 编辑",
+    "align.row.disclose": "👁 看大家(会锁)",
+    "align.row.view_disclosed": "👁 查看",
+    "align.row.view_finalized": "✓ 查看金标",
     "align.toast.export_failed": "导出失败",
     "my_reviews.history": "审核历史",
     "my_reviews.empty": "你还没有审核记录。提交一些标注,会被抽样或自报告。",
@@ -2532,6 +2558,14 @@ async function initAlign() {
   // Wire "View results (read-only)" button on done page — re-renders the overview.
   const viewResultsBtn = document.getElementById("al-view-results-btn");
   if (viewResultsBtn) viewResultsBtn.addEventListener("click", () => loadAlignStatus());
+  // Wire "Browse my items" — opens the my_alignment grid (mixed-state per-item view).
+  const browseMineBtn = document.getElementById("al-browse-mine-btn");
+  if (browseMineBtn) browseMineBtn.addEventListener("click", () => loadMyAlignment());
+  const myBackBtn = document.getElementById("al-my-back-btn");
+  if (myBackBtn) myBackBtn.addEventListener("click", () => {
+    document.getElementById("al-my-alignment").hidden = true;
+    document.getElementById("al-done-msg").hidden = false;
+  });
   // Admin: Start new campaign form
   if (ALIGN_IS_ADMIN) {
     document.getElementById("al-start-toggle").hidden = false;
@@ -3054,6 +3088,151 @@ function renderDiscloseProgress(d) {
   // Gate the "View results (read-only)" button on al-done-msg: only visible when all_disclosed.
   const viewBtn = document.getElementById("al-view-results-btn");
   if (viewBtn) viewBtn.hidden = !allDisclosed && !ALIGN_IS_ADMIN;
+}
+
+/* Load the mixed-state grid of all my items in this campaign (Ham's my_alignment endpoint).
+   Each row has annotated/disclosed/finalized/editable flags + payload + media — we render
+   one card per item with the appropriate action button. */
+async function loadMyAlignment() {
+  if (!ALIGN_CAMPAIGN_ID) return;
+  const user = localStorage.getItem(CFG.LS_USER);
+  hideAlignSections();
+  document.getElementById("al-my-alignment").hidden = false;
+  const list = document.getElementById("al-my-list");
+  list.innerHTML = `<li class="muted">${tr("common.loading")}</li>`;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=my_alignment&user=${encodeURIComponent(user)}&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}`);
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "fetch failed");
+    const items = d.items || [];
+    if (items.length === 0) { list.innerHTML = `<li class="muted">${tr("my_annotations.empty")}</li>`; return; }
+    if (items[0]) setVideoSourcesFromItem(items[0]);
+    list.innerHTML = "";
+    for (const it of items) list.appendChild(renderMyAlignmentCard(it));
+  } catch (err) {
+    list.innerHTML = `<li class="warn-text">${escapeHtml(err.message)}</li>`;
+  }
+}
+
+function renderMyAlignmentCard(it) {
+  const li = document.createElement("li");
+  // State: not_started / editable / disclosed / finalized
+  let state, badgeClass, action;
+  if (it.finalized) {
+    state = "finalized"; badgeClass = "gold-tag";
+    action = `<button type="button" class="link al-row-view" data-id="${escapeHtml(it.item_id)}">${tr("align.row.view_finalized")}</button>`;
+  } else if (it.disclosed) {
+    state = "disclosed"; badgeClass = "tag";
+    action = `<button type="button" class="link al-row-view" data-id="${escapeHtml(it.item_id)}">${tr("align.row.view_disclosed")}</button>`;
+  } else if (it.annotated) {
+    state = "editable"; badgeClass = "tag aud-tag tag-custom";
+    action = `<button type="button" class="link al-row-edit" data-id="${escapeHtml(it.item_id)}">${tr("align.row.edit")}</button>
+              <button type="button" class="link al-row-disclose" data-id="${escapeHtml(it.item_id)}">${tr("align.row.disclose")}</button>`;
+  } else {
+    state = "todo"; badgeClass = "tag";
+    action = `<button type="button" class="link al-row-annotate" data-id="${escapeHtml(it.item_id)}">${tr("align.row.annotate")}</button>`;
+  }
+  li.className = `my-annot-card ma-state-${state}`;
+  const p = it.payload || {};
+  const phys = p.physical_adherence ?? "—";
+  const inst = p.instruction_alignment ?? "—";
+  const scoresLine = it.annotated
+    ? `<p class="ma-scores">Physical: <strong>${phys}</strong> · Instruction: <strong>${inst}</strong></p>`
+    : "";
+  li.innerHTML = `
+    <div class="meta"><span class="${badgeClass}">${tr("align.state." + state)}</span><span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span></div>
+    ${it.video_url ? `<video class="ma-thumb" controls preload="none" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${pickVideoUrl(it.video_sources, it.video_url)}" data-sources-json='${escapeHtml(JSON.stringify(it.video_sources || []))}'></video>` : ""}
+    ${scoresLine}
+    <div class="ma-foot">${action}</div>
+  `;
+  const v = li.querySelector("video"); if (v) wireVideoFallback(v);
+  // Wire row actions
+  const editBtn = li.querySelector(".al-row-edit");
+  if (editBtn) editBtn.addEventListener("click", () => loadAlignItemForEdit(it));
+  const discloseBtn = li.querySelector(".al-row-disclose");
+  if (discloseBtn) discloseBtn.addEventListener("click", () => {
+    if (!confirm(tr("align.disclose.confirm"))) return;
+    discloseAndShowOthers(it.item_id);
+  });
+  const viewBtn = li.querySelector(".al-row-view");
+  if (viewBtn) viewBtn.addEventListener("click", () => showAlignOthers(it.item_id));
+  const annBtn = li.querySelector(".al-row-annotate");
+  if (annBtn) annBtn.addEventListener("click", () => loadAlignItemForAnnotate(it));
+  return li;
+}
+
+/* Load an editable (submitted-but-undisclosed) item back into al-form for re-scoring. */
+function loadAlignItemForEdit(it) {
+  hideAlignSections();
+  setVideoSourcesFromItem(it);
+  ALIGN_CURRENT = { id: it.item_id, video_url: it.video_url, dataset: it.dataset, task: it.task,
+                    video_sources: it.video_sources, instruction: it.instruction, instruction_cn: it.instruction_cn };
+  document.getElementById("al-dataset").textContent = it.dataset || "?";
+  document.getElementById("al-task").textContent = it.task || "?";
+  const vid = document.getElementById("al-video");
+  wireVideoFallback(vid, { onSkip: () => loadAlignNext() });
+  vid.src = pickVideoUrl(it.video_sources, it.video_url || "");
+  bindVideoSources(vid, it.video_sources);
+  vid.load();
+  CURRENT_INSTRUCTION = {
+    video_url: it.video_url, targetId: "al-prompt",
+    en: it.instruction || "", cn: it.instruction_cn || "",
+  };
+  if (CURRENT_INSTRUCTION.en || CURRENT_INSTRUCTION.cn) applyCurrentInstruction();
+  else fetchInstructionInto(it.video_url, "al-prompt");
+  // Prefill form values
+  const p = it.payload || {};
+  for (const id of ["al-physical_adherence", "al-instruction_alignment"]) {
+    const k = id.replace("al-", "");
+    const v = p[k];
+    const inp = document.getElementById(id);
+    const out = document.getElementById(id + "-out");
+    if (inp && v != null) inp.value = v;
+    if (out && v != null) out.value = v;
+    if (inp) inp.dispatchEvent(new Event("input"));
+  }
+  for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
+    const cb = document.getElementById("al-" + id);
+    if (cb) cb.checked = (p[id] === 0);
+  }
+  document.getElementById("al-physical_notes").value = p.physical_notes || "";
+  document.getElementById("al-instruction_notes").value = p.instruction_notes || "";
+  document.getElementById("al-item").hidden = false;
+  document.getElementById("al-others").hidden = true;
+}
+
+/* Load a not-yet-annotated item directly (skip the loadAlignNext queue ordering). */
+function loadAlignItemForAnnotate(it) {
+  hideAlignSections();
+  setVideoSourcesFromItem(it);
+  ALIGN_CURRENT = { id: it.item_id, video_url: it.video_url, dataset: it.dataset, task: it.task,
+                    video_sources: it.video_sources, instruction: it.instruction, instruction_cn: it.instruction_cn };
+  document.getElementById("al-dataset").textContent = it.dataset || "?";
+  document.getElementById("al-task").textContent = it.task || "?";
+  const vid = document.getElementById("al-video");
+  wireVideoFallback(vid, { onSkip: () => loadAlignNext() });
+  vid.src = pickVideoUrl(it.video_sources, it.video_url || "");
+  bindVideoSources(vid, it.video_sources);
+  vid.load();
+  CURRENT_INSTRUCTION = {
+    video_url: it.video_url, targetId: "al-prompt",
+    en: it.instruction || "", cn: it.instruction_cn || "",
+  };
+  if (CURRENT_INSTRUCTION.en || CURRENT_INSTRUCTION.cn) applyCurrentInstruction();
+  else fetchInstructionInto(it.video_url, "al-prompt");
+  // Reset form (fresh item)
+  for (const id of ["al-physical_adherence", "al-instruction_alignment"]) {
+    const inp = document.getElementById(id);
+    const out = document.getElementById(id + "-out");
+    if (inp) inp.value = 3; if (out) out.value = 3;
+  }
+  for (const id of ["al-agent_consistency", "al-scene_consistency", "al-interaction_realism", "al-agent_match", "al-object_correct", "al-goal_completed"]) {
+    document.getElementById(id).checked = false;
+  }
+  document.getElementById("al-physical_notes").value = "";
+  document.getElementById("al-instruction_notes").value = "";
+  document.getElementById("al-item").hidden = false;
+  document.getElementById("al-others").hidden = true;
 }
 
 /* Explicitly disclose an item (locking re-edit) then show the side-by-side view.

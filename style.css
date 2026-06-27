@@ -1325,6 +1325,11 @@ td.progress-cell {
 }
 .my-annot-card.editable { border-left: 3px solid #16a34a; }
 .my-annot-card.reviewed { border-left: 3px solid var(--muted); opacity: 0.92; }
+/* Per-state colors for my_alignment cards. */
+.my-annot-card.ma-state-todo { border-left: 3px solid var(--border); }
+.my-annot-card.ma-state-editable { border-left: 3px solid #16a34a; }
+.my-annot-card.ma-state-disclosed { border-left: 3px solid #2563eb; opacity: 0.95; }
+.my-annot-card.ma-state-finalized { border-left: 3px solid #d4a017; opacity: 0.92; }
 .my-annot-card .ma-thumb {
   width: 100%;
   max-height: 240px;
