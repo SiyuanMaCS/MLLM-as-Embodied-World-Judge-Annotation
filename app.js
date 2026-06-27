@@ -98,6 +98,9 @@ const LANG = {
     "align.iaa.title": "Inter-annotator agreement",
     "align.iaa.no_data": "Not enough multi-rater items to compute agreement yet.",
     "align.iaa.top_items": "Top divergent items",
+    "align.iaa.main_scores": "Main scores (1–5)",
+    "align.iaa.sub_scores": "Sub-items (0/1 violation flags)",
+    "align.iaa.open_item": "open item",
     "align.toast.export_failed": "Export failed",
     "my_reviews.history": "Reviewed history",
     "my_reviews.empty": "No reviews yet for you. Submit some annotations and they'll be sampled or self-reportable.",
@@ -292,6 +295,9 @@ const LANG = {
     "align.iaa.title": "标注者间一致性",
     "align.iaa.no_data": "尚无足够多人标的样本计算一致性。",
     "align.iaa.top_items": "分歧最大的样本",
+    "align.iaa.main_scores": "主分(1–5)",
+    "align.iaa.sub_scores": "子项(0=违背 / 1=通过)",
+    "align.iaa.open_item": "打开",
     "align.toast.export_failed": "导出失败",
     "my_reviews.history": "审核历史",
     "my_reviews.empty": "你还没有审核记录。提交一些标注,会被抽样或自报告。",
@@ -2689,7 +2695,11 @@ function renderIAAPanel(panel, d) {
     panel.innerHTML = `<p class="muted">${tr("align.iaa.no_data")}</p>`;
     return;
   }
-  const dimOrder = ["physical_adherence", "instruction_alignment", "agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"];
+  // Split dimensions: main scores (1-5 scale) vs sub-items (0/1 violation flags) — siyuan
+  // pointed out mixing them in one table mislabels the "mean diff" semantic (a Δ of 0.78
+  // on a 5-point scale is very different from a Δ of 0.27 on a binary).
+  const mainDims = ["physical_adherence", "instruction_alignment"];
+  const subDims = ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"];
   const dimLabel = {
     physical_adherence: tr("axis.physical"),
     instruction_alignment: tr("axis.instruction"),
@@ -2705,10 +2715,9 @@ function renderIAAPanel(panel, d) {
     const cls = a >= 0.8 ? "ok-text" : (a >= 0.4 ? "" : "warn-text");
     return `<td class="${cls}"><strong>${a.toFixed(3)}</strong></td>`;
   }
-  let rows = "";
-  for (const k of dimOrder) {
+  function rowFor(k) {
     const dim = perDim[k] || {};
-    rows += `<tr>
+    return `<tr>
       <td>${escapeHtml(dimLabel[k] || k)}</td>
       ${alphaCell(dim.krippendorff_alpha)}
       <td>${dim.exact_agree_rate != null ? (dim.exact_agree_rate * 100).toFixed(1) + "%" : "—"}</td>
@@ -2716,27 +2725,51 @@ function renderIAAPanel(panel, d) {
       <td class="muted">${dim.n_items ?? "—"}</td>
     </tr>`;
   }
-  const topItems = items.slice(0, 5).map(it => {
-    const pa = it.physical_adherence_spread ?? 0;
-    const ia = it.instruction_alignment_spread ?? 0;
-    const total = pa + ia;
-    return `<li><span class="muted">${escapeHtml(it.dataset || "?")} · ${escapeHtml(it.task || "?")}</span>
-              <span class="muted small">PA Δ${pa} · IA Δ${ia}${total >= 6 ? ' <span class="conflict-tag">⚠ 高分歧</span>' : ''}</span></li>`;
-  }).join("");
-  panel.innerHTML = `
-    <h4 class="iaa-title">${tr("align.iaa.title")} <span class="muted small">· ${d.n_raters || "?"} raters · ${nMulti} multi-rater items</span></h4>
-    <table class="iaa-table">
-      <thead><tr>
+  const mainRows = mainDims.map(rowFor).join("");
+  const subRows = subDims.map(rowFor).join("");
+  const tableHead = `<thead><tr>
         <th>${tr("align.iaa.dim")}</th>
         <th>${tr("align.iaa.alpha")}</th>
         <th>${tr("align.iaa.exact")}</th>
         <th>${tr("align.iaa.mean_diff")}</th>
         <th>${tr("align.iaa.n_items")}</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
+      </tr></thead>`;
+  // Top divergent items — each row is a clickable link that calls showAlignOthers(item_id)
+  // to jump directly to the side-by-side view of that item.
+  const topItems = items.slice(0, 5).map(it => {
+    const pa = it.physical_adherence_spread ?? 0;
+    const ia = it.instruction_alignment_spread ?? 0;
+    const total = pa + ia;
+    const itemId = it.item_id || "";
+    const conflictTag = total >= 6 ? ' <span class="conflict-tag">⚠ 高分歧</span>' : '';
+    return `<li>
+      <a href="#" class="iaa-top-link" data-item-id="${escapeHtml(itemId)}">
+        <span class="iaa-top-name">${escapeHtml(it.dataset || "?")} · ${escapeHtml(it.task || "?")}</span>
+        <span class="muted small">PA Δ${pa} · IA Δ${ia}${conflictTag}</span>
+        <span class="iaa-top-open">${tr("align.iaa.open_item")} →</span>
+      </a>
+    </li>`;
+  }).join("");
+  panel.innerHTML = `
+    <h4 class="iaa-title">${tr("align.iaa.title")} <span class="muted small">· ${d.n_raters || "?"} raters · ${nMulti} multi-rater items</span></h4>
+    <h5 class="iaa-subtitle">${tr("align.iaa.main_scores")}</h5>
+    <table class="iaa-table iaa-table-main">${tableHead}<tbody>${mainRows}</tbody></table>
+    <h5 class="iaa-subtitle">${tr("align.iaa.sub_scores")}</h5>
+    <table class="iaa-table iaa-table-sub">${tableHead}<tbody>${subRows}</tbody></table>
     ${topItems ? `<h5 class="iaa-subtitle">${tr("align.iaa.top_items")}</h5><ul class="iaa-top-list">${topItems}</ul>` : ""}
   `;
+  // Wire click handlers on top-divergent rows → jump to side-by-side for that item.
+  panel.querySelectorAll(".iaa-top-link").forEach(a => {
+    a.addEventListener("click", e => {
+      e.preventDefault();
+      const id = a.dataset.itemId;
+      if (!id) { toast(tr("align.iaa.open_item") + ": item_id missing in backend response", "err"); return; }
+      // Collapse the IAA panel and jump to the item's side-by-side view.
+      const ip = document.getElementById("al-iaa-panel");
+      if (ip) ip.hidden = true;
+      showAlignOthers(id);
+    });
+  });
 }
 
 async function exportCampaign() {
