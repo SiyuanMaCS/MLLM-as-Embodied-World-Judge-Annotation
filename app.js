@@ -1694,7 +1694,9 @@ function renderQualityCard(d) {
   const tierLabel = tr("quality.tier." + tier);
   const tierColor = { bonus: "#16a34a", base: "#2563eb", low: "#d39c00", interim: "var(--muted)", paused: "#dc2626" }[tier] || "var(--muted)";
   const unitPrice = d.unit_price != null ? `¥${Number(d.unit_price).toFixed(2)}/条` : "—";
-  const earned = d.earned_estimate != null ? `¥${Number(d.earned_estimate).toFixed(2)}` : "—";
+  // Ham's contract: week_earned = ISO-week earnings (label-accurate); earned_estimate = cumulative.
+  const weekEarned = d.week_earned != null ? `¥${Number(d.week_earned).toFixed(2)}` : "—";
+  const weekPayable = d.week_payable != null ? ` (${d.week_payable} 条)` : "";
   const pauseState = d.pause_state || "normal";
   const pauseBanner = pauseState !== "normal"
     ? `<div class="quality-pause-banner pause-${escapeHtml(pauseState)}">${escapeHtml(tr("quality.pause." + pauseState))}</div>`
@@ -1716,7 +1718,7 @@ function renderQualityCard(d) {
         </div>
       </div>
       <div class="quality-foot">
-        <span class="muted">${tr("quality.earned_this_week")}:</span> <strong>${earned}</strong>
+        <span class="muted">${tr("quality.earned_this_week")}:</span> <strong>${weekEarned}</strong><span class="muted small">${weekPayable}</span>
       </div>
       ${pauseBanner}
     </div>
