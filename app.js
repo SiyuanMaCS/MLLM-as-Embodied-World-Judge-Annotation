@@ -1717,7 +1717,8 @@ function renderQualityCard(d) {
   const poolCount = d.rework_pool ?? 0;
   let banner = "";
   if (reworkState === "rework_pending" && poolCount > 0) {
-    banner = `<div class="quality-pause-banner pause-rework_pending">⚠ ${tr("quality.rework.pending").replace("{N}", poolCount)}</div>`;
+    // i18n string already starts with ⚠ — don't prefix another one (Alice's catch).
+    banner = `<div class="quality-pause-banner pause-rework_pending">${tr("quality.rework.pending").replace("{N}", poolCount)}</div>`;
   } else if (reworkState === "admin_review") {
     banner = `<div class="quality-pause-banner pause-admin_review">${escapeHtml(tr("quality.rework.admin_review"))}</div>`;
   }
