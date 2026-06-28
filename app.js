@@ -162,6 +162,7 @@ const LANG = {
     "page.docs": "Annotation Standard",
     "page.align": "Reviewer alignment",
     "task.instruction": "Task instruction",
+    "task.init_frame": "Init frame",
     "task.notes": "Notes",
     "task.notes_placeholder": "Required — explain your reasoning (what you saw, key violations, key successes)…",
     "task.physical_notes": "Physical evidence",
@@ -390,6 +391,7 @@ const LANG = {
     "page.docs": "标注标准",
     "page.align": "审核员对齐",
     "task.instruction": "任务指令",
+    "task.init_frame": "起始帧",
     "task.notes": "备注",
     "task.notes_placeholder": "必填 — 简述你的判断依据(看到了什么、关键违反、关键成功)…",
     "task.physical_notes": "物理证据",
@@ -959,6 +961,7 @@ function renderItem(it) {
   gen.src = pickVideoUrl(it.video_sources, it.video_url);
   bindVideoSources(gen, it.video_sources);
   gen.load();
+  setInitFrame(it.init_frame_url, "");
   const gtFig = document.getElementById("gt-fig");
   const gt = document.getElementById("gt-video");
   if (it.gt_url) {
@@ -1102,6 +1105,41 @@ function bindVideoSources(videoEl, sources) {
   if (!videoEl) return;
   videoEl.dataset.sourcesJson = JSON.stringify(Array.isArray(sources) ? sources : []);
   videoEl.dataset.originalSrc = videoEl.getAttribute("src") || "";
+}
+
+/* Show/hide the init-frame thumbnail next to a video. Pass the figure ID prefix
+   (default empty = '#init-frame-fig'+'#init-frame-img'; 'al-' for align form,
+   'al-others-' for the review panel). Click → lightbox via openImageLightbox.
+   Ham confirms init_frame_url is on every backend item payload + proxied (China-reachable). */
+function setInitFrame(url, prefix) {
+  const p = prefix || "";
+  const fig = document.getElementById(p + "init-frame-fig");
+  const img = document.getElementById(p + "init-frame-img");
+  if (!fig || !img) return;
+  if (url) {
+    img.src = applyVideoHost(url);
+    fig.hidden = false;
+    img.onclick = () => openImageLightbox(img.src);
+    img.style.cursor = "zoom-in";
+  } else {
+    fig.hidden = true;
+    img.removeAttribute("src");
+  }
+}
+
+/* Simple lightbox: dim the page, show the image full-size, click to close. */
+function openImageLightbox(src) {
+  let box = document.getElementById("img-lightbox");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "img-lightbox";
+    box.className = "img-lightbox";
+    box.innerHTML = `<img class="img-lightbox-img" alt="">`;
+    box.addEventListener("click", () => { box.hidden = true; });
+    document.body.appendChild(box);
+  }
+  box.querySelector("img").src = src;
+  box.hidden = false;
 }
 
 /* Backend-driven source list. Item payloads carry `video_sources = [{label, url, ...}]`
@@ -1953,6 +1991,7 @@ function renderReviewItem(it) {
   reviewGen.src = pickVideoUrl(it.video_sources, it.video_url);
   bindVideoSources(reviewGen, it.video_sources);
   reviewGen.load();
+  setInitFrame(it.init_frame_url, "");
   document.getElementById("prompt-text").textContent = "(loading instruction…)";
   // Original annotator submission (annotator anon).
   // Backend field: `annotation` (was `annotation_payload` in my earlier draft).
@@ -3103,6 +3142,7 @@ async function loadAlignNext() {
     vid.src = pickVideoUrl(d.video_sources, d.video_url || "");
     bindVideoSources(vid, d.video_sources);
     vid.load();
+    setInitFrame(d.init_frame_url, "al-");
     // Ignore d.prompt (may be prefix/rewrite version) — always use canonical instruction.
     CURRENT_INSTRUCTION = {
       video_url: d.video_url,
@@ -3290,6 +3330,7 @@ function loadAlignItemForEdit(it) {
   vid.src = pickVideoUrl(it.video_sources, it.video_url || "");
   bindVideoSources(vid, it.video_sources);
   vid.load();
+  setInitFrame(it.init_frame_url, "al-");
   CURRENT_INSTRUCTION = {
     video_url: it.video_url, targetId: "al-prompt",
     en: it.instruction || "", cn: it.instruction_cn || "",
@@ -3329,6 +3370,7 @@ function loadAlignItemForAnnotate(it) {
   vid.src = pickVideoUrl(it.video_sources, it.video_url || "");
   bindVideoSources(vid, it.video_sources);
   vid.load();
+  setInitFrame(it.init_frame_url, "al-");
   CURRENT_INSTRUCTION = {
     video_url: it.video_url, targetId: "al-prompt",
     en: it.instruction || "", cn: it.instruction_cn || "",
@@ -3433,6 +3475,7 @@ async function showAlignOthers(item_id) {
       bindVideoSources(ov, d.video_sources);
       ov.load();
     }
+    setInitFrame(d.init_frame_url, "al-others-");
     // Instruction (same path as the annotate form — prefer backend-supplied text, fallback HF fetch).
     CURRENT_INSTRUCTION = {
       video_url: d.video_url,

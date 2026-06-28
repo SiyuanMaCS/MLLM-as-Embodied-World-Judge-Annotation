@@ -6,7 +6,7 @@
 <title>Reviewer Alignment — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v76">
+<link rel="stylesheet" href="style.css?v=v77">
 </head>
 <body>
 <main>
@@ -84,6 +84,10 @@
       <span class="tag" id="al-task">—</span>
     </div>
     <div class="video-row">
+      <figure class="init-frame-fig" id="al-init-frame-fig" hidden>
+        <figcaption data-i18n="task.init_frame">Init frame</figcaption>
+        <img id="al-init-frame-img" class="init-frame-img" alt="Init frame" loading="lazy">
+      </figure>
       <figure><figcaption>Generated</figcaption><video id="al-video" controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true"></video></figure>
     </div>
     <div class="prompt-box"><label data-i18n="task.instruction">Task instruction</label><p id="al-prompt">—</p></div>
@@ -163,6 +167,10 @@
       <span class="tag" id="al-others-task">—</span>
     </div>
     <div class="video-row">
+      <figure class="init-frame-fig" id="al-others-init-frame-fig" hidden>
+        <figcaption data-i18n="task.init_frame">Init frame</figcaption>
+        <img id="al-others-init-frame-img" class="init-frame-img" alt="Init frame" loading="lazy">
+      </figure>
       <figure><figcaption>Generated</figcaption><video id="al-others-video" controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true"></video></figure>
     </div>
     <div class="prompt-box"><label data-i18n="task.instruction">Task instruction</label><p id="al-others-prompt">—</p></div>
@@ -195,6 +203,6 @@
 
   <section id="al-error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="al-err-msg">—</p><button id="al-retry" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v76" defer></script>
+<script src="app.js?v=v77" defer></script>
 </body>
 </html>

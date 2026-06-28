@@ -6,7 +6,7 @@
 <title>Review Queue — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v76">
+<link rel="stylesheet" href="style.css?v=v77">
 </head>
 <body>
 <main>
@@ -32,6 +32,10 @@
     </div>
 
     <div class="video-row">
+      <figure class="init-frame-fig" id="init-frame-fig" hidden>
+        <figcaption data-i18n="task.init_frame">Init frame</figcaption>
+        <img id="init-frame-img" class="init-frame-img" alt="Init frame" loading="lazy">
+      </figure>
       <figure><figcaption>Generated</figcaption><video id="gen-video" controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true"></video></figure>
     </div>
     <div class="prompt-box"><label data-i18n="task.instruction">Task instruction</label><p id="prompt-text">—</p></div>
@@ -116,6 +120,6 @@
 
   <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v76" defer></script>
+<script src="app.js?v=v77" defer></script>
 </body>
 </html>
