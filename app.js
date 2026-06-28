@@ -1703,7 +1703,11 @@ function renderQualityCard(d) {
   const tier = d.tier || "interim";
   const tierLabel = tr("quality.tier." + tier);
   const tierColor = { bonus: "#16a34a", base: "#2563eb", low: "#d39c00", interim: "var(--muted)", paused: "#dc2626" }[tier] || "var(--muted)";
-  const unitPrice = d.unit_price != null ? `¥${Number(d.unit_price).toFixed(2)}/条` : "—";
+  // Author role: tier name still shows (quality signal) but hide ¥ unit price + earnings
+  // since author isn't paid per-item (Alice's catch from B QA).
+  const role = (localStorage.getItem(CFG.LS_ROLE) || "").toLowerCase();
+  const isContributor = role === "contributor";
+  const unitPrice = isContributor && d.unit_price != null ? `¥${Number(d.unit_price).toFixed(2)}/条` : "";
   // Ham's contract: week_earned = ISO-week earnings (label-accurate); earned_estimate = cumulative.
   const weekEarned = d.week_earned != null ? `¥${Number(d.week_earned).toFixed(2)}` : "—";
   const weekPayable = d.week_payable != null ? ` (${d.week_payable} 条)` : "";
@@ -1731,12 +1735,13 @@ function renderQualityCard(d) {
           </div>
         </div>
         <div class="quality-tier" style="color:${tierColor};border-color:${tierColor}">
-          ${escapeHtml(tierLabel)} · ${unitPrice}
+          ${escapeHtml(tierLabel)}${unitPrice ? " · " + unitPrice : ""}
         </div>
       </div>
+      ${isContributor ? `
       <div class="quality-foot">
         <span class="muted">${tr("quality.earned_this_week")}:</span> <strong>${weekEarned}</strong><span class="muted small">${weekPayable}</span>
-      </div>
+      </div>` : ""}
       ${pauseBanner}
     </div>
   `;
