@@ -94,6 +94,8 @@ const LANG = {
     "align.iaa.alpha": "Krippendorff α",
     "align.iaa.exact": "Exact agree",
     "align.iaa.mean_diff": "Mean pairwise diff",
+    "align.iaa.within1": "Within ±1",
+    "align.iaa.std_dev": "Std-dev (pts)",
     "align.iaa.n_items": "Items",
     "align.iaa.title": "Inter-annotator agreement",
     "align.iaa.no_data": "Not enough multi-rater items to compute agreement yet.",
@@ -101,9 +103,11 @@ const LANG = {
     "align.iaa.main_scores": "Main scores (1–5)",
     "align.iaa.sub_scores": "Sub-items (0/1/2 ordinal)",
     "align.iaa.open_item": "open item",
-    "align.iaa.alpha_tip": "Krippendorff α: chance-corrected inter-rater agreement. 1.0 = perfect agreement; 0 = chance-level; <0 = worse than chance. Conventional bands: >0.8 high, 0.6–0.8 substantial, 0.4–0.6 moderate, <0.4 weak. Computed with interval distance (squared) on main scores 1–5 and ordinal on sub-items 0/1/2.",
-    "align.iaa.exact_tip": "Fraction of items where ALL raters gave the same exact score. On a 5-point scale, random chance is only ~4%, so this number is usually low even with strong agreement — it's a stricter signal than α. We may replace this with variance/stdev in a future build (siyuan request).",
+    "align.iaa.alpha_tip": "Krippendorff α: chance-corrected inter-rater agreement. 1.0 = perfect agreement; 0 = chance-level; <0 = worse than chance. Conventional bands: >0.8 high, 0.67–0.8 acceptable, <0.67 weak. Computed with interval distance (squared) on main scores 1–5 and ordinal on sub-items 0/1/2.",
+    "align.iaa.exact_tip": "Fraction of items where ALL raters gave the same exact score. On a 5-point scale, random chance is only ~4%, so this number is usually low even with strong agreement — replaced by ±1 and std-dev below in v76.",
     "align.iaa.mean_diff_tip": "Average |scoreA − scoreB| across every pair of raters on each item, then averaged across items. Units match the scale (so 0.78 on the 1–5 main scale means raters typically differ by ~0.78 points). Lower = more agreement.",
+    "align.iaa.within1_tip": "Fraction of rater-pairs whose scores differ by at most 1 on each item, averaged across items. On a 1–5 scale this is the most readable signal — 76% means most pairs are 'basically agreeing'.",
+    "align.iaa.std_dev_tip": "Per-item standard deviation of rater scores, averaged across items. Units = points (e.g. 0.78 means a typical item's raters spread by ~0.78 points around their mean). Lower = more agreement; 0 = unanimous.",
     "align.iaa.n_items_tip": "Number of items with at least 2 raters — only those contribute to the agreement metrics.",
     "align.disclose.confirm": "Submitted ✓\n\nSee how others scored this? You will permanently lock this item — re-edit no longer allowed.\n\nOK = see + lock\nCancel = continue annotating, this item stays editable",
     "align.disclose.locked_toast": "Item disclosed and locked.",
@@ -318,6 +322,8 @@ const LANG = {
     "align.iaa.alpha": "Krippendorff α",
     "align.iaa.exact": "完全一致率",
     "align.iaa.mean_diff": "平均两两差",
+    "align.iaa.within1": "±1 内一致率",
+    "align.iaa.std_dev": "标准差(分)",
     "align.iaa.n_items": "样本数",
     "align.iaa.title": "标注者间一致性",
     "align.iaa.no_data": "尚无足够多人标的样本计算一致性。",
@@ -325,9 +331,11 @@ const LANG = {
     "align.iaa.main_scores": "主分(1–5)",
     "align.iaa.sub_scores": "子项(0/1/2 三档有序)",
     "align.iaa.open_item": "打开",
-    "align.iaa.alpha_tip": "Krippendorff α:扣除随机一致后的标注者间一致性指标。1.0=完全一致;0=随机水平;<0=比随机还差。常用区间:>0.8 强、0.6–0.8 较强、0.4–0.6 中等、<0.4 弱。主分按 interval(平方距离)算,子项 0/1/2 按 ordinal 算。",
-    "align.iaa.exact_tip": "所有标注者打出**完全一样**的分数的样本比例。1-5 尺度下随机概率只有 ~4%,所以这个数即使一致性很强也偏低 — 比 α 更严格。siyuan 提议未来换成方差/标准差,Ham 在做。",
+    "align.iaa.alpha_tip": "Krippendorff α:扣除随机一致后的标注者间一致性指标。1.0=完全一致;0=随机水平;<0=比随机还差。常用区间:>0.8 优秀、0.67–0.8 可接受、<0.67 偏弱。主分按 interval(平方距离)算,子项 0/1/2 按 ordinal 算。",
+    "align.iaa.exact_tip": "所有标注者打出**完全一样**的分数的样本比例。1-5 尺度下随机概率只有 ~4%,所以这个数即使一致性很强也偏低 — 已被下方的 ±1 和标准差替代(v76)。",
     "align.iaa.mean_diff_tip": "任意两位标注者对同一 item 的 |分差| 平均(先 per item 再跨 item 平均)。单位跟尺度一致(主分 0.78 = 平均相差 0.78 分)。越小越一致。",
+    "align.iaa.within1_tip": "标注者两两打分**差≤1分**的比例(逐 item 算后跨 item 平均)。1-5 尺度上最直观 — 76% 就是「大多数人基本一致」。",
+    "align.iaa.std_dev_tip": "每条样本上各标注者打分的标准差(逐 item 算后跨 item 平均),单位是**分**(主分 0.78 = 每条样本上标注者打分平均散布 ~0.78 分)。越小越一致,0 = 完全一致。",
     "align.iaa.n_items_tip": "至少有 2 位标注者打过分的样本数 — 只有这些才参与一致性计算。",
     "align.disclose.confirm": "已提交 ✓\n\n要现在看大家怎么标吗?**看了这条就永久锁定**,不能再改。\n\n确定 = 看 + 锁\n取消 = 继续标下一条,这条仍可改",
     "align.disclose.locked_toast": "已锁定该条。",
@@ -2857,8 +2865,8 @@ function renderIAAPanel(panel, d) {
     return `<tr>
       <td>${escapeHtml(dimLabel[k] || k)}</td>
       ${alphaCell(dim.krippendorff_alpha)}
-      <td>${dim.exact_agree_rate != null ? (dim.exact_agree_rate * 100).toFixed(1) + "%" : "—"}</td>
-      <td>${dim.mean_pairwise_diff != null ? dim.mean_pairwise_diff.toFixed(2) : "—"}</td>
+      <td>${dim.within1_rate != null ? (dim.within1_rate * 100).toFixed(1) + "%" : "—"}</td>
+      <td>${dim.std_dev != null ? dim.std_dev.toFixed(2) : "—"}</td>
       <td class="muted">${dim.n_items ?? "—"}</td>
     </tr>`;
   }
@@ -2869,8 +2877,8 @@ function renderIAAPanel(panel, d) {
   const tableHead = `<thead><tr>
         <th>${tr("align.iaa.dim")}</th>
         <th>${tr("align.iaa.alpha")} ${help("align.iaa.alpha_tip")}</th>
-        <th>${tr("align.iaa.exact")} ${help("align.iaa.exact_tip")}</th>
-        <th>${tr("align.iaa.mean_diff")} ${help("align.iaa.mean_diff_tip")}</th>
+        <th>${tr("align.iaa.within1")} ${help("align.iaa.within1_tip")}</th>
+        <th>${tr("align.iaa.std_dev")} ${help("align.iaa.std_dev_tip")}</th>
         <th>${tr("align.iaa.n_items")} ${help("align.iaa.n_items_tip")}</th>
       </tr></thead>`;
   // Top divergent items — each row is a clickable link that calls showAlignOthers(item_id)
