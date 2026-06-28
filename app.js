@@ -99,8 +99,12 @@ const LANG = {
     "align.iaa.no_data": "Not enough multi-rater items to compute agreement yet.",
     "align.iaa.top_items": "Top divergent items",
     "align.iaa.main_scores": "Main scores (1–5)",
-    "align.iaa.sub_scores": "Sub-items (0/1 violation flags)",
+    "align.iaa.sub_scores": "Sub-items (0/1/2 ordinal)",
     "align.iaa.open_item": "open item",
+    "align.iaa.alpha_tip": "Krippendorff α: chance-corrected inter-rater agreement. 1.0 = perfect agreement; 0 = chance-level; <0 = worse than chance. Conventional bands: >0.8 high, 0.6–0.8 substantial, 0.4–0.6 moderate, <0.4 weak. Computed with interval distance (squared) on main scores 1–5 and ordinal on sub-items 0/1/2.",
+    "align.iaa.exact_tip": "Fraction of items where ALL raters gave the same exact score. On a 5-point scale, random chance is only ~4%, so this number is usually low even with strong agreement — it's a stricter signal than α. We may replace this with variance/stdev in a future build (siyuan request).",
+    "align.iaa.mean_diff_tip": "Average |scoreA − scoreB| across every pair of raters on each item, then averaged across items. Units match the scale (so 0.78 on the 1–5 main scale means raters typically differ by ~0.78 points). Lower = more agreement.",
+    "align.iaa.n_items_tip": "Number of items with at least 2 raters — only those contribute to the agreement metrics.",
     "align.disclose.confirm": "Submitted ✓\n\nSee how others scored this? You will permanently lock this item — re-edit no longer allowed.\n\nOK = see + lock\nCancel = continue annotating, this item stays editable",
     "align.disclose.locked_toast": "Item disclosed and locked.",
     "align.disclose.label": "🔒 disclosed:",
@@ -319,8 +323,12 @@ const LANG = {
     "align.iaa.no_data": "尚无足够多人标的样本计算一致性。",
     "align.iaa.top_items": "分歧最大的样本",
     "align.iaa.main_scores": "主分(1–5)",
-    "align.iaa.sub_scores": "子项(0=违背 / 1=通过)",
+    "align.iaa.sub_scores": "子项(0/1/2 三档有序)",
     "align.iaa.open_item": "打开",
+    "align.iaa.alpha_tip": "Krippendorff α:扣除随机一致后的标注者间一致性指标。1.0=完全一致;0=随机水平;<0=比随机还差。常用区间:>0.8 强、0.6–0.8 较强、0.4–0.6 中等、<0.4 弱。主分按 interval(平方距离)算,子项 0/1/2 按 ordinal 算。",
+    "align.iaa.exact_tip": "所有标注者打出**完全一样**的分数的样本比例。1-5 尺度下随机概率只有 ~4%,所以这个数即使一致性很强也偏低 — 比 α 更严格。siyuan 提议未来换成方差/标准差,Ham 在做。",
+    "align.iaa.mean_diff_tip": "任意两位标注者对同一 item 的 |分差| 平均(先 per item 再跨 item 平均)。单位跟尺度一致(主分 0.78 = 平均相差 0.78 分)。越小越一致。",
+    "align.iaa.n_items_tip": "至少有 2 位标注者打过分的样本数 — 只有这些才参与一致性计算。",
     "align.disclose.confirm": "已提交 ✓\n\n要现在看大家怎么标吗?**看了这条就永久锁定**,不能再改。\n\n确定 = 看 + 锁\n取消 = 继续标下一条,这条仍可改",
     "align.disclose.locked_toast": "已锁定该条。",
     "align.disclose.label": "🔒 已锁:",
@@ -2856,12 +2864,14 @@ function renderIAAPanel(panel, d) {
   }
   const mainRows = mainDims.map(rowFor).join("");
   const subRows = subDims.map(rowFor).join("");
+  // Tooltip helper: small (?) icon with hover-to-explain via title attribute.
+  const help = (key) => `<span class="iaa-help" title="${escapeHtml(tr(key))}">ⓘ</span>`;
   const tableHead = `<thead><tr>
         <th>${tr("align.iaa.dim")}</th>
-        <th>${tr("align.iaa.alpha")}</th>
-        <th>${tr("align.iaa.exact")}</th>
-        <th>${tr("align.iaa.mean_diff")}</th>
-        <th>${tr("align.iaa.n_items")}</th>
+        <th>${tr("align.iaa.alpha")} ${help("align.iaa.alpha_tip")}</th>
+        <th>${tr("align.iaa.exact")} ${help("align.iaa.exact_tip")}</th>
+        <th>${tr("align.iaa.mean_diff")} ${help("align.iaa.mean_diff_tip")}</th>
+        <th>${tr("align.iaa.n_items")} ${help("align.iaa.n_items_tip")}</th>
       </tr></thead>`;
   // Top divergent items — each row is a clickable link that calls showAlignOthers(item_id)
   // to jump directly to the side-by-side view of that item.
