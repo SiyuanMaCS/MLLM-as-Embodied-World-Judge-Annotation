@@ -1377,6 +1377,52 @@ td.progress-cell {
 .sub-tri-btn.active.val-1 { background: #fef3c7; border-color: #f59e0b; color: #b45309; }
 .sub-tri-btn.active.val-2 { background: #dcfce7; border-color: #16a34a; color: #15803d; }
 
+/* Quality + earnings card on dashboard (annotator self-view).
+   Reads Ham's my_quality: shows this week's pass rates + tier + earned + pause state. */
+.quality-card {
+  margin: 12px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f3f7ff 0%, #fafbfd 100%);
+}
+.quality-card.empty { background: #fafbfd; padding: 10px 14px; }
+.quality-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.quality-icon { font-size: 22px; }
+.quality-meta { flex: 1 1 200px; min-width: 0; }
+.quality-label { font-size: 12px; color: var(--muted); }
+.quality-rates {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 15px;
+  margin-top: 2px;
+}
+.quality-rate strong { font-size: 18px; font-weight: 700; }
+.quality-rate-sep { color: var(--border); }
+.quality-tier {
+  padding: 4px 10px;
+  border: 1.5px solid;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.quality-foot { margin-top: 10px; font-size: 13.5px; color: var(--text); }
+.quality-pause-banner {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13.5px;
+}
+.quality-pause-banner.pause-reannotate_required { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+.quality-pause-banner.pause-admin_review { background: #fee2e2; color: #991b1b; border: 1px solid #dc2626; font-weight: 600; }
+
 /* Admin gold override footer on gold_library cards. */
 .gl-card .gl-foot {
   margin-top: 8px;
@@ -1795,6 +1841,8 @@ ul.my-list .my-row:hover { border-color: var(--accent); }
 ul.my-list .my-row.expanded { box-shadow: 0 2px 10px rgba(60, 90, 200, 0.08); border-color: var(--accent); }
 ul.my-list .my-row.approved { border-left: 4px solid var(--ok); }
 ul.my-list .my-row.modified { border-left: 4px solid #d39c00; }
+ul.my-list .my-row.rejected { border-left: 4px solid #dc2626; }
+ul.my-list .my-row.rejected .row-decision { color: #b91c1c; font-weight: 700; }
 ul.my-list .my-row.self-reported { background: #fffaf0; }
 
 .row-head {

@@ -204,9 +204,26 @@ const LANG = {
     "sub.goal_completed_hint": "the instructed goal state is fully reached",
     "review.your_decision": "Your decision",
     "review.approve": "✅ Approve",
-    "review.modify": "✏ Modify",
-    "review.minor": "✏ Minor edit",
-    "review.major": "🛑 Major (return)",
+    "review.modify": "✏ Adjust",
+    "review.minor": "✏ Adjust",
+    "review.major": "🛑 Reject",
+    "review.decision.approve": "✅ Approved",
+    "review.decision.minor": "✏ Adjusted",
+    "review.decision.major": "🛑 Rejected",
+    "quality.no_reviews_yet": "No reviews yet — start annotating and your quality stats will appear here.",
+    "quality.this_week": "This week",
+    "quality.reviewed_unit": "reviewed",
+    "quality.pass_rate": "pass rate",
+    "quality.full_pass_rate": "full-pass rate",
+    "quality.earned_this_week": "Earned this week",
+    "quality.tier.bonus": "Bonus tier",
+    "quality.tier.base": "Base tier",
+    "quality.tier.low": "Reduced tier",
+    "quality.tier.interim": "Interim (need ≥10 reviews)",
+    "quality.tier.paused": "PAUSED",
+    "quality.pause.normal": "",
+    "quality.pause.reannotate_required": "⚠ Your pass rate fell below 60%. New tasks paused — clear the re-annotate queue to resume.",
+    "quality.pause.admin_review": "🛑 Account in admin review (consecutive low quality). Admin will decide next step.",
     "review.modify_note": "Modification note",
     "review.annotator_submission": "Annotator submission (annotator hidden)",
     "align.title": "Reviewer alignment",
@@ -435,9 +452,26 @@ const LANG = {
     "sub.goal_completed_hint": "指令的目标已完整达成",
     "review.your_decision": "你的决定",
     "review.approve": "✅ 通过",
-    "review.modify": "✏ 修改",
-    "review.minor": "✏ 小修改",
-    "review.major": "🛑 大修改(打回)",
+    "review.modify": "✏ 调整",
+    "review.minor": "✏ 调整",
+    "review.major": "🛑 不通过",
+    "review.decision.approve": "✅ 通过",
+    "review.decision.minor": "✏ 调整",
+    "review.decision.major": "🛑 不通过",
+    "quality.no_reviews_yet": "暂无审核记录 — 开始标注后这里会显示你的质量统计。",
+    "quality.this_week": "本周",
+    "quality.reviewed_unit": "条已审",
+    "quality.pass_rate": "通过率",
+    "quality.full_pass_rate": "完全通过率",
+    "quality.earned_this_week": "本周已挣",
+    "quality.tier.bonus": "奖励档",
+    "quality.tier.base": "正常档",
+    "quality.tier.low": "减扣档",
+    "quality.tier.interim": "暂结(需 ≥10 条)",
+    "quality.tier.paused": "已暂停",
+    "quality.pause.normal": "",
+    "quality.pause.reannotate_required": "⚠ 通过率跌破 60% — 新任务已暂停,清空重标队列后恢复。",
+    "quality.pause.admin_review": "🛑 账号进入 admin 复审(连续低质),admin 将决定下一步。",
     "review.modify_note": "修改备注",
     "review.annotator_submission": "标注者提交(隐名)",
     "align.title": "审核员对齐",
@@ -1420,6 +1454,8 @@ function renderGrid(data) {
     if (!isAdmin && me) {
       renderSelfSummary(selfBlock, me);
       selfBlock.hidden = false;
+      // Async-fetch quality stats and slot the card in (doesn't block summary render).
+      loadAndRenderQualityCard();
     } else {
       selfBlock.hidden = true;
     }
@@ -1585,6 +1621,7 @@ function renderSelfSummary(root, me) {
       </div>
     </div>
     ${renderEarningsCard(me)}
+    <div id="quality-card-slot"></div>
     <div class="total-progress">
       <div class="total-progress-head">
         <span class="total-label">总进度 (21 天目标)</span>
@@ -1624,6 +1661,66 @@ function capitalizeLabel(s) {
   // "author 3" → "Author 3", "admin 1" → "Admin 1", "You" → "You"
   if (!s) return s;
   return s.replace(/\b([a-z])/g, c => c.toUpperCase());
+}
+
+/* Fetch Ham's my_quality and render into #quality-card-slot.
+   Surface: this week's 通过率 / 完全通过率 + current pay tier + this week's earned + pause state. */
+async function loadAndRenderQualityCard() {
+  if (!CFG.APPS_SCRIPT_URL) return;
+  const user = localStorage.getItem(CFG.LS_USER);
+  if (!user) return;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=my_quality&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    if (d?.ok === false) return;
+    const slot = document.getElementById("quality-card-slot");
+    if (!slot) return;
+    slot.innerHTML = renderQualityCard(d);
+  } catch (err) {
+    console.warn("my_quality fetch failed", err);
+  }
+}
+
+function renderQualityCard(d) {
+  const week = d.week || d.rolling || {};
+  const reviewed = week.reviewed ?? 0;
+  if (reviewed === 0) {
+    return `<div class="quality-card empty"><span class="muted">${tr("quality.no_reviews_yet")}</span></div>`;
+  }
+  const passRate = week.pass_rate ?? 0;
+  const fullRate = week.full_pass_rate ?? 0;
+  const pct = (x) => (x * 100).toFixed(1) + "%";
+  const tier = d.tier || "interim";
+  const tierLabel = tr("quality.tier." + tier);
+  const tierColor = { bonus: "#16a34a", base: "#2563eb", low: "#d39c00", interim: "var(--muted)", paused: "#dc2626" }[tier] || "var(--muted)";
+  const unitPrice = d.unit_price != null ? `¥${Number(d.unit_price).toFixed(2)}/条` : "—";
+  const earned = d.earned_estimate != null ? `¥${Number(d.earned_estimate).toFixed(2)}` : "—";
+  const pauseState = d.pause_state || "normal";
+  const pauseBanner = pauseState !== "normal"
+    ? `<div class="quality-pause-banner pause-${escapeHtml(pauseState)}">${escapeHtml(tr("quality.pause." + pauseState))}</div>`
+    : "";
+  return `
+    <div class="quality-card">
+      <div class="quality-head">
+        <span class="quality-icon">📊</span>
+        <div class="quality-meta">
+          <div class="quality-label">${tr("quality.this_week")} · ${reviewed} ${tr("quality.reviewed_unit")}</div>
+          <div class="quality-rates">
+            <span class="quality-rate"><strong>${pct(passRate)}</strong> ${tr("quality.pass_rate")}</span>
+            <span class="quality-rate-sep">·</span>
+            <span class="quality-rate muted"><strong>${pct(fullRate)}</strong> ${tr("quality.full_pass_rate")}</span>
+          </div>
+        </div>
+        <div class="quality-tier" style="color:${tierColor};border-color:${tierColor}">
+          ${escapeHtml(tierLabel)} · ${unitPrice}
+        </div>
+      </div>
+      <div class="quality-foot">
+        <span class="muted">${tr("quality.earned_this_week")}:</span> <strong>${earned}</strong>
+      </div>
+      ${pauseBanner}
+    </div>
+  `;
 }
 
 function renderMetByDay(root, days, annotators, metByDate) {
@@ -2137,11 +2234,15 @@ async function initMyReviews() {
 /* Build one review-history row with a click-to-expand detail panel. */
 function renderReviewRow(r) {
   const li = document.createElement("li");
-  const isApprove = r.decision === "approve";
-  li.className = "my-row " + (isApprove ? "approved" : "modified");
+  // 3 decisions (v78): approve / minor (= adjust, counts as pass) / major (= reject, counts as fail).
+  // Legacy "modify" maps to "minor" for back-compat — Ham's backend also accepts both.
+  const dec = r.decision === "modify" ? "minor" : (r.decision || "approve");
+  const isApprove = dec === "approve";
+  const isMajor = dec === "major";
+  li.className = "my-row " + (isApprove ? "approved" : (isMajor ? "rejected" : "modified"));
   if (r.is_report) li.classList.add("self-reported");
   const reviewer = r.reviewer_label || "Reviewer";
-  const decisionLbl = isApprove ? "✅ Approved" : "✏ Modified";
+  const decisionLbl = tr("review.decision." + dec);
   const kindBadge = r.kind === "gold" ? '<span class="row-badge gold">GOLD</span>' : "";
   const reportBadge = r.is_report ? '<span class="row-badge report">⚠ self-reported</span>' : "";
   const ts = r.ts || r.created_at || "";
