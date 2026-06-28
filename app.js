@@ -210,22 +210,22 @@ const LANG = {
     "review.decision.approve": "✅ Approved",
     "review.decision.minor": "✏ Adjusted",
     "review.decision.major": "🛑 Rejected",
-    "quality.no_reviews_yet": "No reviews yet — start annotating and your quality stats will appear here.",
+    "quality.no_reviews_yet": "No reviews yet.",
     "quality.this_week": "This week",
     "quality.reviewed_unit": "reviewed",
-    "quality.pass_rate": "pass rate",
-    "quality.full_pass_rate": "full-pass rate",
+    "quality.pass_rate": "pass",
+    "quality.full_pass_rate": "full-pass",
     "quality.earned_this_week": "Earned this week",
-    "quality.tier.bonus": "Bonus tier",
-    "quality.tier.base": "Base tier",
-    "quality.tier.low": "Reduced tier",
-    "quality.tier.interim": "Interim (need ≥10 reviews)",
+    "quality.tier.bonus": "Bonus",
+    "quality.tier.base": "Base",
+    "quality.tier.low": "Reduced",
+    "quality.tier.interim": "Interim (need ≥10)",
     "quality.tier.paused": "PAUSED",
     "quality.pause.normal": "",
-    "quality.pause.reannotate_required": "⚠ Your pass rate fell below 60%. New tasks paused — clear the re-annotate queue to resume.",
-    "quality.pause.admin_review": "🛑 Account in admin review (consecutive low quality). Admin will decide next step.",
-    "quality.rework.pending": "Quality is below 60%. You have {N} unreviewed items to redo (priority-sorted in My Annotations). You can still take new tasks while clearing them.",
-    "quality.rework.admin_review": "🛑 Re-do queue cleared but pass rate is still below 60%. Admin will review and decide next step.",
+    "quality.pause.reannotate_required": "⚠ Below 60% — clear redo queue to resume.",
+    "quality.pause.admin_review": "🛑 Admin review.",
+    "quality.rework.pending": "⚠ {N} to redo — see My Annotations (❗).",
+    "quality.rework.admin_review": "🛑 Queue cleared but rate still <60% — admin review.",
     "my_annotations.rework_badge": "❗ Redo",
     "review.modify_note": "Modification note",
     "review.annotator_submission": "Annotator submission (annotator hidden)",
@@ -463,22 +463,22 @@ const LANG = {
     "review.decision.approve": "✅ 通过",
     "review.decision.minor": "✏ 调整",
     "review.decision.major": "🛑 不通过",
-    "quality.no_reviews_yet": "暂无审核记录 — 开始标注后这里会显示你的质量统计。",
+    "quality.no_reviews_yet": "暂无审核记录。",
     "quality.this_week": "本周",
-    "quality.reviewed_unit": "条已审",
-    "quality.pass_rate": "通过率",
-    "quality.full_pass_rate": "完全通过率",
+    "quality.reviewed_unit": "条",
+    "quality.pass_rate": "通过",
+    "quality.full_pass_rate": "完全通过",
     "quality.earned_this_week": "本周已挣",
-    "quality.tier.bonus": "奖励档",
-    "quality.tier.base": "正常档",
-    "quality.tier.low": "减扣档",
-    "quality.tier.interim": "暂结(需 ≥10 条)",
+    "quality.tier.bonus": "奖励",
+    "quality.tier.base": "正常",
+    "quality.tier.low": "减扣",
+    "quality.tier.interim": "暂结(需 ≥10)",
     "quality.tier.paused": "已暂停",
     "quality.pause.normal": "",
-    "quality.pause.reannotate_required": "⚠ 通过率跌破 60% — 新任务已暂停,清空重标队列后恢复。",
-    "quality.pause.admin_review": "🛑 账号进入 admin 复审(连续低质),admin 将决定下一步。",
-    "quality.rework.pending": "通过率低于 60%。你有 {N} 条未审条目待重做(已在「我的标注」里红❗优先排)。可以同时继续接新任务。",
-    "quality.rework.admin_review": "🛑 重做池已清空但通过率仍 <60%,admin 将审核决定下一步。",
+    "quality.pause.reannotate_required": "⚠ 通过率 <60%,清重做队列恢复。",
+    "quality.pause.admin_review": "🛑 Admin 复审中。",
+    "quality.rework.pending": "⚠ {N} 条待重做(去「我的标注」红❗清池)。",
+    "quality.rework.admin_review": "🛑 池已清但率仍 <60%,Admin 复审。",
     "my_annotations.rework_badge": "❗ 重做",
     "review.modify_note": "修改备注",
     "review.annotator_submission": "标注者提交(隐名)",
@@ -1727,21 +1727,19 @@ function renderQualityCard(d) {
       <div class="quality-head">
         <span class="quality-icon">📊</span>
         <div class="quality-meta">
-          <div class="quality-label">${tr("quality.this_week")} · ${reviewed} ${tr("quality.reviewed_unit")}</div>
           <div class="quality-rates">
+            <span class="muted">${tr("quality.this_week")} ${reviewed} ${tr("quality.reviewed_unit")}</span>
+            <span class="quality-rate-sep">·</span>
             <span class="quality-rate"><strong>${pct(passRate)}</strong> ${tr("quality.pass_rate")}</span>
             <span class="quality-rate-sep">·</span>
             <span class="quality-rate muted"><strong>${pct(fullRate)}</strong> ${tr("quality.full_pass_rate")}</span>
           </div>
         </div>
         <div class="quality-tier" style="color:${tierColor};border-color:${tierColor}">
-          ${escapeHtml(tierLabel)}${unitPrice ? " · " + unitPrice : ""}
+          ${escapeHtml(tierLabel)}${unitPrice ? " " + unitPrice : ""}
         </div>
       </div>
-      ${isContributor ? `
-      <div class="quality-foot">
-        <span class="muted">${tr("quality.earned_this_week")}:</span> <strong>${weekEarned}</strong><span class="muted small">${weekPayable}</span>
-      </div>` : ""}
+      ${isContributor ? `<div class="quality-foot"><span class="muted">${tr("quality.earned_this_week")}:</span> <strong>${weekEarned}</strong><span class="muted small">${weekPayable}</span></div>` : ""}
       ${pauseBanner}
     </div>
   `;
