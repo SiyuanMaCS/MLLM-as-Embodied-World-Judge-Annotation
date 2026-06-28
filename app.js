@@ -976,13 +976,35 @@ function renderItem(it) {
 async function fetchInstructionInto(video_url, targetElId) {
   const target = document.getElementById(targetElId);
   if (!target) return;
-  const baseRaw = video_url && video_url.replace(
-    /generated_data\/[^\/]+\/(task_\d+)\/(episode_\d+)\/1\/[^\/]+\.mp4$/,
-    "gt_data/$1/$2/prompt"
+  if (!video_url) { target.textContent = "(no prompt)"; return; }
+  // Step 1: extract the canonical rel_path. Two cases:
+  //   (a) plain HF/mirror URL: `https://host/datasets/.../resolve/main/data/.../X.mp4`
+  //   (b) Ham's tunnel proxy:  `https://tunnel/?action=vid&p=data/.../X.mp4` (rel_path is in `?p=`)
+  // The instruction.txt lives next to the video under gt_data/ (not generated_data/), and is
+  // text — the proxy only serves mp4 bytes — so always fetch instruction from HF directly.
+  let relPath = "";
+  try {
+    const u = new URL(video_url, window.location.href);
+    const p = u.searchParams.get("p");
+    if (p) {
+      relPath = p;  // proxy URL
+    } else {
+      // resolve URL: strip the `/datasets/<owner>/<repo>/resolve/<rev>/` prefix.
+      const m = u.pathname.match(/\/datasets\/[^/]+\/[^/]+\/resolve\/[^/]+\/(.+)$/);
+      if (m) relPath = m[1];
+    }
+  } catch { /* not a URL — fall through */ }
+  if (!relPath) { target.textContent = "(no prompt)"; return; }
+  // Step 2: derive the prompt directory: replace generated_data/<model>/<task>/<ep>/1/<file>.mp4
+  // → gt_data/<task>/<ep>/prompt
+  const baseRaw = relPath.replace(
+    /^(.+?)\/generated_data\/[^/]+\/(task_\d+)\/(episode_\d+)\/1\/[^/]+\.mp4$/,
+    "$1/gt_data/$2/$3/prompt"
   );
-  if (!baseRaw) { target.textContent = "(no prompt)"; return; }
-  // Apply current video-host preference so instruction also follows hf-mirror switch.
-  const base = applyVideoHost(baseRaw);
+  if (baseRaw === relPath) { target.textContent = "(no prompt)"; return; }
+  // Always fetch from HF (text files; the proxy isn't a generic file server). Apply user-host
+  // preference for parity with video — though hf-mirror.com 308-redirects this back to HF.
+  const base = applyVideoHost(CFG.HF_RESOLVE_BASE + "/" + baseRaw.replace(/^\/+/, ""));
   const filenames = getLang() === "cn"
     ? ["instruction_cn.txt", "instruction.txt"]
     : ["instruction.txt"];
