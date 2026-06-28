@@ -253,6 +253,8 @@ const LANG = {
     "my_annotations.not_found": "Annotation not found or already reviewed.",
     "my_annotations.already_reviewed": "This annotation has been reviewed and can no longer be edited.",
     "my_annotations.updated_toast": "Updated.",
+    "my_annotations.diff.your_submission": "Your submission",
+    "my_annotations.diff.reviewer_final": "Reviewer (final)",
     "gold_library.edit_gold": "Edit gold",
     "gold_library.audit_tip": "Override history",
     "gold_library.override_btn": "Save override",
@@ -501,6 +503,8 @@ const LANG = {
     "my_annotations.not_found": "标注不存在或已被审核。",
     "my_annotations.already_reviewed": "此标注已被审核,不能再修改。",
     "my_annotations.updated_toast": "已更新。",
+    "my_annotations.diff.your_submission": "你的提交",
+    "my_annotations.diff.reviewer_final": "Reviewer 终值",
     "gold_library.edit_gold": "编辑金标",
     "gold_library.audit_tip": "编辑历史",
     "gold_library.override_btn": "保存覆盖",
@@ -2371,30 +2375,79 @@ async function loadMyAnnotations() {
 
 function renderMyAnnotationCard(it) {
   const li = document.createElement("li");
-  li.className = "my-annot-card" + (it.reviewed ? " reviewed" : " editable");
-  const p = it.payload || {};
-  const phys = p.physical_adherence ?? "—";
-  const inst = p.instruction_alignment ?? "—";
+  // Ham's contract on my_annotations adds review_decision / review_passed / review_original /
+  // review_final on every reviewed task row. Branch the card style on decision so the user
+  // can see at a glance whether their submission was approved, adjusted, or rejected.
+  const dec = it.review_decision === "modify" ? "minor" : it.review_decision;  // legacy compat
+  const isReviewed = !!it.reviewed;
+  let stateCls = "editable";
+  if (isReviewed) {
+    stateCls = dec === "approve" ? "approved" : (dec === "major" ? "rejected" : (dec === "minor" ? "adjusted" : "reviewed"));
+  }
+  li.className = "my-annot-card " + stateCls;
+  const orig = it.review_original || it.payload || {};
+  const fin = it.review_final || it.payload || {};
   const kindTag = it.kind === "gold"
     ? `<span class="tag gold-tag">GOLD</span>`
     : `<span class="tag">TASK</span>`;
-  const reviewedBadge = it.reviewed
-    ? `<span class="tag" title="${escapeHtml(it.reviewed_by || "")} · ${escapeHtml(String(it.reviewed_ts || ""))}">✓ ${tr("my_annotations.reviewed_badge")}</span>`
-    : `<span class="tag aud-tag tag-custom">${tr("my_annotations.editable_badge")}</span>`;
-  // Edit target page depends on kind.
+  // Decision badge (when reviewed) — explicit '通过 / 调整 / 不通过'.
+  const decisionBadge = isReviewed && dec
+    ? `<span class="row-badge decision-${dec}">${tr("review.decision." + dec)}</span>`
+    : (isReviewed
+        ? `<span class="tag" title="${escapeHtml(it.reviewed_by || "")} · ${escapeHtml(String(it.reviewed_ts || ""))}">✓ ${tr("my_annotations.reviewed_badge")}</span>`
+        : `<span class="tag aud-tag tag-custom">${tr("my_annotations.editable_badge")}</span>`);
   const editHref = it.kind === "gold"
     ? `gold_annotate.html?edit=${encodeURIComponent(it.item_id)}`
     : `task.html?edit=${encodeURIComponent(it.item_id)}`;
-  const actionBtn = it.reviewed
+  const actionBtn = isReviewed
     ? `<span class="muted small">${tr("my_annotations.locked")}</span>`
     : `<a class="link ma-edit-btn" href="${editHref}">✏ ${tr("my_annotations.edit_btn")}</a>`;
+  // Sub-line: legacy 0/1/2 → glyphs (mirrors subBadges in my_reviews).
+  const subKeys = ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"];
+  function subLine(p) {
+    return subKeys.map(k => {
+      const v = p?.[k]; if (v == null) return "";
+      const glyph = v === 0 ? "✗" : (v === 1 ? "⚠" : "✓");
+      const cls = v === 0 ? "no" : (v === 1 ? "partial" : "yes");
+      return `<span class="sub-badge ${cls}" title="${k}">${glyph} ${k.replace(/_/g," ")}</span>`;
+    }).join("");
+  }
+  // Diff display: only show "原值 → 改后" when reviewer actually changed something (adjust or reject).
+  const changed = (dec === "minor" || dec === "major") && it.review_original && it.review_final;
+  const physChanged = changed && orig.physical_adherence !== fin.physical_adherence;
+  const instChanged = changed && orig.instruction_alignment !== fin.instruction_alignment;
+  const notesChanged = changed && (
+    (orig.physical_notes || "") !== (fin.physical_notes || "") ||
+    (orig.instruction_notes || "") !== (fin.instruction_notes || "")
+  );
+  const diffBlock = changed ? `
+    <div class="ma-diff">
+      <div class="ma-diff-side ma-diff-orig">
+        <div class="ma-diff-head">${tr("my_annotations.diff.your_submission")}</div>
+        <p>Physical: <strong>${orig.physical_adherence ?? "—"}</strong> · Instruction: <strong>${orig.instruction_alignment ?? "—"}</strong></p>
+        <p class="sub-line">${subLine(orig)}</p>
+        ${(orig.physical_notes || orig.instruction_notes)
+          ? `<p class="muted small"><strong>P:</strong> ${escapeHtml(orig.physical_notes || "—")}<br><strong>I:</strong> ${escapeHtml(orig.instruction_notes || "—")}</p>`
+          : ""}
+      </div>
+      <div class="ma-diff-arrow">→</div>
+      <div class="ma-diff-side ma-diff-final">
+        <div class="ma-diff-head">${tr("my_annotations.diff.reviewer_final")}</div>
+        <p>Physical: <strong class="${physChanged ? "diff" : ""}">${fin.physical_adherence ?? "—"}</strong> · Instruction: <strong class="${instChanged ? "diff" : ""}">${fin.instruction_alignment ?? "—"}</strong></p>
+        <p class="sub-line">${subLine(fin)}</p>
+        ${(fin.physical_notes || fin.instruction_notes)
+          ? `<p class="muted small ${notesChanged ? "diff" : ""}"><strong>P:</strong> ${escapeHtml(fin.physical_notes || "—")}<br><strong>I:</strong> ${escapeHtml(fin.instruction_notes || "—")}</p>`
+          : ""}
+      </div>
+    </div>` : `
+    <p class="ma-scores">Physical: <strong>${fin.physical_adherence ?? "—"}</strong> · Instruction: <strong>${fin.instruction_alignment ?? "—"}</strong></p>
+    ${(fin.physical_notes || fin.instruction_notes)
+      ? `<p class="muted small"><strong>P:</strong> ${escapeHtml(fin.physical_notes || "—")}<br><strong>I:</strong> ${escapeHtml(fin.instruction_notes || "—")}</p>`
+      : ""}`;
   li.innerHTML = `
-    <div class="meta">${kindTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${reviewedBadge}</div>
+    <div class="meta">${kindTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${decisionBadge}</div>
     ${it.video_url ? `<video class="ma-thumb" controls preload="none" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${pickVideoUrl(it.video_sources, it.video_url)}" data-sources-json='${escapeHtml(JSON.stringify(it.video_sources || []))}'></video>` : ""}
-    <p class="ma-scores">Physical: <strong>${phys}</strong> · Instruction: <strong>${inst}</strong></p>
-    ${(p.physical_notes || p.instruction_notes)
-      ? `<p class="muted small"><strong>P:</strong> ${escapeHtml(p.physical_notes || "—")}<br><strong>I:</strong> ${escapeHtml(p.instruction_notes || "—")}</p>`
-      : ""}
+    ${diffBlock}
     <div class="ma-foot">${actionBtn}</div>
   `;
   const v = li.querySelector("video");
