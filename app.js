@@ -203,8 +203,10 @@ const LANG = {
     "sub.goal_completed": "Goal completed",
     "sub.goal_completed_hint": "the instructed goal state is fully reached",
     "review.your_decision": "Your decision",
-    "review.approve": "✅ Approve as-is",
+    "review.approve": "✅ Approve",
     "review.modify": "✏ Modify",
+    "review.minor": "✏ Minor edit",
+    "review.major": "🛑 Major (return)",
     "review.modify_note": "Modification note",
     "review.annotator_submission": "Annotator submission (annotator hidden)",
     "align.title": "Reviewer alignment",
@@ -432,8 +434,10 @@ const LANG = {
     "sub.goal_completed": "目标达成",
     "sub.goal_completed_hint": "指令的目标已完整达成",
     "review.your_decision": "你的决定",
-    "review.approve": "✅ 通过原样",
+    "review.approve": "✅ 通过",
     "review.modify": "✏ 修改",
+    "review.minor": "✏ 小修改",
+    "review.major": "🛑 大修改(打回)",
     "review.modify_note": "修改备注",
     "review.annotator_submission": "标注者提交(隐名)",
     "align.title": "审核员对齐",
@@ -1933,10 +1937,13 @@ async function initReview() {
   }
   wireScoreHint("m-physical_adherence", "m-physical_adherence-hint", "pa");
   wireScoreHint("m-instruction_alignment", "m-instruction_alignment-hint", "ia");
+  // Reviewer 3-decision UX (siyuan v78): 通过 / 小修改 / 大修改(打回).
+  // 通过 = approve as-is; 小修改 = reviewer 改后 final, 算"通过"; 大修改 = 打回标注员重标, 不付钱.
   document.getElementById("approve-btn").addEventListener("click", () => submitReview("approve"));
-  document.getElementById("modify-btn").addEventListener("click", () => {
+  const openModifyForm = (asDecision) => {
     const fields = document.getElementById("modify-fields");
     if (fields.hidden) {
+      // First click → open prefilled form, button label becomes "submit <decision>".
       const orig = REVIEW_CURRENT?.annotation || REVIEW_CURRENT?.annotation_payload || {};
       for (const id of ["physical_adherence", "instruction_alignment"]) {
         const v = orig[id] ?? 3;
@@ -1944,23 +1951,36 @@ async function initReview() {
         document.getElementById("m-" + id + "-out").value = v;
       }
       for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-        // Inverted: stored 0 (violated) → checkbox checked (red ✗); stored 1 (pass) → unchecked.
-        document.getElementById("m-" + id).checked = orig[id] === 0;
+        setSubTri("m-" + id, orig[id] ?? 2);  // 3-class (v72), default fresh=2
       }
       document.getElementById("m-physical_notes").value = "";
       document.getElementById("m-instruction_notes").value = "";
       fields.hidden = false;
-      document.getElementById("modify-btn").textContent = "Submit modify";
+      // Highlight which decision the open form is for; clicking same button again submits.
+      REVIEW_PENDING_DECISION = asDecision;
+      const minorBtn = document.getElementById("minor-btn");
+      const majorBtn = document.getElementById("major-btn");
+      if (asDecision === "minor") {
+        minorBtn.textContent = "📤 提交小修改 Submit Minor";
+        majorBtn.textContent = "🛑 大修改(打回) Major";  // reset other
+      } else {
+        majorBtn.textContent = "📤 提交大修改(打回) Submit Major";
+        minorBtn.textContent = "✏ 小修改 Minor";
+      }
     } else {
-      submitReview("modify");
+      submitReview(REVIEW_PENDING_DECISION || asDecision);
     }
-  });
+  };
+  document.getElementById("minor-btn").addEventListener("click", () => openModifyForm("minor"));
+  document.getElementById("major-btn").addEventListener("click", () => openModifyForm("major"));
   document.getElementById("skip-btn").addEventListener("click", () => loadNextReview());
   document.getElementById("retry-btn").addEventListener("click", () => loadNextReview());
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => loadNextReview() });
   wireSubTriButtons();  // 6 sub-tri groups in review modify form
   await loadNextReview();
 }
+
+let REVIEW_PENDING_DECISION = null;  // tracks which button opened the modify form
 
 async function loadNextReview() {
   hide("error"); hide("item"); show("loading");
@@ -2019,7 +2039,10 @@ async function submitReview(decision) {
   const item_id = REVIEW_CURRENT.item_id || REVIEW_CURRENT.id;
   const is_report = !!REVIEW_CURRENT.is_report;
   let payload = REVIEW_CURRENT.annotation || REVIEW_CURRENT.annotation_payload || {};
-  if (decision === "modify") {
+  // 3-decision flow (v78): approve = no edit; minor = reviewer's edit, counts as pass for annotator;
+  // major = reviewer's edit + flag for re-annotation (annotator gets it back, doesn't get paid until
+  // a subsequent review passes). Both minor and major require the modify form to be filled.
+  if (decision === "minor" || decision === "major" || decision === "modify") {
     const physical_notes = document.getElementById("m-physical_notes").value.trim();
     const instruction_notes = document.getElementById("m-instruction_notes").value.trim();
     if (!physical_notes || !instruction_notes) { toast(tr("toast.modify_note_required"), "err"); return; }
@@ -2034,6 +2057,7 @@ async function submitReview(decision) {
     }
     payload.subs_v = 2;
   }
+  REVIEW_PENDING_DECISION = null;
   const body = { review_submit: true, reviewer, item_id, target, decision, payload, is_report };
   try {
     const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
