@@ -123,6 +123,7 @@ const LANG = {
     "sub.tri.violated": "0 — Clear violation",
     "sub.tri.partial": "1 — Partial / minor issue",
     "sub.tri.passes": "2 — Holds / passes",
+    "align.overview.end_of_list": "End of the list. Use the overview to pick another item.",
     "align.toast.export_failed": "Export failed",
     "my_reviews.history": "Reviewed history",
     "my_reviews.empty": "No reviews yet for you. Submit some annotations and they'll be sampled or self-reportable.",
@@ -342,6 +343,7 @@ const LANG = {
     "sub.tri.violated": "0 严重违背",
     "sub.tri.partial": "1 部分·轻微",
     "sub.tri.passes": "2 完全通过",
+    "align.overview.end_of_list": "列表到底了。回 overview 选另一条。",
     "align.toast.export_failed": "导出失败",
     "my_reviews.history": "审核历史",
     "my_reviews.empty": "你还没有审核记录。提交一些标注,会被抽样或自报告。",
@@ -2570,6 +2572,7 @@ let ALIGN_CAMPAIGN_NAME = "";   // currently-selected campaign name
 let ALIGN_IS_ADMIN = false;
 let ALIGN_READ_ONLY = false;    // set when backend returns read_only:true for a completed non-admin participant
 let ALIGN_USER_LIST = [];       // for custom-audience multi-select
+let ALIGN_OVERVIEW_ITEMS = [];  // ordered item_ids from current admin/read-only overview, used to advance "Next" within the review-list
 
 async function initAlign() {
   const user = localStorage.getItem(CFG.LS_USER);
@@ -3378,6 +3381,27 @@ async function showAlignOthers(item_id) {
     }
     document.getElementById("al-item").hidden = true;
     document.getElementById("al-others").hidden = false;
+    // Show video + meta + instruction inline so the user can rewatch while reviewing
+    // others' scores (siyuan flagged the video was missing in this view, 2026-06-28).
+    document.getElementById("al-others-dataset").textContent = d.dataset || "?";
+    document.getElementById("al-others-task").textContent = d.task || "?";
+    setVideoSourcesFromItem(d);
+    const ov = document.getElementById("al-others-video");
+    if (ov) {
+      wireVideoFallback(ov);
+      ov.src = pickVideoUrl(d.video_sources, d.video_url || "");
+      bindVideoSources(ov, d.video_sources);
+      ov.load();
+    }
+    // Instruction (same path as the annotate form — prefer backend-supplied text, fallback HF fetch).
+    CURRENT_INSTRUCTION = {
+      video_url: d.video_url,
+      targetId: "al-others-prompt",
+      en: d.instruction || "",
+      cn: d.instruction_cn || "",
+    };
+    if (CURRENT_INSTRUCTION.en || CURRENT_INSTRUCTION.cn) applyCurrentInstruction();
+    else if (d.video_url) fetchInstructionInto(d.video_url, "al-others-prompt");
     renderAlignOthers(d);
   } catch (err) {
     toast("Failed to load others' annotations: " + err.message, "err");
@@ -3445,7 +3469,9 @@ function renderAlignOthers(d) {
     finalizeWrap.hidden = true;
   }
 
-  // Next button
+  // Next button: prefer next item in current admin/read-only overview (so siyuan can step
+  // through finalized items for review). Falls back to loadAlignNext for the regular
+  // annotate flow (un-annotated → next un-annotated).
   let nextBtn = document.getElementById("al-next-btn");
   if (!nextBtn) {
     nextBtn = document.createElement("button");
@@ -3454,12 +3480,26 @@ function renderAlignOthers(d) {
     nextBtn.className = "primary";
     nextBtn.textContent = "Next item →";
     nextBtn.style.marginTop = "12px";
-    nextBtn.addEventListener("click", () => {
-      document.getElementById("al-others").hidden = true;
-      loadAlignNext();
-    });
     document.getElementById("al-others").appendChild(nextBtn);
   }
+  // Re-wire handler per render so we know the *current* item id (closure captures d.item_id).
+  const curId = d.item_id;
+  nextBtn.onclick = () => {
+    document.getElementById("al-others").hidden = true;
+    // If we're stepping through the admin/read-only overview, advance to the next item there.
+    if (ALIGN_OVERVIEW_ITEMS && ALIGN_OVERVIEW_ITEMS.length) {
+      const idx = ALIGN_OVERVIEW_ITEMS.indexOf(curId);
+      if (idx >= 0 && idx < ALIGN_OVERVIEW_ITEMS.length - 1) {
+        showAlignOthers(ALIGN_OVERVIEW_ITEMS[idx + 1]);
+        return;
+      }
+      // End of overview list — show overview panel again.
+      const ov = document.getElementById("al-admin-overview");
+      if (ov && !ov.hidden) { toast(tr("align.overview.end_of_list"), "ok"); return; }
+    }
+    // Default: regular annotate flow (un-annotated → next un-annotated).
+    loadAlignNext();
+  };
 }
 
 function renderFinalizeForm(d) {
@@ -3571,6 +3611,10 @@ function renderAdminOverview(items) {
     if (fa !== fb) return fa - fb;
     return (b.n_annotations ?? 0) - (a.n_annotations ?? 0);
   });
+  // Remember the ordered list so the "Next" button in al-others can step through it
+  // (fixes siyuan's "next button doesn't go to next" — was calling loadAlignNext which only
+  // returns un-annotated items, so for an admin reviewing finalized items "Next" did nothing).
+  ALIGN_OVERVIEW_ITEMS = sorted.map(x => x.item_id);
   for (const it of sorted) {
     const li = document.createElement("li");
     li.className = "al-admin-row" + (it.finalized ? " finalized" : "");
