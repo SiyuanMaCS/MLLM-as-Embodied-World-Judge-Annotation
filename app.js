@@ -224,6 +224,9 @@ const LANG = {
     "quality.pause.normal": "",
     "quality.pause.reannotate_required": "⚠ Your pass rate fell below 60%. New tasks paused — clear the re-annotate queue to resume.",
     "quality.pause.admin_review": "🛑 Account in admin review (consecutive low quality). Admin will decide next step.",
+    "quality.rework.pending": "Quality is below 60%. You have {N} unreviewed items to redo (priority-sorted in My Annotations). You can still take new tasks while clearing them.",
+    "quality.rework.admin_review": "🛑 Re-do queue cleared but pass rate is still below 60%. Admin will review and decide next step.",
+    "my_annotations.rework_badge": "❗ Redo",
     "review.modify_note": "Modification note",
     "review.annotator_submission": "Annotator submission (annotator hidden)",
     "align.title": "Reviewer alignment",
@@ -474,6 +477,9 @@ const LANG = {
     "quality.pause.normal": "",
     "quality.pause.reannotate_required": "⚠ 通过率跌破 60% — 新任务已暂停,清空重标队列后恢复。",
     "quality.pause.admin_review": "🛑 账号进入 admin 复审(连续低质),admin 将决定下一步。",
+    "quality.rework.pending": "通过率低于 60%。你有 {N} 条未审条目待重做(已在「我的标注」里红❗优先排)。可以同时继续接新任务。",
+    "quality.rework.admin_review": "🛑 重做池已清空但通过率仍 <60%,admin 将审核决定下一步。",
+    "my_annotations.rework_badge": "❗ 重做",
     "review.modify_note": "修改备注",
     "review.annotator_submission": "标注者提交(隐名)",
     "align.title": "审核员对齐",
@@ -1701,10 +1707,17 @@ function renderQualityCard(d) {
   // Ham's contract: week_earned = ISO-week earnings (label-accurate); earned_estimate = cumulative.
   const weekEarned = d.week_earned != null ? `¥${Number(d.week_earned).toFixed(2)}` : "—";
   const weekPayable = d.week_payable != null ? ` (${d.week_payable} 条)` : "";
-  const pauseState = d.pause_state || "normal";
-  const pauseBanner = pauseState !== "normal"
-    ? `<div class="quality-pause-banner pause-${escapeHtml(pauseState)}">${escapeHtml(tr("quality.pause." + pauseState))}</div>`
-    : "";
+  // v80: rework_state replaces the old pause_state. Three states: normal / rework_pending (soft,
+   // pool has items, NO new-task lock) / admin_review (pool cleared but rate still <60%).
+  const reworkState = d.rework_state || d.pause_state || "normal";
+  const poolCount = d.rework_pool ?? 0;
+  let banner = "";
+  if (reworkState === "rework_pending" && poolCount > 0) {
+    banner = `<div class="quality-pause-banner pause-rework_pending">⚠ ${tr("quality.rework.pending").replace("{N}", poolCount)}</div>`;
+  } else if (reworkState === "admin_review") {
+    banner = `<div class="quality-pause-banner pause-admin_review">${escapeHtml(tr("quality.rework.admin_review"))}</div>`;
+  }
+  const pauseBanner = banner;
   return `
     <div class="quality-card">
       <div class="quality-head">
@@ -2354,16 +2367,31 @@ async function loadMyAnnotations() {
   loading.hidden = false; empty.hidden = true; list.hidden = true; err.hidden = true;
   list.innerHTML = "";
   try {
+    // Fetch items + quality state in parallel. quality gives us the redo pool (rework_items) +
+    // state — used for the priority sort and the red ❗ badge.
     const url = `${CFG.APPS_SCRIPT_URL}/?action=my_annotations&user=${encodeURIComponent(user)}&kind=${encodeURIComponent(MA_CURRENT_KIND)}`;
-    const r = await fetch(url);
+    const qUrl = `${CFG.APPS_SCRIPT_URL}/?action=my_quality&user=${encodeURIComponent(user)}`;
+    const [r, qr] = await Promise.all([fetch(url), fetch(qUrl).catch(() => null)]);
     const d = await r.json();
+    let reworkSet = new Set();
+    if (qr) {
+      try {
+        const qd = await qr.json();
+        if (qd && Array.isArray(qd.rework_items)) reworkSet = new Set(qd.rework_items);
+      } catch {}
+    }
     loading.hidden = true;
     if (d?.ok === false) throw new Error(d.error || "fetch failed");
     const items = d.items || [];
     if (items.length === 0) { empty.hidden = false; return; }
     if (items[0]) setVideoSourcesFromItem(items[0]);
-    // Newest first.
-    items.sort((a, b) => (b.submitted_ts || 0) - (a.submitted_ts || 0));
+    // Annotate rework membership so renderMyAnnotationCard can show the ❗ badge + priority sort.
+    for (const it of items) it._in_rework = reworkSet.has(it.item_id);
+    // Sort: rework items first (priority), then newest submitted_ts.
+    items.sort((a, b) => {
+      if (a._in_rework !== b._in_rework) return a._in_rework ? -1 : 1;
+      return (b.submitted_ts || 0) - (a.submitted_ts || 0);
+    });
     for (const it of items) list.appendChild(renderMyAnnotationCard(it));
     list.hidden = false;
   } catch (e) {
@@ -2391,11 +2419,17 @@ function renderMyAnnotationCard(it) {
     ? `<span class="tag gold-tag">GOLD</span>`
     : `<span class="tag">TASK</span>`;
   // Decision badge (when reviewed) — explicit '通过 / 调整 / 不通过'.
+  // Rework badge (when item is in the redo pool — un-reviewed item flagged by backend's
+  // quality state because the annotator's pass rate dropped below 60%).
+  const reworkBadge = it._in_rework
+    ? `<span class="row-badge rework-badge" title="${escapeHtml(tr("quality.rework.pending").replace("{N}", "—"))}">${tr("my_annotations.rework_badge")}</span>`
+    : "";
   const decisionBadge = isReviewed && dec
     ? `<span class="row-badge decision-${dec}">${tr("review.decision." + dec)}</span>`
     : (isReviewed
         ? `<span class="tag" title="${escapeHtml(it.reviewed_by || "")} · ${escapeHtml(String(it.reviewed_ts || ""))}">✓ ${tr("my_annotations.reviewed_badge")}</span>`
         : `<span class="tag aud-tag tag-custom">${tr("my_annotations.editable_badge")}</span>`);
+  if (it._in_rework) li.classList.add("rework-priority");
   const editHref = it.kind === "gold"
     ? `gold_annotate.html?edit=${encodeURIComponent(it.item_id)}`
     : `task.html?edit=${encodeURIComponent(it.item_id)}`;
