@@ -1561,8 +1561,8 @@ function renderGrid(data) {
 
   // Data rows: one per annotator (full list for admin; only self for non-admin)
   for (const a of gridUsers) {
-    const tr = document.createElement("tr");
-    if (a.is_self) tr.classList.add("self-row");
+    const row = document.createElement("tr");
+    if (a.is_self) row.classList.add("self-row");
 
     // First cell: user info (name, role, quota if admin)
     const tdUser = document.createElement("td");
@@ -1595,7 +1595,7 @@ function renderGrid(data) {
         ${deleteBtn}
       </div>
     `;
-    tr.appendChild(tdUser);
+    row.appendChild(tdUser);
     if (isAdmin && !isMaSiyuan) {
       const sel = tdUser.querySelector(".role-select");
       sel.addEventListener("change", async (ev) => {
@@ -1638,7 +1638,7 @@ function renderGrid(data) {
         }
       }
       if (cell && showNumbers) td.title = `${cell.date}: ${cell.count}/${a.quota ?? "?"}`;
-      tr.appendChild(td);
+      row.appendChild(td);
     }
 
     // Progress cell at end of row: done/target (pct%)
@@ -1655,9 +1655,9 @@ function renderGrid(data) {
           <span class="progress-text">${done}/${target}<span class="muted"> (${pct ?? 0}%)</span></span>
         </div>`;
     }
-    tr.appendChild(tdProgress);
+    row.appendChild(tdProgress);
 
-    tbody.appendChild(tr);
+    tbody.appendChild(row);
   }
 }
 
