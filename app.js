@@ -1416,14 +1416,16 @@ async function loadMilestoneProgress() {
 async function loadBadges() {
   const user = localStorage.getItem(CFG.LS_USER);
   if (!user || !CFG.APPS_SCRIPT_URL) return;
-  let data, alignListData;
+  let data, alignListData, statsData;
   try {
-    const [bRes, aRes] = await Promise.all([
+    const [bRes, aRes, sRes] = await Promise.all([
       fetch(`${CFG.APPS_SCRIPT_URL}/?action=badges&user=${encodeURIComponent(user)}`),
       fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_list&user=${encodeURIComponent(user)}`),
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(user)}`),
     ]);
     data = await bRes.json();
     alignListData = await aRes.json();
+    statsData = await sRes.json();
   } catch (err) { console.warn("badges fetch failed", err); return; }
   if (!data || data.error) return;
 
@@ -1450,8 +1452,13 @@ async function loadBadges() {
       }
     }
   }
+  // v85i (siyuan): Annotate card badge = today's remaining daily quota (WeChat-style
+  // unread count). Falls back to backend `annotate_remaining` when stats lacks quota.
+  const todayDone = Number(statsData?.today ?? 0);
+  const dailyQuota = Number(statsData?.quota ?? 0);
+  const todayRemaining = dailyQuota > 0 ? Math.max(0, dailyQuota - todayDone) : Number(data.annotate_remaining || 0);
   const map = {
-    annotate:     data.annotate_remaining,
+    annotate:     todayRemaining,
     myreviewed:   myreviewedNew,
     review:       data.review_pending,
     gold:         data.gold_remaining,
