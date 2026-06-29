@@ -446,8 +446,8 @@ const LANG = {
     "axis.physical_help": "只看视频判断",
     "sub.violation_notice": "⚠ 勾选 = 标记该项【被违背】(红 ✗);默认不勾 = 通过。只在发现问题时勾选。",
     "axis.pa.level.1": "整体崩坏 — 普遍物理违反",
-    "axis.pa.level.2": "重大违反(漂浮 / 穿模)",
-    "axis.pa.level.3": "明显不一致(短暂形变 / 闪烁)",
+    "axis.pa.level.2": "重大违反",
+    "axis.pa.level.3": "明显不一致",
     "axis.pa.level.4": "轻微瑕疵",
     "axis.pa.level.5": "完美无违反",
     "axis.ia.level.1": "错 agent 或 agent 不动",
@@ -1045,16 +1045,19 @@ function renderItem(it) {
   }
   document.getElementById("physical_notes").value = "";
   document.getElementById("instruction_notes").value = "";
+  // v85k: default fresh item to score 5 + all subs ✓ — siyuan: 完美视频可直接保存.
   for (const id of ["physical_adherence", "instruction_alignment"]) {
     const inp = document.getElementById(id);
     const out = document.getElementById(id + "-out");
-    if (inp) inp.value = 3;
-    if (out) out.value = 3;
+    if (inp) inp.value = 5;
+    if (out) out.value = 5;
   }
-  // Reset fresh item to all "passes" (2) by default.
   for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
     setSubTri(id, 2);
   }
+  // Auto-fill the notes with the score-5 default template so user can save without typing.
+  buildAutoNote("", "physical");
+  buildAutoNote("", "instruction");
   fetchPrompt(it);
 }
 
@@ -1963,14 +1966,14 @@ const AUTO_NOTE = {
     score_lines: {
       1: "物理完全崩坏",
       2: "物理严重违反",
-      3: "物理明显不一致(短暂形变/闪烁)",
+      3: "物理明显不一致",
       4: "物理大致真实",
       5: "物理高度真实",
     },
     subs: [
-      ["agent_consistency", "主体一致性", { 0: "主体严重形变/消失", 1: "主体短暂形变/抖动" }],
-      ["scene_consistency", "场景一致性", { 0: "场景崩坏/突变", 1: "场景轻微闪烁/漂移" }],
-      ["interaction_realism", "交互真实性", { 0: "交互严重违反物理", 1: "交互轻微不自然" }],
+      ["agent_consistency", "机械手/人手完整性", { 0: "机械手/人手结构破损、融化或扭曲", 1: "机械手/人手轻微变形" }],
+      ["scene_consistency", "背景与物体一致性", { 0: "背景或物体闪烁、瞬移或形变", 1: "背景或物体轻微不一致" }],
+      ["interaction_realism", "交互真实性", { 0: "抓取不闭合、穿模或违反重力惯性", 1: "交互轻微不真实" }],
     ],
     note_id: "physical_notes",
     main_id: "physical_adherence",
@@ -1984,9 +1987,9 @@ const AUTO_NOTE = {
       5: "指令完全符合",
     },
     subs: [
-      ["agent_match", "主体匹配", { 0: "主体严重不符", 1: "主体部分不符" }],
-      ["object_correct", "物体正确", { 0: "操作了错误物体", 1: "目标物体部分偏差" }],
-      ["goal_completed", "目标完成", { 0: "目标未完成", 1: "目标仅部分完成" }],
+      ["agent_match", "动作与主体匹配", { 0: "做了无关动作或主体不符", 1: "动作大致对但有偏差" }],
+      ["object_correct", "目标物正确", { 0: "操作了错误物体", 1: "目标物部分正确或有歧义" }],
+      ["goal_completed", "目标完成度", { 0: "目标未完成", 1: "目标仅部分完成" }],
     ],
     note_id: "instruction_notes",
     main_id: "instruction_alignment",
@@ -3600,15 +3603,19 @@ async function loadAlignNext() {
     };
     if (CURRENT_INSTRUCTION.en || CURRENT_INSTRUCTION.cn) applyCurrentInstruction();
     else fetchInstructionInto(d.video_url, "al-prompt");
-    // Reset form
+    // Reset form (v85k: default 5 / all ✓ — perfect-video friendly)
     for (const id of ["al-physical_adherence", "al-instruction_alignment"]) {
       const inp = document.getElementById(id);
       const out = document.getElementById(id + "-out");
-      if (inp) inp.value = 3; if (out) out.value = 3;
+      if (inp) inp.value = 5; if (out) out.value = 5;
     }
     for (const id of ["al-agent_consistency", "al-scene_consistency", "al-interaction_realism", "al-agent_match", "al-object_correct", "al-goal_completed"]) {
-      setSubTri(id, 2);  // fresh item → all "passes"
+      setSubTri(id, 2);
     }
+    document.getElementById("al-physical_notes").value = "";
+    document.getElementById("al-instruction_notes").value = "";
+    buildAutoNote("al-", "physical");
+    buildAutoNote("al-", "instruction");
     document.getElementById("al-physical_notes").value = "";
     document.getElementById("al-instruction_notes").value = "";
     document.getElementById("al-item").hidden = false;
@@ -3825,17 +3832,19 @@ function loadAlignItemForAnnotate(it) {
   };
   if (CURRENT_INSTRUCTION.en || CURRENT_INSTRUCTION.cn) applyCurrentInstruction();
   else fetchInstructionInto(it.video_url, "al-prompt");
-  // Reset form (fresh item)
+  // Reset form (v85k: default 5 / all ✓ — perfect-video friendly)
   for (const id of ["al-physical_adherence", "al-instruction_alignment"]) {
     const inp = document.getElementById(id);
     const out = document.getElementById(id + "-out");
-    if (inp) inp.value = 3; if (out) out.value = 3;
+    if (inp) inp.value = 5; if (out) out.value = 5;
   }
   for (const id of ["al-agent_consistency", "al-scene_consistency", "al-interaction_realism", "al-agent_match", "al-object_correct", "al-goal_completed"]) {
-    setSubTri(id, 2);  // fresh item → all "passes"
+    setSubTri(id, 2);
   }
   document.getElementById("al-physical_notes").value = "";
   document.getElementById("al-instruction_notes").value = "";
+  buildAutoNote("al-", "physical");
+  buildAutoNote("al-", "instruction");
   document.getElementById("al-item").hidden = false;
   document.getElementById("al-others").hidden = true;
 }
