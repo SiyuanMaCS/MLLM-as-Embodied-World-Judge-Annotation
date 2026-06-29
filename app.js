@@ -1345,14 +1345,19 @@ async function initDashboard() {
     roleEl.textContent = tr("role." + shown);
   }
   const isAdmin = user === "masiyuan";
-  const isReviewer = role === "reviewer" && !isAdmin;
-  // Reveal only the row matching this user's role; others stay hidden.
-  const rowKey = isAdmin ? "admin" : (isReviewer ? "reviewer" : "annotator");
+  // Peer-review model (siyuan v84): author = annotate+review, contributor = annotate-only,
+  // admin = full. Legacy 'reviewer' role gets mapped to author for back-compat (those users
+  // can still review + now also annotate). Default unknown roles → contributor (safest).
+  let rowKey = "contributor";
+  if (isAdmin) rowKey = "admin";
+  else if (role === "author" || role === "reviewer") rowKey = "author";
   document.querySelectorAll(".home-actions .action-row").forEach(r => {
     r.hidden = r.dataset.row !== rowKey;
   });
+  // Legacy .reviewer-only marks elements that should only show for users with review power
+  // (= author + admin under peer-review model).
   document.querySelectorAll(".page-nav .reviewer-only").forEach(a => {
-    if (rowKey !== "reviewer") a.style.display = "none";
+    if (rowKey !== "author" && rowKey !== "admin") a.style.display = "none";
   });
   document.querySelectorAll(".page-nav .admin-only").forEach(a => {
     if (!isAdmin) a.style.display = "none";
@@ -1525,7 +1530,6 @@ function renderGrid(data) {
       ? `<select class="role-select" data-role="${escapeHtml(a.role || '')}" data-target="${escapeHtml(a.user)}">
            <option value="author"${a.role === "author" ? " selected" : ""}>Author</option>
            <option value="contributor"${a.role === "contributor" ? " selected" : ""}>Contributor</option>
-           <option value="reviewer"${a.role === "reviewer" ? " selected" : ""}>Reviewer</option>
          </select>`
       : (a.role ? `<span class="role-pill" data-role="${a.role}">${capitalizeFirst(a.role)}</span>` : "");
     const quotaHTML = isAdmin
