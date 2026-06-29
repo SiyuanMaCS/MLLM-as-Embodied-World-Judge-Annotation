@@ -70,6 +70,7 @@ const LANG = {
     "align.no_campaigns_mine": "You are not currently enrolled in any active alignment campaign.",
     "align.start_form_title": "Start a new alignment campaign",
     "align.name_label": "Campaign name",
+    "align.n_items_label": "Items per campaign (default 10)",
     "align.audience_label": "Participants",
     "align.aud_reviewers": "Reviewers + Admin",
     "align.aud_all": "All users",
@@ -323,6 +324,7 @@ const LANG = {
     "align.no_campaigns_mine": "你目前没有参与任何活动的对齐任务。",
     "align.start_form_title": "发起新的对齐任务",
     "align.name_label": "任务名称",
+    "align.n_items_label": "条目数(默认 10)",
     "align.audience_label": "参与者",
     "align.aud_reviewers": "审核员 + 管理员",
     "align.aud_all": "所有用户",
@@ -2989,13 +2991,16 @@ async function submitAlignStart() {
   if (!name) { toast(tr("align.toast.name_required"), "err"); return; }
   const audienceEl = document.querySelector('input[name="al-audience"]:checked');
   const audience = audienceEl ? audienceEl.value : "reviewers";
+  // siyuan v82: admin chooses item count (default 10). Backend reads n_items.
+  const nItemsInput = document.getElementById("al-new-n-items");
+  const n_items = nItemsInput ? Math.max(1, Math.min(500, Number(nItemsInput.value) || 10)) : 10;
   let participants;
   if (audience === "custom") {
     participants = Array.from(document.querySelectorAll(".al-custom-cb:checked")).map(cb => cb.value);
     if (participants.length === 0) { toast(tr("align.toast.no_participants"), "err"); return; }
   }
   try {
-    const body = { align_start: true, admin, name, audience };
+    const body = { align_start: true, admin, name, audience, n_items };
     if (participants) body.participants = participants;
     const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
       method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(body),
@@ -3005,6 +3010,8 @@ async function submitAlignStart() {
     toast(tr("align.toast.campaign_created"), "ok");
     document.getElementById("al-start-form").hidden = true;
     document.getElementById("al-new-name").value = "";
+    const nItemsResetEl = document.getElementById("al-new-n-items");
+    if (nItemsResetEl) nItemsResetEl.value = 10;
     document.querySelectorAll(".al-custom-cb").forEach(cb => cb.checked = false);
     await loadAlignList();
   } catch (err) {

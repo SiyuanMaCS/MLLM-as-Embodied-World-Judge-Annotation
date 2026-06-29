@@ -6,7 +6,7 @@
 <title>Reviewer Alignment — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v81">
+<link rel="stylesheet" href="style.css?v=v82">
 </head>
 <body>
 <main>
@@ -40,6 +40,10 @@
       <div class="form-row">
         <label for="al-new-name" data-i18n="align.name_label">Campaign name</label>
         <input type="text" id="al-new-name" maxlength="60" placeholder="e.g. Reviewer-only Round 1">
+      </div>
+      <div class="form-row">
+        <label for="al-new-n-items" data-i18n="align.n_items_label">Items per campaign</label>
+        <input type="number" id="al-new-n-items" min="1" max="500" value="10" style="max-width:100px">
       </div>
       <div class="form-row">
         <label data-i18n="align.audience_label">Participants</label>
@@ -203,6 +207,6 @@
 
   <section id="al-error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="al-err-msg">—</p><button id="al-retry" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v81" defer></script>
+<script src="app.js?v=v82" defer></script>
 </body>
 </html>
