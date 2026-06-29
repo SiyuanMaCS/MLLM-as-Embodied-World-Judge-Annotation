@@ -276,6 +276,7 @@ const LANG = {
     "align.next_btn": "Next item →",
     "align.overview_title": "Campaign overview",
     "align.end_btn": "End campaign",
+    "align.mine_link": "📋 My items",
     "docs.title": "Annotation Standard",
     "home.section_home": "Home",
     "milestone.title": "Milestone progress",
@@ -552,6 +553,7 @@ const LANG = {
     "align.next_btn": "下一条 →",
     "align.overview_title": "对齐任务总览",
     "align.end_btn": "结束对齐",
+    "align.mine_link": "📋 我标过的",
     "docs.title": "标注标准",
     "home.section_home": "首页",
     "milestone.title": "里程碑进度",
@@ -3198,6 +3200,8 @@ async function initAlign() {
   // Wire "Browse my items" — opens the my_alignment grid (mixed-state per-item view).
   const browseMineBtn = document.getElementById("al-browse-mine-btn");
   if (browseMineBtn) browseMineBtn.addEventListener("click", () => loadMyAlignment());
+  const mineLink = document.getElementById("al-mine-link");
+  if (mineLink) mineLink.addEventListener("click", () => loadMyAlignment());
   // Wire bulk-disclose-all (one-click "see everyone, lock all my items") — task 1 core.
   const discloseAllBtn = document.getElementById("al-disclose-all-btn");
   if (discloseAllBtn) discloseAllBtn.addEventListener("click", () => discloseAllAndOpenResults());
@@ -3580,6 +3584,10 @@ async function loadAlignStatus() {
     document.getElementById("al-done").textContent = d.my_done ?? 0;
     document.getElementById("al-total").textContent = d.total ?? 50;
     document.getElementById("al-progress-stat").hidden = false;
+    // v85u: always expose "browse my items" once user has any submitted entry
+    // (siyuan/Xinyi bug — they couldn't reopen prior cases after cancel/end).
+    const mineLink = document.getElementById("al-mine-link");
+    if (mineLink) mineLink.hidden = !((d.my_items || []).length > 0);
     // Render the disclosed count next to submitted count for participants — IAA closure
     // (Alice's guard) requires all-disclosed before aggregate views unlock.
     renderDiscloseProgress(d);
