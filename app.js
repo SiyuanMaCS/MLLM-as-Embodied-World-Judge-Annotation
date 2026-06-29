@@ -3417,8 +3417,9 @@ async function loadAlignStatus() {
       const exportBtn = document.getElementById("al-export-btn");
       if (exportBtn) exportBtn.hidden = false;
     }
-    if (ALIGN_READ_ONLY) {
-      // Read-only viewer: no more annotation form, no loadAlignNext.
+    // Admin no longer directly annotates alignment (siyuan v85g: admin 不直接标 alignment,
+    // 进去就是审阅界面). Treat admin like read-only: overview panel only, no loadAlignNext.
+    if (ALIGN_READ_ONLY || ALIGN_IS_ADMIN) {
       document.getElementById("al-done-msg").hidden = false;
       document.getElementById("al-item").hidden = true;
       return;
