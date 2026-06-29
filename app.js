@@ -1743,6 +1743,9 @@ async function loadAndRenderQualityCard() {
   if (!CFG.APPS_SCRIPT_URL) return;
   const user = localStorage.getItem(CFG.LS_USER);
   if (!user) return;
+  // v85g: pass-rate / quality only applies to contributor (siyuan: author 不算通过率).
+  const role = localStorage.getItem(CFG.LS_ROLE);
+  if (role !== "contributor") return;
   try {
     const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=my_quality&user=${encodeURIComponent(user)}`);
     const d = await r.json();
