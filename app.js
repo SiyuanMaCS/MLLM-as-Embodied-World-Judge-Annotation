@@ -278,17 +278,6 @@ const LANG = {
     "align.end_btn": "End campaign",
     "docs.title": "Annotation Standard",
     "home.section_home": "Home",
-    "ood.badge.id": "🧪 ID-test",
-    "ood.badge.ood_dataset": "🧪D OOD-dataset",
-    "ood.badge.ood_model": "🧪M OOD-model",
-    "ood.badge.ood_instruction": "🧪I OOD-instruction",
-    "ood.badge.combined": "🚫 Compound",
-    "ood.badge.id_title": "In-distribution test sample — frozen after submit, used as judge baseline.",
-    "ood.badge.ood_dataset_title": "OOD test — held-out dataset. Frozen after submit, not used to train the judge.",
-    "ood.badge.ood_model_title": "OOD test — held-out model (vidu / dreamzero / cosmos-2.5). Frozen after submit, not used to train the judge.",
-    "ood.badge.ood_instruction_title": "OOD test — held-out instruction. Frozen after submit, not used to train the judge.",
-    "ood.badge.combined_title": "Multi-axis OOD — excluded from single-axis eval slices (kept frozen for combined analysis).",
-    "ood.toast.frozen": "✓ Saved. This item is part of the test set — frozen, not used to train the judge.",
   },
   cn: {
     "nav.back": "← 返回",
@@ -547,17 +536,6 @@ const LANG = {
     "align.end_btn": "结束对齐",
     "docs.title": "标注标准",
     "home.section_home": "首页",
-    "ood.badge.id": "🧪 同分布测试",
-    "ood.badge.ood_dataset": "🧪D 数据集OOD",
-    "ood.badge.ood_model": "🧪M 模型OOD",
-    "ood.badge.ood_instruction": "🧪I 指令OOD",
-    "ood.badge.combined": "🚫 多轴",
-    "ood.badge.id_title": "同分布测试条目 — 提交后冻结,作 judge baseline 评测,不进训练。",
-    "ood.badge.ood_dataset_title": "OOD 测试 — 留出数据集(libero / dreamdojo_hv)。提交后冻结,不进 judge 训练。",
-    "ood.badge.ood_model_title": "OOD 测试 — 留出模型(vidu / dreamzero / cosmos-2.5)。提交后冻结,不进 judge 训练。",
-    "ood.badge.ood_instruction_title": "OOD 测试 — 留出指令。提交后冻结,不进 judge 训练。",
-    "ood.badge.combined_title": "多轴 OOD 命中 — 不进单轴 eval slice(留作 combined 分析)。",
-    "ood.toast.frozen": "✓ 已保存。此条目属于测试集 — 冻结,不进 judge 训练。",
   },
 };
 
@@ -1025,46 +1003,10 @@ async function loadNext() {
   }
 }
 
-// Ham's contract: each item carries `test_split` ∈
-// {train, id, ood_dataset, ood_model, ood_instruction, combined}.
-// Derived from 3 bool flags (ood_dataset / ood_model / ood_instruction). `train` shows no
-// badge; `id` + 3 OOD + combined render a small tag that warns the annotator the item is
-// part of the held-out test set and will be frozen post-submit (no judge SFT).
-function applyOodBadge(it, badgeId) {
-  const el = document.getElementById(badgeId || "meta-ood-badge");
-  if (!el) return;
-  const split = it && it.test_split;
-  if (!split || split === "train") {
-    el.hidden = true;
-    el.className = "tag ood-badge";
-    return;
-  }
-  const known = ["id", "ood_dataset", "ood_model", "ood_instruction", "combined"];
-  if (!known.includes(split)) { el.hidden = true; return; }
-  el.hidden = false;
-  el.className = "tag ood-badge ood-" + split;
-  el.textContent = tr("ood.badge." + split);
-  el.title = tr("ood.badge." + split + "_title");
-}
-
-function isTestSplit(it) {
-  const s = it && it.test_split;
-  return s && s !== "train";
-}
-
-// String form for template literals (my_annotations cards). Returns "" for train/unknown.
-function oodBadgeHtml(it) {
-  const split = it && it.test_split;
-  const known = ["id", "ood_dataset", "ood_model", "ood_instruction", "combined"];
-  if (!split || !known.includes(split)) return "";
-  return `<span class="tag ood-badge ood-${split}" title="${escapeHtml(tr("ood.badge." + split + "_title"))}">${escapeHtml(tr("ood.badge." + split))}</span>`;
-}
-
 function renderItem(it) {
   setVideoSourcesFromItem(it);
   document.getElementById("meta-dataset").textContent = it.dataset || "?";
   document.getElementById("meta-task").textContent = it.task || "?";
-  applyOodBadge(it);
   // model name intentionally NOT shown — annotators should be blind.
   // Variant (prefix/rewrite) still shown so annotator knows what prompt the model received.
   const variant = (it.id || "").includes("_rewrite_") || (it.video_url || "").includes("_rewrite/")
@@ -1348,13 +1290,11 @@ async function onSubmit(skip) {
   if (EDIT_MODE && EDIT_MODE.item_id === CURRENT.id) body.edit = true;
   try {
     await submitAnnotation(body);
-    const wasTest = isTestSplit(CURRENT);
     if (EDIT_MODE) {
       toast(tr("my_annotations.updated_toast"), "ok");
       window.location.href = "my_annotations.html";
       return;
     }
-    if (wasTest) toast(tr("ood.toast.frozen"), "ok");
     await refreshStats();
     await loadNext();
   } catch (err) {
@@ -2123,7 +2063,6 @@ async function submitGold(skip) {
     });
     const data = await res.json();
     if (data && data.ok === false) throw new Error(data.error || "save failed");
-    const wasTest = isTestSplit(GOLD_CURRENT);
     if (isOverride) {
       toast(tr("gold_library.override_done_toast"), "ok");
       window.location.href = "gold_library.html";
@@ -2134,7 +2073,6 @@ async function submitGold(skip) {
       window.location.href = "my_annotations.html";
       return;
     }
-    if (wasTest && !skip) toast(tr("ood.toast.frozen"), "ok");
     await loadNextGold();
   } catch (err) {
     showError("Save failed: " + err.message);
@@ -2237,7 +2175,6 @@ function renderReviewItem(it) {
   document.getElementById("meta-dataset").textContent = it.dataset || "?";
   document.getElementById("meta-task").textContent = it.task || "?";
   document.getElementById("meta-self-report").hidden = !it.is_report;
-  applyOodBadge(it);
   const reviewGen = document.getElementById("gen-video");
   reviewGen.src = pickVideoUrl(it.video_sources, it.video_url);
   bindVideoSources(reviewGen, it.video_sources);
@@ -2594,7 +2531,7 @@ function renderMyAnnotationCard(it) {
       ? `<p class="muted small"><strong>P:</strong> ${escapeHtml(fin.physical_notes || "—")}<br><strong>I:</strong> ${escapeHtml(fin.instruction_notes || "—")}</p>`
       : ""}`;
   li.innerHTML = `
-    <div class="meta">${kindTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${oodBadgeHtml(it)}${decisionBadge}</div>
+    <div class="meta">${kindTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${decisionBadge}</div>
     ${it.video_url ? `<video class="ma-thumb" controls preload="none" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${pickVideoUrl(it.video_sources, it.video_url)}" data-sources-json='${escapeHtml(JSON.stringify(it.video_sources || []))}'></video>` : ""}
     ${diffBlock}
     <div class="ma-foot">${actionBtn}</div>
