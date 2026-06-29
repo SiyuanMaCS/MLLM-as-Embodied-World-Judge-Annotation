@@ -2360,3 +2360,13 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
   margin-top: 8px;
 }
 .filter-actions button { padding: 6px 18px; font-size: 14px; }
+
+/* OOD test-split badges (v85). Color-codes which held-out axis an item belongs to;
+   `train` items render no badge at all. Distinct hues so the operator can scan a list
+   and immediately tell which item is which test slice. */
+.tag.ood-badge { border: 1px solid transparent; }
+.tag.ood-badge.ood-id { background: #eef0f3; color: #4a5468; border-color: #c8cfd9; }
+.tag.ood-badge.ood-ood_dataset { background: #e6f0ff; color: #1f4ea8; border-color: #b5cdf3; }
+.tag.ood-badge.ood-ood_model { background: #f1e8fb; color: #6a3aa8; border-color: #d8c2f0; }
+.tag.ood-badge.ood-ood_instruction { background: #fff1de; color: #8a4a0a; border-color: #f2cf95; }
+.tag.ood-badge.ood-combined { background: #f5f5f5; color: #777; border-color: #d8d8d8; text-decoration: line-through; }
