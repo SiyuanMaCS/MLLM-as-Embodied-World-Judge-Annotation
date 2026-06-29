@@ -1482,6 +1482,20 @@ td.progress-cell {
   50% { opacity: 0.7; }
 }
 .quality-pause-banner.pause-rework_pending { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+
+/* Admin "delete user" button in dashboard grid. */
+.delete-user-btn {
+  font-size: 13px;
+  color: #b91c1c;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 2px 4px;
+  margin-left: 4px;
+  opacity: 0.6;
+  transition: opacity 0.1s;
+}
+.delete-user-btn:hover { opacity: 1; background: #fee2e2; border-radius: 4px; }
 .ma-diff {
   display: grid;
   grid-template-columns: 1fr auto 1fr;

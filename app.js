@@ -71,6 +71,10 @@ const LANG = {
     "align.start_form_title": "Start a new alignment campaign",
     "align.name_label": "Campaign name",
     "align.n_items_label": "Items per campaign (default 10)",
+    "admin.delete_user_tip": "Delete user (blocklists the name, history kept)",
+    "admin.delete_user_confirm": "Delete {U}? Their annotation history stays attributed to them, but the name is blocklisted and cannot re-register. This is reversible via admin tools.",
+    "admin.delete_reviewer_warn": "⚠ {U} is a REVIEWER. Deleting them shrinks the review pool (admin still backs up review queue). Continue?",
+    "admin.delete_user_done": "Deleted {U}.",
     "align.audience_label": "Participants",
     "align.aud_reviewers": "Reviewers + Admin",
     "align.aud_all": "All users",
@@ -325,6 +329,10 @@ const LANG = {
     "align.start_form_title": "发起新的对齐任务",
     "align.name_label": "任务名称",
     "align.n_items_label": "条目数(默认 10)",
+    "admin.delete_user_tip": "删除用户(账号封禁,历史保留)",
+    "admin.delete_user_confirm": "删除用户 {U}? 该用户的标注历史仍归属于他,但账号名将被封禁,不能再注册。Admin 工具可恢复。",
+    "admin.delete_reviewer_warn": "⚠ {U} 是 reviewer。删除会缩小审核池(admin 仍能兜底)。确定继续吗?",
+    "admin.delete_user_done": "已删除 {U}。",
     "align.audience_label": "参与者",
     "align.aud_reviewers": "审核员 + 管理员",
     "align.aud_all": "所有用户",
@@ -1526,6 +1534,11 @@ function renderGrid(data) {
     const streakHTML = (isAdmin || a.is_self) && (a.streak ?? 0) > 0
       ? `<span class="streak-mini" title="连续打卡 ${a.streak} 天">连续 ${a.streak} 天</span>`
       : "";
+    // Admin can delete any non-admin user (v83). Backend gates: rejects admin targets +
+    // self-target + adds to blocklist so deleted name can't re-register.
+    const deleteBtn = (isAdmin && !isMaSiyuan)
+      ? `<button type="button" class="link delete-user-btn" data-target="${escapeHtml(a.user)}" data-role="${escapeHtml(a.role || '')}" title="${tr("admin.delete_user_tip")}">🗑</button>`
+      : "";
     tdUser.innerHTML = `
       <div class="user-head">
         <span class="user-name">${escapeHtml(a.user)}</span>
@@ -1533,6 +1546,7 @@ function renderGrid(data) {
         ${roleControl}
         ${quotaHTML}
         ${streakHTML}
+        ${deleteBtn}
       </div>
     `;
     tr.appendChild(tdUser);
@@ -1552,6 +1566,8 @@ function renderGrid(data) {
           ev.target.disabled = false;
         }
       });
+      const delBtn = tdUser.querySelector(".delete-user-btn");
+      if (delBtn) delBtn.addEventListener("click", () => deleteUserHandler(a.user, a.role));
     }
 
     // Day cells: count + deficit (BaiCiZhan-style "差 N" on miss days, ✓ on met)
@@ -1785,6 +1801,32 @@ function renderMetByDay(root, days, annotators, metByDate) {
     ul.appendChild(li);
   }
   root.appendChild(ul);
+}
+
+/* Admin: delete a user (soft-blocklist on backend — name can't re-register).
+   Two confirm dialogs: standard one + extra warning when target is a reviewer
+   (deleting a reviewer affects the 30%-sample distribution + review pool capacity). */
+async function deleteUserHandler(target, role) {
+  const isReviewer = role === "reviewer";
+  const standardMsg = (tr("admin.delete_user_confirm") || "Delete {U}? Their history stays, but the name is blocklisted and cannot re-register.").replace("{U}", target);
+  if (!confirm(standardMsg)) return;
+  if (isReviewer) {
+    const reviewerMsg = (tr("admin.delete_reviewer_warn") || "{U} is a REVIEWER. Deleting them shrinks the review pool. Continue?").replace("{U}", target);
+    if (!confirm(reviewerMsg)) return;
+  }
+  const admin = localStorage.getItem(CFG.LS_USER);
+  try {
+    const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ delete_user: true, admin, target }),
+    });
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "delete failed");
+    toast((tr("admin.delete_user_done") || "Deleted {U}.").replace("{U}", target), "ok");
+    await loadDashboard();
+  } catch (err) {
+    alert("Delete failed: " + err.message);
+  }
 }
 
 async function setRoleAdmin(target, role) {
