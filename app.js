@@ -278,6 +278,10 @@ const LANG = {
     "align.end_btn": "End campaign",
     "docs.title": "Annotation Standard",
     "home.section_home": "Home",
+    "milestone.title": "Test-set progress",
+    "milestone.note": "Items are auto-routed across the pool — your contributions count toward the shared milestone.",
+    "milestone.counts": "Yours {mine} · everyone {all} / {total}",
+    "milestone.done_toast": "🎉 Test-set milestone complete — thank you!",
   },
   cn: {
     "nav.back": "← 返回",
@@ -536,6 +540,10 @@ const LANG = {
     "align.end_btn": "结束对齐",
     "docs.title": "标注标准",
     "home.section_home": "首页",
+    "milestone.title": "测试集进度",
+    "milestone.note": "条目按 priority pool 自动派发 — 你的标注贡献到团队 milestone。",
+    "milestone.counts": "我 {mine} · 全员 {all} / {total}",
+    "milestone.done_toast": "🎉 测试集已标完,感谢!",
   },
 };
 
@@ -1364,9 +1372,43 @@ async function initDashboard() {
   });
   await loadDashboard();
   await loadBadges();
+  await loadMilestoneProgress();
   let timer = setInterval(() => {
-    if (!document.hidden) { loadDashboard(); loadBadges(); }
+    if (!document.hidden) { loadDashboard(); loadBadges(); loadMilestoneProgress(); }
   }, 30000);
+}
+
+// v85b milestone (siyuan): single neutral bar showing test-set priority pool progress.
+// Personal + global counts. Backend contract: `?action=priority_progress&user=<u>` →
+// `{total, mine, all}`. Hides itself when total is 0/missing (graceful pre-deploy state).
+let _milestoneDoneFired = false;
+async function loadMilestoneProgress() {
+  const card = document.getElementById("milestone-card");
+  if (!card) return;
+  const user = localStorage.getItem(CFG.LS_USER);
+  if (!user || !CFG.APPS_SCRIPT_URL) { card.hidden = true; return; }
+  try {
+    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=milestone&user=${encodeURIComponent(user)}`);
+    if (!res.ok) { card.hidden = true; return; }
+    const d = await res.json();
+    const total = Number(d?.total || 0);
+    const mine = Number(d?.mine || 0);
+    const all = Number(d?.all ?? d?.all_done ?? 0);
+    if (!total) { card.hidden = true; return; }
+    card.hidden = false;
+    const pctAll = Math.max(0, Math.min(100, (all / total) * 100));
+    const pctMine = Math.max(0, Math.min(100, (mine / total) * 100));
+    document.getElementById("ms-bar-all").style.width = pctAll.toFixed(1) + "%";
+    document.getElementById("ms-bar-mine").style.width = pctMine.toFixed(1) + "%";
+    const txt = tr("milestone.counts").replace("{mine}", mine).replace("{all}", all).replace("{total}", total);
+    document.getElementById("ms-counts").textContent = txt;
+    if (all >= total && !_milestoneDoneFired) {
+      _milestoneDoneFired = true;
+      toast(tr("milestone.done_toast"), "ok");
+    }
+  } catch (_) {
+    card.hidden = true;
+  }
 }
 
 async function loadBadges() {

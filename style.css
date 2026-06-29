@@ -2360,3 +2360,14 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
   margin-top: 8px;
 }
 .filter-actions button { padding: 6px 18px; font-size: 14px; }
+
+/* v85b — neutral test-set milestone bar. Two-layer bar: light underlay = all annotators'
+   cumulative progress; brighter overlay = current user's contribution. No OOD detail. */
+.milestone-card { display: flex; flex-direction: column; gap: 10px; }
+.milestone-card .ms-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.milestone-card h3 { margin: 0; font-size: 16px; }
+.milestone-card .ms-sub { font-variant-numeric: tabular-nums; }
+.ms-bar { position: relative; background: #eef2fb; border-radius: 8px; height: 14px; overflow: hidden; border: 1px solid #d4dcef; }
+.ms-bar-fill { position: absolute; inset: 0 auto 0 0; background: #c6d2f0; transition: width .4s ease; }
+.ms-bar-mine { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .4s ease; }
+.milestone-card .ms-note { margin: 0; }
