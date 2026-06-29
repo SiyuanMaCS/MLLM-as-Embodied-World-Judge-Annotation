@@ -2624,7 +2624,8 @@ function renderReviewRow(r) {
 }
 
 /* ===================== My annotations (edit-if-unreviewed) ===================== */
-let MA_CURRENT_KIND = "all";
+// v85t: gold mechanism is gone + tabs removed per siyuan → always fetch all kinds.
+const MA_CURRENT_KIND = "all";
 
 async function initMyAnnotations() {
   const user = localStorage.getItem(CFG.LS_USER);
@@ -2633,16 +2634,6 @@ async function initMyAnnotations() {
   const role = localStorage.getItem(CFG.LS_ROLE) || "—";
   const roleEl = document.getElementById("role");
   if (roleEl) { roleEl.textContent = tr("role." + role); roleEl.dataset.role = role; }
-
-  // Tab wiring
-  document.querySelectorAll("#ma-tabs .tab-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll("#ma-tabs .tab-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      MA_CURRENT_KIND = btn.dataset.kind;
-      loadMyAnnotations();
-    });
-  });
   await loadMyAnnotations();
 }
 
