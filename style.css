@@ -2372,6 +2372,24 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
 .ms-bar-mine { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .4s ease; }
 .milestone-card .ms-note { margin: 0; }
 
+/* v85y — admin data-reports panel. */
+.reports-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.reports-list { list-style: none; padding: 0; margin: 0; }
+.report-row { padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; }
+.report-row.report-bad { background: #fef2f3; border-color: #f3c8cd; }
+.report-row.report-ok { background: #f0f9f1; border-color: #bce4c1; }
+.report-row.report-open { background: #fff8e8; border-color: #f0d59c; }
+.report-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.report-meta { font-size: 12px; }
+.report-status { font-size: 11px; }
+.report-status.tag-bad { background: #dc3545; color: #fff; }
+.report-status.tag-ok { background: #2da155; color: #fff; }
+.report-status.tag-open { background: #f0b400; color: #444; }
+.report-note { margin: 6px 0; font-size: 13px; }
+.report-actions { display: flex; gap: 6px; margin-top: 6px; }
+.report-actions button.small { padding: 4px 10px; font-size: 12px; }
+.xsmall { font-size: 11px; word-break: break-all; }
+
 /* v85m — danger (red) button variant for the Report ("报错") action. */
 button.danger, .danger {
   background: #dc3545;

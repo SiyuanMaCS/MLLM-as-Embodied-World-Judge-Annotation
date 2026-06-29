@@ -287,6 +287,8 @@ const LANG = {
     "task.report_data": "🚨 Report",
     "task.edit_prev": "↺ Edit previous",
     "task.edit_prev_confirm": "Discard current draft and edit the previously submitted item?",
+    "reports.title": "🚨 Data issue reports",
+    "reports.empty": "No reports.",
     "report.title": "Report a data issue",
     "report.type_label": "Issue type",
     "report.type.instruction_init_mismatch": "Instruction doesn't match init frame",
@@ -567,6 +569,8 @@ const LANG = {
     "task.report_data": "🚨 报错",
     "task.edit_prev": "↺ 修改上一条",
     "task.edit_prev_confirm": "丢弃当前草稿,改上一条已提交的?",
+    "reports.title": "🚨 数据问题报告",
+    "reports.empty": "暂无报告。",
     "report.title": "报告数据问题",
     "report.type_label": "问题类型",
     "report.type.instruction_init_mismatch": "指令与首帧不符",
@@ -1471,9 +1475,83 @@ async function initDashboard() {
   await loadDashboard();
   await loadBadges();
   await loadMilestoneProgress();
+  if (isAdmin) await loadDataReports();
   let timer = setInterval(() => {
-    if (!document.hidden) { loadDashboard(); loadBadges(); loadMilestoneProgress(); }
+    if (!document.hidden) {
+      loadDashboard(); loadBadges(); loadMilestoneProgress();
+      if (isAdmin) loadDataReports();
+    }
   }, 30000);
+}
+
+/* v85y — admin data-reports panel. Lists annotator-submitted report items
+   with resolve buttons (confirmed_bad / invalid). Alice already processes
+   most via API; this surfaces the same queue for admin review. */
+async function loadDataReports() {
+  const card = document.getElementById("reports-card");
+  if (!card) return;
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  if (user !== "masiyuan") { card.hidden = true; return; }
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=data_reports&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    if (d?.ok === false) { card.hidden = true; return; }
+    const reports = d.reports || [];
+    card.hidden = false;
+    const openCount = reports.filter(rr => rr.status === "open").length;
+    const cnt = document.getElementById("reports-count");
+    if (cnt) cnt.textContent = `${reports.length} total · ${openCount} open`;
+    const empty = document.getElementById("reports-empty");
+    const list = document.getElementById("reports-list");
+    if (!reports.length) { empty.hidden = false; list.innerHTML = ""; return; }
+    empty.hidden = true;
+    list.innerHTML = reports.map(rr => {
+      const open = rr.status === "open";
+      const status_cls = rr.status === "confirmed_bad" ? "bad" : (rr.status === "invalid" ? "ok" : "open");
+      const reporters = (rr.reporters || []).join(", ");
+      const notes = (rr.notes || []).filter(Boolean).join(" · ");
+      const ts = (rr.first_ts || "").slice(0, 16).replace("T", " ");
+      const idShort = (rr.item_id || "").slice(-60);
+      return `<li class="report-row report-${status_cls}">
+        <div class="report-head">
+          <span class="report-type tag">${escapeHtml(rr.issue_type || "?")}</span>
+          <span class="report-meta muted">${escapeHtml(rr.dataset || "?")} / ${escapeHtml(rr.task || "?")} · ${escapeHtml(rr.model || "?")}</span>
+          <span class="report-status tag tag-${status_cls}">${escapeHtml(rr.status || "?")}</span>
+        </div>
+        <p class="muted small">${escapeHtml(ts)} · 报告人: ${escapeHtml(reporters)} ${rr.resolved_by ? "· 处理: " + escapeHtml(rr.resolved_by) : ""}</p>
+        ${notes ? `<p class="report-note">${escapeHtml(notes)}</p>` : ""}
+        <p class="muted xsmall" title="${escapeHtml(rr.item_id || "")}">…${escapeHtml(idShort)}</p>
+        ${open ? `<div class="report-actions">
+          <button type="button" class="danger small" data-resolve="confirmed_bad" data-item="${escapeHtml(rr.item_id || "")}">确认坏</button>
+          <button type="button" class="ghost small" data-resolve="invalid" data-item="${escapeHtml(rr.item_id || "")}">无效(恢复)</button>
+        </div>` : ""}
+      </li>`;
+    }).join("");
+    list.querySelectorAll("[data-resolve]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const resolution = btn.dataset.resolve;
+        const item_id = btn.dataset.item;
+        if (!item_id) return;
+        btn.disabled = true;
+        try {
+          const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+            method: "POST", headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ resolve_data_report: true, agent: user, item_id, resolution }),
+          });
+          const dd = await res.json();
+          if (dd?.ok === false) throw new Error(dd.error || "resolve failed");
+          toast(`已 ${resolution}`, "ok");
+          await loadDataReports();
+        } catch (err) {
+          toast("Resolve failed: " + err.message, "err");
+          btn.disabled = false;
+        }
+      });
+    });
+  } catch (err) {
+    console.warn("data_reports fetch failed", err);
+    card.hidden = true;
+  }
 }
 
 // v85b milestone (siyuan): single neutral bar showing test-set priority pool progress.
@@ -2363,9 +2441,11 @@ async function initReview() {
     roleEl.dataset.role = shown;
     roleEl.textContent = tr("role." + shown);
   }
-  // Role gate: only reviewer / admin can use the review queue.
-  if (role !== "reviewer" && username !== "masiyuan") {
-    renderRoleGate("审核员 (reviewer) / 管理员");
+  // Role gate (v85y, peer-review model): authors + admin can review;
+  // contributors are annotators-only. Legacy "reviewer" role is treated as author.
+  const allowedReview = role === "author" || role === "reviewer" || username === "masiyuan";
+  if (!allowedReview) {
+    renderRoleGate("作者 (author) / 管理员");
     return;
   }
   for (const id of ["m-physical_adherence", "m-instruction_alignment"]) {

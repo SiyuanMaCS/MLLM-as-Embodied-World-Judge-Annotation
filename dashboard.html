@@ -6,7 +6,7 @@
 <title>Home — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85x">
+<link rel="stylesheet" href="style.css?v=v85y">
 </head>
 <body>
 <main>
@@ -110,11 +110,20 @@
 
   <section class="card" id="met-by-day" hidden></section>
 
+  <section class="card" id="reports-card" hidden>
+    <div class="reports-head">
+      <h3 data-i18n="reports.title">🚨 数据问题报告</h3>
+      <span class="muted small" id="reports-count">—</span>
+    </div>
+    <p id="reports-empty" class="muted" hidden data-i18n="reports.empty">No reports.</p>
+    <ul id="reports-list" class="reports-list"></ul>
+  </section>
+
   <section id="dash-error" class="card error" hidden>
     <h3 data-i18n="common.failed_to_load">Failed to load</h3>
     <p id="dash-err-msg">—</p>
   </section>
 </main>
-<script src="app.js?v=v85x" defer></script>
+<script src="app.js?v=v85y" defer></script>
 </body>
 </html>
