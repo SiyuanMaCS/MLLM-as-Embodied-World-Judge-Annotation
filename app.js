@@ -923,15 +923,26 @@ async function initTask() {
       const btn = document.getElementById("report-submit-btn");
       btn.disabled = true;
       try {
+        // v85r: in edit mode the user is reviewing an already-submitted annotation;
+        // tell the backend to also remove that annotation (the data was bad).
+        const wasEdit = !!(EDIT_MODE && EDIT_MODE.item_id === CURRENT.id);
         const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
           method: "POST",
           headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify({ report: true, user: username, item_id: CURRENT.id, issue_type, note })
+          body: JSON.stringify({
+            report: true, user: username, item_id: CURRENT.id,
+            issue_type, note, edit: wasEdit
+          })
         });
         const data = await res.json().catch(() => ({}));
         if (data && data.ok === false) throw new Error(data.error || "report failed");
         reportModal.hidden = true;
         toast(tr("report.submitted_toast"), "ok");
+        if (wasEdit) {
+          // Bounce back to my_annotations so user sees the removed item is gone.
+          window.location.href = "my_annotations.html";
+          return;
+        }
         await loadNext();
       } catch (err) {
         toast(tr("report.failed_toast") + ": " + err.message, "err");
