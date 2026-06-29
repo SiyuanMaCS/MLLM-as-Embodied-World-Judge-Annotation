@@ -282,6 +282,7 @@ const LANG = {
     "milestone.note": "Items auto-routed across the pool — your contributions count toward the shared milestone.",
     "milestone.counts": "Yours {mine} · everyone {all} / {total}",
     "milestone.done_toast": "🎉 Milestone complete — thank you!",
+    "earnings.settle_time": "Settles daily at 10:00 Beijing time.",
   },
   cn: {
     "nav.back": "← 返回",
@@ -544,6 +545,7 @@ const LANG = {
     "milestone.note": "条目自动派发 — 你的标注贡献到团队 milestone。",
     "milestone.counts": "我 {mine} · 全员 {all} / {total}",
     "milestone.done_toast": "🎉 里程碑达成,感谢!",
+    "earnings.settle_time": "每日 10:00（北京时间）结算。",
   },
 };
 
@@ -1514,14 +1516,16 @@ function renderGrid(data) {
     }
   }
 
-  // Non-admin: render prominent self-summary banner above the grid.
+  // Self-summary banner: shows today's count vs daily quota + total progress.
+  // siyuan v85h: admin now annotates like an author (30/day quota) so admin also gets
+  // this card — they need to see their own annotation progress, not just the team grid.
   const selfBlock = document.getElementById("self-summary");
   if (selfBlock) {
     const me = annotators.find(a => a.is_self);
-    if (!isAdmin && me) {
+    if (me) {
       renderSelfSummary(selfBlock, me);
       selfBlock.hidden = false;
-      // Async-fetch quality stats and slot the card in (doesn't block summary render).
+      // Quality card still gated to contributor only (v85f).
       loadAndRenderQualityCard();
     } else {
       selfBlock.hidden = true;
@@ -1727,6 +1731,7 @@ function renderEarningsCard(me) {
         ${earnedToday > 0 ? `<div class="earnings-today">+${fmt(earnedToday)} 今日</div>` : ""}
       </div>
       <div class="progress-bar earnings-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <p class="muted small earnings-settle">${tr("earnings.settle_time")}</p>
     </div>
   `;
 }
