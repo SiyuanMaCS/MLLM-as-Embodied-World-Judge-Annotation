@@ -6,7 +6,7 @@
 <title>Annotate — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85n">
+<link rel="stylesheet" href="style.css?v=v85o">
 </head>
 <body>
 <main>
@@ -49,11 +49,6 @@
       </figure>
     </div>
 
-    <div class="prompt-box">
-      <label data-i18n="task.instruction">Task instruction</label>
-      <p id="prompt-text">—</p>
-    </div>
-
     <form id="annotate-form">
       <fieldset class="dim-block">
         <legend class="dim-block-title"><span data-i18n="axis.physical">Physical Adherence</span> <span class="dim-help" data-i18n="axis.physical_help">only judge what you see in the video</span></legend>
@@ -84,6 +79,11 @@
           <textarea id="physical_notes" rows="2" maxlength="500" data-i18n-placeholder="task.physical_notes_placeholder" placeholder="Required — visual evidence for the physical score (any violation observed)"></textarea>
         </div>
       </fieldset>
+
+      <div class="prompt-box">
+        <label data-i18n="task.instruction">Task instruction</label>
+        <p id="prompt-text">—</p>
+      </div>
 
       <fieldset class="dim-block">
         <legend class="dim-block-title"><span data-i18n="axis.instruction">Instruction Alignment</span> <span class="dim-help" data-i18n="axis.instruction_help">judge with task instruction + init frame</span></legend>
@@ -146,6 +146,6 @@
     <button id="retry-btn" data-i18n="common.retry">Retry</button>
   </section>
 </main>
-<script src="app.js?v=v85n" defer></script>
+<script src="app.js?v=v85o" defer></script>
 </body>
 </html>

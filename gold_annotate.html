@@ -6,7 +6,7 @@
 <title>Gold Annotation — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85n">
+<link rel="stylesheet" href="style.css?v=v85o">
 </head>
 <body>
 <main>
@@ -33,7 +33,6 @@
       <figure><figcaption>Generated</figcaption><video id="gen-video" controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true"></video></figure>
       <figure id="gt-fig" hidden><figcaption>Ground truth</figcaption><video id="gt-video" controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true"></video></figure>
     </div>
-    <div class="prompt-box"><label data-i18n="task.instruction">Task instruction</label><p id="prompt-text">—</p></div>
     <form id="annotate-form">
       <fieldset class="dim-block">
         <legend class="dim-block-title">Physical Adherence <span class="dim-help">物理真实度 · only judge what you see in the video</span></legend>
@@ -64,6 +63,8 @@
           <textarea id="physical_notes" rows="2" maxlength="500" data-i18n-placeholder="task.physical_notes_placeholder" placeholder="Required — cover sub-axes: agent / scene / interaction"></textarea>
         </div>
       </fieldset>
+
+      <div class="prompt-box"><label data-i18n="task.instruction">Task instruction</label><p id="prompt-text">—</p></div>
 
       <fieldset class="dim-block">
         <legend class="dim-block-title">Instruction Alignment <span class="dim-help">指令对齐 · judge with task instruction + init frame</span></legend>
@@ -103,6 +104,6 @@
 
   <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v85n" defer></script>
+<script src="app.js?v=v85o" defer></script>
 </body>
 </html>
