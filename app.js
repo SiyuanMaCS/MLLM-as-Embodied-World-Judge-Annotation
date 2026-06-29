@@ -2531,7 +2531,10 @@ function renderReviewItem(it) {
   bindVideoSources(reviewGen, it.video_sources);
   reviewGen.load();
   setInitFrame(it.init_frame_url, "");
+  // v85aa: Ham added init_frame_url + instruction + instruction_cn to review_next,
+  // so reuse the standard fetchPrompt path (handles inline + HF fallback + lang toggle).
   document.getElementById("prompt-text").textContent = "(loading instruction…)";
+  fetchPrompt(it);
   // Original annotator submission (annotator anon).
   // Backend field: `annotation` (was `annotation_payload` in my earlier draft).
   const payload = it.annotation || it.annotation_payload || {};
