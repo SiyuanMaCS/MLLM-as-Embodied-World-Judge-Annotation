@@ -285,6 +285,8 @@ const LANG = {
     "milestone.done_toast": "🎉 Milestone complete — thank you!",
     "earnings.settle_time": "Settles daily at 10:00 Beijing time.",
     "task.report_data": "🚨 Report",
+    "task.edit_prev": "↺ Edit previous",
+    "task.edit_prev_confirm": "Discard current draft and edit the previously submitted item?",
     "report.title": "Report a data issue",
     "report.type_label": "Issue type",
     "report.type.instruction_init_mismatch": "Instruction doesn't match init frame",
@@ -562,6 +564,8 @@ const LANG = {
     "milestone.done_toast": "🎉 里程碑达成,感谢!",
     "earnings.settle_time": "每日 10:00（北京时间）结算。",
     "task.report_data": "🚨 报错",
+    "task.edit_prev": "↺ 修改上一条",
+    "task.edit_prev_confirm": "丢弃当前草稿,改上一条已提交的?",
     "report.title": "报告数据问题",
     "report.type_label": "问题类型",
     "report.type.instruction_init_mismatch": "指令与首帧不符",
@@ -906,6 +910,16 @@ async function initTask() {
   // v85m (siyuan): Skip restored — submits {skip:true} which Ham re-queues to the FRONT
   // so the next annotator picks it up immediately (skipper doesn't get it back).
   document.getElementById("skip-btn").addEventListener("click", () => onSubmit(true));
+  // v85v (siyuan): one-click jump back into edit mode on the just-submitted item.
+  const editPrevBtn = document.getElementById("edit-prev-btn");
+  if (editPrevBtn) {
+    editPrevBtn.addEventListener("click", () => {
+      const target = editPrevBtn.dataset.target || "";
+      if (!target) return;
+      if (!confirm(tr("task.edit_prev_confirm"))) return;
+      window.location.href = "task.html?edit=" + encodeURIComponent(target);
+    });
+  }
   // Report: dedicated red button for data issues. Opens inline panel to pick issue_type
   // + optional note, POSTs to Ham's `report` endpoint, then advances to next item.
   const reportBtn = document.getElementById("report-btn");
@@ -968,6 +982,7 @@ async function initTask() {
   } else {
     await loadNext();
   }
+  updateEditPrevBtn();
 }
 
 /* Currently-being-edited annotation (task or gold). When set, submit goes back to my_annotations.html
@@ -1363,6 +1378,9 @@ async function onSubmit(skip) {
   if (EDIT_MODE && EDIT_MODE.item_id === CURRENT.id) body.edit = true;
   try {
     await submitAnnotation(body);
+    // v85v: remember the just-submitted item so the next page render can
+    // surface a "↺ 修改上一条" shortcut. Per-user keyed in localStorage.
+    try { localStorage.setItem("ewj_last_item:" + (localStorage.getItem(CFG.LS_USER) || ""), CURRENT.id); } catch {}
     if (EDIT_MODE) {
       toast(tr("my_annotations.updated_toast"), "ok");
       window.location.href = "my_annotations.html";
@@ -1370,9 +1388,22 @@ async function onSubmit(skip) {
     }
     await refreshStats();
     await loadNext();
+    updateEditPrevBtn();
   } catch (err) {
     showError("Save failed: " + err.message);
   }
+}
+
+function updateEditPrevBtn() {
+  const btn = document.getElementById("edit-prev-btn");
+  if (!btn) return;
+  // Hide in edit mode (you're already editing) or when no previous saved.
+  if (typeof EDIT_MODE !== "undefined" && EDIT_MODE) { btn.hidden = true; return; }
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  const prev = localStorage.getItem("ewj_last_item:" + user);
+  const curId = (typeof CURRENT !== "undefined" && CURRENT) ? CURRENT.id : null;
+  btn.hidden = !prev || prev === curId;
+  btn.dataset.target = prev || "";
 }
 
 async function submitAnnotation(body) {
