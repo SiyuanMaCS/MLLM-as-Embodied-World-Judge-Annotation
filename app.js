@@ -278,10 +278,10 @@ const LANG = {
     "align.end_btn": "End campaign",
     "docs.title": "Annotation Standard",
     "home.section_home": "Home",
-    "milestone.title": "Test-set progress",
-    "milestone.note": "Items are auto-routed across the pool — your contributions count toward the shared milestone.",
+    "milestone.title": "Milestone progress",
+    "milestone.note": "Items auto-routed across the pool — your contributions count toward the shared milestone.",
     "milestone.counts": "Yours {mine} · everyone {all} / {total}",
-    "milestone.done_toast": "🎉 Test-set milestone complete — thank you!",
+    "milestone.done_toast": "🎉 Milestone complete — thank you!",
   },
   cn: {
     "nav.back": "← 返回",
@@ -540,10 +540,10 @@ const LANG = {
     "align.end_btn": "结束对齐",
     "docs.title": "标注标准",
     "home.section_home": "首页",
-    "milestone.title": "测试集进度",
-    "milestone.note": "条目按 priority pool 自动派发 — 你的标注贡献到团队 milestone。",
+    "milestone.title": "里程碑进度",
+    "milestone.note": "条目自动派发 — 你的标注贡献到团队 milestone。",
     "milestone.counts": "我 {mine} · 全员 {all} / {total}",
-    "milestone.done_toast": "🎉 测试集已标完,感谢!",
+    "milestone.done_toast": "🎉 里程碑达成,感谢!",
   },
 };
 
