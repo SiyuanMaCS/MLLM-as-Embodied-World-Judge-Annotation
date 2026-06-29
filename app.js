@@ -899,6 +899,7 @@ async function initTask() {
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => onSubmit(true) });
   wireVideoFallback(document.getElementById("gt-video"));
   wireSubTriButtons();  // 6 sub-tri groups in task form
+  wireAutoNote("");     // v85j note prefill (task form, no prefix)
 
   await refreshStats();
   // Edit mode: ?edit=<item_id> loads the existing annotation and prefills the form.
@@ -1919,6 +1920,10 @@ function wireSubTriButtons(root) {
         const v = b.dataset.val;
         if (input) input.value = v;
         btns.forEach(x => x.classList.toggle("active", x === b));
+        // v85j: rebuild auto-note when a sub-tri changes (one of the 6 inputs that
+        // contribute to the per-axis notes). The dispatched event lets all wired
+        // forms recompute without us caring which form contains the button.
+        document.dispatchEvent(new CustomEvent("autonote:refresh", { detail: { source: "subtri", input: input?.id } }));
       });
     });
   });
@@ -1944,6 +1949,117 @@ function getSubTri(id) {
   const v = Number(input.value);
   return Number.isFinite(v) ? v : 2;
 }
+
+/* ===================== Note auto-prefill (v85j) =====================
+   siyuan: when annotator picks a main score / sub-tri, the note textarea
+   auto-fills a scaffold (score-tier header + per-sub bullet) so the
+   annotator only writes the trailing detail after each colon. Subs at 2
+   (passes) get no bullet. User text after ": " is preserved across
+   rebuilds — we parse each rebuild and re-slot the trailing text. */
+// Templates per Ham's v85j design: per-sub phrasing differs by status (0=severe,
+// 1=partial). Sub at 2 (passes) emits no bullet. Header line varies by main score.
+const AUTO_NOTE = {
+  physical: {
+    score_lines: {
+      1: "物理完全崩坏",
+      2: "物理严重违反",
+      3: "物理明显不一致(短暂形变/闪烁)",
+      4: "物理大致真实",
+      5: "物理高度真实",
+    },
+    subs: [
+      ["agent_consistency", "主体一致性", { 0: "主体严重形变/消失", 1: "主体短暂形变/抖动" }],
+      ["scene_consistency", "场景一致性", { 0: "场景崩坏/突变", 1: "场景轻微闪烁/漂移" }],
+      ["interaction_realism", "交互真实性", { 0: "交互严重违反物理", 1: "交互轻微不自然" }],
+    ],
+    note_id: "physical_notes",
+    main_id: "physical_adherence",
+  },
+  instruction: {
+    score_lines: {
+      1: "指令完全不符",
+      2: "指令明显不符",
+      3: "指令部分偏离",
+      4: "指令基本符合",
+      5: "指令完全符合",
+    },
+    subs: [
+      ["agent_match", "主体匹配", { 0: "主体严重不符", 1: "主体部分不符" }],
+      ["object_correct", "物体正确", { 0: "操作了错误物体", 1: "目标物体部分偏差" }],
+      ["goal_completed", "目标完成", { 0: "目标未完成", 1: "目标仅部分完成" }],
+    ],
+    note_id: "instruction_notes",
+    main_id: "instruction_alignment",
+  },
+};
+
+/* Per-form registry of which (prefix, axis) pairs to rebuild. Forms call
+   registerAutoNote("", "physical") etc. at wire-time; the global
+   `autonote:refresh` event then iterates and calls buildAutoNote(prefix, axis). */
+const _AUTO_NOTE_REGISTRY = new Set();
+function registerAutoNote(prefix, axis) {
+  _AUTO_NOTE_REGISTRY.add(prefix + "|" + axis);
+}
+
+function buildAutoNote(prefix, axis) {
+  const cfg = AUTO_NOTE[axis];
+  if (!cfg) return;
+  const mainEl = document.getElementById(prefix + cfg.main_id);
+  const noteEl = document.getElementById(prefix + cfg.note_id);
+  if (!mainEl || !noteEl) return;
+  const current = noteEl.value || "";
+  // Edit-mode safety: if textarea has freeform content not matching any of our header
+  // lines or sub-status phrases, leave it alone (annotator wrote it by hand).
+  const allHeaders = Object.values(cfg.score_lines);
+  const allStatusPhrases = cfg.subs.flatMap(([_k, _l, statusMap]) => Object.values(statusMap));
+  const matchesOurFormat = current === "" ||
+    allHeaders.some(h => current.startsWith(h)) ||
+    allStatusPhrases.some(p => current.includes(p));
+  if (!matchesOurFormat) return;
+  const mainScore = Math.min(5, Math.max(1, Number(mainEl.value) || 3));
+  // Preserve user text after the colon on each sub bullet line.
+  const userTextBySub = {};
+  for (const line of current.split("\n")) {
+    for (const [subKey, _subLabel, statusMap] of cfg.subs) {
+      for (const phrase of Object.values(statusMap)) {
+        const m = line.match(new RegExp("^" + escapeRegex(phrase) + ":\\s*(.*)$"));
+        if (m) { userTextBySub[subKey] = m[1]; break; }
+      }
+    }
+  }
+  const lines = [cfg.score_lines[mainScore] || ""];
+  for (const [subKey, _subLabel, statusMap] of cfg.subs) {
+    const id = prefix + subKey;
+    const v = getSubTri(id);
+    const phrase = statusMap[v];
+    if (phrase) {
+      const tail = userTextBySub[subKey] || "";
+      lines.push(`${phrase}: ${tail}`);
+    }
+  }
+  noteEl.value = lines.join("\n");
+}
+
+function escapeRegex(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+function wireAutoNote(prefix) {
+  for (const axis of Object.keys(AUTO_NOTE)) {
+    const cfg = AUTO_NOTE[axis];
+    const mainEl = document.getElementById(prefix + cfg.main_id);
+    const noteEl = document.getElementById(prefix + cfg.note_id);
+    if (!mainEl || !noteEl) continue;
+    registerAutoNote(prefix, axis);
+    mainEl.addEventListener("input", () => buildAutoNote(prefix, axis));
+  }
+}
+
+// Single global listener: any sub-tri change triggers rebuild for every registered form.
+document.addEventListener("autonote:refresh", () => {
+  for (const key of _AUTO_NOTE_REGISTRY) {
+    const [prefix, axis] = key.split("|");
+    buildAutoNote(prefix, axis);
+  }
+});
 
 /* ===================== Gold annotation page ===================== */
 let GOLD_CURRENT = null;
@@ -1980,6 +2096,7 @@ async function initGold() {
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => submitGold(true) });
   wireVideoFallback(document.getElementById("gt-video"));
   wireSubTriButtons();  // 6 sub-tri groups in gold form
+  wireAutoNote("");     // v85j note prefill (gold form shares annotate-form ids)
   // Edit mode: ?edit=<item_id> loads the existing gold annotation and prefills the form.
   // Override mode: ?override=<item_id> admin-only path that loads a finalized gold from
   // gold_library and lets admin rewrite it (writes audit log on submit).
@@ -2202,6 +2319,7 @@ async function initReview() {
   document.getElementById("retry-btn").addEventListener("click", () => loadNextReview());
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => loadNextReview() });
   wireSubTriButtons();  // 6 sub-tri groups in review modify form
+  wireAutoNote("m-");   // v85j note prefill (review modify panel uses m- prefix)
   await loadNextReview();
 }
 
@@ -3055,6 +3173,7 @@ async function initAlign() {
     document.getElementById("al-start-submit").addEventListener("click", submitAlignStart);
   }
   wireSubTriButtons();  // 6 sub-tri groups in the align form
+  wireAutoNote("al-");  // v85j note prefill (align form uses al- prefix)
   await loadAlignList();
 }
 
@@ -3979,6 +4098,7 @@ function renderFinalizeForm(d) {
   wireScoreHint("f-physical_adherence", "f-physical_adherence-hint", "pa");
   wireScoreHint("f-instruction_alignment", "f-instruction_alignment-hint", "ia");
   wireSubTriButtons(wrap);  // 6 sub-tri groups in the freshly-injected finalize form
+  wireAutoNote("f-");        // v85j note prefill (finalize form uses f- prefix)
   document.getElementById("al-finalize-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     await submitAlignFinalize(d.item_id || ALIGN_CURRENT.id);
