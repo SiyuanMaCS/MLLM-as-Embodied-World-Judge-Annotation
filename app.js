@@ -2512,9 +2512,9 @@ async function loadNextReview() {
     REVIEW_CURRENT = data;
     renderReviewItem(data);
     hide("loading"); show("item");
-    // Reset modify panel
+    // Reset modify panel (legacy single modify-btn element no longer exists since v78
+    // 3-decision UX; only modify-fields needs hiding).
     document.getElementById("modify-fields").hidden = true;
-    document.getElementById("modify-btn").textContent = "✏ Modify";
   } catch (err) {
     showError("Failed to load review task: " + err.message);
   }
