@@ -6,7 +6,7 @@
 <title>Annotate — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85k">
+<link rel="stylesheet" href="style.css?v=v85l">
 </head>
 <body>
 <main>
@@ -116,10 +116,27 @@
       </fieldset>
       <div class="form-row actions">
         <button type="submit" id="submit-btn" data-i18n="task.save_next">Save &amp; next →</button>
-        <button type="button" id="skip-btn" class="ghost" data-i18n="task.skip">Skip</button>
-        <button type="button" id="report-btn" class="ghost" data-i18n="task.report" title="Send this annotation to a reviewer for second opinion">⚠ Report (uncertain)</button>
+        <button type="button" id="report-btn" class="ghost" data-i18n="task.report_data">🚨 Report data issue</button>
       </div>
     </form>
+    <div class="card report-modal" id="report-modal" hidden>
+      <h3 data-i18n="report.title">Report data issue</h3>
+      <label data-i18n="report.type_label">Issue type</label>
+      <select id="report-type">
+        <option value="video_init_mismatch" data-i18n="report.type.video_init_mismatch">Video doesn't match init frame</option>
+        <option value="broken_video" data-i18n="report.type.broken_video">Video broken / unplayable</option>
+        <option value="instruction_mismatch" data-i18n="report.type.instruction_mismatch">Instruction doesn't match video</option>
+        <option value="wrong_content" data-i18n="report.type.wrong_content">Wrong content / task</option>
+        <option value="static_or_corrupt" data-i18n="report.type.static_or_corrupt">Static / corrupt content</option>
+        <option value="other" data-i18n="report.type.other">Other</option>
+      </select>
+      <label data-i18n="report.note_label">Note (optional)</label>
+      <textarea id="report-note" rows="2" maxlength="300" data-i18n-placeholder="report.note_placeholder" placeholder="Optional detail — Alice will review"></textarea>
+      <div class="form-row actions">
+        <button type="button" id="report-submit-btn" data-i18n="report.submit">Submit report</button>
+        <button type="button" id="report-cancel-btn" class="ghost" data-i18n="common.cancel">Cancel</button>
+      </div>
+    </div>
   </section>
 
   <section id="error" class="card error" hidden>
@@ -128,6 +145,6 @@
     <button id="retry-btn" data-i18n="common.retry">Retry</button>
   </section>
 </main>
-<script src="app.js?v=v85k" defer></script>
+<script src="app.js?v=v85l" defer></script>
 </body>
 </html>

@@ -283,6 +283,21 @@ const LANG = {
     "milestone.counts": "Yours {mine} · everyone {all} / {total}",
     "milestone.done_toast": "🎉 Milestone complete — thank you!",
     "earnings.settle_time": "Settles daily at 10:00 Beijing time.",
+    "task.report_data": "🚨 Report data issue",
+    "report.title": "Report a data issue",
+    "report.type_label": "Issue type",
+    "report.type.video_init_mismatch": "Video doesn't match init frame",
+    "report.type.broken_video": "Video broken / unplayable",
+    "report.type.instruction_mismatch": "Instruction doesn't match video",
+    "report.type.wrong_content": "Wrong content / task",
+    "report.type.static_or_corrupt": "Static / corrupt content",
+    "report.type.other": "Other",
+    "report.note_label": "Note (optional)",
+    "report.note_placeholder": "Optional detail — Alice will review.",
+    "report.submit": "Submit report",
+    "report.submitted_toast": "Reported — Alice will review.",
+    "report.failed_toast": "Report failed",
+    "common.cancel": "Cancel",
   },
   cn: {
     "nav.back": "← 返回",
@@ -546,6 +561,21 @@ const LANG = {
     "milestone.counts": "我 {mine} · 全员 {all} / {total}",
     "milestone.done_toast": "🎉 里程碑达成,感谢!",
     "earnings.settle_time": "每日 10:00（北京时间）结算。",
+    "task.report_data": "🚨 报告数据问题",
+    "report.title": "报告数据问题",
+    "report.type_label": "问题类型",
+    "report.type.video_init_mismatch": "视频与首帧不匹配",
+    "report.type.broken_video": "视频损坏 / 无法播放",
+    "report.type.instruction_mismatch": "指令与视频不符",
+    "report.type.wrong_content": "内容 / 任务错误",
+    "report.type.static_or_corrupt": "静态 / 损坏内容",
+    "report.type.other": "其他",
+    "report.note_label": "备注（可选）",
+    "report.note_placeholder": "可选细节 — Alice 将处理。",
+    "report.submit": "提交报告",
+    "report.submitted_toast": "已报告 — Alice 将处理。",
+    "report.failed_toast": "报告失败",
+    "common.cancel": "取消",
   },
 };
 
@@ -874,29 +904,47 @@ async function initTask() {
     e.preventDefault();
     await onSubmit(false);
   });
-  document.getElementById("skip-btn").addEventListener("click", () => onSubmit(true));
   document.getElementById("retry-btn").addEventListener("click", () => loadNext());
+  // v85l: Report-data-issue replaces Skip. Opens an inline panel to pick issue_type +
+  // optional note, POSTs to Ham's `report` endpoint, then advances to the next item.
+  // Ham removes the reported item from the pool so no one else sees it again.
   const reportBtn = document.getElementById("report-btn");
-  if (reportBtn) {
-    reportBtn.addEventListener("click", async () => {
+  const reportModal = document.getElementById("report-modal");
+  if (reportBtn && reportModal) {
+    reportBtn.addEventListener("click", () => {
+      reportModal.hidden = false;
+      document.getElementById("report-note").value = "";
+    });
+    document.getElementById("report-cancel-btn").addEventListener("click", () => {
+      reportModal.hidden = true;
+    });
+    document.getElementById("report-submit-btn").addEventListener("click", async () => {
       if (!CURRENT) return;
-      if (!confirm("Report this item to a reviewer? (will be flagged as self-reported)")) return;
+      const issue_type = document.getElementById("report-type").value;
+      const note = document.getElementById("report-note").value.trim();
+      const btn = document.getElementById("report-submit-btn");
+      btn.disabled = true;
       try {
-        await fetch(CFG.APPS_SCRIPT_URL + "/", {
+        const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
           method: "POST",
           headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify({ report: true, user: username, item_id: CURRENT.id })
+          body: JSON.stringify({ report: true, user: username, item_id: CURRENT.id, issue_type, note })
         });
-        alert("Reported. Loading next item.");
+        const data = await res.json().catch(() => ({}));
+        if (data && data.ok === false) throw new Error(data.error || "report failed");
+        reportModal.hidden = true;
+        toast(tr("report.submitted_toast"), "ok");
         await loadNext();
       } catch (err) {
-        alert("Report failed: " + err.message);
+        toast(tr("report.failed_toast") + ": " + err.message, "err");
+      } finally {
+        btn.disabled = false;
       }
     });
   }
 
-  // Video fallback: retry on HF/CDN errors, then show inline placeholder w/ Skip.
-  wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => onSubmit(true) });
+  // Video fallback: load next item on failure (no separate skip anymore).
+  wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => loadNext() });
   wireVideoFallback(document.getElementById("gt-video"));
   wireSubTriButtons();  // 6 sub-tri groups in task form
   wireAutoNote("");     // v85j note prefill (task form, no prefix)

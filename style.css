@@ -2371,3 +2371,11 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
 .ms-bar-fill { position: absolute; inset: 0 auto 0 0; background: #c6d2f0; transition: width .4s ease; }
 .ms-bar-mine { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .4s ease; }
 .milestone-card .ms-note { margin: 0; }
+
+/* v85l — Report data-issue inline panel (collapsible card under the form). */
+.report-modal { margin-top: 12px; border: 1px solid #f0d59c; background: #fff8e8; }
+.report-modal h3 { margin: 0 0 8px 0; }
+.report-modal label { display: block; font-weight: 600; margin: 10px 0 4px 0; }
+.report-modal select { width: 100%; padding: 6px 10px; }
+.report-modal textarea { width: 100%; padding: 6px 10px; }
+.report-modal .actions { margin-top: 10px; }
