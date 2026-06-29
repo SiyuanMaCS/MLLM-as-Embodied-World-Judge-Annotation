@@ -2372,6 +2372,52 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
 .ms-bar-mine { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .4s ease; }
 .milestone-card .ms-note { margin: 0; }
 
+/* v85m — danger (red) button variant for the Report ("报错") action. */
+button.danger, .danger {
+  background: #dc3545;
+  color: #fff;
+  border: 1px solid #c62937;
+}
+button.danger:hover, .danger:hover { background: #c62937; }
+
+/* v85m — my_annotations card: init_frame thumb beside instruction (replaces video player). */
+.my-annot-card .ma-context {
+  display: flex;
+  gap: 12px;
+  margin: 8px 0;
+  align-items: flex-start;
+}
+.my-annot-card .ma-init {
+  width: 160px;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.my-annot-card .ma-instr {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #444;
+}
+
+/* v85m — nicer edit button (was a text link, now a proper button-style affordance). */
+.btn-edit, a.btn-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+  border: none;
+  transition: background .15s ease;
+}
+.btn-edit:hover, a.btn-edit:hover { background: var(--accent-dark); text-decoration: none; }
+
 /* v85l — Report data-issue inline panel (collapsible card under the form). */
 .report-modal { margin-top: 12px; border: 1px solid #f0d59c; background: #fff8e8; }
 .report-modal h3 { margin: 0 0 8px 0; }

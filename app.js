@@ -905,9 +905,11 @@ async function initTask() {
     await onSubmit(false);
   });
   document.getElementById("retry-btn").addEventListener("click", () => loadNext());
-  // v85l: Report-data-issue replaces Skip. Opens an inline panel to pick issue_type +
-  // optional note, POSTs to Ham's `report` endpoint, then advances to the next item.
-  // Ham removes the reported item from the pool so no one else sees it again.
+  // v85m (siyuan): Skip restored — submits {skip:true} which Ham re-queues to the FRONT
+  // so the next annotator picks it up immediately (skipper doesn't get it back).
+  document.getElementById("skip-btn").addEventListener("click", () => onSubmit(true));
+  // Report: dedicated red button for data issues. Opens inline panel to pick issue_type
+  // + optional note, POSTs to Ham's `report` endpoint, then advances to next item.
   const reportBtn = document.getElementById("report-btn");
   const reportModal = document.getElementById("report-modal");
   if (reportBtn && reportModal) {
@@ -943,8 +945,8 @@ async function initTask() {
     });
   }
 
-  // Video fallback: load next item on failure (no separate skip anymore).
-  wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => loadNext() });
+  // Video fallback: re-queue via skip flow if playback fails (siyuan: skip = push-to-front).
+  wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => onSubmit(true) });
   wireVideoFallback(document.getElementById("gt-video"));
   wireSubTriButtons();  // 6 sub-tri groups in task form
   wireAutoNote("");     // v85j note prefill (task form, no prefix)
@@ -2059,8 +2061,7 @@ function buildAutoNote(prefix, axis) {
   const noteEl = document.getElementById(prefix + cfg.note_id);
   if (!mainEl || !noteEl) return;
   const current = noteEl.value || "";
-  // Edit-mode safety: if textarea has freeform content not matching any of our header
-  // lines or sub-status phrases, leave it alone (annotator wrote it by hand).
+  // Edit-mode safety: leave freeform content alone.
   const allHeaders = Object.values(cfg.score_lines);
   const allStatusPhrases = cfg.subs.flatMap(([_k, _l, statusMap]) => Object.values(statusMap));
   const matchesOurFormat = current === "" ||
@@ -2069,23 +2070,25 @@ function buildAutoNote(prefix, axis) {
   if (!matchesOurFormat) return;
   const mainScore = Math.min(5, Math.max(1, Number(mainEl.value) || 3));
   // Preserve user text after the colon on each sub bullet line.
+  // Matches optional leading whitespace (tab indent) + status phrase + colon (CJK or ASCII).
   const userTextBySub = {};
   for (const line of current.split("\n")) {
     for (const [subKey, _subLabel, statusMap] of cfg.subs) {
       for (const phrase of Object.values(statusMap)) {
-        const m = line.match(new RegExp("^" + escapeRegex(phrase) + ":\\s*(.*)$"));
+        const m = line.match(new RegExp("^\\s*" + escapeRegex(phrase) + "[：:]\\s*(.*)$"));
         if (m) { userTextBySub[subKey] = m[1]; break; }
       }
     }
   }
-  const lines = [cfg.score_lines[mainScore] || ""];
+  // v85m: overall line ends with colon; sub lines indented with a tab. Both colons full-width.
+  const lines = [(cfg.score_lines[mainScore] || "") + "："];
   for (const [subKey, _subLabel, statusMap] of cfg.subs) {
     const id = prefix + subKey;
     const v = getSubTri(id);
     const phrase = statusMap[v];
     if (phrase) {
       const tail = userTextBySub[subKey] || "";
-      lines.push(`${phrase}: ${tail}`);
+      lines.push(`\t${phrase}：${tail}`);
     }
   }
   noteEl.value = lines.join("\n");
@@ -2713,7 +2716,7 @@ function renderMyAnnotationCard(it) {
     : `task.html?edit=${encodeURIComponent(it.item_id)}`;
   const actionBtn = isReviewed
     ? `<span class="muted small">${tr("my_annotations.locked")}</span>`
-    : `<a class="link ma-edit-btn" href="${editHref}">✏ ${tr("my_annotations.edit_btn")}</a>`;
+    : `<a class="btn-edit ma-edit-btn" href="${editHref}">✏ ${tr("my_annotations.edit_btn")}</a>`;
   // Sub-line: legacy 0/1/2 → glyphs (mirrors subBadges in my_reviews).
   const subKeys = ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"];
   function subLine(p) {
@@ -2756,14 +2759,17 @@ function renderMyAnnotationCard(it) {
     ${(fin.physical_notes || fin.instruction_notes)
       ? `<p class="muted small"><strong>P:</strong> ${escapeHtml(fin.physical_notes || "—")}<br><strong>I:</strong> ${escapeHtml(fin.instruction_notes || "—")}</p>`
       : ""}`;
+  // v85m (siyuan): my_annotations card drops the video player — only init_frame thumb
+  // + instruction. Keeps the page light + signals the row is for review, not playback.
   li.innerHTML = `
     <div class="meta">${kindTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${decisionBadge}</div>
-    ${it.video_url ? `<video class="ma-thumb" controls preload="none" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${pickVideoUrl(it.video_sources, it.video_url)}" data-sources-json='${escapeHtml(JSON.stringify(it.video_sources || []))}'></video>` : ""}
+    <div class="ma-context">
+      ${it.init_frame_url ? `<img class="ma-init" src="${escapeHtml(it.init_frame_url)}" alt="init frame" loading="lazy">` : ""}
+      ${it.instruction || it.instruction_cn ? `<p class="ma-instr"><strong>${tr("task.instruction")}:</strong> ${escapeHtml(it.instruction_cn || it.instruction)}</p>` : ""}
+    </div>
     ${diffBlock}
     <div class="ma-foot">${actionBtn}</div>
   `;
-  const v = li.querySelector("video");
-  if (v) wireVideoFallback(v);
   return li;
 }
 
