@@ -3037,22 +3037,29 @@ async function initReview() {
   const reportSubmit = document.getElementById("report-submit-btn");
   if (reportSubmit) reportSubmit.addEventListener("click", async () => {
     if (!REVIEW_CURRENT) return;
-    const issue = document.getElementById("report-type").value;
+    const issue_type = document.getElementById("report-type").value;
     const note = document.getElementById("report-note").value.trim();
+    const btn = document.getElementById("report-submit-btn");
+    btn.disabled = true;
     try {
+      // v85bp: align field names with task.html report (issue_type, not 'issue').
+      // Wrong key caused backend validation to drop the report → no advance.
+      // Also use the `report:true` action key task.html uses — same route on Ham's side.
       const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
         method: "POST", headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ report_data_issue: true, user: localStorage.getItem(CFG.LS_USER),
-          item_id: REVIEW_CURRENT.item_id || REVIEW_CURRENT.id, issue, note, source: "review" }),
+        body: JSON.stringify({ report: true, user: localStorage.getItem(CFG.LS_USER),
+          item_id: REVIEW_CURRENT.item_id || REVIEW_CURRENT.id, issue_type, note, source: "review" }),
       });
       const d = await r.json().catch(() => ({}));
-      if (d?.ok === false) throw new Error(d.error || "report failed");
+      if (!r.ok || d?.ok === false) throw new Error(d?.error || "HTTP " + r.status);
       toast(tr("report.submitted_toast"), "ok");
       document.getElementById("report-modal").hidden = true;
       document.getElementById("report-note").value = "";
-      await loadNextReview();
+      await loadNextReview();   // advance to next review item
     } catch (err) {
       toast("Report failed: " + err.message, "err");
+    } finally {
+      btn.disabled = false;
     }
   });
   wireSubTriButtons();  // 6 sub-tri groups in review modify form
