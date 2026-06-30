@@ -1444,12 +1444,24 @@ function showReadOnlyAdminPopup() {
   host.addEventListener("click", (e) => { if (e.target === host) host.hidden = true; });
 }
 
-// Wrap a fetch call so a 403 surfaces the read-only popup instead of bubbling raw.
+// Wrap a fetch call so a 403 / readonly_admin code surfaces the read-only popup
+// instead of bubbling raw. Ham's backend now returns
+//   { ok:false, code:"readonly_admin", error:"..." }
+// for any write attempt by a read-only admin (siyuanw / Yu).
 async function fetchWriteOrPopup(url, opts) {
   if (!requireWriteOrPopup()) return null;
   const res = await fetch(url, opts);
   if (res.status === 403) { showReadOnlyAdminPopup(); return null; }
   return res;
+}
+
+// Inspect a parsed JSON body for the readonly_admin sentinel; show popup if matched.
+function maybeShowReadOnlyFromBody(body) {
+  if (body && body.ok === false && body.code === "readonly_admin") {
+    showReadOnlyAdminPopup();
+    return true;
+  }
+  return false;
 }
 
 function updateEditPrevBtn() {
@@ -1644,6 +1656,7 @@ async function loadDataReports() {
             body: JSON.stringify({ resolve_data_report: true, agent: user, item_id, resolution }),
           });
           const dd = await res.json();
+          if (maybeShowReadOnlyFromBody(dd)) { btn.disabled = false; return; }
           if (dd?.ok === false) throw new Error(dd.error || "resolve failed");
           toast(`已 ${resolution}`, "ok");
           await loadDataReports();
