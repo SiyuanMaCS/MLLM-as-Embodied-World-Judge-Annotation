@@ -3352,8 +3352,10 @@ async function loadNextArbitration() {
     const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=arbitration_queue&user=${encodeURIComponent(user)}`);
     const d = await r.json();
     if (d?.ok === false) throw new Error(d.error || "fetch failed");
-    const items = d.items || [];
-    setArbRemaining(items.length);
+    // v85bt: Ham's contract returns {pending, fallback, count, fallback_count} — not `items`.
+    // pending = items assigned to this meta; fallback = both-meta-conflict items finalizer takes.
+    const items = d.pending || d.items || [];
+    setArbRemaining(typeof d.count === "number" ? d.count : items.length);
     if (items.length === 0) {
       showError(tr("arbitration.queue_empty"), {success: true});
       return;
