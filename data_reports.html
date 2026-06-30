@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Issue Reports — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css?v=v85at">
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1 data-i18n="reports.page_title">🚨 数据问题报告</h1>
+    <div class="user-chip">
+      <span class="lb-countdown" id="lb-countdown" hidden></span>
+      <span id="who">—</span> <span class="role-pill" id="role">—</span>
+      <button id="logout-btn" class="link" data-i18n="chip.logout">logout</button>
+    </div>
+  </header>
+  <nav class="page-nav">
+    <a href="dashboard.html" class="back-link" data-i18n="nav.back">← Back</a>
+    <span class="nav-stat muted small" id="dr-count">—</span>
+  </nav>
+
+  <section class="card">
+    <p id="dr-loading" data-i18n="common.loading">Loading…</p>
+    <p id="dr-empty" hidden data-i18n="reports.empty">No reports.</p>
+    <ul id="dr-list" class="reports-list" hidden></ul>
+  </section>
+
+  <section id="dr-error" class="card error" hidden>
+    <h3 data-i18n="common.failed">Failed</h3>
+    <p id="dr-err-msg">—</p>
+  </section>
+</main>
+<script src="app.js?v=v85at" defer></script>
+</body>
+</html>

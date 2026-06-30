@@ -2460,6 +2460,35 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
   color: #555;
 }
 
+/* v85at — data_reports.html context block (init_frame + instruction + video toggle). */
+.dr-context {
+  display: flex;
+  gap: 12px;
+  margin: 10px 0;
+  align-items: flex-start;
+}
+.dr-init {
+  width: 200px;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.dr-instr {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+}
+.dr-toggle-video { margin-top: 4px; }
+.dr-video-panel { margin-top: 8px; }
+.dr-video-panel video {
+  width: 100%;
+  max-width: 640px;
+  background: #000;
+  border-radius: 8px;
+}
+
 /* v85y — admin data-reports panel. */
 .reports-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .reports-list { list-style: none; padding: 0; margin: 0; }

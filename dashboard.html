@@ -75,6 +75,11 @@
         <span class="ac-icon">📋</span>
         <span class="ac-text"><span class="ac-title" data-i18n="home.card.my_annotations.title">My annotations</span><span class="ac-sub" data-i18n="home.card.my_annotations.sub">Edit unreviewed entries</span></span>
       </a>
+      <a class="action-card primary" href="data_reports.html" data-badge="reports">
+        <span class="ac-icon">🚨</span>
+        <span class="ac-text"><span class="ac-title" data-i18n="home.card.reports.title">Data reports</span><span class="ac-sub" data-i18n="home.card.reports.sub">Reported items queue</span></span>
+        <span class="ac-badge" hidden>0</span>
+      </a>
       <a class="action-card" href="align.html" data-badge="align">
         <span class="ac-icon">🧭</span>
         <span class="ac-text"><span class="ac-title" data-i18n="home.card.alignment.title">Alignment</span><span class="ac-sub" data-i18n="home.card.alignment_admin.sub">Start / manage reviewer alignment</span></span>
@@ -117,15 +122,6 @@
   </section>
 
   <section class="card" id="met-by-day" hidden></section>
-
-  <section class="card" id="reports-card" hidden>
-    <div class="reports-head">
-      <h3 data-i18n="reports.title">🚨 数据问题报告</h3>
-      <span class="muted small" id="reports-count">—</span>
-    </div>
-    <p id="reports-empty" class="muted" hidden data-i18n="reports.empty">No reports.</p>
-    <ul id="reports-list" class="reports-list"></ul>
-  </section>
 
   <section id="dash-error" class="card error" hidden>
     <h3 data-i18n="common.failed_to_load">Failed to load</h3>

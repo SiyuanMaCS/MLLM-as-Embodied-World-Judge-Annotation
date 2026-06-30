@@ -290,7 +290,12 @@ const LANG = {
     "task.edit_prev": "↺ Edit previous",
     "task.edit_prev_confirm": "Discard current draft and edit the previously submitted item?",
     "reports.title": "🚨 Data issue reports",
+    "reports.page_title": "🚨 Data issue reports",
     "reports.empty": "No reports.",
+    "reports.show_video": "▶ Show video",
+    "reports.hide_video": "▾ Hide video",
+    "home.card.reports.title": "Data reports",
+    "home.card.reports.sub": "Reported items queue",
     "readonly.title": "Read-only admin",
     "readonly.body": "You're a read-only admin — you can see admin views but cannot take write actions (delete user, change role, resolve reports, finalize alignments). Ask masiyuan if you need write access.",
     "readonly.ok": "Got it",
@@ -584,7 +589,12 @@ const LANG = {
     "task.edit_prev": "↺ 修改上一条",
     "task.edit_prev_confirm": "丢弃当前草稿,改上一条已提交的?",
     "reports.title": "🚨 数据问题报告",
+    "reports.page_title": "🚨 数据问题报告",
     "reports.empty": "暂无报告。",
+    "reports.show_video": "▶ 查看视频",
+    "reports.hide_video": "▾ 收起视频",
+    "home.card.reports.title": "数据问题报告",
+    "home.card.reports.sub": "查看与处理报告",
     "readonly.title": "只读管理员",
     "readonly.body": "你是只读管理员 — 可查看所有数据,但不能执行写操作(删用户 / 改角色 / 解决报告 / finalize alignment)。如需写权限,请联系 masiyuan。",
     "readonly.ok": "知道了",
@@ -1665,9 +1675,137 @@ async function loadLeaderboard() {
   }
 }
 
-/* v85y — admin data-reports panel. Lists annotator-submitted report items
-   with resolve buttons (confirmed_bad / invalid). Alice already processes
-   most via API; this surfaces the same queue for admin review. */
+/* v85at — dedicated data_reports.html page. siyuan: 别堆在 home, 专门页 like
+   review/my_annotations. Renders each report with init_frame + instruction +
+   click-to-watch video. */
+async function initDataReports() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  const role = localStorage.getItem(CFG.LS_ROLE) || "";
+  if (!user) { window.location.href = "index.html"; return; }
+  document.getElementById("who").textContent = user;
+  const roleEl = document.getElementById("role");
+  if (roleEl) {
+    const shown = displayRole(user, role);
+    roleEl.dataset.role = shown;
+    roleEl.textContent = tr("role." + shown);
+  }
+  if (role !== "admin" && user !== "masiyuan") {
+    renderRoleGate("管理员 (admin)");
+    return;
+  }
+  ensureSettleAnchor().then(() => startSettleCountdown());
+  await loadDataReportsPage();
+  setInterval(() => { if (!document.hidden) loadDataReportsPage(); }, 30000);
+}
+
+async function loadDataReportsPage() {
+  const list = document.getElementById("dr-list");
+  const loading = document.getElementById("dr-loading");
+  const empty = document.getElementById("dr-empty");
+  const err = document.getElementById("dr-error");
+  const cntEl = document.getElementById("dr-count");
+  if (!list) return;
+  err.hidden = true;
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  const canWrite = localStorage.getItem("ewj_can_write") === "1";
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=data_reports&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "fetch failed");
+    const reports = (d.reports || []).slice();
+    reports.sort((a, b) => {
+      const ao = a.status === "open" ? 0 : 1;
+      const bo = b.status === "open" ? 0 : 1;
+      if (ao !== bo) return ao - bo;
+      return (b.first_ts || "").localeCompare(a.first_ts || "");
+    });
+    const openCount = reports.filter(rr => rr.status === "open").length;
+    cntEl.textContent = `${openCount} open · ${reports.length} total`;
+    loading.hidden = true;
+    if (!reports.length) { empty.hidden = false; list.hidden = true; return; }
+    empty.hidden = true; list.hidden = false;
+    list.innerHTML = reports.map(rr => renderReportCard(rr, canWrite)).join("");
+    list.querySelectorAll("[data-resolve]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const resolution = btn.dataset.resolve;
+        const item_id = btn.dataset.item;
+        if (!item_id) return;
+        btn.disabled = true;
+        try {
+          const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+            method: "POST", headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ resolve_data_report: true, agent: user, item_id, resolution }),
+          });
+          const dd = await res.json();
+          if (maybeShowReadOnlyFromBody(dd)) { btn.disabled = false; return; }
+          if (dd?.ok === false) throw new Error(dd.error || "resolve failed");
+          toast(`已 ${resolution}`, "ok");
+          await loadDataReportsPage();
+        } catch (ee) {
+          toast("Resolve failed: " + ee.message, "err");
+          btn.disabled = false;
+        }
+      });
+    });
+    list.querySelectorAll(".dr-toggle-video").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const panel = btn.nextElementSibling;
+        if (!panel) return;
+        const showing = !panel.hidden;
+        panel.hidden = showing;
+        btn.textContent = showing ? tr("reports.show_video") : tr("reports.hide_video");
+        if (!showing) {
+          const v = panel.querySelector("video");
+          if (v && !v.src && v.dataset.src) { v.src = v.dataset.src; v.load(); }
+        }
+      });
+    });
+  } catch (e) {
+    loading.hidden = true;
+    err.hidden = false;
+    document.getElementById("dr-err-msg").textContent = e.message;
+  }
+}
+
+function renderReportCard(rr, canWrite) {
+  const open = rr.status === "open";
+  const statusCls = rr.status === "confirmed_bad" ? "bad"
+                   : rr.status === "invalid" ? "ok"
+                   : "open";
+  const reporters = (rr.reporters || []).join(", ");
+  const notes = (rr.notes || []).filter(Boolean).join(" · ");
+  const ts = (rr.first_ts || "").slice(0, 16).replace("T", " ");
+  const idShort = (rr.item_id || "").slice(-50);
+  const instruction = escapeHtml(rr.instruction_cn || rr.instruction || "");
+  const initFrameUrl = rr.init_frame_url ? escapeHtml(rr.init_frame_url) : "";
+  const videoUrl = rr.video_url ? escapeHtml(rr.video_url) : "";
+  return `<li class="report-row report-${statusCls}">
+    <div class="report-head">
+      <span class="report-type tag">${escapeHtml(rr.issue_type || "?")}</span>
+      <span class="report-meta muted">${escapeHtml(rr.dataset || "?")} / ${escapeHtml(rr.task || "?")} · ${escapeHtml(rr.model || "?")}</span>
+      <span class="report-status tag tag-${statusCls}">${escapeHtml(rr.status || "?")}</span>
+    </div>
+    <p class="muted small">${escapeHtml(ts)} · 报告人: ${escapeHtml(reporters)} ${rr.resolved_by ? "· 处理: " + escapeHtml(rr.resolved_by) : ""}</p>
+    ${notes ? `<p class="report-note">${escapeHtml(notes)}</p>` : ""}
+    <div class="dr-context">
+      ${initFrameUrl ? `<img class="dr-init" src="${initFrameUrl}" alt="init frame" loading="lazy">` : ""}
+      ${instruction ? `<p class="dr-instr"><strong>${escapeHtml(tr("task.instruction"))}:</strong> ${instruction}</p>` : ""}
+    </div>
+    ${videoUrl ? `
+      <button type="button" class="ghost small dr-toggle-video">${escapeHtml(tr("reports.show_video"))}</button>
+      <div class="dr-video-panel" hidden>
+        <video controls preload="none" muted playsinline webkit-playsinline="true" x5-playsinline="true" data-src="${videoUrl}"></video>
+      </div>
+    ` : ""}
+    <p class="muted xsmall" title="${escapeHtml(rr.item_id || "")}">…${escapeHtml(idShort)}</p>
+    ${open && canWrite ? `<div class="report-actions">
+      <button type="button" class="danger small" data-resolve="confirmed_bad" data-item="${escapeHtml(rr.item_id || "")}">确认坏</button>
+      <button type="button" class="ghost small" data-resolve="invalid" data-item="${escapeHtml(rr.item_id || "")}">无效(恢复)</button>
+    </div>` : ""}
+  </li>`;
+}
+
+/* v85y — legacy dashboard panel (kept as no-op since v85at moved it to data_reports.html). */
 async function loadDataReports() {
   const card = document.getElementById("reports-card");
   if (!card) return;
@@ -3461,6 +3599,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("reviewer-section")) initReviewerHub();
   if (document.getElementById("al-form")) initAlign();
   if (document.getElementById("ma-list")) initMyAnnotations();
+  if (document.getElementById("dr-list")) initDataReports();
 });
 
 /* ===================== Reviewer Alignment v2 (multi-campaign concurrent) ===================== */
