@@ -4196,14 +4196,15 @@ async function submitAlign() {
       method: "POST", headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ align_submit: true, user, campaign_id: ALIGN_CAMPAIGN_ID, item_id: submittedItemId, payload }),
     });
-    const d = await r.json();
-    if (d?.ok === false) {
-      // v85au: friendly mapping for the two new backend error codes.
-      const code = String(d.error || "");
+    const d = await r.json().catch(() => ({}));
+    // v85au + v85av: Ham's contract — error body is {code, dim?, error:<中文>}.
+    // 409 = finalized_locked, 400 = main_sub_conflict (with dim).
+    if (!r.ok || d?.ok === false) {
+      const code = String(d?.code || "");
       if (code === "finalized_locked" || r.status === 409) {
         toast(tr("toast.align_finalized_locked"), "err");
         await refreshAlignStatusOnly();
-        await loadMyAlignment();  // re-render with up-to-date finalize flags
+        await loadMyAlignment();
         return;
       }
       if (code === "main_sub_conflict") {
@@ -4211,7 +4212,7 @@ async function submitAlign() {
         toast(dim, "err");
         return;
       }
-      throw new Error(d.error || "submit failed");
+      throw new Error(d?.error || ("HTTP " + r.status));
     }
     await refreshAlignStatusOnly();
     // IAA-independence rule (Alice's guard): seeing others requires explicit "disclose" action,
