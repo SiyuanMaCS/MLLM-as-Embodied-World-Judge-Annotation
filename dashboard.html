@@ -6,7 +6,7 @@
 <title>Home — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85bm">
+<link rel="stylesheet" href="style.css?v=v85bn">
 </head>
 <body>
 <main>
@@ -125,6 +125,12 @@
         <span class="ac-text"><span class="ac-title" data-i18n="home.card.reports.title">Data reports</span><span class="ac-sub" data-i18n="home.card.reports.sub">Reported items queue</span></span>
         <span class="ac-badge" hidden>0</span>
       </a>
+      <!-- v85bn: arbitration entry — only for meta-reviewers (siyuanw, masiyuan). -->
+      <a class="action-card primary" href="arbitration.html" data-badge="arbitration" data-show-if="is_meta_reviewer" hidden>
+        <span class="ac-icon">⚖</span>
+        <span class="ac-text"><span class="ac-title" data-i18n="home.card.arbitration.title">Arbitration</span><span class="ac-sub" data-i18n="home.card.arbitration.sub">Final-say on rejections</span></span>
+        <span class="ac-badge" hidden>0</span>
+      </a>
       <a class="action-card" href="align.html">
         <span class="ac-icon">🧭</span>
         <span class="ac-text"><span class="ac-title" data-i18n="home.card.alignment_admin.title">Manage alignment</span><span class="ac-sub" data-i18n="home.card.alignment_admin.sub">Create campaigns · Alice finalizes</span></span>
@@ -172,6 +178,6 @@
     <p id="dash-err-msg">—</p>
   </section>
 </main>
-<script src="app.js?v=v85bm" defer></script>
+<script src="app.js?v=v85bn" defer></script>
 </body>
 </html>

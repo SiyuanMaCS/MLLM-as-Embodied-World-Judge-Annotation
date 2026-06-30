@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbitration — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css?v=v85bn">
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1 data-i18n="page.arbitration">Arbitration</h1>
+    <div class="user-chip">
+      <span id="who">—</span> <span class="role-pill" id="role">—</span>
+      <button id="logout-btn" class="link" data-i18n="chip.logout">logout</button>
+    </div>
+  </header>
+  <nav class="page-nav">
+    <a href="dashboard.html" class="back-link" data-i18n="nav.back">← Back</a>
+    <span class="nav-stat" id="arb-remaining" hidden><span data-i18n="arbitration.queue">queue</span> <strong id="arb-pending">—</strong></span>
+  </nav>
+
+  <section id="loading" class="card"><p data-i18n="arbitration.loading">Loading next arbitration…</p></section>
+
+  <section id="item" class="card" hidden>
+    <div class="meta">
+      <span class="tag arb-tag" data-i18n="arbitration.tag">ARBITRATION</span>
+      <span class="tag" id="meta-dataset">—</span>
+      <span class="tag" id="meta-task">—</span>
+      <span class="tag" id="meta-ts">—</span>
+    </div>
+
+    <div class="video-row">
+      <figure class="init-frame-fig" id="init-frame-fig" hidden>
+        <figcaption data-i18n="task.init_frame">Init frame</figcaption>
+        <img id="init-frame-img" class="init-frame-img" alt="Init frame" loading="lazy">
+      </figure>
+      <figure><figcaption>Generated</figcaption><video id="gen-video" controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true"></video></figure>
+    </div>
+    <div class="prompt-box"><label data-i18n="task.instruction">Task instruction</label><p id="prompt-text">—</p></div>
+
+    <div class="arb-compare">
+      <div class="arb-col arb-annot">
+        <h4><span data-i18n="arbitration.annotator">Annotator</span> · <strong id="arb-annotator">—</strong></h4>
+        <p>Physical: <strong id="ann-physical_adherence">—</strong> · Instruction: <strong id="ann-instruction_alignment">—</strong></p>
+        <p class="muted small">P-subs: <span id="ann-psubs">—</span> · I-subs: <span id="ann-isubs">—</span></p>
+        <p class="notes" id="ann-notes">—</p>
+      </div>
+      <div class="arb-col arb-reviewer">
+        <h4><span data-i18n="arbitration.reviewer">Reviewer</span> · <strong id="arb-reviewer">—</strong> <span class="row-badge decision-major">🛑 Reject</span></h4>
+        <p>Physical: <strong id="rev-physical_adherence">—</strong> · Instruction: <strong id="rev-instruction_alignment">—</strong></p>
+        <p class="muted small">P-subs: <span id="rev-psubs">—</span> · I-subs: <span id="rev-isubs">—</span></p>
+        <p class="notes" id="rev-notes">—</p>
+      </div>
+    </div>
+
+    <form id="arb-form">
+      <h3 data-i18n="arbitration.your_decision">Your decision</h3>
+      <div id="modify-fields" hidden>
+        <fieldset class="dim-block">
+          <legend class="dim-block-title" data-i18n="axis.physical">Physical Adherence</legend>
+          <div class="form-row">
+            <label for="mr-physical_adherence">Score (1–5) <output for="mr-physical_adherence" id="mr-physical_adherence-out">5</output></label>
+            <input type="range" id="mr-physical_adherence" min="1" max="5" step="1" value="5">
+            <p class="score-hint level-5" id="mr-physical_adherence-hint">—</p>
+          </div>
+          <div class="sub-row">
+            <div class="sub-tri" data-key="mr-agent_consistency">
+              <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.agent_consistency">Agent consistency</span></div>
+              <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2">✓</button></div>
+              <input type="hidden" id="mr-agent_consistency" value="2">
+            </div>
+            <div class="sub-tri" data-key="mr-scene_consistency">
+              <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.scene_consistency">Scene & object consistency</span></div>
+              <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2">✓</button></div>
+              <input type="hidden" id="mr-scene_consistency" value="2">
+            </div>
+            <div class="sub-tri" data-key="mr-interaction_realism">
+              <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.interaction_realism">Interaction realism</span></div>
+              <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2">✓</button></div>
+              <input type="hidden" id="mr-interaction_realism" value="2">
+            </div>
+          </div>
+          <div class="form-row">
+            <label for="mr-physical_notes"><span data-i18n="task.physical_notes">Physical evidence</span></label>
+            <textarea id="mr-physical_notes" rows="2" maxlength="500" placeholder="Optional — meta-reviewer note"></textarea>
+          </div>
+        </fieldset>
+        <fieldset class="dim-block">
+          <legend class="dim-block-title" data-i18n="axis.instruction">Instruction Alignment</legend>
+          <div class="form-row">
+            <label for="mr-instruction_alignment">Score (1–5) <output for="mr-instruction_alignment" id="mr-instruction_alignment-out">5</output></label>
+            <input type="range" id="mr-instruction_alignment" min="1" max="5" step="1" value="5">
+            <p class="score-hint level-5" id="mr-instruction_alignment-hint">—</p>
+          </div>
+          <div class="sub-row">
+            <div class="sub-tri" data-key="mr-agent_match">
+              <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.agent_match">Agent match</span></div>
+              <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2">✓</button></div>
+              <input type="hidden" id="mr-agent_match" value="2">
+            </div>
+            <div class="sub-tri" data-key="mr-object_correct">
+              <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.object_correct">Object correct</span></div>
+              <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2">✓</button></div>
+              <input type="hidden" id="mr-object_correct" value="2">
+            </div>
+            <div class="sub-tri" data-key="mr-goal_completed">
+              <div class="sub-tri-head"><span class="sub-tri-label" data-i18n="sub.goal_completed">Goal completed</span></div>
+              <div class="sub-tri-buttons" role="radiogroup"><button type="button" class="sub-tri-btn val-0" data-val="0">✗</button><button type="button" class="sub-tri-btn val-1" data-val="1">⚠</button><button type="button" class="sub-tri-btn val-2 active" data-val="2">✓</button></div>
+              <input type="hidden" id="mr-goal_completed" value="2">
+            </div>
+          </div>
+          <div class="form-row">
+            <label for="mr-instruction_notes"><span data-i18n="task.instruction_notes">Instruction-alignment evidence</span></label>
+            <textarea id="mr-instruction_notes" rows="2" maxlength="500" placeholder="Optional — meta-reviewer note"></textarea>
+          </div>
+        </fieldset>
+      </div>
+      <div class="form-row">
+        <label for="arb-note" data-i18n="arbitration.note_label">Arbitration note (optional)</label>
+        <textarea id="arb-note" rows="2" maxlength="300" placeholder="Why this decision — for audit log"></textarea>
+      </div>
+      <div class="form-row actions">
+        <button type="button" id="uphold-btn" class="danger" data-i18n="arbitration.uphold">✅ 维持不通过 / Uphold</button>
+        <button type="button" id="overturn-btn" class="warn" data-i18n="arbitration.overturn">↩ 推翻不通过 / Overturn</button>
+        <button type="button" id="modify-btn" class="" data-i18n="arbitration.modify">✏ 修改判定 / Modify</button>
+      </div>
+    </form>
+  </section>
+
+  <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
+</main>
+<script src="app.js?v=v85bn" defer></script>
+</body>
+</html>

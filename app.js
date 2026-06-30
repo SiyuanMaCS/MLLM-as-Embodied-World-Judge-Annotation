@@ -54,6 +54,26 @@ const LANG = {
     "home.card.my_reviews.sub": "Decisions you've made",
     "home.card.review_results.title": "Review results",
     "home.card.review_results.sub": "Read-only — admin doesn't get review tasks",
+    "home.card.arbitration.title": "Arbitration",
+    "home.card.arbitration.sub": "Final-say on rejections",
+    "page.arbitration": "Arbitration",
+    "arbitration.queue": "queue",
+    "arbitration.loading": "Loading next arbitration…",
+    "arbitration.tag": "ARBITRATION",
+    "arbitration.annotator": "Annotator",
+    "arbitration.reviewer": "Reviewer",
+    "arbitration.your_decision": "Your decision",
+    "arbitration.note_label": "Arbitration note (optional)",
+    "arbitration.uphold": "✅ 维持不通过 / Uphold",
+    "arbitration.overturn": "↩ 推翻不通过 / Overturn",
+    "arbitration.modify": "✏ 修改判定 / Modify",
+    "arbitration.modify_submit": "📤 提交修改 / Submit Modify",
+    "arbitration.queue_empty": "🎉 No arbitrations pending.",
+    "arbitration.role_required": "仲裁员 (meta-reviewer)",
+    "arbitration.badge.uphold": "⚖ Upheld",
+    "arbitration.badge.overturn": "⚖ Overturned",
+    "arbitration.badge.modify": "⚖ Modified",
+    "arbitration.badge.pending": "⚖ Pending arbitration",
     "home.card.gold_annotation.title": "Gold annotation",
     "home.card.gold_annotation.sub": "Your 50-item set",
     "home.card.gold_reviewed.title": "Gold reviewed",
@@ -384,6 +404,26 @@ const LANG = {
     "home.card.my_reviews.sub": "你做过的审核决定",
     "home.card.review_results.title": "审核结果",
     "home.card.review_results.sub": "只读视图 — 管理员不被分配审核任务",
+    "home.card.arbitration.title": "审核仲裁",
+    "home.card.arbitration.sub": "对不通过审核做最终裁决",
+    "page.arbitration": "审核仲裁",
+    "arbitration.queue": "队列",
+    "arbitration.loading": "加载下一条仲裁中…",
+    "arbitration.tag": "仲裁",
+    "arbitration.annotator": "标注者",
+    "arbitration.reviewer": "审核员",
+    "arbitration.your_decision": "你的裁决",
+    "arbitration.note_label": "裁决备注(可选)",
+    "arbitration.uphold": "✅ 维持不通过",
+    "arbitration.overturn": "↩ 推翻不通过",
+    "arbitration.modify": "✏ 修改判定",
+    "arbitration.modify_submit": "📤 提交修改",
+    "arbitration.queue_empty": "🎉 暂无待裁决审核。",
+    "arbitration.role_required": "仲裁员(meta-reviewer)",
+    "arbitration.badge.uphold": "⚖ 维持不通过",
+    "arbitration.badge.overturn": "⚖ 推翻不通过",
+    "arbitration.badge.modify": "⚖ 仲裁修改",
+    "arbitration.badge.pending": "⚖ 待仲裁",
     "home.card.gold_annotation.title": "金标标注",
     "home.card.gold_annotation.sub": "你的 50 条金标集",
     "home.card.gold_reviewed.title": "金标被审核",
@@ -1649,6 +1689,8 @@ async function initDashboard() {
     // v85bb: stash yesterday-KPI status for the Review card gating below.
     if (d?.met_yesterday_kpi === false) localStorage.setItem("ewj_kpi_blocked", "1");
     else localStorage.removeItem("ewj_kpi_blocked");
+    // v85bn: stash meta-reviewer flag so the dashboard show-if and arbitration page agree.
+    localStorage.setItem("ewj_is_meta_reviewer", d?.is_meta_reviewer ? "1" : "0");
   } catch (_) { /* fall through */ }
   // user-chip + logout wired by wireGlobalChrome on DOMContentLoaded.
   applyRolePill(user, role);
@@ -1673,6 +1715,9 @@ async function initDashboard() {
   // read-only 'Review results' for plain admins). Toggle based on isReviewer flag.
   document.querySelectorAll('.home-actions [data-show-if="is_reviewer"]').forEach(el => { el.hidden = !isReviewer; });
   document.querySelectorAll('.home-actions [data-show-if="not_reviewer"]').forEach(el => { el.hidden = isReviewer; });
+  // v85bn: meta-reviewer (siyuanw, masiyuan) gets the ⚖ Arbitration card.
+  const isMeta = localStorage.getItem("ewj_is_meta_reviewer") === "1";
+  document.querySelectorAll('.home-actions [data-show-if="is_meta_reviewer"]').forEach(el => { el.hidden = !isMeta; });
   // v85bb: KPI gate — reviewers who didn't meet yesterday's annotation quota get the
   // Review card grayed out + an inline banner. siyuanw (pure reviewer) is exempt by
   // backend (met_yesterday_kpi === null for non-author reviewers).
@@ -2105,6 +2150,8 @@ async function loadBadges() {
     // reviewer and not yet acknowledged. Cleared by mark_rejected_seen when the user
     // opens my_annotations.html and sees the items.
     rejected:     Number(statsData?.n_my_rejected_unseen ?? 0),
+    // v85bn: meta-reviewer pending arbitration queue size (siyuanw / masiyuan only).
+    arbitration:  Number(statsData?.n_pending_arbitration ?? 0),
   };
   document.querySelectorAll("[data-badge]").forEach(card => {
     const badge = card.querySelector(".ac-badge");
@@ -3200,6 +3247,189 @@ async function submitReview(decision) {
   }
 }
 
+/* ===================== Arbitration (meta-reviewer) page =====================
+   v85bn: siyuanw + masiyuan only — final-say on reviewer rejections.
+   Backend (Ham): arbitration_queue → list of rejected reviews pending meta call;
+   arbitration_submit → POST {meta_reviewer, item_id, reviewer, decision:uphold|overturn|modify, final_payload?, note?}.
+   Three decisions:
+     - uphold:   reviewer's reject stays final
+     - overturn: cancel reject → annotator's original is accepted
+     - modify:   meta writes own final_payload (overrides both)
+*/
+let ARB_CURRENT = null;
+
+async function initArbitration() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  const role = localStorage.getItem(CFG.LS_ROLE);
+  if (!user) { window.location.href = "index.html"; return; }
+  document.getElementById("who").textContent = user;
+  applyRolePill(user, role);
+  // Role gate — Ham's is_meta_reviewer flag (siyuanw, masiyuan). Anyone else gets bounced.
+  let isMeta = false;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    isMeta = !!d?.is_meta_reviewer;
+  } catch (_) {}
+  if (!isMeta) {
+    renderRoleGate(tr("arbitration.role_required"));
+    return;
+  }
+  for (const id of ["mr-physical_adherence", "mr-instruction_alignment"]) {
+    const inp = document.getElementById(id);
+    const out = document.getElementById(id + "-out");
+    if (inp && out) inp.addEventListener("input", () => out.value = inp.value);
+  }
+  wireScoreHint("mr-physical_adherence", "mr-physical_adherence-hint", "pa");
+  wireScoreHint("mr-instruction_alignment", "mr-instruction_alignment-hint", "ia");
+  wireSubTriButtons();
+  document.getElementById("uphold-btn").addEventListener("click", () => submitArbitration("uphold"));
+  document.getElementById("overturn-btn").addEventListener("click", () => submitArbitration("overturn"));
+  // Modify opens the meta-reviewer's own scoring form, prefilled with reviewer's final values;
+  // second click submits. Mirrors the two-step pattern from review.html minor/major.
+  document.getElementById("modify-btn").addEventListener("click", () => openMetaModifyForm());
+  document.getElementById("retry-btn").addEventListener("click", () => loadNextArbitration());
+  wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => loadNextArbitration() });
+  await loadNextArbitration();
+}
+
+let ARB_MODIFY_OPEN = false;
+function openMetaModifyForm() {
+  const fields = document.getElementById("modify-fields");
+  if (fields.hidden) {
+    // Prefill with reviewer's final (the meta-reviewer is most likely to tweak the reject).
+    const rev = ARB_CURRENT?.reviewer_final || ARB_CURRENT?.reviewer_payload || {};
+    for (const id of ["physical_adherence", "instruction_alignment"]) {
+      const v = rev[id] ?? 3;
+      document.getElementById("mr-" + id).value = v;
+      document.getElementById("mr-" + id + "-out").value = v;
+    }
+    for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
+      setSubTri("mr-" + id, rev[id] ?? 2);
+    }
+    document.getElementById("mr-physical_notes").value = "";
+    document.getElementById("mr-instruction_notes").value = "";
+    fields.hidden = false;
+    ARB_MODIFY_OPEN = true;
+    const btn = document.getElementById("modify-btn");
+    btn.textContent = tr("arbitration.modify_submit");
+  } else {
+    submitArbitration("modify");
+  }
+}
+
+async function loadNextArbitration() {
+  hide("error"); hide("item"); show("loading");
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=arbitration_queue&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "fetch failed");
+    const items = d.items || [];
+    setArbRemaining(items.length);
+    if (items.length === 0) {
+      showError(tr("arbitration.queue_empty"));
+      return;
+    }
+    ARB_CURRENT = items[0];
+    renderArbitrationItem(ARB_CURRENT);
+    document.getElementById("modify-fields").hidden = true;
+    ARB_MODIFY_OPEN = false;
+    document.getElementById("modify-btn").textContent = tr("arbitration.modify");
+    hide("loading"); show("item");
+  } catch (err) {
+    showError("Failed to load arbitration: " + err.message);
+  }
+}
+
+function setArbRemaining(n) {
+  const wrap = document.getElementById("arb-remaining");
+  if (!wrap) return;
+  document.getElementById("arb-pending").textContent = n;
+  wrap.hidden = false;
+}
+
+function renderArbitrationItem(it) {
+  setVideoSourcesFromItem(it);
+  document.getElementById("meta-dataset").textContent = it.dataset || "?";
+  document.getElementById("meta-task").textContent = it.task || "?";
+  document.getElementById("meta-ts").textContent = String(it.rejection_ts || it.ts || "").slice(0, 16).replace("T", " ");
+  document.getElementById("arb-annotator").textContent = it.annotator || it.target || "—";
+  document.getElementById("arb-reviewer").textContent = it.reviewer || "—";
+  const v = document.getElementById("gen-video");
+  v.src = pickVideoUrl(it.video_sources, it.video_url || "");
+  bindVideoSources(v, it.video_sources);
+  v.load();
+  setInitFrame(it.init_frame_url, "");
+  CURRENT_INSTRUCTION = {
+    video_url: it.video_url, targetId: "prompt-text",
+    en: it.instruction || "", cn: it.instruction_cn || "",
+  };
+  if (CURRENT_INSTRUCTION.en || CURRENT_INSTRUCTION.cn) applyCurrentInstruction();
+  else fetchInstructionInto(it.video_url, "prompt-text");
+  const ann = it.annotation_original || it.annotation || {};
+  const rev = it.reviewer_final || it.reviewer_payload || {};
+  const subKeys = ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"];
+  const subLine = (p, keys) => keys.map(k => `${k.split("_")[0]}=${p?.[k] ?? "—"}`).join(", ");
+  const physKeys = ["agent_consistency", "scene_consistency", "interaction_realism"];
+  const instrKeys = ["agent_match", "object_correct", "goal_completed"];
+  document.getElementById("ann-physical_adherence").textContent = ann.physical_adherence ?? "—";
+  document.getElementById("ann-instruction_alignment").textContent = ann.instruction_alignment ?? "—";
+  document.getElementById("ann-psubs").textContent = subLine(ann, physKeys);
+  document.getElementById("ann-isubs").textContent = subLine(ann, instrKeys);
+  const nl2br = s => escapeHtml(s).replace(/\n/g, "<br>");
+  document.getElementById("ann-notes").innerHTML = (ann.physical_notes || ann.instruction_notes)
+    ? `<strong>P:</strong> ${nl2br(ann.physical_notes || "—")}<br><strong>I:</strong> ${nl2br(ann.instruction_notes || "—")}`
+    : "(no notes)";
+  document.getElementById("rev-physical_adherence").textContent = rev.physical_adherence ?? "—";
+  document.getElementById("rev-instruction_alignment").textContent = rev.instruction_alignment ?? "—";
+  document.getElementById("rev-psubs").textContent = subLine(rev, physKeys);
+  document.getElementById("rev-isubs").textContent = subLine(rev, instrKeys);
+  document.getElementById("rev-notes").innerHTML = (rev.physical_notes || rev.instruction_notes)
+    ? `<strong>P:</strong> ${nl2br(rev.physical_notes || "—")}<br><strong>I:</strong> ${nl2br(rev.instruction_notes || "—")}`
+    : "(no notes)";
+}
+
+async function submitArbitration(decision) {
+  if (!ARB_CURRENT) return;
+  // Modify requires the form to be open + filled.
+  if (decision === "modify" && !ARB_MODIFY_OPEN) { openMetaModifyForm(); return; }
+  const meta_reviewer = localStorage.getItem(CFG.LS_USER);
+  const note = document.getElementById("arb-note").value.trim();
+  const body = {
+    arbitration_submit: true,
+    meta_reviewer,
+    item_id: ARB_CURRENT.item_id,
+    reviewer: ARB_CURRENT.reviewer,
+    decision,
+    note,
+  };
+  if (decision === "modify") {
+    body.final_payload = {
+      physical_adherence: Number(document.getElementById("mr-physical_adherence").value),
+      instruction_alignment: Number(document.getElementById("mr-instruction_alignment").value),
+      physical_notes: document.getElementById("mr-physical_notes").value.trim(),
+      instruction_notes: document.getElementById("mr-instruction_notes").value.trim(),
+      subs_v: 2,
+    };
+    for (const k of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
+      body.final_payload[k] = getSubTri("mr-" + k);
+    }
+  }
+  try {
+    const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || d?.ok === false) throw new Error(d?.error || "HTTP " + r.status);
+    document.getElementById("arb-note").value = "";
+    await loadNextArbitration();
+  } catch (err) {
+    showError("Arbitration submit failed: " + err.message);
+  }
+}
+
 /* ===================== My reviews page ===================== */
 async function initMyReviews() {
   const user = localStorage.getItem(CFG.LS_USER);
@@ -3316,9 +3546,12 @@ function renderReviewWorkRow(it) {
   const editBtn = it.editable
     ? `<a class="btn-edit" href="review.html?edit_review=${encodeURIComponent(it.item_id)}">✏ ${tr("my_reviews.edit_btn")}</a>`
     : `<span class="muted small">${tr("my_annotations.locked")}</span>`;
+  // v85bn: arbitration outcome on reviewer's past major decisions (uphold/overturn/modify/pending).
+  const arbDec = it.arbitration_decision;
+  const arbBadge = arbDec ? `<span class="row-badge arb-${arbDec}" title="${tr("arbitration.tag")}">${tr("arbitration.badge." + arbDec)}</span>` : "";
   li.innerHTML = `
     <div class="meta">
-      <span class="row-badge decision-${dec}">${decisionLbl}</span>
+      <span class="row-badge decision-${dec}">${decisionLbl}</span>${arbBadge}
       <span class="tag">${escapeHtml(it.dataset || "?")}</span>
       <span class="tag">${escapeHtml(it.task || "?")}</span>
       <span class="muted small">→ <strong>${escapeHtml(target)}</strong></span>
@@ -3661,8 +3894,11 @@ function renderMyAnnotationCard(it) {
   // v85bk: rejected-unseen cards get an unread dot; clicking the card marks-as-seen.
   const isRejectedUnseen = annotationStatus(it) === "rejected" && it._rejected_unseen && !it._rejected_seen;
   const unreadDot = isRejectedUnseen ? `<span class="ma-unread-dot" title="${tr("my_annotations.unread")}"></span>` : "";
+  // v85bn: meta-reviewer arbitration outcome on rejected items (uphold/overturn/modify/pending).
+  const arbDec = it.arbitration_decision;
+  const arbBadge = arbDec ? `<span class="row-badge arb-${arbDec}" title="${tr("arbitration.tag")}">${tr("arbitration.badge." + arbDec)}</span>` : "";
   li.innerHTML = `
-    <div class="meta">${kindTag}${unreadDot}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${decisionBadge}</div>
+    <div class="meta">${kindTag}${unreadDot}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${decisionBadge}${arbBadge}</div>
     <div class="ma-context">
       ${it.init_frame_url ? `<img class="ma-init" src="${escapeHtml(it.init_frame_url)}" alt="init frame" loading="lazy">` : ""}
       ${it.instruction || it.instruction_cn ? `<p class="ma-instr"><strong>${tr("task.instruction")}:</strong> ${escapeHtml(it.instruction_cn || it.instruction)}</p>` : ""}
@@ -4080,6 +4316,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("al-form")) initAlign();
   if (document.getElementById("ma-list")) initMyAnnotations();
   if (document.getElementById("dr-list")) initDataReports();
+  if (document.getElementById("arb-form")) initArbitration();
 });
 
 /* ===================== Reviewer Alignment v2 (multi-campaign concurrent) ===================== */
