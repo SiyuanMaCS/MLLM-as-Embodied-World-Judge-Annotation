@@ -1431,6 +1431,16 @@ async function onSubmit(skip) {
     payload.subs_v = 2;  // schema marker: migration script skips records already at v2
     payload.physical_notes = physical_notes;
     payload.instruction_notes = instruction_notes;
+    // v85ay: same main/sub guard as align flow (Ham reuses backend _main_sub_conflict).
+    // Any sub ⚠/✗ on an axis → that axis main can't be 5. Catch locally to avoid round-trip.
+    const physSubs = ["agent_consistency", "scene_consistency", "interaction_realism"];
+    const instrSubs = ["agent_match", "object_correct", "goal_completed"];
+    if (payload.physical_adherence === 5 && physSubs.some(k => payload[k] < 2)) {
+      toast(tr("toast.main_sub_conflict_phys"), "err"); return;
+    }
+    if (payload.instruction_alignment === 5 && instrSubs.some(k => payload[k] < 2)) {
+      toast(tr("toast.main_sub_conflict_instr"), "err"); return;
+    }
   }
   const body = {
     user: localStorage.getItem(CFG.LS_USER),
@@ -1454,6 +1464,13 @@ async function onSubmit(skip) {
     await loadNext();
     updateEditPrevBtn();
   } catch (err) {
+    // v85ay: 400 main_sub_conflict → recoverable validation; toast and let user fix.
+    // Anything else → full-screen error (transport / 500 / unknown).
+    if (err && err.code === "main_sub_conflict") {
+      const dim = err.dim === "instruction_alignment" ? tr("toast.main_sub_conflict_instr") : tr("toast.main_sub_conflict_phys");
+      toast(dim, "err");
+      return;
+    }
     showError("Save failed: " + err.message);
   }
 }
@@ -1526,9 +1543,15 @@ async function submitAnnotation(body) {
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  const data = await res.json();
-  if (data && data.ok === false) throw new Error(data.error || "save failed");
+  const data = await res.json().catch(() => ({}));
+  // v85ay: structured error carries Ham's contract {code, dim} so the caller can
+  // toast a friendly per-axis message instead of falling through to showError.
+  if (!res.ok || data?.ok === false) {
+    const err = new Error(data?.error || "HTTP " + res.status);
+    if (data?.code) err.code = data.code;
+    if (data?.dim) err.dim = data.dim;
+    throw err;
+  }
 }
 
 function show(id) { const el = document.getElementById(id); if (el) el.hidden = false; }
