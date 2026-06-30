@@ -39,6 +39,11 @@ const LANG = {
     "home.card.docs.sub": "Annotation guide",
     "home.card.review.title": "Review",
     "home.card.review.sub": "Audit annotator queue",
+    "home.card.review.sub_reviewer": "Audit yesterday's annotations",
+    "home.card.my_reviews.title": "My reviews",
+    "home.card.my_reviews.sub": "Decisions you've made",
+    "home.card.review_results.title": "Review results",
+    "home.card.review_results.sub": "Read-only — admin doesn't get review tasks",
     "home.card.gold_annotation.title": "Gold annotation",
     "home.card.gold_annotation.sub": "Your 50-item set",
     "home.card.gold_reviewed.title": "Gold reviewed",
@@ -341,6 +346,11 @@ const LANG = {
     "home.card.docs.sub": "标注指南",
     "home.card.review.title": "审核",
     "home.card.review.sub": "审核标注员队列",
+    "home.card.review.sub_reviewer": "审核前一日的标注",
+    "home.card.my_reviews.title": "我的审核",
+    "home.card.my_reviews.sub": "你做过的审核决定",
+    "home.card.review_results.title": "审核结果",
+    "home.card.review_results.sub": "只读视图 — 管理员不被分配审核任务",
     "home.card.gold_annotation.title": "金标标注",
     "home.card.gold_annotation.sub": "你的 50 条金标集",
     "home.card.gold_reviewed.title": "金标被审核",
@@ -1101,10 +1111,16 @@ async function refreshStats() {
     if (typeof data.today === "number") {
       document.getElementById("today").textContent = data.today;
       const quotaEl = document.getElementById("quota");
-      if (quotaEl) quotaEl.textContent = data.quota ?? "—";
       const quotaBlock = quotaEl?.parentElement;
-      if (quotaBlock && data.quota) {
-        quotaBlock.classList.toggle("met", data.today >= data.quota);
+      // v85aw: pure-reviewer (siyuanw) has no annotation KPI → quota=null. Hide the
+      // whole today/quota chip instead of showing a misleading "today N / —".
+      if (quotaBlock) {
+        const hasQuota = typeof data.quota === "number" && data.quota > 0;
+        quotaBlock.hidden = !hasQuota;
+        if (hasQuota) {
+          quotaEl.textContent = data.quota;
+          quotaBlock.classList.toggle("met", data.today >= data.quota);
+        }
       }
     }
   } catch (err) {
@@ -1531,6 +1547,7 @@ async function initDashboard() {
   let role = localStorage.getItem(CFG.LS_ROLE);
   // Refresh role + write permission from server (admin set / read-only tier may have changed).
   let canWrite = localStorage.getItem("ewj_can_write") === "1";
+  let isReviewer = false;
   try {
     const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(user || "")}`);
     const d = await r.json();
@@ -1539,6 +1556,10 @@ async function initDashboard() {
       canWrite = d.can_write;
       localStorage.setItem("ewj_can_write", canWrite ? "1" : "0");
     }
+    // v85aw: reviewer is a stacked role flag (e.g. author + reviewer), not a separate role.
+    // Back-compat: legacy "reviewer" role value also counts.
+    isReviewer = (typeof d?.is_reviewer === "boolean") ? d.is_reviewer : (role === "reviewer");
+    localStorage.setItem("ewj_is_reviewer", isReviewer ? "1" : "0");
   } catch (_) { /* fall through */ }
   // user-chip + logout wired by wireGlobalChrome on DOMContentLoaded; just set role pill here.
   const roleEl = document.getElementById("role");
@@ -1552,19 +1573,22 @@ async function initDashboard() {
   // `isAdmin` check below now matches anyone with role==="admin" (or legacy masiyuan
   // fallback); `canWrite` further gates the destructive UI.
   const isAdmin = role === "admin" || user === "masiyuan";
-  // Peer-review model (siyuan v84): author = annotate+review, contributor = annotate-only,
-  // admin = full. Legacy 'reviewer' role gets mapped to author for back-compat (those users
-  // can still review + now also annotate). Default unknown roles → contributor (safest).
+  // Role model (siyuan v85aw): role = primary identity (contributor / author / admin).
+  // is_reviewer = stacked flag: gets review tasks in addition to the role's normal work.
+  // - linziti / tony / Xinyi_Xu: author + reviewer (annotate with quota + review queue)
+  // - siyuanw: pure reviewer (annotate without quota + review queue) — stats.quota is null
+  // - admin: never gets review tasks (read-only via "Review results" card)
   let rowKey = "contributor";
   if (isAdmin) rowKey = "admin";
-  else if (role === "author" || role === "reviewer") rowKey = "author";
+  else if (isReviewer) rowKey = "reviewer";
+  else if (role === "author") rowKey = "author";
   document.querySelectorAll(".home-actions .action-row").forEach(r => {
     r.hidden = r.dataset.row !== rowKey;
   });
-  // Legacy .reviewer-only marks elements that should only show for users with review power
-  // (= author + admin under peer-review model).
+  // .reviewer-only nav entries (e.g. links to review.html in shared headers) show only for
+  // users with review power: reviewer + admin (admin can VIEW results read-only).
   document.querySelectorAll(".page-nav .reviewer-only").forEach(a => {
-    if (rowKey !== "author" && rowKey !== "admin") a.style.display = "none";
+    if (rowKey !== "reviewer" && rowKey !== "admin") a.style.display = "none";
   });
   document.querySelectorAll(".page-nav .admin-only").forEach(a => {
     if (!isAdmin) a.style.display = "none";
@@ -2792,11 +2816,13 @@ async function initReview() {
     roleEl.dataset.role = shown;
     roleEl.textContent = tr("role." + shown);
   }
-  // Role gate (v85y, peer-review model): authors + admin can review;
-  // contributors are annotators-only. Legacy "reviewer" role is treated as author.
-  const allowedReview = role === "author" || role === "reviewer" || role === "admin" || username === "masiyuan";
+  // Role gate (v85aw): is_reviewer flag + admin. Authors without the reviewer stack don't
+  // get a review queue; if they navigate here directly we surface a clear role gate.
+  // Back-compat: legacy role==="reviewer" also counts as is_reviewer=true.
+  const isReviewer = localStorage.getItem("ewj_is_reviewer") === "1" || role === "reviewer";
+  const allowedReview = isReviewer || role === "admin" || username === "masiyuan";
   if (!allowedReview) {
-    renderRoleGate("作者 (author) / 管理员");
+    renderRoleGate("审核员 / 管理员");
     return;
   }
   for (const id of ["m-physical_adherence", "m-instruction_alignment"]) {

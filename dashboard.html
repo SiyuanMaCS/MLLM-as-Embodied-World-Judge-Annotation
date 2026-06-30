@@ -6,7 +6,7 @@
 <title>Home — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85av">
+<link rel="stylesheet" href="style.css?v=v85aw">
 </head>
 <body>
 <main>
@@ -41,14 +41,38 @@
         <span class="ac-text"><span class="ac-title" data-i18n="home.card.annotate.title">Annotate</span><span class="ac-sub" data-i18n="home.card.annotate.sub">Score generated videos</span></span>
         <span class="ac-badge" hidden>0</span>
       </a>
+      <a class="action-card" href="my_annotations.html">
+        <span class="ac-icon">📋</span>
+        <span class="ac-text"><span class="ac-title" data-i18n="home.card.my_annotations.title">My annotations</span><span class="ac-sub" data-i18n="home.card.my_annotations.sub">Edit unreviewed entries</span></span>
+      </a>
+      <a class="action-card" href="align.html" data-badge="align">
+        <span class="ac-icon">🧭</span>
+        <span class="ac-text"><span class="ac-title" data-i18n="home.card.alignment.title">Alignment</span><span class="ac-sub" data-i18n="home.card.alignment.sub">Shared alignment task</span></span>
+        <span class="ac-badge" hidden>0</span>
+      </a>
+      <a class="action-card" href="docs.html">
+        <span class="ac-icon">📘</span>
+        <span class="ac-text"><span class="ac-title" data-i18n="home.card.docs.title">Docs</span><span class="ac-sub" data-i18n="home.card.docs.sub">Annotation guide</span></span>
+      </a>
+    </div>
+    <div class="action-row" data-row="reviewer" hidden>
+      <a class="action-card primary" href="task.html" data-badge="annotate">
+        <span class="ac-icon">📝</span>
+        <span class="ac-text"><span class="ac-title" data-i18n="home.card.annotate.title">Annotate</span><span class="ac-sub" data-i18n="home.card.annotate.sub">Score generated videos</span></span>
+        <span class="ac-badge" hidden>0</span>
+      </a>
       <a class="action-card primary" href="review.html" data-badge="review">
         <span class="ac-icon">🔍</span>
-        <span class="ac-text"><span class="ac-title" data-i18n="home.card.review.title">Review</span><span class="ac-sub" data-i18n="home.card.review.sub">Peer-review queue</span></span>
+        <span class="ac-text"><span class="ac-title" data-i18n="home.card.review.title">Review</span><span class="ac-sub" data-i18n="home.card.review.sub_reviewer">Audit yesterday's annotations</span></span>
         <span class="ac-badge" hidden>0</span>
       </a>
       <a class="action-card" href="my_annotations.html">
         <span class="ac-icon">📋</span>
         <span class="ac-text"><span class="ac-title" data-i18n="home.card.my_annotations.title">My annotations</span><span class="ac-sub" data-i18n="home.card.my_annotations.sub">Edit unreviewed entries</span></span>
+      </a>
+      <a class="action-card" href="my_reviews.html">
+        <span class="ac-icon">🗂</span>
+        <span class="ac-text"><span class="ac-title" data-i18n="home.card.my_reviews.title">My reviews</span><span class="ac-sub" data-i18n="home.card.my_reviews.sub">Decisions you've made</span></span>
       </a>
       <a class="action-card" href="align.html" data-badge="align">
         <span class="ac-icon">🧭</span>
@@ -66,10 +90,9 @@
         <span class="ac-text"><span class="ac-title" data-i18n="home.card.annotate.title">Annotate</span><span class="ac-sub" data-i18n="home.card.annotate.sub">Score generated videos</span></span>
         <span class="ac-badge" hidden>0</span>
       </a>
-      <a class="action-card primary" href="review.html" data-badge="review">
+      <a class="action-card" href="review.html">
         <span class="ac-icon">🔍</span>
-        <span class="ac-text"><span class="ac-title" data-i18n="home.card.review.title">Review</span><span class="ac-sub" data-i18n="home.card.review.sub">Peer-review queue</span></span>
-        <span class="ac-badge" hidden>0</span>
+        <span class="ac-text"><span class="ac-title" data-i18n="home.card.review_results.title">Review results</span><span class="ac-sub" data-i18n="home.card.review_results.sub">Read-only — admin doesn't get review tasks</span></span>
       </a>
       <a class="action-card" href="my_annotations.html">
         <span class="ac-icon">📋</span>
@@ -128,6 +151,6 @@
     <p id="dash-err-msg">—</p>
   </section>
 </main>
-<script src="app.js?v=v85av" defer></script>
+<script src="app.js?v=v85aw" defer></script>
 </body>
 </html>
