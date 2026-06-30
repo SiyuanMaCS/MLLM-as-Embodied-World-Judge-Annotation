@@ -48,6 +48,8 @@ const LANG = {
     "review.today": "today",
     "review.edit_required": "Both 调整 / Reject require you to change the scores or notes before submitting.",
     "review.remaining": "queue",
+    "review.queue_empty": "🎉 No more review tasks in your queue.",
+    "review.cap_reached": "🎉 You've finished your 5 reviews for today — come back tomorrow.",
     "home.card.my_reviews.title": "My reviews",
     "home.card.my_reviews.sub": "Decisions you've made",
     "home.card.review_results.title": "Review results",
@@ -368,6 +370,9 @@ const LANG = {
     "review.edit_not_found": "在历史里找不到这条审核记录。",
     "review.today": "今日审核",
     "review.edit_required": "调整 / Reject 都需要先改分或备注后再提交。",
+    "review.remaining": "队列",
+    "review.queue_empty": "🎉 审核队列已清空。",
+    "review.cap_reached": "🎉 今日 5 条审核已完成,明天继续。",
     "home.card.my_reviews.title": "我的审核",
     "home.card.my_reviews.sub": "你做过的审核决定",
     "home.card.review_results.title": "审核结果",
@@ -3075,7 +3080,11 @@ async function loadNextReview() {
       return;
     }
     if (data.error) throw new Error(data.error);
-    if (data.done) { showError("🎉 No more review tasks in your queue."); return; }
+    if (data.done) {
+      // v85bi: differentiate "you hit your daily cap" (siyuanw 5/day) from "queue empty".
+      showError(data.review_cap_reached ? tr("review.cap_reached") : tr("review.queue_empty"));
+      return;
+    }
     REVIEW_CURRENT = data;
     renderReviewItem(data);
     hide("loading"); show("item");
