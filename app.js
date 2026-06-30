@@ -252,6 +252,7 @@ const LANG = {
     "my_annotations.rework_badge": "❗ Auditing",
     "review.modify_note": "Modification note",
     "review.annotator_submission": "Annotator submission (annotator hidden)",
+    "review.annotator_submission_by": "Annotator submission by",
     "align.title": "Reviewer alignment",
     "align.progress": "progress",
     "align.no_campaign": "No active alignment campaign",
@@ -569,6 +570,7 @@ const LANG = {
     "my_annotations.rework_badge": "❗ 待审",
     "review.modify_note": "修改备注",
     "review.annotator_submission": "标注者提交(隐名)",
+    "review.annotator_submission_by": "标注者:",
     "align.title": "审核员对齐",
     "align.progress": "进度",
     "align.no_campaign": "暂无活动的对齐任务",
@@ -2920,9 +2922,38 @@ async function initReview() {
   };
   document.getElementById("minor-btn").addEventListener("click", () => openModifyForm("minor"));
   document.getElementById("major-btn").addEventListener("click", () => openModifyForm("major"));
-  document.getElementById("skip-btn").addEventListener("click", () => loadNextReview());
   document.getElementById("retry-btn").addEventListener("click", () => loadNextReview());
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => loadNextReview() });
+  // v85be: report-data-issue flow mirrored from task.html (skip removed per siyuan).
+  const reportBtn = document.getElementById("report-btn");
+  if (reportBtn) reportBtn.addEventListener("click", () => {
+    document.getElementById("report-modal").hidden = false;
+  });
+  const reportCancel = document.getElementById("report-cancel-btn");
+  if (reportCancel) reportCancel.addEventListener("click", () => {
+    document.getElementById("report-modal").hidden = true;
+  });
+  const reportSubmit = document.getElementById("report-submit-btn");
+  if (reportSubmit) reportSubmit.addEventListener("click", async () => {
+    if (!REVIEW_CURRENT) return;
+    const issue = document.getElementById("report-type").value;
+    const note = document.getElementById("report-note").value.trim();
+    try {
+      const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+        method: "POST", headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ report_data_issue: true, user: localStorage.getItem(CFG.LS_USER),
+          item_id: REVIEW_CURRENT.item_id || REVIEW_CURRENT.id, issue, note, source: "review" }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (d?.ok === false) throw new Error(d.error || "report failed");
+      toast(tr("report.submitted_toast"), "ok");
+      document.getElementById("report-modal").hidden = true;
+      document.getElementById("report-note").value = "";
+      await loadNextReview();
+    } catch (err) {
+      toast("Report failed: " + err.message, "err");
+    }
+  });
   wireSubTriButtons();  // 6 sub-tri groups in review modify form
   wireAutoNote("m-");   // v85j note prefill (review modify panel uses m- prefix)
   refreshReviewProgress();   // v85bd: per-user review_quota chip (only siyuanw today)
@@ -3024,6 +3055,9 @@ function renderReviewItem(it) {
   document.getElementById("meta-dataset").textContent = it.dataset || "?";
   document.getElementById("meta-task").textContent = it.task || "?";
   document.getElementById("meta-self-report").hidden = !it.is_report;
+  // v85be: show annotator id (siyuan: 把标注者 id 给显示出来) — previously anonymized.
+  const annEl = document.getElementById("orig-annotator");
+  if (annEl) annEl.textContent = it.target || it.annotator || "—";
   const reviewGen = document.getElementById("gen-video");
   reviewGen.src = pickVideoUrl(it.video_sources, it.video_url);
   bindVideoSources(reviewGen, it.video_sources);
@@ -3045,8 +3079,11 @@ function renderReviewItem(it) {
   // Split per-axis notes with fallback to legacy single `notes` field.
   const pNote = payload.physical_notes || payload.notes || "";
   const iNote = payload.instruction_notes || (payload.physical_notes ? "" : payload.notes) || "";
+  // v85be: preserve newlines from the prefilled multi-line notes — escapeHtml drops them
+  // visually otherwise. Tabs come through via CSS white-space:pre-wrap on .notes.
+  const nl2br = s => escapeHtml(s).replace(/\n/g, "<br>");
   document.getElementById("orig-notes").innerHTML = (pNote || iNote)
-    ? `<strong>Physical:</strong> ${escapeHtml(pNote || "—")}<br><strong>Instruction:</strong> ${escapeHtml(iNote || "—")}`
+    ? `<strong>Physical:</strong> ${nl2br(pNote || "—")}<br><strong>Instruction:</strong> ${nl2br(iNote || "—")}`
     : "(no notes)";
   fetchPrompt(it);
 }

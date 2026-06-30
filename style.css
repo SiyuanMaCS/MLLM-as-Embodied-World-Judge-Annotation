@@ -475,6 +475,10 @@ fieldset.role-row.known .role-opt:has(input:checked) {
    + the count detail) — siyuan wants discoverable feedback, not a fully-dead button. */
 .action-card.kpi-locked { opacity: 0.45; filter: grayscale(0.6); }
 .action-card.kpi-locked .ac-badge { display: none; }
+/* v85be: preserve newlines + indentation in prefilled / displayed annotation notes.
+   buildAutoNote joins lines with \n and indents sub-bullets with \t; without pre-wrap
+   those collapse to single-line space-separated text and the structure is invisible. */
+.notes, .ma-diff p.muted, .detail-card .notes { white-space: pre-wrap; }
 
 /* role-select dropdown shares the same color coding as role-pill */
 .role-select {
