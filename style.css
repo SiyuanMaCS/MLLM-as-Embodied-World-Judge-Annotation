@@ -2408,13 +2408,15 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
 }
 .lb-head h3 { margin: 0; }
 .lb-countdown {
-  background: #fff7e0;
-  padding: 4px 12px;
+  background: linear-gradient(135deg, #2d3a52, #1f2a42);
+  padding: 5px 14px;
   border-radius: 14px;
-  border: 1px solid #f0d59c;
+  border: 1px solid #1a2238;
   font-variant-numeric: tabular-nums;
-  color: #8a5500;
+  color: #e7eef8;
   font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 4px rgba(31, 42, 66, 0.18);
 }
 .lb-row {
   padding: 6px 0;
