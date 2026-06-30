@@ -3442,10 +3442,16 @@ async function initMyAnnotations() {
 }
 
 function annotationStatus(it) {
+  // v85bl: prefer Ham's authoritative review_status (pending|approve|minor|major).
+  // Fall back to legacy reviewed + review_decision for back-compat.
+  const rs = it.review_status;
+  if (rs === "pending") return "pending";
+  if (rs === "major") return "rejected";
+  if (rs === "approve" || rs === "minor") return "reviewed";
   if (!it.reviewed) return "pending";
   const dec = it.review_decision === "modify" ? "minor" : it.review_decision;
   if (dec === "major") return "rejected";
-  return "reviewed";  // approve / minor — counted as 已审核
+  return "reviewed";
 }
 
 function renderMyAnnotationList() {
@@ -3495,12 +3501,20 @@ function updateTabCounts() {
   set("ma-count-rejected", rejected);
   const rejTab = document.querySelector('.ma-tab[data-tab="rejected"]');
   if (rejTab) rejTab.classList.toggle("has-unread", rejectedUnseen > 0);
-  // v85bk: 不通过率 per Alice's spec — reject / (approve + minor + reject), pending excluded.
-  // Min sample 10 to avoid 1/2=50% misleading.
+  // v85bl: prefer Ham's authoritative stats.my_reject_rate (null when sample < 10),
+  // fall back to client-side calc if stats wasn't fetched.
   const denom = reviewed + rejected;
   const rateEl = document.getElementById("ma-reject-rate");
   if (rateEl) {
-    if (denom === 0) rateEl.textContent = "—";
+    const serverRate = window.MA_SERVER_RATE;  // {my_reject_rate, n_my_reviewed, n_my_rejected}
+    if (serverRate && typeof serverRate.my_reject_rate === "number") {
+      const pct = Math.round(serverRate.my_reject_rate * 100);
+      const r = serverRate.n_my_rejected ?? rejected;
+      const d = (serverRate.n_my_reviewed ?? reviewed) + r;
+      rateEl.textContent = `${pct}% (${r}/${d})`;
+    } else if (serverRate && serverRate.my_reject_rate === null) {
+      rateEl.textContent = `${tr("my_annotations.sample_low")} (${serverRate.n_my_rejected ?? rejected}/${(serverRate.n_my_reviewed ?? reviewed) + (serverRate.n_my_rejected ?? rejected)})`;
+    } else if (denom === 0) rateEl.textContent = "—";
     else if (denom < 10) rateEl.textContent = `${tr("my_annotations.sample_low")} (${rejected}/${denom})`;
     else {
       const pct = Math.round((rejected / denom) * 100);
@@ -3522,8 +3536,15 @@ async function loadMyAnnotations() {
     // state — used for the priority sort and the red ❗ badge.
     const url = `${CFG.APPS_SCRIPT_URL}/?action=my_annotations&user=${encodeURIComponent(user)}&kind=${encodeURIComponent(MA_CURRENT_KIND)}`;
     const qUrl = `${CFG.APPS_SCRIPT_URL}/?action=my_quality&user=${encodeURIComponent(user)}`;
-    const [r, qr] = await Promise.all([fetch(url), fetch(qUrl).catch(() => null)]);
+    const sUrl = `${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(user)}`;
+    const [r, qr, sr] = await Promise.all([fetch(url), fetch(qUrl).catch(() => null), fetch(sUrl).catch(() => null)]);
     const d = await r.json();
+    if (sr) {
+      try {
+        const sd = await sr.json();
+        window.MA_SERVER_RATE = { my_reject_rate: sd?.my_reject_rate, n_my_reviewed: sd?.n_my_reviewed, n_my_rejected: sd?.n_my_rejected };
+      } catch {}
+    }
     let reworkSet = new Set();
     if (qr) {
       try {
