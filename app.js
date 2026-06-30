@@ -1453,11 +1453,16 @@ async function initDashboard() {
   // Top user-chip + role + logout (regular page top bar).
   const user = localStorage.getItem(CFG.LS_USER);
   let role = localStorage.getItem(CFG.LS_ROLE);
-  // Refresh role from server (admin may have changed).
+  // Refresh role + write permission from server (admin set / read-only tier may have changed).
+  let canWrite = localStorage.getItem("ewj_can_write") === "1";
   try {
     const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(user || "")}`);
     const d = await r.json();
     if (d?.role && d.role !== role) { localStorage.setItem(CFG.LS_ROLE, d.role); role = d.role; }
+    if (typeof d?.can_write === "boolean") {
+      canWrite = d.can_write;
+      localStorage.setItem("ewj_can_write", canWrite ? "1" : "0");
+    }
   } catch (_) { /* fall through */ }
   // user-chip + logout wired by wireGlobalChrome on DOMContentLoaded; just set role pill here.
   const roleEl = document.getElementById("role");
@@ -1466,7 +1471,11 @@ async function initDashboard() {
     roleEl.dataset.role = shown;
     roleEl.textContent = tr("role." + shown);
   }
-  const isAdmin = user === "masiyuan";
+  // v85ad (siyuan): yu + siyuanw are read-only admins — they see the admin view but
+  // can't take write actions (delete user, set_role, resolve reports, finalize). The
+  // `isAdmin` check below now matches anyone with role==="admin" (or legacy masiyuan
+  // fallback); `canWrite` further gates the destructive UI.
+  const isAdmin = role === "admin" || user === "masiyuan";
   // Peer-review model (siyuan v84): author = annotate+review, contributor = annotate-only,
   // admin = full. Legacy 'reviewer' role gets mapped to author for back-compat (those users
   // can still review + now also annotate). Default unknown roles → contributor (safest).
@@ -1543,7 +1552,11 @@ async function loadDataReports() {
   const card = document.getElementById("reports-card");
   if (!card) return;
   const user = localStorage.getItem(CFG.LS_USER) || "";
-  if (user !== "masiyuan") { card.hidden = true; return; }
+  const role = localStorage.getItem(CFG.LS_ROLE) || "";
+  // v85ad: any admin (full or read-only) can see the reports queue; only canWrite
+  // gets the resolve buttons rendered below.
+  if (role !== "admin" && user !== "masiyuan") { card.hidden = true; return; }
+  const canWrite = localStorage.getItem("ewj_can_write") === "1";
   try {
     const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=data_reports&user=${encodeURIComponent(user)}`);
     const d = await r.json();
@@ -1573,7 +1586,7 @@ async function loadDataReports() {
         <p class="muted small">${escapeHtml(ts)} · 报告人: ${escapeHtml(reporters)} ${rr.resolved_by ? "· 处理: " + escapeHtml(rr.resolved_by) : ""}</p>
         ${notes ? `<p class="report-note">${escapeHtml(notes)}</p>` : ""}
         <p class="muted xsmall" title="${escapeHtml(rr.item_id || "")}">…${escapeHtml(idShort)}</p>
-        ${open ? `<div class="report-actions">
+        ${open && canWrite ? `<div class="report-actions">
           <button type="button" class="danger small" data-resolve="confirmed_bad" data-item="${escapeHtml(rr.item_id || "")}">确认坏</button>
           <button type="button" class="ghost small" data-resolve="invalid" data-item="${escapeHtml(rr.item_id || "")}">无效(恢复)</button>
         </div>` : ""}
@@ -1726,11 +1739,14 @@ async function loadDashboard() {
 function renderGrid(data) {
   const days = data.days || [];
   const isAdmin = !!data.is_admin;
+  // Whether the viewer (this user) can take write actions (delete, role change).
+  // Read-only admins like siyuanw/Yu set can_write=false in stats.
+  const viewerCanWrite = localStorage.getItem("ewj_can_write") === "1";
   // Sort by role rank (admin → reviewer → author → contributor), then total_pct desc, then done desc.
   const roleRank = { admin: 0, reviewer: 1, contributor: 2, author: 3 };
   const annotators = (data.annotators || []).slice().sort((a, b) => {
-    const aRole = (a.user === "masiyuan") ? "admin" : (a.role || "contributor");
-    const bRole = (b.user === "masiyuan") ? "admin" : (b.role || "contributor");
+    const aRole = a.role || ((a.user === "masiyuan") ? "admin" : "contributor");
+    const bRole = b.role || ((b.user === "masiyuan") ? "admin" : "contributor");
     const rDiff = (roleRank[aRole] ?? 99) - (roleRank[bRole] ?? 99);
     if (rDiff !== 0) return rDiff;
     const aPct = a.total_pct ?? -1, bPct = b.total_pct ?? -1;
@@ -1804,12 +1820,14 @@ function renderGrid(data) {
     // First cell: user info (name, role, quota if admin)
     const tdUser = document.createElement("td");
     tdUser.className = "user-cell";
-    const isMaSiyuan = a.user === "masiyuan";
-    // masiyuan gets the explicit Admin pill rendered below — skip roleControl
-    // to avoid the duplicate "ADMIN ADMIN" pill siyuan caught.
-    const roleControl = isMaSiyuan
+    // v85ad: admins are no longer just masiyuan — also siyuanw / Yu (role=admin).
+    // We render an explicit Admin pill for admin rows and skip the role-select dropdown
+    // (admins can't be downgraded via UI). Delete + role-change controls are only shown
+    // when the viewer is a full admin (viewerCanWrite) AND the target is not an admin.
+    const isAdminRow = a.role === "admin" || a.user === "masiyuan";
+    const roleControl = isAdminRow
       ? ""
-      : (isAdmin
+      : (isAdmin && viewerCanWrite
           ? `<select class="role-select" data-role="${escapeHtml(a.role || '')}" data-target="${escapeHtml(a.user)}">
                <option value="author"${a.role === "author" ? " selected" : ""}>Author</option>
                <option value="contributor"${a.role === "contributor" ? " selected" : ""}>Contributor</option>
@@ -1821,15 +1839,14 @@ function renderGrid(data) {
     const streakHTML = (isAdmin || a.is_self) && (a.streak ?? 0) > 0
       ? `<span class="streak-mini" title="连续打卡 ${a.streak} 天">连续 ${a.streak} 天</span>`
       : "";
-    // Admin can delete any non-admin user (v83). Backend gates: rejects admin targets +
-    // self-target + adds to blocklist so deleted name can't re-register.
-    const deleteBtn = (isAdmin && !isMaSiyuan)
+    // Delete: full-admin viewer only; admin rows never deletable.
+    const deleteBtn = (isAdmin && viewerCanWrite && !isAdminRow)
       ? `<button type="button" class="link delete-user-btn" data-target="${escapeHtml(a.user)}" data-role="${escapeHtml(a.role || '')}" title="${tr("admin.delete_user_tip")}">🗑</button>`
       : "";
     tdUser.innerHTML = `
       <div class="user-head">
         <span class="user-name">${escapeHtml(a.user)}</span>
-        ${isMaSiyuan ? '<span class="role-pill" data-role="admin">Admin</span>' : ''}
+        ${isAdminRow ? '<span class="role-pill" data-role="admin">Admin</span>' : ''}
         ${roleControl}
         ${quotaHTML}
         ${streakHTML}
@@ -1837,7 +1854,7 @@ function renderGrid(data) {
       </div>
     `;
     row.appendChild(tdUser);
-    if (isAdmin && !isMaSiyuan) {
+    if (isAdmin && viewerCanWrite && !isAdminRow) {
       const sel = tdUser.querySelector(".role-select");
       sel.addEventListener("change", async (ev) => {
         const newRole = ev.target.value;
