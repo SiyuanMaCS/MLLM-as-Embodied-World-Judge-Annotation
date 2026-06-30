@@ -45,6 +45,7 @@ const LANG = {
     "review.kpi_gate.detail": "Yesterday completed",
     "review.kpi_gate.dashboard": "Yesterday's KPI not met — review locked until you catch up.",
     "review.edit_not_found": "Couldn't find that past review in your history.",
+    "review.today": "today",
     "home.card.my_reviews.title": "My reviews",
     "home.card.my_reviews.sub": "Decisions you've made",
     "home.card.review_results.title": "Review results",
@@ -361,6 +362,7 @@ const LANG = {
     "review.kpi_gate.detail": "昨日已完成",
     "review.kpi_gate.dashboard": "昨日 KPI 未完成 — 完成后才能审核。",
     "review.edit_not_found": "在历史里找不到这条审核记录。",
+    "review.today": "今日审核",
     "home.card.my_reviews.title": "我的审核",
     "home.card.my_reviews.sub": "你做过的审核决定",
     "home.card.review_results.title": "审核结果",
@@ -2923,6 +2925,7 @@ async function initReview() {
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => loadNextReview() });
   wireSubTriButtons();  // 6 sub-tri groups in review modify form
   wireAutoNote("m-");   // v85j note prefill (review modify panel uses m- prefix)
+  refreshReviewProgress();   // v85bd: per-user review_quota chip (only siyuanw today)
   // v85bc: my_reviews?as=reviewer "Re-decide" deep-link lands here with edit_review=ITEM.
   // Load that specific past decision for the reviewer to re-submit.
   const editId = new URLSearchParams(window.location.search).get("edit_review");
@@ -2931,6 +2934,26 @@ async function initReview() {
   } else {
     await loadNextReview();
   }
+}
+
+/* v85bd: surface per-user review KPI (siyuanw = 5/day). Hidden when review_quota is null.
+   Backend treats the quota as a target/floor, not a cap — reviewer can keep going past N. */
+async function refreshReviewProgress() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  if (!user) return;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=stats&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    const wrap = document.getElementById("review-progress");
+    if (!wrap) return;
+    const quota = d?.review_quota;
+    if (quota == null) { wrap.hidden = true; return; }
+    const today = Number(d?.review_today ?? 0);
+    document.getElementById("review-today").textContent = today;
+    document.getElementById("review-quota").textContent = quota;
+    wrap.hidden = false;
+    wrap.classList.toggle("met", today >= quota);
+  } catch (_) { /* silent */ }
 }
 
 async function loadReviewForEdit(itemId) {
@@ -3064,6 +3087,7 @@ async function submitReview(decision) {
     });
     const data = await res.json();
     if (data && data.ok === false) throw new Error(data.error || "submit failed");
+    refreshReviewProgress();  // v85bd: bump today/quota chip after each decision
     await loadNextReview();
   } catch (err) {
     showError("Review submit failed: " + err.message);
