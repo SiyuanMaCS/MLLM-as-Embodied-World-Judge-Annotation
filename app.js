@@ -47,6 +47,7 @@ const LANG = {
     "review.edit_not_found": "Couldn't find that past review in your history.",
     "review.today": "today",
     "review.edit_required": "Both 调整 / Reject require you to change the scores or notes before submitting.",
+    "review.remaining": "queue",
     "home.card.my_reviews.title": "My reviews",
     "home.card.my_reviews.sub": "Decisions you've made",
     "home.card.review_results.title": "Review results",
@@ -3013,6 +3014,15 @@ async function refreshReviewProgress() {
   } catch (_) { /* silent */ }
 }
 
+/* v85bh: queue-remaining chip — fed by Ham's review_next.remaining (per-reviewer total). */
+function setReviewRemaining(n) {
+  const wrap = document.getElementById("review-remaining");
+  if (!wrap) return;
+  if (n == null) { wrap.hidden = true; return; }
+  document.getElementById("review-pending").textContent = n;
+  wrap.hidden = false;
+}
+
 async function loadReviewForEdit(itemId) {
   hide("error"); hide("item"); show("loading");
   const user = localStorage.getItem(CFG.LS_USER);
@@ -3084,6 +3094,8 @@ function renderReviewItem(it) {
   // v85be: show annotator id (siyuan: 把标注者 id 给显示出来) — previously anonymized.
   const annEl = document.getElementById("orig-annotator");
   if (annEl) annEl.textContent = it.target || it.annotator || "—";
+  // v85bh: queue-remaining chip from Ham's review_next.remaining.
+  if (typeof it.remaining === "number") setReviewRemaining(it.remaining);
   const reviewGen = document.getElementById("gen-video");
   reviewGen.src = pickVideoUrl(it.video_sources, it.video_url);
   bindVideoSources(reviewGen, it.video_sources);

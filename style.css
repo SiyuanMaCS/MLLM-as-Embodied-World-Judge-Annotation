@@ -2525,6 +2525,19 @@ button.danger, .danger {
   border: 1px solid #c62937;
 }
 button.danger:hover, .danger:hover { background: #c62937; }
+/* v85bh — colored alternatives to .ghost so secondary actions aren't white. */
+button.warn, .warn {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+button.warn:hover, .warn:hover { background: #fde68a; }
+button.muted-btn, .muted-btn {
+  background: #e5e7eb;
+  color: #374151;
+  border: 1px solid #9ca3af;
+}
+button.muted-btn:hover, .muted-btn:hover { background: #d1d5db; }
 
 /* v85m — my_annotations card: init_frame thumb beside instruction (replaces video player). */
 .my-annot-card .ma-context {
