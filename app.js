@@ -289,6 +289,11 @@ const LANG = {
     "task.edit_prev_confirm": "Discard current draft and edit the previously submitted item?",
     "reports.title": "🚨 Data issue reports",
     "reports.empty": "No reports.",
+    "leaderboard.title": "📊 Team today",
+    "leaderboard.admin": "Admin today",
+    "leaderboard.top3": "Top 3 today",
+    "leaderboard.done": "Quota met today",
+    "leaderboard.none": "—",
     "report.title": "Report a data issue",
     "report.type_label": "Issue type",
     "report.type.instruction_init_mismatch": "Instruction doesn't match init frame",
@@ -571,6 +576,11 @@ const LANG = {
     "task.edit_prev_confirm": "丢弃当前草稿,改上一条已提交的?",
     "reports.title": "🚨 数据问题报告",
     "reports.empty": "暂无报告。",
+    "leaderboard.title": "📊 今日团队",
+    "leaderboard.admin": "管理员今日",
+    "leaderboard.top3": "今日前三",
+    "leaderboard.done": "今日已达标",
+    "leaderboard.none": "—",
     "report.title": "报告数据问题",
     "report.type_label": "问题类型",
     "report.type.instruction_init_mismatch": "指令与首帧不符",
@@ -1475,13 +1485,39 @@ async function initDashboard() {
   await loadDashboard();
   await loadBadges();
   await loadMilestoneProgress();
+  await loadLeaderboard();
   if (isAdmin) await loadDataReports();
   let timer = setInterval(() => {
     if (!document.hidden) {
-      loadDashboard(); loadBadges(); loadMilestoneProgress();
+      loadDashboard(); loadBadges(); loadMilestoneProgress(); loadLeaderboard();
       if (isAdmin) loadDataReports();
     }
   }, 30000);
+}
+
+/* v85ab — public team leaderboard (Ham's `?action=leaderboard`). Visible to everyone,
+   shows admin count + top3 + completed-today, all with real names — intentional
+   transparency / incentive per siyuan. */
+async function loadLeaderboard() {
+  const card = document.getElementById("leaderboard-card");
+  if (!card) return;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=leaderboard`);
+    if (!r.ok) { card.hidden = true; return; }
+    const d = await r.json();
+    if (d?.ok === false) { card.hidden = true; return; }
+    card.hidden = false;
+    const adminBlock = d.admin
+      ? `<strong>${tr("leaderboard.admin")}</strong>: ${escapeHtml(d.admin.user || "—")} · <strong>${Number(d.admin.today ?? 0)}</strong>`
+      : `<strong>${tr("leaderboard.admin")}</strong>: ${tr("leaderboard.none")}`;
+    document.getElementById("lb-admin").innerHTML = adminBlock;
+    const top3Names = (d.top3 || []).map((u, i) => `${["🥇","🥈","🥉"][i] || ""} ${escapeHtml(u.user)} <strong>${Number(u.today ?? 0)}</strong>`).join(" · ");
+    document.getElementById("lb-top3").innerHTML = `<strong>${tr("leaderboard.top3")}</strong>: ${top3Names || tr("leaderboard.none")}`;
+    const doneNames = (d.completed_today || []).map(u => `${escapeHtml(u.user || u)} ✓`).join(" · ");
+    document.getElementById("lb-done").innerHTML = `<strong>${tr("leaderboard.done")}</strong>: ${doneNames || tr("leaderboard.none")}`;
+  } catch (_) {
+    card.hidden = true;
+  }
 }
 
 /* v85y — admin data-reports panel. Lists annotator-submitted report items
@@ -1753,12 +1789,16 @@ function renderGrid(data) {
     const tdUser = document.createElement("td");
     tdUser.className = "user-cell";
     const isMaSiyuan = a.user === "masiyuan";
-    const roleControl = isAdmin && !isMaSiyuan
-      ? `<select class="role-select" data-role="${escapeHtml(a.role || '')}" data-target="${escapeHtml(a.user)}">
-           <option value="author"${a.role === "author" ? " selected" : ""}>Author</option>
-           <option value="contributor"${a.role === "contributor" ? " selected" : ""}>Contributor</option>
-         </select>`
-      : (a.role ? `<span class="role-pill" data-role="${a.role}">${capitalizeFirst(a.role)}</span>` : "");
+    // masiyuan gets the explicit Admin pill rendered below — skip roleControl
+    // to avoid the duplicate "ADMIN ADMIN" pill siyuan caught.
+    const roleControl = isMaSiyuan
+      ? ""
+      : (isAdmin
+          ? `<select class="role-select" data-role="${escapeHtml(a.role || '')}" data-target="${escapeHtml(a.user)}">
+               <option value="author"${a.role === "author" ? " selected" : ""}>Author</option>
+               <option value="contributor"${a.role === "contributor" ? " selected" : ""}>Contributor</option>
+             </select>`
+          : (a.role ? `<span class="role-pill" data-role="${a.role}">${capitalizeFirst(a.role)}</span>` : ""));
     const quotaHTML = isAdmin
       ? `<span class="quota-label">${a.quota ?? "—"}/day</span>`
       : "";
