@@ -2397,7 +2397,25 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
 .readonly-modal-inner p { margin: 0 0 18px 0; color: #555; line-height: 1.55; }
 .readonly-modal-inner button { padding: 8px 22px; }
 
-/* v85ab/ac — public team-today leaderboard, chip layout. */
+/* v85ab/ac/ai — public team-today leaderboard, chip layout + countdown. */
+.lb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.lb-head h3 { margin: 0; }
+.lb-countdown {
+  background: #fff7e0;
+  padding: 4px 12px;
+  border-radius: 14px;
+  border: 1px solid #f0d59c;
+  font-variant-numeric: tabular-nums;
+  color: #8a5500;
+  font-weight: 600;
+}
 .lb-row {
   padding: 6px 0;
   font-size: 14px;

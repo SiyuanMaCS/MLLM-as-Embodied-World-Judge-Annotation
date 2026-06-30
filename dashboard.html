@@ -6,7 +6,7 @@
 <title>Home — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85ah">
+<link rel="stylesheet" href="style.css?v=v85ai">
 </head>
 <body>
 <main>
@@ -98,7 +98,10 @@
   <section class="card" id="self-summary" hidden></section>
 
   <section class="card" id="leaderboard-card" hidden>
-    <h3 data-i18n="leaderboard.title">📊 今日团队</h3>
+    <div class="lb-head">
+      <h3 data-i18n="leaderboard.title">📊 今日团队</h3>
+      <span class="lb-countdown muted small" id="lb-countdown"></span>
+    </div>
     <div class="lb-row" id="lb-admin"></div>
     <div class="lb-row" id="lb-top3"></div>
     <div class="lb-row" id="lb-done"></div>
@@ -131,6 +134,6 @@
     <p id="dash-err-msg">—</p>
   </section>
 </main>
-<script src="app.js?v=v85ah" defer></script>
+<script src="app.js?v=v85ai" defer></script>
 </body>
 </html>

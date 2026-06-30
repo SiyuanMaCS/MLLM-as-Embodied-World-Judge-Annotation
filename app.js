@@ -283,7 +283,9 @@ const LANG = {
     "milestone.note": "Items auto-routed across the pool — your contributions count toward the shared milestone.",
     "milestone.counts": "Yours {mine} · everyone {all} / {total}",
     "milestone.done_toast": "🎉 Milestone complete — thank you!",
-    "earnings.settle_time": "Settles daily at 10:00 Beijing time.",
+    "earnings.settle_time": "Settles daily at 13:00 Beijing time.",
+    "countdown.title": "Next settle in",
+    "countdown.now": "Settling now…",
     "task.report_data": "🚨 Report",
     "task.edit_prev": "↺ Edit previous",
     "task.edit_prev_confirm": "Discard current draft and edit the previously submitted item?",
@@ -575,7 +577,9 @@ const LANG = {
     "milestone.note": "条目自动派发 — 你的标注贡献到团队 milestone。",
     "milestone.counts": "我 {mine} · 全员 {all} / {total}",
     "milestone.done_toast": "🎉 里程碑达成,感谢!",
-    "earnings.settle_time": "每日 10:00（北京时间）结算。",
+    "earnings.settle_time": "每日 13:00（北京时间）结算。",
+    "countdown.title": "距离结算",
+    "countdown.now": "正在结算…",
     "task.report_data": "🚨 报错",
     "task.edit_prev": "↺ 修改上一条",
     "task.edit_prev_confirm": "丢弃当前草稿,改上一条已提交的?",
@@ -1560,6 +1564,36 @@ async function initDashboard() {
   }, 30000);
 }
 
+/* v85ai — settle-countdown to next 13:00 Beijing (UTC+8 → 05:00 UTC). Updates the
+   small badge in the leaderboard header every second. */
+function nextSettleMs() {
+  const now = new Date();
+  const utc = now.getTime();
+  // Next 05:00 UTC = 13:00 Beijing.
+  const target = new Date(now);
+  target.setUTCHours(5, 0, 0, 0);
+  if (target.getTime() <= utc) target.setUTCDate(target.getUTCDate() + 1);
+  return target.getTime() - utc;
+}
+
+let _countdownTimer = null;
+function startSettleCountdown() {
+  const el = document.getElementById("lb-countdown");
+  if (!el) return;
+  if (_countdownTimer) clearInterval(_countdownTimer);
+  const tick = () => {
+    const ms = nextSettleMs();
+    if (ms <= 0) { el.textContent = tr("countdown.now"); return; }
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    const pad = (n) => String(n).padStart(2, "0");
+    el.textContent = `⏰ ${tr("countdown.title")} ${pad(h)}:${pad(m)}:${pad(s)}`;
+  };
+  tick();
+  _countdownTimer = setInterval(tick, 1000);
+}
+
 /* v85ac — public team leaderboard, redesigned per siyuan: admin out of the ranking,
    completed-today list sorted by today desc, prettier chip layout. */
 async function loadLeaderboard() {
@@ -1571,6 +1605,7 @@ async function loadLeaderboard() {
     const d = await r.json();
     if (d?.ok === false) { card.hidden = true; return; }
     card.hidden = false;
+    startSettleCountdown();
     // Admin is an array (siyuanw/Yu/masiyuan can all be admin). Show their counts but
     // don't include them in the ranking.
     const admins = Array.isArray(d.admin) ? d.admin : (d.admin ? [d.admin] : []);
