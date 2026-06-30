@@ -352,6 +352,7 @@ const LANG = {
     "reports.quarantine_title": "Hold back ALL sibling videos (every model × prompt) of this GT task",
     "reports.quarantine_confirm": "Quarantine this entire task? All sibling videos across all models will be held out of annotate + review until you restore.",
     "reports.quarantine_done": "Quarantined — {n} sibling videos held back.",
+    "reports.quarantine_auto_resolved": "{r} open report(s) auto-resolved.",
     "quarantine.title": "🚧 Quarantined tasks",
     "quarantine.hint": "These GT tasks are held out of annotate + review across all sibling models.",
     "quarantine.empty": "No tasks quarantined.",
@@ -718,6 +719,7 @@ const LANG = {
     "reports.quarantine_title": "把这个 GT 任务的所有兄弟视频(各 model × prompt)全部从标注/审核池剔除",
     "reports.quarantine_confirm": "确定隔离整个 task?同 GT 的所有兄弟视频会从标注 + 审核池剔除,直到你恢复。",
     "reports.quarantine_done": "已隔离 — 波及 {n} 条兄弟视频。",
+    "reports.quarantine_auto_resolved": "{r} 条 open 报告已自动 resolve。",
     "quarantine.title": "🚧 待定区(已隔离 task)",
     "quarantine.hint": "这些 GT 任务被从标注 + 审核池剔除,跨所有兄弟模型的视频都被冻结。",
     "quarantine.empty": "无待定任务。",
@@ -2049,7 +2051,12 @@ async function loadDataReportsPage() {
           const dd = await res.json();
           if (maybeShowReadOnlyFromBody(dd)) { btn.disabled = false; return; }
           if (dd?.ok === false) throw new Error(dd.error || "quarantine failed");
-          toast(tr("reports.quarantine_done").replace("{n}", dd.affected ?? dd.count ?? "?"), "ok");
+          // v85bv: Ham added reports_auto_resolved — surface it in the toast so the admin
+          // sees that the open report(s) for this GT were cleared automatically.
+          const n = dd.affected ?? dd.count ?? "?";
+          const r = Number(dd.reports_auto_resolved || 0);
+          const base = tr("reports.quarantine_done").replace("{n}", n);
+          toast(r > 0 ? `${base} ${tr("reports.quarantine_auto_resolved").replace("{r}", r)}` : base, "ok");
           await loadDataReportsPage();
           await loadQuarantineList();
         } catch (ee) {
