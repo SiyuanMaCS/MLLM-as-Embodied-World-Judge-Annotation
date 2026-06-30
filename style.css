@@ -468,6 +468,8 @@ fieldset.role-row.known .role-opt:has(input:checked) {
 .role-pill[data-role="contributor"] { background: #e8f0fd; color: var(--accent-dark); border: 1px solid #b9cdf3; }
 .role-pill[data-role="reviewer"] { background: #f3e8fd; color: #5b21b6; border: 1px solid #d8c0f5; }
 .role-pill[data-role="admin"] { background: #fff3a3; color: #8a5500; border: 1px solid #f4d76a; }
+/* v85ba: compact "审" marker for leaderboard chips when user is_reviewer. */
+.lb-rev-mark { display: inline-block; padding: 0 4px; font-size: 10px; font-weight: 700; line-height: 14px; color: #5b21b6; background: #f3e8fd; border: 1px solid #d8c0f5; border-radius: 4px; vertical-align: middle; }
 
 /* role-select dropdown shares the same color coding as role-pill */
 .role-select {

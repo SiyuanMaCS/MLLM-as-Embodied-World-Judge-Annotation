@@ -1700,8 +1700,10 @@ async function loadLeaderboard() {
     // Admin is an array (siyuanw/Yu/masiyuan can all be admin). Show their counts but
     // don't include them in the ranking.
     const admins = Array.isArray(d.admin) ? d.admin : (d.admin ? [d.admin] : []);
+    // v85ba: small "审" marker for stacked reviewers (when backend includes is_reviewer).
+    const revMark = a => a?.is_reviewer ? ` <span class="lb-rev-mark" title="reviewer / 审核员">审</span>` : "";
     const adminChips = admins.length
-      ? admins.map(a => `<span class="lb-chip lb-admin-chip">${escapeHtml(a.user)} <strong>${Number(a.today ?? 0)}</strong>${a.quota ? `<span class="muted">/${a.quota}</span>` : ""}${a.met ? " ✓" : ""}</span>`).join("")
+      ? admins.map(a => `<span class="lb-chip lb-admin-chip">${escapeHtml(a.user)}${revMark(a)} <strong>${Number(a.today ?? 0)}</strong>${a.quota ? `<span class="muted">/${a.quota}</span>` : ""}${a.met ? " ✓" : ""}</span>`).join("")
       : `<span class="muted">${tr("leaderboard.none")}</span>`;
     document.getElementById("lb-admin").innerHTML =
       `<span class="lb-label">${tr("leaderboard.admin")}</span> ${adminChips}`;
@@ -1712,7 +1714,7 @@ async function loadLeaderboard() {
     const rankedChips = top3.length
       ? top3.map((u, i) => {
           const medal = ["🥇","🥈","🥉"][i] || `<span class="lb-rank">${i+1}</span>`;
-          return `<span class="lb-chip lb-rank-chip">${medal} ${escapeHtml(u.user)} <strong>${Number(u.today ?? 0)}</strong>${u.quota ? `<span class="muted">/${u.quota}</span>` : ""}${u.met ? " ✓" : ""}</span>`;
+          return `<span class="lb-chip lb-rank-chip">${medal} ${escapeHtml(u.user)}${revMark(u)} <strong>${Number(u.today ?? 0)}</strong>${u.quota ? `<span class="muted">/${u.quota}</span>` : ""}${u.met ? " ✓" : ""}</span>`;
         }).join("")
       : `<span class="muted">${tr("leaderboard.none")}</span>`;
     document.getElementById("lb-top3").innerHTML =
@@ -2146,6 +2148,8 @@ function renderGrid(data) {
                <option value="contributor"${a.role === "contributor" ? " selected" : ""}>Contributor</option>
              </select>`
           : (a.role ? `<span class="role-pill" data-role="${a.role}">${capitalizeFirst(a.role)}</span>` : ""));
+    // v85ba: per-row reviewer stack badge (siyuan 面板里要标审核员)
+    const reviewerPill = a.is_reviewer ? `<span class="role-pill" data-role="reviewer">${tr("role.reviewer")}</span>` : "";
     const quotaHTML = isAdmin
       ? `<span class="quota-label">${a.quota ?? "—"}/day</span>`
       : "";
@@ -2161,6 +2165,7 @@ function renderGrid(data) {
         <span class="user-name">${escapeHtml(a.user)}</span>
         ${isAdminRow ? '<span class="role-pill" data-role="admin">Admin</span>' : ''}
         ${roleControl}
+        ${reviewerPill}
         ${quotaHTML}
         ${streakHTML}
         ${deleteBtn}
