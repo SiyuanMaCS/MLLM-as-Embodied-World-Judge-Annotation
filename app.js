@@ -277,6 +277,13 @@ const LANG = {
     "my_annotations.tab.gold": "Gold",
     "my_annotations.hint": "Unreviewed entries can be edited. Once a reviewer/admin acts on them, they are locked.",
     "my_annotations.empty": "No annotations yet.",
+    "my_annotations.tab.all": "All",
+    "my_annotations.tab.pending": "Pending review",
+    "my_annotations.tab.reviewed": "Reviewed",
+    "my_annotations.tab.rejected": "Rejected",
+    "my_annotations.reject_rate": "Rejection rate",
+    "my_annotations.sample_low": "(sample too small)",
+    "my_annotations.unread": "Unread rejection — click to mark as read",
     "my_annotations.reviewed_badge": "reviewed",
     "my_annotations.editable_badge": "editable",
     "my_annotations.locked": "locked",
@@ -600,6 +607,13 @@ const LANG = {
     "my_annotations.tab.gold": "Gold",
     "my_annotations.hint": "未被审核的条目可编辑;一旦 reviewer/admin 介入(approve/modify/finalize)就锁定。",
     "my_annotations.empty": "暂无标注。",
+    "my_annotations.tab.all": "全部",
+    "my_annotations.tab.pending": "未审核",
+    "my_annotations.tab.reviewed": "已审核",
+    "my_annotations.tab.rejected": "不通过",
+    "my_annotations.reject_rate": "不通过率",
+    "my_annotations.sample_low": "(样本不足)",
+    "my_annotations.unread": "未读不通过 — 点击标为已读",
     "my_annotations.reviewed_badge": "已审核",
     "my_annotations.editable_badge": "可编辑",
     "my_annotations.locked": "已锁",
@@ -3408,21 +3422,91 @@ function renderReviewRow(r) {
 // v85t: gold mechanism is gone + tabs removed per siyuan → always fetch all kinds.
 const MA_CURRENT_KIND = "all";
 
+let MA_CURRENT_TAB = "all";  // v85bk: filter mode — all|pending|reviewed|rejected
+let MA_ALL_ITEMS = [];      // cached for tab switching without refetch
+
 async function initMyAnnotations() {
   const user = localStorage.getItem(CFG.LS_USER);
   if (!user) { window.location.href = "index.html"; return; }
   document.getElementById("who").textContent = user;
   const role = localStorage.getItem(CFG.LS_ROLE) || "—";
   applyRolePill(user, role);
-  // v85bb: opening this page = the user is seeing their rejected items.
-  // Tell Ham's backend to clear n_my_rejected_unseen so the home-card red badge resets.
-  try {
-    fetch(CFG.APPS_SCRIPT_URL + "/", {
-      method: "POST", headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ mark_rejected_seen: true, user }),
-    });  // fire-and-forget; even if it 4xx the badge will refresh on next dashboard load
-  } catch (_) {}
+  // v85bk: per-item unread mark (not bulk). Each rejected card marks itself when clicked.
+  // Wire tab buttons.
+  document.querySelectorAll(".ma-tab").forEach(btn => btn.addEventListener("click", () => {
+    document.querySelectorAll(".ma-tab").forEach(b => b.classList.toggle("active", b === btn));
+    MA_CURRENT_TAB = btn.dataset.tab;
+    renderMyAnnotationList();
+  }));
   await loadMyAnnotations();
+}
+
+function annotationStatus(it) {
+  if (!it.reviewed) return "pending";
+  const dec = it.review_decision === "modify" ? "minor" : it.review_decision;
+  if (dec === "major") return "rejected";
+  return "reviewed";  // approve / minor — counted as 已审核
+}
+
+function renderMyAnnotationList() {
+  const list = document.getElementById("ma-list");
+  const empty = document.getElementById("ma-empty");
+  list.innerHTML = "";
+  const filtered = MA_CURRENT_TAB === "all"
+    ? MA_ALL_ITEMS
+    : MA_ALL_ITEMS.filter(it => annotationStatus(it) === MA_CURRENT_TAB);
+  if (filtered.length === 0) {
+    empty.hidden = false; list.hidden = true; return;
+  }
+  empty.hidden = true; list.hidden = false;
+  for (const it of filtered) list.appendChild(renderMyAnnotationCard(it));
+}
+
+/* v85bk: rejected-item click → POST mark_rejected_seen with item_id (Ham per-item endpoint).
+   Returns immediately; UI optimistically clears unseen marker locally so the counter and
+   home-card badge decrement without waiting for a server refresh. */
+async function markRejectedSeen(itemId) {
+  const user = localStorage.getItem(CFG.LS_USER);
+  if (!user || !itemId) return;
+  try {
+    await fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ mark_rejected_seen: true, user, item_id: itemId }),
+    });
+  } catch (_) {}
+  // Locally drop "unseen" marker on this item so tab counts and the home-card badge
+  // (refetched on next dashboard load) reflect the read state.
+  const it = MA_ALL_ITEMS.find(x => x.item_id === itemId);
+  if (it) it._rejected_seen = true;
+  updateTabCounts();
+}
+
+function updateTabCounts() {
+  const total = MA_ALL_ITEMS.length;
+  const pending = MA_ALL_ITEMS.filter(it => annotationStatus(it) === "pending").length;
+  const reviewed = MA_ALL_ITEMS.filter(it => annotationStatus(it) === "reviewed").length;
+  const rejected = MA_ALL_ITEMS.filter(it => annotationStatus(it) === "rejected").length;
+  const rejectedUnseen = MA_ALL_ITEMS.filter(it => annotationStatus(it) === "rejected" && !it._rejected_seen && it._rejected_unseen).length;
+  const set = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
+  set("ma-count-all", total);
+  set("ma-count-pending", pending);
+  set("ma-count-reviewed", reviewed);
+  // Tab-button "rejected" count uses TOTAL rejected; the in-button unread dot uses unseen.
+  set("ma-count-rejected", rejected);
+  const rejTab = document.querySelector('.ma-tab[data-tab="rejected"]');
+  if (rejTab) rejTab.classList.toggle("has-unread", rejectedUnseen > 0);
+  // v85bk: 不通过率 per Alice's spec — reject / (approve + minor + reject), pending excluded.
+  // Min sample 10 to avoid 1/2=50% misleading.
+  const denom = reviewed + rejected;
+  const rateEl = document.getElementById("ma-reject-rate");
+  if (rateEl) {
+    if (denom === 0) rateEl.textContent = "—";
+    else if (denom < 10) rateEl.textContent = `${tr("my_annotations.sample_low")} (${rejected}/${denom})`;
+    else {
+      const pct = Math.round((rejected / denom) * 100);
+      rateEl.textContent = `${pct}% (${rejected}/${denom})`;
+    }
+  }
 }
 
 async function loadMyAnnotations() {
@@ -3452,15 +3536,21 @@ async function loadMyAnnotations() {
     const items = d.items || [];
     if (items.length === 0) { empty.hidden = false; return; }
     if (items[0]) setVideoSourcesFromItem(items[0]);
-    // Annotate rework membership so renderMyAnnotationCard can show the ❗ badge + priority sort.
-    for (const it of items) it._in_rework = reworkSet.has(it.item_id);
-    // Sort: rework items first (priority), then newest submitted_ts.
+    for (const it of items) {
+      it._in_rework = reworkSet.has(it.item_id);
+      // v85bk: backend marks per-item _rejected_unseen=true on items the annotator hasn't viewed
+      // since the rejection. Fall back: any rejected item is "unseen" until clicked.
+      it._rejected_unseen = it.rejected_unseen ?? (annotationStatus(it) === "rejected");
+      it._rejected_seen = it.rejected_seen ?? false;
+    }
     items.sort((a, b) => {
       if (a._in_rework !== b._in_rework) return a._in_rework ? -1 : 1;
       return (b.submitted_ts || 0) - (a.submitted_ts || 0);
     });
-    for (const it of items) list.appendChild(renderMyAnnotationCard(it));
-    list.hidden = false;
+    MA_ALL_ITEMS = items;
+    document.getElementById("ma-tabs").hidden = false;
+    updateTabCounts();
+    renderMyAnnotationList();
   } catch (e) {
     loading.hidden = true;
     err.hidden = false;
@@ -3547,8 +3637,11 @@ function renderMyAnnotationCard(it) {
       : ""}`;
   // v85m (siyuan): my_annotations card drops the video player — only init_frame thumb
   // + instruction. Keeps the page light + signals the row is for review, not playback.
+  // v85bk: rejected-unseen cards get an unread dot; clicking the card marks-as-seen.
+  const isRejectedUnseen = annotationStatus(it) === "rejected" && it._rejected_unseen && !it._rejected_seen;
+  const unreadDot = isRejectedUnseen ? `<span class="ma-unread-dot" title="${tr("my_annotations.unread")}"></span>` : "";
   li.innerHTML = `
-    <div class="meta">${kindTag}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${decisionBadge}</div>
+    <div class="meta">${kindTag}${unreadDot}<span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span>${decisionBadge}</div>
     <div class="ma-context">
       ${it.init_frame_url ? `<img class="ma-init" src="${escapeHtml(it.init_frame_url)}" alt="init frame" loading="lazy">` : ""}
       ${it.instruction || it.instruction_cn ? `<p class="ma-instr"><strong>${tr("task.instruction")}:</strong> ${escapeHtml(it.instruction_cn || it.instruction)}</p>` : ""}
@@ -3556,6 +3649,12 @@ function renderMyAnnotationCard(it) {
     ${diffBlock}
     <div class="ma-foot">${actionBtn}</div>
   `;
+  if (isRejectedUnseen) {
+    li.addEventListener("click", () => {
+      li.querySelector(".ma-unread-dot")?.remove();
+      markRejectedSeen(it.item_id);
+    }, { once: true });
+  }
   return li;
 }
 

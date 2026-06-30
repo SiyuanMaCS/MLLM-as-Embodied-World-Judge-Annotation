@@ -6,7 +6,7 @@
 <title>My Annotations — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85bj">
+<link rel="stylesheet" href="style.css?v=v85bk">
 </head>
 <body>
 <main>
@@ -22,6 +22,13 @@
   </nav>
 
   <section class="card">
+    <div id="ma-tabs" class="ma-tabs" hidden>
+      <button type="button" class="ma-tab active" data-tab="all"><span data-i18n="my_annotations.tab.all">全部</span> <span class="ma-tab-count" id="ma-count-all">0</span></button>
+      <button type="button" class="ma-tab" data-tab="pending"><span data-i18n="my_annotations.tab.pending">未审核</span> <span class="ma-tab-count" id="ma-count-pending">0</span></button>
+      <button type="button" class="ma-tab" data-tab="reviewed"><span data-i18n="my_annotations.tab.reviewed">已审核</span> <span class="ma-tab-count" id="ma-count-reviewed">0</span></button>
+      <button type="button" class="ma-tab" data-tab="rejected"><span data-i18n="my_annotations.tab.rejected">不通过</span> <span class="ma-tab-count rejected-count" id="ma-count-rejected">0</span></button>
+    </div>
+    <p class="ma-reject-rate-line muted small"><span data-i18n="my_annotations.reject_rate">不通过率</span>: <strong id="ma-reject-rate">—</strong></p>
     <p id="ma-loading" data-i18n="common.loading">Loading…</p>
     <p id="ma-empty" hidden data-i18n="my_annotations.empty">No annotations yet.</p>
     <ul id="ma-list" class="my-annot-list" hidden></ul>
@@ -29,6 +36,6 @@
 
   <section id="ma-error" class="card error" hidden><h3 data-i18n="common.failed">Failed</h3><p id="ma-err-msg">—</p></section>
 </main>
-<script src="app.js?v=v85bj" defer></script>
+<script src="app.js?v=v85bk" defer></script>
 </body>
 </html>
