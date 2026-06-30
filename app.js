@@ -1585,10 +1585,15 @@ async function initDashboard() {
   document.querySelectorAll(".home-actions .action-row").forEach(r => {
     r.hidden = r.dataset.row !== rowKey;
   });
+  // v85ax: admin row has two Review cards (primary if admin+reviewer like masiyuan;
+  // read-only 'Review results' for plain admins). Toggle based on isReviewer flag.
+  document.querySelectorAll('.home-actions [data-show-if="is_reviewer"]').forEach(el => { el.hidden = !isReviewer; });
+  document.querySelectorAll('.home-actions [data-show-if="not_reviewer"]').forEach(el => { el.hidden = isReviewer; });
   // .reviewer-only nav entries (e.g. links to review.html in shared headers) show only for
-  // users with review power: reviewer + admin (admin can VIEW results read-only).
+  // users with review power: anyone with the reviewer stack flag, or admin (admin sees
+  // results read-only via the same link).
   document.querySelectorAll(".page-nav .reviewer-only").forEach(a => {
-    if (rowKey !== "reviewer" && rowKey !== "admin") a.style.display = "none";
+    if (!isReviewer && rowKey !== "admin") a.style.display = "none";
   });
   document.querySelectorAll(".page-nav .admin-only").forEach(a => {
     if (!isAdmin) a.style.display = "none";

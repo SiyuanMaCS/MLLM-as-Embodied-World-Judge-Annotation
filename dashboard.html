@@ -6,7 +6,7 @@
 <title>Home — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85aw">
+<link rel="stylesheet" href="style.css?v=v85ax">
 </head>
 <body>
 <main>
@@ -90,7 +90,15 @@
         <span class="ac-text"><span class="ac-title" data-i18n="home.card.annotate.title">Annotate</span><span class="ac-sub" data-i18n="home.card.annotate.sub">Score generated videos</span></span>
         <span class="ac-badge" hidden>0</span>
       </a>
-      <a class="action-card" href="review.html">
+      <!-- v85ax: admin row has TWO Review cards; JS hides one based on is_reviewer.
+           masiyuan is admin+reviewer → primary 'Review' (has tasks). Read-only admins
+           get the 'Review results' link instead. -->
+      <a class="action-card primary" href="review.html" data-badge="review" data-show-if="is_reviewer" hidden>
+        <span class="ac-icon">🔍</span>
+        <span class="ac-text"><span class="ac-title" data-i18n="home.card.review.title">Review</span><span class="ac-sub" data-i18n="home.card.review.sub_reviewer">Audit yesterday's annotations</span></span>
+        <span class="ac-badge" hidden>0</span>
+      </a>
+      <a class="action-card" href="review.html" data-show-if="not_reviewer">
         <span class="ac-icon">🔍</span>
         <span class="ac-text"><span class="ac-title" data-i18n="home.card.review_results.title">Review results</span><span class="ac-sub" data-i18n="home.card.review_results.sub">Read-only — admin doesn't get review tasks</span></span>
       </a>
@@ -151,6 +159,6 @@
     <p id="dash-err-msg">—</p>
   </section>
 </main>
-<script src="app.js?v=v85aw" defer></script>
+<script src="app.js?v=v85ax" defer></script>
 </body>
 </html>
