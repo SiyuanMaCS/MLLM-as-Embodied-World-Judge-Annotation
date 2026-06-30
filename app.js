@@ -230,6 +230,7 @@ const LANG = {
     "review.modify": "✏ Adjust",
     "review.minor": "✏ Adjust",
     "review.major": "🛑 Reject",
+    "review.submit_decision": "📤 Submit",
     "review.decision.approve": "✅ Approved",
     "review.decision.minor": "✏ Adjusted",
     "review.decision.major": "🛑 Rejected",
@@ -547,7 +548,8 @@ const LANG = {
     "review.approve": "✅ 通过",
     "review.modify": "✏ 调整",
     "review.minor": "✏ 调整",
-    "review.major": "🛑 不通过",
+    "review.major": "🛑 Reject",
+    "review.submit_decision": "📤 提交",
     "review.decision.approve": "✅ 通过",
     "review.decision.minor": "✏ 调整",
     "review.decision.major": "🛑 不通过",
@@ -749,6 +751,23 @@ function wireVideoFallback(videoEl, opts) {
   const onSkip = opts && opts.onSkip;
   let retries = 0;
   let srcCursor = -1;  // initialized lazily
+  // v85bf: load-stall watchdog. Some videos hang in "loading" without firing `error`
+  // (CDN hiccup, slow Xet, transient 5xx). If we don't get `loadeddata`/`canplay`
+  // within LOAD_TIMEOUT, force a fake error to trigger the retry path.
+  const LOAD_TIMEOUT = 8000;
+  let loadTimer = null;
+  const armLoadTimer = () => {
+    if (loadTimer) clearTimeout(loadTimer);
+    loadTimer = setTimeout(() => {
+      if (videoEl.readyState < 2) {  // HAVE_CURRENT_DATA = 2
+        console.warn(`video load stalled ${LOAD_TIMEOUT}ms — triggering retry:`, videoEl.src);
+        videoEl.dispatchEvent(new Event("error"));
+      }
+    }, LOAD_TIMEOUT);
+  };
+  videoEl.addEventListener("loadstart", armLoadTimer);
+  ["loadeddata", "canplay"].forEach(ev =>
+    videoEl.addEventListener(ev, () => { if (loadTimer) { clearTimeout(loadTimer); loadTimer = null; } }));
   videoEl.addEventListener("error", () => {
     // Prefer per-element stored sources (correct for OSS + HF + any future host).
     let sources = null;
@@ -756,7 +775,10 @@ function wireVideoFallback(videoEl, opts) {
       try { sources = JSON.parse(videoEl.dataset.sourcesJson); } catch {}
     }
     if (sources && sources.length) {
-      const maxRetries = (opts && opts.maxRetries) || sources.length;
+      // v85bf: cycle through each source up to 3x before giving up (was 1x). Transient
+      // failures often clear within a couple of attempts; we'd rather quietly retry than
+      // pop the failed-placeholder + force a manual refresh (siyuan's complaint).
+      const maxRetries = (opts && opts.maxRetries) || Math.max(3, sources.length * 3);
       if (srcCursor < 0) {
         const curBase = (videoEl.src || "").split(/[?&]_cb=/)[0];
         srcCursor = Math.max(0, sources.findIndex(s => s && s.url && s.url.split(/[?&]_cb=/)[0] === curBase));
@@ -777,7 +799,7 @@ function wireVideoFallback(videoEl, opts) {
     } else {
       // Legacy host-swap path for elements without per-element sources.
       const HOST_KEYS = getVideoHosts().map(h => h.key);
-      const maxRetries = (opts && opts.maxRetries) || HOST_KEYS.length;
+      const maxRetries = (opts && opts.maxRetries) || Math.max(3, HOST_KEYS.length * 3);
       if (srcCursor < 0) srcCursor = Math.max(0, HOST_KEYS.indexOf(getVideoHost()));
       if (retries < maxRetries) {
         retries++;
@@ -2909,12 +2931,14 @@ async function initReview() {
       REVIEW_PENDING_DECISION = asDecision;
       const minorBtn = document.getElementById("minor-btn");
       const majorBtn = document.getElementById("major-btn");
+      // v85bf: cleaner button text — "📤 提交" on the active button, reset the other.
+      const submitLbl = tr("review.submit_decision");
       if (asDecision === "minor") {
-        minorBtn.textContent = "📤 提交小修改 Submit Minor";
-        majorBtn.textContent = "🛑 大修改(打回) Major";  // reset other
+        minorBtn.textContent = submitLbl;
+        majorBtn.textContent = tr("review.major");
       } else {
-        majorBtn.textContent = "📤 提交大修改(打回) Submit Major";
-        minorBtn.textContent = "✏ 小修改 Minor";
+        majorBtn.textContent = submitLbl;
+        minorBtn.textContent = tr("review.minor");
       }
     } else {
       submitReview(REVIEW_PENDING_DECISION || asDecision);
