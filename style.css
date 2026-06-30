@@ -2372,9 +2372,48 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
 .ms-bar-mine { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .4s ease; }
 .milestone-card .ms-note { margin: 0; }
 
-/* v85ab — public team-today leaderboard. */
-.lb-row { padding: 6px 0; font-size: 14px; line-height: 1.6; }
-.lb-row strong { font-variant-numeric: tabular-nums; }
+/* v85ab/ac — public team-today leaderboard, chip layout. */
+.lb-row {
+  padding: 6px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.lb-label {
+  font-weight: 600;
+  color: var(--accent-dark);
+  margin-right: 4px;
+  font-size: 13px;
+}
+.lb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eef2fb;
+  border: 1px solid #d4dcef;
+  border-radius: 14px;
+  padding: 3px 10px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.lb-chip strong { color: var(--accent-dark); }
+.lb-admin-chip { background: #fff7e0; border-color: #f0d59c; }
+.lb-rank-chip { background: #eaf6ec; border-color: #b9e0bd; }
+.lb-rank {
+  display: inline-block;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #d4dcef;
+  border-radius: 9px;
+  font-size: 11px;
+  color: #555;
+}
 
 /* v85y — admin data-reports panel. */
 .reports-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }

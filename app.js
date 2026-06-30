@@ -290,7 +290,8 @@ const LANG = {
     "reports.title": "🚨 Data issue reports",
     "reports.empty": "No reports.",
     "leaderboard.title": "📊 Team today",
-    "leaderboard.admin": "Admin today",
+    "leaderboard.admin": "Admin",
+    "leaderboard.ranked": "Today (sorted)",
     "leaderboard.top3": "Top 3 today",
     "leaderboard.done": "Quota met today",
     "leaderboard.none": "—",
@@ -577,7 +578,8 @@ const LANG = {
     "reports.title": "🚨 数据问题报告",
     "reports.empty": "暂无报告。",
     "leaderboard.title": "📊 今日团队",
-    "leaderboard.admin": "管理员今日",
+    "leaderboard.admin": "管理员",
+    "leaderboard.ranked": "今日排行",
     "leaderboard.top3": "今日前三",
     "leaderboard.done": "今日已达标",
     "leaderboard.none": "—",
@@ -1495,9 +1497,8 @@ async function initDashboard() {
   }, 30000);
 }
 
-/* v85ab — public team leaderboard (Ham's `?action=leaderboard`). Visible to everyone,
-   shows admin count + top3 + completed-today, all with real names — intentional
-   transparency / incentive per siyuan. */
+/* v85ac — public team leaderboard, redesigned per siyuan: admin out of the ranking,
+   completed-today list sorted by today desc, prettier chip layout. */
 async function loadLeaderboard() {
   const card = document.getElementById("leaderboard-card");
   if (!card) return;
@@ -1507,14 +1508,29 @@ async function loadLeaderboard() {
     const d = await r.json();
     if (d?.ok === false) { card.hidden = true; return; }
     card.hidden = false;
-    const adminBlock = d.admin
-      ? `<strong>${tr("leaderboard.admin")}</strong>: ${escapeHtml(d.admin.user || "—")} · <strong>${Number(d.admin.today ?? 0)}</strong>`
-      : `<strong>${tr("leaderboard.admin")}</strong>: ${tr("leaderboard.none")}`;
-    document.getElementById("lb-admin").innerHTML = adminBlock;
-    const top3Names = (d.top3 || []).map((u, i) => `${["🥇","🥈","🥉"][i] || ""} ${escapeHtml(u.user)} <strong>${Number(u.today ?? 0)}</strong>`).join(" · ");
-    document.getElementById("lb-top3").innerHTML = `<strong>${tr("leaderboard.top3")}</strong>: ${top3Names || tr("leaderboard.none")}`;
-    const doneNames = (d.completed_today || []).map(u => `${escapeHtml(u.user || u)} ✓`).join(" · ");
-    document.getElementById("lb-done").innerHTML = `<strong>${tr("leaderboard.done")}</strong>: ${doneNames || tr("leaderboard.none")}`;
+    // Admin is an array (siyuanw/Yu/masiyuan can all be admin). Show their counts but
+    // don't include them in the ranking.
+    const admins = Array.isArray(d.admin) ? d.admin : (d.admin ? [d.admin] : []);
+    const adminChips = admins.length
+      ? admins.map(a => `<span class="lb-chip lb-admin-chip">${escapeHtml(a.user)} <strong>${Number(a.today ?? 0)}</strong>${a.quota ? `<span class="muted">/${a.quota}</span>` : ""}${a.met ? " ✓" : ""}</span>`).join("")
+      : `<span class="muted">${tr("leaderboard.none")}</span>`;
+    document.getElementById("lb-admin").innerHTML =
+      `<span class="lb-label">${tr("leaderboard.admin")}</span> ${adminChips}`;
+    // Ranking: prefer Ham's `ranked` (already excludes admin, sorted desc); fall back to
+    // completed_today sorted by today desc.
+    const ranked = (d.ranked && d.ranked.length)
+      ? d.ranked
+      : (d.completed_today || []).slice().sort((a,b) => (b.today||0) - (a.today||0));
+    const rankedChips = ranked.length
+      ? ranked.map((u, i) => {
+          const medal = ["🥇","🥈","🥉"][i] || `<span class="lb-rank">${i+1}</span>`;
+          return `<span class="lb-chip lb-rank-chip">${medal} ${escapeHtml(u.user)} <strong>${Number(u.today ?? 0)}</strong>${u.quota ? `<span class="muted">/${u.quota}</span>` : ""}${u.met ? " ✓" : ""}</span>`;
+        }).join("")
+      : `<span class="muted">${tr("leaderboard.none")}</span>`;
+    document.getElementById("lb-top3").innerHTML =
+      `<span class="lb-label">${tr("leaderboard.ranked")}</span> ${rankedChips}`;
+    // Completed list now redundant with ranked (if Ham returns ranked). Keep for fallback.
+    document.getElementById("lb-done").innerHTML = "";
   } catch (_) {
     card.hidden = true;
   }
