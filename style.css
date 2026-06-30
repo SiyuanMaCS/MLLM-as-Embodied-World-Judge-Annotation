@@ -2548,6 +2548,15 @@ button.muted-btn, .muted-btn {
   border: 1px solid #9ca3af;
 }
 button.muted-btn:hover, .muted-btn:hover { background: #d1d5db; }
+/* v85bm — outlined red, visually distinct from solid .danger so Reject (solid red)
+   and 🚨 Report (outlined red) don't read as the same button on the review page. */
+button.danger-outline, .danger-outline {
+  background: #fff;
+  color: #b91c1c;
+  border: 1.5px solid #dc3545;
+  font-weight: 600;
+}
+button.danger-outline:hover, .danger-outline:hover { background: #fee2e2; }
 
 /* v85m — my_annotations card: init_frame thumb beside instruction (replaces video player). */
 .my-annot-card .ma-context {
