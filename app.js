@@ -46,6 +46,7 @@ const LANG = {
     "review.kpi_gate.dashboard": "Yesterday's KPI not met — review locked until you catch up.",
     "review.edit_not_found": "Couldn't find that past review in your history.",
     "review.today": "today",
+    "review.edit_required": "Both 调整 / Reject require you to change the scores or notes before submitting.",
     "home.card.my_reviews.title": "My reviews",
     "home.card.my_reviews.sub": "Decisions you've made",
     "home.card.review_results.title": "Review results",
@@ -365,6 +366,7 @@ const LANG = {
     "review.kpi_gate.dashboard": "昨日 KPI 未完成 — 完成后才能审核。",
     "review.edit_not_found": "在历史里找不到这条审核记录。",
     "review.today": "今日审核",
+    "review.edit_required": "调整 / Reject 都需要先改分或备注后再提交。",
     "home.card.my_reviews.title": "我的审核",
     "home.card.my_reviews.sub": "你做过的审核决定",
     "home.card.review_results.title": "审核结果",
@@ -3146,8 +3148,16 @@ async function submitReview(decision) {
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(body)
     });
-    const data = await res.json();
-    if (data && data.ok === false) throw new Error(data.error || "submit failed");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || (data && data.ok === false)) {
+      // v85bg: Ham's 400 code:edit_required when reviewer submits minor/major without
+      // actually changing the scores. Recoverable — toast and keep the form open.
+      if (data?.code === "edit_required") {
+        toast(tr("review.edit_required"), "err");
+        return;
+      }
+      throw new Error(data?.error || "HTTP " + res.status);
+    }
     refreshReviewProgress();  // v85bd: bump today/quota chip after each decision
     await loadNextReview();
   } catch (err) {
