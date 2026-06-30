@@ -74,6 +74,10 @@ const LANG = {
     "arbitration.badge.overturn": "⚖ Overturned",
     "arbitration.badge.modify": "⚖ Modified",
     "arbitration.badge.pending": "⚖ Pending arbitration",
+    "review.accuracy": "Reviewer accuracy (vs meta arbitration)",
+    "review.accuracy.correct": "✓ Reject upheld",
+    "review.accuracy.over_reject": "✗ Over-rejected",
+    "review.accuracy.adjusted": "≈ Adjusted by meta",
     "home.card.gold_annotation.title": "Gold annotation",
     "home.card.gold_annotation.sub": "Your 50-item set",
     "home.card.gold_reviewed.title": "Gold reviewed",
@@ -424,6 +428,10 @@ const LANG = {
     "arbitration.badge.overturn": "⚖ 推翻不通过",
     "arbitration.badge.modify": "⚖ 仲裁修改",
     "arbitration.badge.pending": "⚖ 待仲裁",
+    "review.accuracy": "审核准确率(对比仲裁结果)",
+    "review.accuracy.correct": "✓ 反对成立",
+    "review.accuracy.over_reject": "✗ 误拒",
+    "review.accuracy.adjusted": "≈ 仲裁调整",
     "home.card.gold_annotation.title": "金标标注",
     "home.card.gold_annotation.sub": "你的 50 条金标集",
     "home.card.gold_reviewed.title": "金标被审核",
@@ -3298,7 +3306,7 @@ function openMetaModifyForm() {
   const fields = document.getElementById("modify-fields");
   if (fields.hidden) {
     // Prefill with reviewer's final (the meta-reviewer is most likely to tweak the reject).
-    const rev = ARB_CURRENT?.reviewer_final || ARB_CURRENT?.reviewer_payload || {};
+    const rev = ARB_CURRENT?.reviewer_payload || ARB_CURRENT?.reviewer_final || {};
     for (const id of ["physical_adherence", "instruction_alignment"]) {
       const v = rev[id] ?? 3;
       document.getElementById("mr-" + id).value = v;
@@ -3353,8 +3361,10 @@ function renderArbitrationItem(it) {
   setVideoSourcesFromItem(it);
   document.getElementById("meta-dataset").textContent = it.dataset || "?";
   document.getElementById("meta-task").textContent = it.task || "?";
-  document.getElementById("meta-ts").textContent = String(it.rejection_ts || it.ts || "").slice(0, 16).replace("T", " ");
-  document.getElementById("arb-annotator").textContent = it.annotator || it.target || "—";
+  // Ham: reject_ts on arbitration_queue items.
+  document.getElementById("meta-ts").textContent = String(it.reject_ts || it.rejection_ts || it.ts || "").slice(0, 16).replace("T", " ");
+  // v85bo: Ham's actual field is `target` for the annotator on arbitration_queue.
+  document.getElementById("arb-annotator").textContent = it.target || it.annotator || "—";
   document.getElementById("arb-reviewer").textContent = it.reviewer || "—";
   const v = document.getElementById("gen-video");
   v.src = pickVideoUrl(it.video_sources, it.video_url || "");
@@ -3367,8 +3377,9 @@ function renderArbitrationItem(it) {
   };
   if (CURRENT_INSTRUCTION.en || CURRENT_INSTRUCTION.cn) applyCurrentInstruction();
   else fetchInstructionInto(it.video_url, "prompt-text");
-  const ann = it.annotation_original || it.annotation || {};
-  const rev = it.reviewer_final || it.reviewer_payload || {};
+  // Ham contract: annotator_payload (annotator's submitted scores) + reviewer_payload (reviewer's final, post-reject).
+  const ann = it.annotator_payload || it.annotation_original || it.annotation || {};
+  const rev = it.reviewer_payload || it.reviewer_final || {};
   const subKeys = ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"];
   const subLine = (p, keys) => keys.map(k => `${k.split("_")[0]}=${p?.[k] ?? "—"}`).join(", ");
   const physKeys = ["agent_consistency", "scene_consistency", "interaction_realism"];
@@ -3400,6 +3411,8 @@ async function submitArbitration(decision) {
     arbitration_submit: true,
     meta_reviewer,
     item_id: ARB_CURRENT.item_id,
+    // Ham contract: include target (the annotator being arbitrated about) alongside reviewer.
+    target: ARB_CURRENT.target || ARB_CURRENT.annotator,
     reviewer: ARB_CURRENT.reviewer,
     decision,
     note,
@@ -3549,9 +3562,12 @@ function renderReviewWorkRow(it) {
   // v85bn: arbitration outcome on reviewer's past major decisions (uphold/overturn/modify/pending).
   const arbDec = it.arbitration_decision;
   const arbBadge = arbDec ? `<span class="row-badge arb-${arbDec}" title="${tr("arbitration.tag")}">${tr("arbitration.badge." + arbDec)}</span>` : "";
+  // v85bo: reviewer accuracy signal from Ham (correct|over_reject|adjusted) — actionable feedback.
+  const accuracy = it.reviewer_accuracy;
+  const accBadge = accuracy ? `<span class="row-badge acc-${accuracy}" title="${tr("review.accuracy")}">${tr("review.accuracy." + accuracy)}</span>` : "";
   li.innerHTML = `
     <div class="meta">
-      <span class="row-badge decision-${dec}">${decisionLbl}</span>${arbBadge}
+      <span class="row-badge decision-${dec}">${decisionLbl}</span>${arbBadge}${accBadge}
       <span class="tag">${escapeHtml(it.dataset || "?")}</span>
       <span class="tag">${escapeHtml(it.task || "?")}</span>
       <span class="muted small">→ <strong>${escapeHtml(target)}</strong></span>
