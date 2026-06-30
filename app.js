@@ -1668,14 +1668,15 @@ function hide(id) { const el = document.getElementById(id); if (el) el.hidden = 
 function showError(text, opts) {
   document.getElementById("error-msg").textContent = text;
   const err = document.getElementById("error");
-  // v85bq: opts.success=true re-skins the card green (celebratory done states) and hides
-  // the '提示/Notice' header + Retry button — "🎉 queue cleared" shouldn't look like a failure.
+  // v85bq: opts.success=true re-skins the card green and hides the 提示/Notice header.
+  // v85br: keep the Refresh button visible in success state — siyuan wants to poll for
+  // new tasks after the queue is cleared, not lose the action.
   if (err) {
     err.classList.toggle("success", !!(opts && opts.success));
     const h3 = err.querySelector("h3");
     if (h3) h3.hidden = !!(opts && opts.success);
     const retry = err.querySelector("#retry-btn");
-    if (retry) retry.hidden = !!(opts && opts.success);
+    if (retry) retry.hidden = false;
   }
   hide("loading"); hide("item"); show("error");
 }
