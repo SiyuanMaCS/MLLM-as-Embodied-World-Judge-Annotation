@@ -298,6 +298,7 @@ const LANG = {
     "leaderboard.top3": "Top 3 today",
     "leaderboard.done": "Quota met today",
     "leaderboard.none": "—",
+    "leaderboard.team_today_summary": "Team today: {n} annotations",
     "report.title": "Report a data issue",
     "report.type_label": "Issue type",
     "report.type.instruction_init_mismatch": "Instruction doesn't match init frame",
@@ -589,6 +590,7 @@ const LANG = {
     "leaderboard.top3": "今日前三",
     "leaderboard.done": "今日已达标",
     "leaderboard.none": "—",
+    "leaderboard.team_today_summary": "今日全员共标 {n} 条",
     "report.title": "报告数据问题",
     "report.type_label": "问题类型",
     "report.type.instruction_init_mismatch": "指令与首帧不符",
@@ -1577,21 +1579,23 @@ async function loadLeaderboard() {
       : `<span class="muted">${tr("leaderboard.none")}</span>`;
     document.getElementById("lb-admin").innerHTML =
       `<span class="lb-label">${tr("leaderboard.admin")}</span> ${adminChips}`;
-    // Ranking: prefer Ham's `ranked` (already excludes admin, sorted desc); fall back to
-    // completed_today sorted by today desc.
-    const ranked = (d.ranked && d.ranked.length)
-      ? d.ranked
-      : (d.completed_today || []).slice().sort((a,b) => (b.today||0) - (a.today||0));
-    const rankedChips = ranked.length
-      ? ranked.map((u, i) => {
+    // v85ag (siyuan): only top 3 in leaderboard (not full ranked list).
+    const top3 = (d.top3 && d.top3.length)
+      ? d.top3
+      : (d.ranked || d.completed_today || []).slice(0, 3);
+    const rankedChips = top3.length
+      ? top3.map((u, i) => {
           const medal = ["🥇","🥈","🥉"][i] || `<span class="lb-rank">${i+1}</span>`;
           return `<span class="lb-chip lb-rank-chip">${medal} ${escapeHtml(u.user)} <strong>${Number(u.today ?? 0)}</strong>${u.quota ? `<span class="muted">/${u.quota}</span>` : ""}${u.met ? " ✓" : ""}</span>`;
         }).join("")
       : `<span class="muted">${tr("leaderboard.none")}</span>`;
     document.getElementById("lb-top3").innerHTML =
-      `<span class="lb-label">${tr("leaderboard.ranked")}</span> ${rankedChips}`;
-    // Completed list now redundant with ranked (if Ham returns ranked). Keep for fallback.
+      `<span class="lb-label">${tr("leaderboard.top3")}</span> ${rankedChips}`;
     document.getElementById("lb-done").innerHTML = "";
+    // siyuan: surface team-total-today on the self-summary total-progress card.
+    const teamToday = (d.all || []).reduce((s, u) => s + Number(u.today || 0), 0);
+    const teamEl = document.getElementById("total-team-today");
+    if (teamEl) teamEl.textContent = tr("leaderboard.team_today_summary").replace("{n}", teamToday);
   } catch (_) {
     card.hidden = true;
   }
@@ -2013,6 +2017,7 @@ function renderSelfSummary(root, me) {
         <span class="total-num">${done}<span class="muted">/${target}</span> <span class="self-pct">(${pct}%)</span></span>
       </div>
       <div class="progress-bar total-bar"><div class="progress-fill" style="width:${Math.min(100, pct)}%"></div></div>
+      <p class="muted small total-team-today" id="total-team-today"></p>
     </div>
   `;
 }
