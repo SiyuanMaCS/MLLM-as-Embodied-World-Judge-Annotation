@@ -44,6 +44,7 @@ const LANG = {
     "review.kpi_gate.body": "Finish yesterday's annotation quota first — review assignments are gated on the previous day's KPI.",
     "review.kpi_gate.detail": "Yesterday completed",
     "review.kpi_gate.dashboard": "Yesterday's KPI not met — review locked until you catch up.",
+    "review.edit_not_found": "Couldn't find that past review in your history.",
     "home.card.my_reviews.title": "My reviews",
     "home.card.my_reviews.sub": "Decisions you've made",
     "home.card.review_results.title": "Review results",
@@ -150,6 +151,9 @@ const LANG = {
     "align.toast.export_failed": "Export failed",
     "my_reviews.history": "Reviewed history",
     "my_reviews.empty": "No reviews yet for you. Submit some annotations and they'll be sampled or self-reportable.",
+    "my_reviews.work_title": "My review decisions",
+    "my_reviews.work_empty": "You haven't reviewed any items yet.",
+    "my_reviews.edit_btn": "Re-decide",
     "my_reviews.stats.reviewed": "reviewed",
     "my_reviews.stats.approved": "approved",
     "my_reviews.stats.modified": "modified",
@@ -356,6 +360,7 @@ const LANG = {
     "review.kpi_gate.body": "必须先完成昨日的标注任务,今天才能领取审核任务。",
     "review.kpi_gate.detail": "昨日已完成",
     "review.kpi_gate.dashboard": "昨日 KPI 未完成 — 完成后才能审核。",
+    "review.edit_not_found": "在历史里找不到这条审核记录。",
     "home.card.my_reviews.title": "我的审核",
     "home.card.my_reviews.sub": "你做过的审核决定",
     "home.card.review_results.title": "审核结果",
@@ -462,6 +467,9 @@ const LANG = {
     "align.toast.export_failed": "导出失败",
     "my_reviews.history": "审核历史",
     "my_reviews.empty": "你还没有审核记录。提交一些标注,会被抽样或自报告。",
+    "my_reviews.work_title": "我的审核决定",
+    "my_reviews.work_empty": "你还没有审核过任何任务。",
+    "my_reviews.edit_btn": "重新审核",
     "my_reviews.stats.reviewed": "已审核",
     "my_reviews.stats.approved": "通过",
     "my_reviews.stats.modified": "修改",
@@ -2045,6 +2053,10 @@ async function loadBadges() {
     goldreviewed: goldreviewedNew,
     goldreview:   data.goldreview_pending,
     align:        alignBadge,
+    // v85bb: WeChat-style red badge for my own annotations that were rejected by a
+    // reviewer and not yet acknowledged. Cleared by mark_rejected_seen when the user
+    // opens my_annotations.html and sees the items.
+    rejected:     Number(statsData?.n_my_rejected_unseen ?? 0),
   };
   document.querySelectorAll("[data-badge]").forEach(card => {
     const badge = card.querySelector(".ac-badge");
@@ -2911,7 +2923,45 @@ async function initReview() {
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => loadNextReview() });
   wireSubTriButtons();  // 6 sub-tri groups in review modify form
   wireAutoNote("m-");   // v85j note prefill (review modify panel uses m- prefix)
-  await loadNextReview();
+  // v85bc: my_reviews?as=reviewer "Re-decide" deep-link lands here with edit_review=ITEM.
+  // Load that specific past decision for the reviewer to re-submit.
+  const editId = new URLSearchParams(window.location.search).get("edit_review");
+  if (editId) {
+    await loadReviewForEdit(editId);
+  } else {
+    await loadNextReview();
+  }
+}
+
+async function loadReviewForEdit(itemId) {
+  hide("error"); hide("item"); show("loading");
+  const user = localStorage.getItem(CFG.LS_USER);
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=my_review_work&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    const list = d.reviews || d.items || [];
+    const it = list.find(x => x.item_id === itemId);
+    if (!it) { showError(tr("review.edit_not_found")); return; }
+    // Backend my_review_work shape → REVIEW_CURRENT shape used by renderReviewItem.
+    REVIEW_CURRENT = {
+      item_id: it.item_id,
+      target: it.target,
+      kind: it.kind,
+      is_report: !!it.is_report,
+      dataset: it.dataset, task: it.task, episode: it.episode,
+      instruction: it.instruction, instruction_cn: it.instruction_cn,
+      video_url: it.video_url, video_sources: it.video_sources,
+      init_frame_url: it.init_frame_url,
+      annotation: it.original,
+      _prev_final: it.final,
+      _prev_decision: it.decision,
+    };
+    renderReviewItem(REVIEW_CURRENT);
+    hide("loading"); show("item");
+    document.getElementById("modify-fields").hidden = true;
+  } catch (err) {
+    showError("Failed to load review item: " + err.message);
+  }
 }
 
 let REVIEW_PENDING_DECISION = null;  // tracks which button opened the modify form
@@ -3025,8 +3075,12 @@ async function initMyReviews() {
   const user = localStorage.getItem(CFG.LS_USER);
   if (!user) { window.location.href = "index.html"; return; }
   document.getElementById("who").textContent = user;
-  // Optional ?kind=gold filter — shows only gold-meta-reviewed entries.
-  const kindFilter = new URLSearchParams(window.location.search).get("kind");
+  applyRolePill(user, localStorage.getItem(CFG.LS_ROLE));
+  const params = new URLSearchParams(window.location.search);
+  const kindFilter = params.get("kind");
+  // v85bc: when entered via ?as=reviewer, swap to "reviews I did" mode.
+  const asReviewer = params.get("as") === "reviewer";
+  if (asReviewer) return initMyReviewWork(user);
   if (kindFilter === "gold") {
     const h1 = document.querySelector("header.bar h1");
     if (h1) h1.textContent = "Gold reviewed";
@@ -3079,6 +3133,74 @@ async function initMyReviews() {
     document.getElementById("my-err-msg").textContent = err.message;
     document.getElementById("my-error").hidden = false;
   }
+}
+
+/* v85bc: reviewer history (my_reviews.html?as=reviewer) — decisions THIS user made,
+   not reviews of their annotations. Per siyuan: 可以看到和修改 — edit button takes the
+   reviewer back to review.html with the item preloaded for re-decision. */
+async function initMyReviewWork(user) {
+  const h1 = document.querySelector("header.bar h1");
+  if (h1) h1.textContent = tr("my_reviews.work_title");
+  // Hide the legacy "reviewed history" stats summary — those numbers are about reviews
+  // OF the user (annotator-side), not reviews BY the user.
+  const summary = document.getElementById("my-summary");
+  if (summary) summary.hidden = true;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=my_review_work&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "fetch failed");
+    document.getElementById("my-loading").hidden = true;
+    const list = d.reviews || d.items || [];
+    if (list.length === 0) {
+      document.getElementById("my-empty").hidden = false;
+      const empty = document.getElementById("my-empty");
+      if (empty) empty.textContent = tr("my_reviews.work_empty");
+    } else {
+      if (list[0]) setVideoSourcesFromItem(list[0]);
+      const ul = document.getElementById("my-list");
+      ul.innerHTML = "";
+      for (const it of list) ul.appendChild(renderReviewWorkRow(it));
+      ul.hidden = false;
+    }
+  } catch (err) {
+    document.getElementById("my-loading").hidden = true;
+    document.getElementById("my-err-msg").textContent = err.message;
+    document.getElementById("my-error").hidden = false;
+  }
+}
+
+function renderReviewWorkRow(it) {
+  const li = document.createElement("li");
+  const dec = it.decision === "modify" ? "minor" : (it.decision || "approve");
+  const isApprove = dec === "approve";
+  const isMajor = dec === "major";
+  li.className = "my-row " + (isApprove ? "approved" : (isMajor ? "rejected" : "modified"));
+  const decisionLbl = tr("review.decision." + dec);
+  const ts = it.ts || "";
+  const fin = it.final || it.review_payload || {};
+  const orig = it.original || {};
+  const target = it.target || "—";
+  const initFrame = it.init_frame_url
+    ? `<img src="${escapeHtml(it.init_frame_url)}" alt="init frame" class="ma-thumb" loading="lazy">`
+    : "";
+  const editBtn = it.editable
+    ? `<a class="btn-edit" href="review.html?edit_review=${encodeURIComponent(it.item_id)}">✏ ${tr("my_reviews.edit_btn")}</a>`
+    : `<span class="muted small">${tr("my_annotations.locked")}</span>`;
+  li.innerHTML = `
+    <div class="meta">
+      <span class="row-badge decision-${dec}">${decisionLbl}</span>
+      <span class="tag">${escapeHtml(it.dataset || "?")}</span>
+      <span class="tag">${escapeHtml(it.task || "?")}</span>
+      <span class="muted small">→ <strong>${escapeHtml(target)}</strong></span>
+      <span class="muted small">${escapeHtml(String(ts).slice(0, 16).replace("T", " "))}</span>
+    </div>
+    ${initFrame}
+    <p class="ma-scores">
+      <strong>Final</strong> — Physical: <strong>${fin.physical_adherence ?? "—"}</strong> · Instruction: <strong>${fin.instruction_alignment ?? "—"}</strong>
+    </p>
+    <div class="ma-foot">${editBtn}</div>
+  `;
+  return li;
 }
 
 /* Build one review-history row with a click-to-expand detail panel. */
@@ -3176,6 +3298,14 @@ async function initMyAnnotations() {
   document.getElementById("who").textContent = user;
   const role = localStorage.getItem(CFG.LS_ROLE) || "—";
   applyRolePill(user, role);
+  // v85bb: opening this page = the user is seeing their rejected items.
+  // Tell Ham's backend to clear n_my_rejected_unseen so the home-card red badge resets.
+  try {
+    fetch(CFG.APPS_SCRIPT_URL + "/", {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ mark_rejected_seen: true, user }),
+    });  // fire-and-forget; even if it 4xx the badge will refresh on next dashboard load
+  } catch (_) {}
   await loadMyAnnotations();
 }
 
