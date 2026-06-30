@@ -1003,6 +1003,8 @@ async function initTask() {
   wireVideoFallback(document.getElementById("gt-video"));
   wireSubTriButtons();  // 6 sub-tri groups in task form
   wireAutoNote("");     // v85j note prefill (task form, no prefix)
+  // v85al: countdown chip in the top user-chip area (siyuan: same place as logout).
+  ensureSettleAnchor().then(() => startSettleCountdown());
 
   await refreshStats();
   // Edit mode: ?edit=<item_id> loads the existing annotation and prefills the form.
@@ -1592,6 +1594,7 @@ let _countdownTimer = null;
 function startSettleCountdown() {
   const el = document.getElementById("lb-countdown");
   if (!el) return;
+  el.hidden = false;
   if (_countdownTimer) clearInterval(_countdownTimer);
   const tick = () => {
     const sec = secondsToSettleNow();
@@ -1604,6 +1607,20 @@ function startSettleCountdown() {
   };
   tick();
   _countdownTimer = setInterval(tick, 1000);
+}
+
+// Also fetch milestone to set server anchor (used on pages without the milestone card).
+async function ensureSettleAnchor() {
+  if (_settleAnchor) return;
+  if (!CFG.APPS_SCRIPT_URL) return;
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  if (!user) return;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=milestone&user=${encodeURIComponent(user)}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    setSettleAnchorFromBody(d);
+  } catch (_) { /* fall back to local time */ }
 }
 
 /* v85ac — public team leaderboard, redesigned per siyuan: admin out of the ranking,
