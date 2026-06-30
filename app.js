@@ -1564,16 +1564,28 @@ async function initDashboard() {
   }, 30000);
 }
 
-/* v85ai — settle-countdown to next 13:00 Beijing (UTC+8 → 05:00 UTC). Updates the
-   small badge in the leaderboard header every second. */
-function nextSettleMs() {
+/* v85ai/aj — settle-countdown to next 13:00 Beijing.
+   Server-anchored (Ham's milestone endpoint returns seconds_to_settlement) so users
+   on a skewed clock still see the correct value. Local clock used only to tick
+   between fetches. */
+let _settleAnchor = null;  // { fetchedAt: ms, secondsAtFetch: number }
+function setSettleAnchorFromBody(d) {
+  const sec = Number(d?.seconds_to_settlement);
+  if (Number.isFinite(sec)) {
+    _settleAnchor = { fetchedAt: Date.now(), secondsAtFetch: sec };
+  }
+}
+function secondsToSettleNow() {
+  if (_settleAnchor) {
+    const elapsed = (Date.now() - _settleAnchor.fetchedAt) / 1000;
+    return Math.max(0, _settleAnchor.secondsAtFetch - elapsed);
+  }
+  // Fallback: compute local. Next 05:00 UTC = 13:00 Beijing.
   const now = new Date();
-  const utc = now.getTime();
-  // Next 05:00 UTC = 13:00 Beijing.
   const target = new Date(now);
   target.setUTCHours(5, 0, 0, 0);
-  if (target.getTime() <= utc) target.setUTCDate(target.getUTCDate() + 1);
-  return target.getTime() - utc;
+  if (target.getTime() <= now.getTime()) target.setUTCDate(target.getUTCDate() + 1);
+  return (target.getTime() - now.getTime()) / 1000;
 }
 
 let _countdownTimer = null;
@@ -1582,11 +1594,11 @@ function startSettleCountdown() {
   if (!el) return;
   if (_countdownTimer) clearInterval(_countdownTimer);
   const tick = () => {
-    const ms = nextSettleMs();
-    if (ms <= 0) { el.textContent = tr("countdown.now"); return; }
-    const h = Math.floor(ms / 3600000);
-    const m = Math.floor((ms % 3600000) / 60000);
-    const s = Math.floor((ms % 60000) / 1000);
+    const sec = secondsToSettleNow();
+    if (sec <= 0) { el.textContent = tr("countdown.now"); return; }
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
     const pad = (n) => String(n).padStart(2, "0");
     el.textContent = `⏰ ${tr("countdown.title")} ${pad(h)}:${pad(m)}:${pad(s)}`;
   };
@@ -1743,6 +1755,8 @@ async function loadMilestoneProgress() {
     const teamToday = Number(d?.team_today ?? 0);
     const teamEl = document.getElementById("total-team-today");
     if (teamEl && teamToday > 0) teamEl.textContent = tr("leaderboard.team_today_summary").replace("{n}", teamToday);
+    // Re-anchor settle countdown to Ham's server time (avoids browser clock skew).
+    setSettleAnchorFromBody(d);
   } catch (_) {
     card.hidden = true;
   }
