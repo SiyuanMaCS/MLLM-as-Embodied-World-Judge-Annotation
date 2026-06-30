@@ -348,6 +348,18 @@ const LANG = {
     "reports.page_title": "🚨 Data issue reports",
     "reports.empty": "No reports.",
     "reports.show_video": "▶ Show video",
+    "reports.quarantine_btn": "Quarantine whole task",
+    "reports.quarantine_title": "Hold back ALL sibling videos (every model × prompt) of this GT task",
+    "reports.quarantine_confirm": "Quarantine this entire task? All sibling videos across all models will be held out of annotate + review until you restore.",
+    "reports.quarantine_done": "Quarantined — {n} sibling videos held back.",
+    "quarantine.title": "🚧 Quarantined tasks",
+    "quarantine.hint": "These GT tasks are held out of annotate + review across all sibling models.",
+    "quarantine.empty": "No tasks quarantined.",
+    "quarantine.tag": "QUARANTINED",
+    "quarantine.affected": "{n} sibling videos",
+    "quarantine.restore": "Restore",
+    "quarantine.restore_confirm": "Restore this GT task back to the annotate + review pools?",
+    "quarantine.restored": "Restored.",
     "reports.hide_video": "▾ Hide video",
     "home.card.reports.title": "Data reports",
     "home.card.reports.sub": "Reported items queue",
@@ -702,6 +714,18 @@ const LANG = {
     "reports.page_title": "🚨 数据问题报告",
     "reports.empty": "暂无报告。",
     "reports.show_video": "▶ 查看视频",
+    "reports.quarantine_btn": "隔离整个 task",
+    "reports.quarantine_title": "把这个 GT 任务的所有兄弟视频(各 model × prompt)全部从标注/审核池剔除",
+    "reports.quarantine_confirm": "确定隔离整个 task?同 GT 的所有兄弟视频会从标注 + 审核池剔除,直到你恢复。",
+    "reports.quarantine_done": "已隔离 — 波及 {n} 条兄弟视频。",
+    "quarantine.title": "🚧 待定区(已隔离 task)",
+    "quarantine.hint": "这些 GT 任务被从标注 + 审核池剔除,跨所有兄弟模型的视频都被冻结。",
+    "quarantine.empty": "无待定任务。",
+    "quarantine.tag": "已隔离",
+    "quarantine.affected": "{n} 条兄弟视频",
+    "quarantine.restore": "恢复",
+    "quarantine.restore_confirm": "把这个 GT 任务恢复到标注 + 审核池?",
+    "quarantine.restored": "已恢复。",
     "reports.hide_video": "▾ 收起视频",
     "home.card.reports.title": "数据问题报告",
     "home.card.reports.sub": "查看与处理报告",
@@ -1891,7 +1915,72 @@ async function initDataReports() {
   }
   ensureSettleAnchor().then(() => startSettleCountdown());
   await loadDataReportsPage();
-  setInterval(() => { if (!document.hidden) loadDataReportsPage(); }, 30000);
+  await loadQuarantineList();
+  setInterval(() => {
+    if (!document.hidden) { loadDataReportsPage(); loadQuarantineList(); }
+  }, 30000);
+}
+
+/* v85bu: read-only view of (dataset, task, episode) GTs that admin/finalizer has
+   quarantined — sibling videos across every model are held out of annotate + review.
+   Backend returns `{tasks:[{dataset,task,episode,affected,note,ts,by}]}`. */
+async function loadQuarantineList() {
+  const card = document.getElementById("quarantine-card");
+  const ul = document.getElementById("quarantine-list");
+  if (!card || !ul) return;
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  const canWrite = localStorage.getItem("ewj_can_write") === "1";
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=quarantine_list&user=${encodeURIComponent(user)}`);
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "fetch failed");
+    const tasks = d.tasks || d.items || [];
+    card.hidden = false;
+    if (tasks.length === 0) {
+      ul.innerHTML = "";
+      document.getElementById("quarantine-empty").hidden = false;
+      return;
+    }
+    document.getElementById("quarantine-empty").hidden = true;
+    ul.innerHTML = tasks.map(t => {
+      const ts = (t.ts || "").slice(0, 16).replace("T", " ");
+      const note = t.note ? `<p class="report-note">${escapeHtml(t.note)}</p>` : "";
+      const restoreBtn = canWrite
+        ? `<button type="button" class="ghost small" data-unquarantine="1" data-dataset="${escapeHtml(t.dataset)}" data-task="${escapeHtml(t.task)}" data-episode="${escapeHtml(t.episode || "")}">↩ ${escapeHtml(tr("quarantine.restore"))}</button>`
+        : "";
+      return `<li class="report-row report-bad">
+        <div class="report-head">
+          <span class="report-type tag">🚧 ${escapeHtml(tr("quarantine.tag"))}</span>
+          <span class="report-meta muted">${escapeHtml(t.dataset || "?")} / ${escapeHtml(t.task || "?")} / ${escapeHtml(t.episode || "?")} · ${tr("quarantine.affected").replace("{n}", t.affected ?? "?")}</span>
+        </div>
+        <p class="muted small">${escapeHtml(ts)}${t.by ? " · " + escapeHtml(t.by) : ""}</p>
+        ${note}
+        <div class="report-actions">${restoreBtn}</div>
+      </li>`;
+    }).join("");
+    ul.querySelectorAll("[data-unquarantine]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm(tr("quarantine.restore_confirm"))) return;
+        btn.disabled = true;
+        try {
+          const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+            method: "POST", headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ unquarantine_task: true, agent: user,
+              dataset: btn.dataset.dataset, task: btn.dataset.task, episode: btn.dataset.episode || null }),
+          });
+          const dd = await res.json();
+          if (maybeShowReadOnlyFromBody(dd)) { btn.disabled = false; return; }
+          if (dd?.ok === false) throw new Error(dd.error || "restore failed");
+          toast(tr("quarantine.restored"), "ok");
+          await loadQuarantineList();
+          await loadDataReportsPage();
+        } catch (ee) {
+          toast("Restore failed: " + ee.message, "err");
+          btn.disabled = false;
+        }
+      });
+    });
+  } catch (_) { /* endpoint not yet up — silently leave card hidden */ }
 }
 
 async function loadDataReportsPage() {
@@ -1939,6 +2028,32 @@ async function loadDataReportsPage() {
           await loadDataReportsPage();
         } catch (ee) {
           toast("Resolve failed: " + ee.message, "err");
+          btn.disabled = false;
+        }
+      });
+    });
+    // v85bu: 🚧 "Quarantine the whole task" — calls Ham's quarantine_task which removes
+    // every (model × prompt) sibling of this GT (dataset|task|episode) from the annotate
+    // + review pools. Use when an admin/finalizer determines the GT itself is broken.
+    list.querySelectorAll("[data-quarantine]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const item_id = btn.dataset.item;
+        if (!item_id) return;
+        if (!confirm(tr("reports.quarantine_confirm"))) return;
+        btn.disabled = true;
+        try {
+          const res = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+            method: "POST", headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ quarantine_task: true, agent: user, item_id }),
+          });
+          const dd = await res.json();
+          if (maybeShowReadOnlyFromBody(dd)) { btn.disabled = false; return; }
+          if (dd?.ok === false) throw new Error(dd.error || "quarantine failed");
+          toast(tr("reports.quarantine_done").replace("{n}", dd.affected ?? dd.count ?? "?"), "ok");
+          await loadDataReportsPage();
+          await loadQuarantineList();
+        } catch (ee) {
+          toast("Quarantine failed: " + ee.message, "err");
           btn.disabled = false;
         }
       });
@@ -1997,6 +2112,7 @@ function renderReportCard(rr, canWrite) {
     ${open && canWrite ? `<div class="report-actions">
       <button type="button" class="danger small" data-resolve="confirmed_bad" data-item="${escapeHtml(rr.item_id || "")}">确认坏</button>
       <button type="button" class="ghost small" data-resolve="invalid" data-item="${escapeHtml(rr.item_id || "")}">无效(恢复)</button>
+      <button type="button" class="warn small" data-quarantine="1" data-item="${escapeHtml(rr.item_id || "")}" title="${escapeHtml(tr("reports.quarantine_title"))}">🚧 ${escapeHtml(tr("reports.quarantine_btn"))}</button>
     </div>` : ""}
   </li>`;
 }

@@ -6,7 +6,7 @@
 <title>Data Issue Reports — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85bt">
+<link rel="stylesheet" href="style.css?v=v85bu">
 </head>
 <body>
 <main>
@@ -29,11 +29,18 @@
     <ul id="dr-list" class="reports-list" hidden></ul>
   </section>
 
+  <section class="card" id="quarantine-card" hidden>
+    <h3 data-i18n="quarantine.title">🚧 Quarantined tasks</h3>
+    <p class="muted small" data-i18n="quarantine.hint">These (dataset, task, episode) GTs are held back from annotation + review. Sibling videos across all models stay frozen until you unquarantine.</p>
+    <ul id="quarantine-list" class="reports-list"></ul>
+    <p id="quarantine-empty" class="muted small" hidden data-i18n="quarantine.empty">No tasks quarantined.</p>
+  </section>
+
   <section id="dr-error" class="card error" hidden>
     <h3 data-i18n="common.failed">Failed</h3>
     <p id="dr-err-msg">—</p>
   </section>
 </main>
-<script src="app.js?v=v85bt" defer></script>
+<script src="app.js?v=v85bu" defer></script>
 </body>
 </html>
