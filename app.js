@@ -50,7 +50,8 @@ const LANG = {
     "home.card.gold_reviewed.sub": "Admin audits of you",
     "home.card.alignment.title": "Alignment",
     "home.card.alignment.sub": "Shared 50-item alignment task",
-    "home.card.alignment_admin.sub": "Start / manage reviewer alignment",
+    "home.card.alignment_admin.title": "Manage alignment",
+    "home.card.alignment_admin.sub": "Create campaigns · Alice finalizes",
     "home.card.gold_review.title": "Gold review",
     "home.card.gold_review.sub": "Approve reviewer gold",
     "home.card.gold_direct.title": "Gold (direct)",
@@ -357,7 +358,8 @@ const LANG = {
     "home.card.gold_reviewed.sub": "管理员对你金标的审核",
     "home.card.alignment.title": "对齐任务",
     "home.card.alignment.sub": "全员共享的 50 条对齐任务",
-    "home.card.alignment_admin.sub": "发起 / 管理审核员对齐",
+    "home.card.alignment_admin.title": "管理对齐",
+    "home.card.alignment_admin.sub": "发起 campaign · Alice 负责 finalize",
     "home.card.gold_review.title": "金标审核",
     "home.card.gold_review.sub": "审核审核员金标",
     "home.card.gold_direct.title": "金标(直接)",
@@ -942,12 +944,7 @@ async function initTask() {
     }
   } catch (err) { /* offline — fall through with cached role */ }
   document.getElementById("who").textContent = username;
-  const roleEl = document.getElementById("role");
-  if (roleEl) {
-    const shown = displayRole(username, role);
-    roleEl.dataset.role = shown;
-    roleEl.textContent = tr("role." + shown);
-  }
+  applyRolePill(username, role);
   // logout wired by wireGlobalChrome.
 
   for (const id of ["physical_adherence", "instruction_alignment"]) {
@@ -1583,14 +1580,11 @@ async function initDashboard() {
     // Back-compat: legacy "reviewer" role value also counts.
     isReviewer = (typeof d?.is_reviewer === "boolean") ? d.is_reviewer : (role === "reviewer");
     localStorage.setItem("ewj_is_reviewer", isReviewer ? "1" : "0");
+    // v85az: store quota so applyRolePill can detect pure-reviewer (quota null/0).
+    localStorage.setItem("ewj_quota", d?.quota == null ? "null" : String(d.quota));
   } catch (_) { /* fall through */ }
-  // user-chip + logout wired by wireGlobalChrome on DOMContentLoaded; just set role pill here.
-  const roleEl = document.getElementById("role");
-  if (roleEl) {
-    const shown = displayRole(user, role);
-    roleEl.dataset.role = shown;
-    roleEl.textContent = tr("role." + shown);
-  }
+  // user-chip + logout wired by wireGlobalChrome on DOMContentLoaded.
+  applyRolePill(user, role);
   // v85ad (siyuan): yu + siyuanw are read-only admins — they see the admin view but
   // can't take write actions (delete user, set_role, resolve reports, finalize). The
   // `isAdmin` check below now matches anyone with role==="admin" (or legacy masiyuan
@@ -1741,12 +1735,7 @@ async function initDataReports() {
   const role = localStorage.getItem(CFG.LS_ROLE) || "";
   if (!user) { window.location.href = "index.html"; return; }
   document.getElementById("who").textContent = user;
-  const roleEl = document.getElementById("role");
-  if (roleEl) {
-    const shown = displayRole(user, role);
-    roleEl.dataset.role = shown;
-    roleEl.textContent = tr("role." + shown);
-  }
+  applyRolePill(user, role);
   if (role !== "admin" && user !== "masiyuan") {
     renderRoleGate("管理员 (admin)");
     return;
@@ -2646,12 +2635,7 @@ async function initGold() {
   const role = localStorage.getItem(CFG.LS_ROLE);
   if (!username) { window.location.href = "index.html"; return; }
   document.getElementById("who").textContent = username;
-  const roleEl = document.getElementById("role");
-  if (roleEl) {
-    const shown = displayRole(username, role);
-    roleEl.dataset.role = shown;
-    roleEl.textContent = tr("role." + shown);
-  }
+  applyRolePill(username, role);
   // Role gate: only reviewer / admin can use gold annotation page.
   if (role !== "reviewer" && username !== "masiyuan") {
     renderRoleGate("审核员 (reviewer) / 管理员");
@@ -2838,15 +2822,9 @@ async function initReview() {
   const role = localStorage.getItem(CFG.LS_ROLE);
   if (!username) { window.location.href = "index.html"; return; }
   document.getElementById("who").textContent = username;
-  const roleEl = document.getElementById("role");
-  if (roleEl) {
-    const shown = displayRole(username, role);
-    roleEl.dataset.role = shown;
-    roleEl.textContent = tr("role." + shown);
-  }
+  applyRolePill(username, role);
   // Role gate (v85aw): is_reviewer flag + admin. Authors without the reviewer stack don't
   // get a review queue; if they navigate here directly we surface a clear role gate.
-  // Back-compat: legacy role==="reviewer" also counts as is_reviewer=true.
   const isReviewer = localStorage.getItem("ewj_is_reviewer") === "1" || role === "reviewer";
   const allowedReview = isReviewer || role === "admin" || username === "masiyuan";
   if (!allowedReview) {
@@ -3155,8 +3133,7 @@ async function initMyAnnotations() {
   if (!user) { window.location.href = "index.html"; return; }
   document.getElementById("who").textContent = user;
   const role = localStorage.getItem(CFG.LS_ROLE) || "—";
-  const roleEl = document.getElementById("role");
-  if (roleEl) { roleEl.textContent = tr("role." + role); roleEl.dataset.role = role; }
+  applyRolePill(user, role);
   await loadMyAnnotations();
 }
 
@@ -3525,6 +3502,43 @@ function displayRole(user, role) {
   return role || "—";
 }
 
+/* v85az: paint the role pill + (when is_reviewer is set) append a secondary "审核员"
+   pill so users see their stacked role. Pure reviewer (siyuanw: stats.quota===null +
+   is_reviewer) shows ONLY the reviewer pill to match siyuan's framing "降为审核员".
+   Callers: every page-init that sets the role pill (dashboard, task, review, etc). */
+function applyRolePill(user, role) {
+  const roleEl = document.getElementById("role");
+  if (!roleEl) return;
+  const isReviewer = localStorage.getItem("ewj_is_reviewer") === "1" || role === "reviewer";
+  const quotaRaw = localStorage.getItem("ewj_quota");
+  const isPureReviewer = isReviewer && (quotaRaw === "null" || quotaRaw === "0");
+  // Primary pill: hide entirely for pure reviewer (the secondary pill carries her identity).
+  if (isPureReviewer) {
+    roleEl.hidden = true;
+  } else {
+    const shown = displayRole(user, role);
+    roleEl.dataset.role = shown;
+    roleEl.textContent = tr("role." + shown);
+    roleEl.hidden = false;
+  }
+  // Secondary "审核员" pill — appears for anyone with the reviewer stack.
+  let pill = document.getElementById("role-reviewer-pill");
+  if (isReviewer) {
+    if (!pill) {
+      pill = document.createElement("span");
+      pill.id = "role-reviewer-pill";
+      pill.className = "role-pill";
+      pill.dataset.role = "reviewer";
+      pill.style.marginLeft = "4px";
+      roleEl.insertAdjacentElement("afterend", pill);
+    }
+    pill.textContent = tr("role.reviewer");
+    pill.hidden = false;
+  } else if (pill) {
+    pill.hidden = true;
+  }
+}
+
 function capitalizeFirst(s) {
   if (!s) return s;
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -3585,9 +3599,7 @@ function wireGlobalChrome() {
   }
   const roleEl = document.getElementById("role");
   if (roleEl && (!roleEl.textContent.trim() || roleEl.textContent.trim() === "—")) {
-    const shown = displayRole(user, role);
-    roleEl.dataset.role = shown;
-    roleEl.textContent = tr("role." + shown);
+    applyRolePill(user, role);
   }
   // Inject lang toggle next to logout if missing.
   const chip = document.querySelector(".user-chip");
@@ -3674,7 +3686,11 @@ let ALIGN_OVERVIEW_ITEMS = [];  // ordered item_ids from current admin/read-only
 async function initAlign() {
   const user = localStorage.getItem(CFG.LS_USER);
   if (!user) { window.location.href = "index.html"; return; }
-  ALIGN_IS_ADMIN = user === "masiyuan";
+  // v85az: any admin (not just masiyuan) gets the create+finalize-overview UI with the
+  // participant annotation surface hidden. Yu is also a pure admin and shouldn't see
+  // "我标过的" / "你已标完" UI either.
+  const role = localStorage.getItem(CFG.LS_ROLE);
+  ALIGN_IS_ADMIN = role === "admin" || user === "masiyuan";
   // No upfront role gate — anyone can land here; participant-gate runs per-campaign.
 
   // Wire range outputs
@@ -4108,8 +4124,9 @@ async function loadAlignStatus() {
     document.getElementById("al-progress-stat").hidden = false;
     // v85u: always expose "browse my items" once user has any submitted entry
     // (siyuan/Xinyi bug — they couldn't reopen prior cases after cancel/end).
+    // v85az: admins have no alignment annotation tasks → no "我标过的" link.
     const mineLink = document.getElementById("al-mine-link");
-    if (mineLink) mineLink.hidden = !((d.my_items || []).length > 0);
+    if (mineLink) mineLink.hidden = ALIGN_IS_ADMIN || !((d.my_items || []).length > 0);
     // Render the disclosed count next to submitted count for participants — IAA closure
     // (Alice's guard) requires all-disclosed before aggregate views unlock.
     renderDiscloseProgress(d);
@@ -4125,17 +4142,27 @@ async function loadAlignStatus() {
       // End-campaign button is admin-only.
       const endBtn = document.getElementById("al-end-btn");
       if (endBtn) endBtn.hidden = !ALIGN_IS_ADMIN;
-      // Export JSONL is now available to all_disclosed completed participants too
-      // (Ham opened it after de-anonymization — they already see all real names via align_item,
-      // exporting the same data adds no new leak; siyuan's task 1 = "admin-equivalent view").
-      // Backend gates by role + all_disclosed; frontend just shows the button to anyone
-      // viewing the admin/read-only panel.
       const exportBtn = document.getElementById("al-export-btn");
       if (exportBtn) exportBtn.hidden = false;
     }
-    // Admin no longer directly annotates alignment (siyuan v85g: admin 不直接标 alignment,
-    // 进去就是审阅界面). Treat admin like read-only: overview panel only, no loadAlignNext.
-    if (ALIGN_READ_ONLY || ALIGN_IS_ADMIN) {
+    // v85az: admin alignment = create + finalize-overview ONLY. Hide the participant UI:
+    // - "progress N/M" stat (annotator counter, not relevant to admin)
+    // - "你已标完全部" done panel (admin never annotates the campaign)
+    // - "Browse my items" + disclose-all buttons (no items to browse)
+    // Keep al-admin-overview visible (handled above).
+    if (ALIGN_IS_ADMIN) {
+      document.getElementById("al-progress-stat").hidden = true;
+      document.getElementById("al-done-msg").hidden = true;
+      document.getElementById("al-item").hidden = true;
+      const browseBtn = document.getElementById("al-browse-mine-btn");
+      if (browseBtn) browseBtn.hidden = true;
+      const discloseAllBtn = document.getElementById("al-disclose-all-btn");
+      if (discloseAllBtn) discloseAllBtn.hidden = true;
+      const viewResultsBtn = document.getElementById("al-view-results-btn");
+      if (viewResultsBtn) viewResultsBtn.hidden = true;
+      return;
+    }
+    if (ALIGN_READ_ONLY) {
       document.getElementById("al-done-msg").hidden = false;
       document.getElementById("al-item").hidden = true;
       return;
@@ -4828,7 +4855,7 @@ async function initReviewerHub() {
     }
   } catch (err) { /* offline — fall through */ }
   document.getElementById("who").textContent = user;
-  document.getElementById("role").textContent = role || "—";
+  applyRolePill(user, role);
   const adm = document.getElementById("admin-section");
   if (adm && user === "masiyuan") adm.hidden = false;
   // Hide reviewer section if user is admin only (masiyuan is auto-reviewer too, so keep visible).
