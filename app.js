@@ -1665,8 +1665,18 @@ async function submitAnnotation(body) {
 
 function show(id) { const el = document.getElementById(id); if (el) el.hidden = false; }
 function hide(id) { const el = document.getElementById(id); if (el) el.hidden = true; }
-function showError(text) {
+function showError(text, opts) {
   document.getElementById("error-msg").textContent = text;
+  const err = document.getElementById("error");
+  // v85bq: opts.success=true re-skins the card green (celebratory done states) and hides
+  // the '提示/Notice' header + Retry button — "🎉 queue cleared" shouldn't look like a failure.
+  if (err) {
+    err.classList.toggle("success", !!(opts && opts.success));
+    const h3 = err.querySelector("h3");
+    if (h3) h3.hidden = !!(opts && opts.success);
+    const retry = err.querySelector("#retry-btn");
+    if (retry) retry.hidden = !!(opts && opts.success);
+  }
   hide("loading"); hide("item"); show("error");
 }
 
@@ -3158,7 +3168,8 @@ async function loadNextReview() {
     if (data.error) throw new Error(data.error);
     if (data.done) {
       // v85bi: differentiate "you hit your daily cap" (siyuanw 5/day) from "queue empty".
-      showError(data.review_cap_reached ? tr("review.cap_reached") : tr("review.queue_empty"));
+      // v85bq: render as the green success card, not the red error card.
+      showError(data.review_cap_reached ? tr("review.cap_reached") : tr("review.queue_empty"), {success: true});
       return;
     }
     REVIEW_CURRENT = data;
@@ -3343,7 +3354,7 @@ async function loadNextArbitration() {
     const items = d.items || [];
     setArbRemaining(items.length);
     if (items.length === 0) {
-      showError(tr("arbitration.queue_empty"));
+      showError(tr("arbitration.queue_empty"), {success: true});
       return;
     }
     ARB_CURRENT = items[0];
