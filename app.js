@@ -157,6 +157,9 @@ const LANG = {
     "toast.align_start_failed": "Failed to start alignment",
     "toast.align_end_failed": "Failed to end alignment",
     "toast.align_locked": "This item is still locked — submit yours first to unlock.",
+    "toast.align_finalized_locked": "This item was just finalized by an admin — your re-submit was blocked. Refreshing.",
+    "toast.main_sub_conflict_phys": "Physical adherence score conflict — a sub-item is marked ⚠/✗, so the main score can't stay at 5. Lower the main slider.",
+    "toast.main_sub_conflict_instr": "Instruction alignment score conflict — a sub-item is marked ⚠/✗, so the main score can't stay at 5. Lower the main slider.",
     "page.home": "Home",
     "page.annotate": "Annotate",
     "page.gold_annotate": "Gold annotation",
@@ -456,6 +459,9 @@ const LANG = {
     "toast.align_start_failed": "发起对齐失败",
     "toast.align_end_failed": "结束对齐失败",
     "toast.align_locked": "本条仍处于锁定 — 先标完自己的再查看他人。",
+    "toast.align_finalized_locked": "本条已被管理员定稿,无法再修改。正在刷新列表。",
+    "toast.main_sub_conflict_phys": "物理真实度评分冲突 — 子项被标为 ⚠/✗,总评分不能停在 5。请下调主滑块。",
+    "toast.main_sub_conflict_instr": "指令对齐度评分冲突 — 子项被标为 ⚠/✗,总评分不能停在 5。请下调主滑块。",
     "page.home": "首页",
     "page.annotate": "标注",
     "page.gold_annotate": "金标标注",
@@ -4107,7 +4113,9 @@ async function loadAlignNext() {
       return;
     }
     setVideoSourcesFromItem(d);
-    ALIGN_CURRENT = d;
+    // v85au: queue items are always editable/un-finalized by definition; normalize the flags
+    // so submitAlign's gate has the same shape as items opened via loadAlignItemForEdit.
+    ALIGN_CURRENT = Object.assign({}, d, { editable: true, finalized: false, disclosed: false });
     document.getElementById("al-dataset").textContent = d.dataset || "?";
     document.getElementById("al-task").textContent = d.task || "?";
     const vid = document.getElementById("al-video");
@@ -4150,6 +4158,14 @@ async function loadAlignNext() {
 
 async function submitAlign() {
   if (!ALIGN_CURRENT) return;
+  // v85au: respect server-side immutability. If this item was already finalized/disclosed by
+  // the time the form opened (or in the interim), refuse the submit locally — backend also
+  // returns 409 finalized_locked, but blocking here avoids a wasted round trip + tells the
+  // user *why*. Triggered the "PA reset to 5" bug when stale grid payloads were re-saved.
+  if (ALIGN_CURRENT.editable === false || ALIGN_CURRENT.finalized || ALIGN_CURRENT.disclosed) {
+    toast(tr("toast.align_locked"), "err");
+    return;
+  }
   const user = localStorage.getItem(CFG.LS_USER);
   const physical_notes = document.getElementById("al-physical_notes").value.trim();
   const instruction_notes = document.getElementById("al-instruction_notes").value.trim();
@@ -4164,6 +4180,16 @@ async function submitAlign() {
     payload[id] = getSubTri("al-" + id);  // 3-class
   }
   payload.subs_v = 2;
+  // v85au: Alice's data-guard — any sub ✗/⚠ on an axis ⇒ that axis main can't be 5.
+  // Catches the "user dragged sub but forgot main slider" pollution. Mirrors backend 400 main_sub_conflict.
+  const physSubs = ["agent_consistency", "scene_consistency", "interaction_realism"];
+  const instrSubs = ["agent_match", "object_correct", "goal_completed"];
+  if (payload.physical_adherence === 5 && physSubs.some(k => payload[k] < 2)) {
+    toast(tr("toast.main_sub_conflict_phys"), "err"); return;
+  }
+  if (payload.instruction_alignment === 5 && instrSubs.some(k => payload[k] < 2)) {
+    toast(tr("toast.main_sub_conflict_instr"), "err"); return;
+  }
   const submittedItemId = ALIGN_CURRENT.id;
   try {
     const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
@@ -4171,7 +4197,22 @@ async function submitAlign() {
       body: JSON.stringify({ align_submit: true, user, campaign_id: ALIGN_CAMPAIGN_ID, item_id: submittedItemId, payload }),
     });
     const d = await r.json();
-    if (d?.ok === false) throw new Error(d.error || "submit failed");
+    if (d?.ok === false) {
+      // v85au: friendly mapping for the two new backend error codes.
+      const code = String(d.error || "");
+      if (code === "finalized_locked" || r.status === 409) {
+        toast(tr("toast.align_finalized_locked"), "err");
+        await refreshAlignStatusOnly();
+        await loadMyAlignment();  // re-render with up-to-date finalize flags
+        return;
+      }
+      if (code === "main_sub_conflict") {
+        const dim = d.dim === "instruction_alignment" ? tr("toast.main_sub_conflict_instr") : tr("toast.main_sub_conflict_phys");
+        toast(dim, "err");
+        return;
+      }
+      throw new Error(d.error || "submit failed");
+    }
     await refreshAlignStatusOnly();
     // IAA-independence rule (Alice's guard): seeing others requires explicit "disclose" action,
     // which permanently LOCKS this item — re-edit no longer allowed. Default = advance to next.
@@ -4296,10 +4337,18 @@ function renderMyAlignmentCard(it) {
 
 /* Load an editable (submitted-but-undisclosed) item back into al-form for re-scoring. */
 function loadAlignItemForEdit(it) {
+  // v85au: hard gate — if grid passed us a finalized/disclosed/non-editable row by mistake,
+  // refuse to open the edit form and refresh the grid (lets user see the up-to-date state).
+  if (it.finalized || it.disclosed || it.editable === false) {
+    toast(tr("toast.align_locked"), "err");
+    loadMyAlignment();
+    return;
+  }
   hideAlignSections();
   setVideoSourcesFromItem(it);
   ALIGN_CURRENT = { id: it.item_id, video_url: it.video_url, dataset: it.dataset, task: it.task,
-                    video_sources: it.video_sources, instruction: it.instruction, instruction_cn: it.instruction_cn };
+                    video_sources: it.video_sources, instruction: it.instruction, instruction_cn: it.instruction_cn,
+                    editable: it.editable !== false, finalized: !!it.finalized, disclosed: !!it.disclosed };
   document.getElementById("al-dataset").textContent = it.dataset || "?";
   document.getElementById("al-task").textContent = it.task || "?";
   const vid = document.getElementById("al-video");
@@ -4336,10 +4385,18 @@ function loadAlignItemForEdit(it) {
 
 /* Load a not-yet-annotated item directly (skip the loadAlignNext queue ordering). */
 function loadAlignItemForAnnotate(it) {
+  // v85au: belt-and-suspenders — same gate as loadAlignItemForEdit, in case the grid hands
+  // over a stale "not annotated" row that was finalized by an admin between fetch and click.
+  if (it.finalized || it.disclosed || it.editable === false) {
+    toast(tr("toast.align_locked"), "err");
+    loadMyAlignment();
+    return;
+  }
   hideAlignSections();
   setVideoSourcesFromItem(it);
   ALIGN_CURRENT = { id: it.item_id, video_url: it.video_url, dataset: it.dataset, task: it.task,
-                    video_sources: it.video_sources, instruction: it.instruction, instruction_cn: it.instruction_cn };
+                    video_sources: it.video_sources, instruction: it.instruction, instruction_cn: it.instruction_cn,
+                    editable: it.editable !== false, finalized: !!it.finalized, disclosed: !!it.disclosed };
   document.getElementById("al-dataset").textContent = it.dataset || "?";
   document.getElementById("al-task").textContent = it.task || "?";
   const vid = document.getElementById("al-video");
