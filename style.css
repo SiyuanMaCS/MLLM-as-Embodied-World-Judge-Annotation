@@ -2447,6 +2447,51 @@ ul.my-list .my-row.self-reported { background: #fffaf0; }
 .lb-chip strong { color: var(--accent-dark); }
 .lb-admin-chip { background: #fff7e0; border-color: #f0d59c; }
 .lb-rank-chip { background: #eaf6ec; border-color: #b9e0bd; }
+
+/* v85aq — leaderboard visual rows (mini progress bar per user). */
+.lb-section-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.lb-headline {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: #eaf6ec;
+  border: 1px solid #b9e0bd;
+  border-radius: 8px;
+  color: #1e7a1e;
+  text-align: center;
+}
+.lb-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.lb-user {
+  padding: 8px 12px;
+  background: #fafbfc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.lb-user-met { background: #f0f9f1; border-color: #b9e0bd; }
+.lb-user-ranked { background: #fbfcfd; }
+.lb-user-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+.lb-medal { font-size: 16px; }
+.lb-user-name { font-weight: 600; flex: 1; }
+.lb-user-num { font-size: 13px; font-variant-numeric: tabular-nums; color: #444; }
+.lb-mini-bar {
+  height: 6px;
+  background: #e9ecf2;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.lb-mini-fill {
+  height: 100%;
+  transition: width .3s ease;
+}
+.lb-mini-fill-met { background: linear-gradient(90deg, #5cb85c, #2da155); }
+.lb-mini-fill-below { background: linear-gradient(90deg, #6688cc, #4060aa); }
 .lb-rank {
   display: inline-block;
   min-width: 18px;

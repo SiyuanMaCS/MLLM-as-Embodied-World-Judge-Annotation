@@ -301,6 +301,7 @@ const LANG = {
     "leaderboard.done": "Quota met today",
     "leaderboard.none": "—",
     "leaderboard.team_today_summary": "Team today: {n} annotations",
+    "leaderboard.headline": "{n} people hit quota today 🎉",
     "report.title": "Report a data issue",
     "report.type_label": "Issue type",
     "report.type.instruction_init_mismatch": "Instruction doesn't match init frame",
@@ -595,6 +596,7 @@ const LANG = {
     "leaderboard.done": "今日已达标",
     "leaderboard.none": "—",
     "leaderboard.team_today_summary": "今日全员共标 {n} 条",
+    "leaderboard.headline": "今日达标 {n} 人 🎉",
     "report.title": "报告数据问题",
     "report.type_label": "问题类型",
     "report.type.instruction_init_mismatch": "指令与首帧不符",
@@ -1635,26 +1637,45 @@ async function loadLeaderboard() {
     if (d?.ok === false) { card.hidden = true; return; }
     card.hidden = false;
     startSettleCountdown();
-    // Admin is an array (siyuanw/Yu/masiyuan can all be admin). Show their counts but
-    // don't include them in the ranking.
+    // v85aq (siyuan): more visual — add a prominent "今日达标 N 人" stat + per-user
+    // mini progress bar so a glance tells you who's done vs in-flight.
+    const renderUserVisual = (u) => {
+      const today = Number(u.today ?? 0);
+      const quota = Number(u.quota ?? 0);
+      const pct = quota > 0 ? Math.min(100, Math.round(100 * today / quota)) : 0;
+      const fillCls = u.met ? "lb-mini-fill-met" : "lb-mini-fill-below";
+      return `<div class="lb-user${u.met ? " lb-user-met" : ""}">
+        <div class="lb-user-head"><span class="lb-user-name">${escapeHtml(u.user)}</span><span class="lb-user-num">${today}<span class="muted">/${quota || "—"}</span>${u.met ? " ✓" : ""}</span></div>
+        <div class="lb-mini-bar"><div class="lb-mini-fill ${fillCls}" style="width:${pct}%"></div></div>
+      </div>`;
+    };
     const admins = Array.isArray(d.admin) ? d.admin : (d.admin ? [d.admin] : []);
-    const adminChips = admins.length
-      ? admins.map(a => `<span class="lb-chip lb-admin-chip">${escapeHtml(a.user)} <strong>${Number(a.today ?? 0)}</strong>${a.quota ? `<span class="muted">/${a.quota}</span>` : ""}${a.met ? " ✓" : ""}</span>`).join("")
+    const adminBlock = admins.length
+      ? admins.map(renderUserVisual).join("")
       : `<span class="muted">${tr("leaderboard.none")}</span>`;
     document.getElementById("lb-admin").innerHTML =
-      `<span class="lb-label">${tr("leaderboard.admin")}</span> ${adminChips}`;
-    // v85ag (siyuan): only top 3 in leaderboard (not full ranked list).
+      `<div class="lb-section-label">${tr("leaderboard.admin")}</div><div class="lb-grid">${adminBlock}</div>`;
+    // Top 3 with medal + visual bar.
     const top3 = (d.top3 && d.top3.length)
       ? d.top3
       : (d.ranked || d.completed_today || []).slice(0, 3);
-    const rankedChips = top3.length
+    const top3Block = top3.length
       ? top3.map((u, i) => {
-          const medal = ["🥇","🥈","🥉"][i] || `<span class="lb-rank">${i+1}</span>`;
-          return `<span class="lb-chip lb-rank-chip">${medal} ${escapeHtml(u.user)} <strong>${Number(u.today ?? 0)}</strong>${u.quota ? `<span class="muted">/${u.quota}</span>` : ""}${u.met ? " ✓" : ""}</span>`;
+          const today = Number(u.today ?? 0);
+          const quota = Number(u.quota ?? 0);
+          const pct = quota > 0 ? Math.min(100, Math.round(100 * today / quota)) : 0;
+          const medal = ["🥇","🥈","🥉"][i] || `#${i+1}`;
+          return `<div class="lb-user lb-user-ranked${u.met ? " lb-user-met" : ""}">
+            <div class="lb-user-head"><span class="lb-medal">${medal}</span> <span class="lb-user-name">${escapeHtml(u.user)}</span><span class="lb-user-num">${today}<span class="muted">/${quota || "—"}</span>${u.met ? " ✓" : ""}</span></div>
+            <div class="lb-mini-bar"><div class="lb-mini-fill ${u.met ? "lb-mini-fill-met" : "lb-mini-fill-below"}" style="width:${pct}%"></div></div>
+          </div>`;
         }).join("")
       : `<span class="muted">${tr("leaderboard.none")}</span>`;
+    // Headline: how many people hit quota today.
+    const completedCount = (d.completed_today || []).length;
+    const headline = `<div class="lb-headline">${tr("leaderboard.headline").replace("{n}", completedCount)}</div>`;
     document.getElementById("lb-top3").innerHTML =
-      `<span class="lb-label">${tr("leaderboard.top3")}</span> ${rankedChips}`;
+      `<div class="lb-section-label">${tr("leaderboard.top3")}</div>${headline}<div class="lb-grid">${top3Block}</div>`;
     document.getElementById("lb-done").innerHTML = "";
     // siyuan: surface team-total-today on the self-summary total-progress card.
     const teamToday = (d.all || []).reduce((s, u) => s + Number(u.today || 0), 0);
