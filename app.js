@@ -289,6 +289,9 @@ const LANG = {
     "task.edit_prev_confirm": "Discard current draft and edit the previously submitted item?",
     "reports.title": "🚨 Data issue reports",
     "reports.empty": "No reports.",
+    "readonly.title": "Read-only admin",
+    "readonly.body": "You're a read-only admin — you can see admin views but cannot take write actions (delete user, change role, resolve reports, finalize alignments). Ask masiyuan if you need write access.",
+    "readonly.ok": "Got it",
     "leaderboard.title": "📊 Team today",
     "leaderboard.admin": "Admin",
     "leaderboard.ranked": "Today (sorted)",
@@ -577,6 +580,9 @@ const LANG = {
     "task.edit_prev_confirm": "丢弃当前草稿,改上一条已提交的?",
     "reports.title": "🚨 数据问题报告",
     "reports.empty": "暂无报告。",
+    "readonly.title": "只读管理员",
+    "readonly.body": "你是只读管理员 — 可查看所有数据,但不能执行写操作(删用户 / 改角色 / 解决报告 / finalize alignment)。如需写权限,请联系 masiyuan。",
+    "readonly.ok": "知道了",
     "leaderboard.title": "📊 今日团队",
     "leaderboard.admin": "管理员",
     "leaderboard.ranked": "今日排行",
@@ -1410,6 +1416,40 @@ async function onSubmit(skip) {
   } catch (err) {
     showError("Save failed: " + err.message);
   }
+}
+
+// v85ae: friendlier "you're a read-only admin" gate. Returns true if the viewer
+// can write; otherwise shows a centered popup explaining why the action is blocked.
+function requireWriteOrPopup() {
+  if (localStorage.getItem("ewj_can_write") === "1") return true;
+  showReadOnlyAdminPopup();
+  return false;
+}
+
+function showReadOnlyAdminPopup() {
+  let host = document.getElementById("readonly-modal");
+  if (host) { host.hidden = false; return; }
+  host = document.createElement("div");
+  host.id = "readonly-modal";
+  host.className = "readonly-modal";
+  host.innerHTML = `
+    <div class="readonly-modal-inner">
+      <div class="readonly-modal-icon">🔒</div>
+      <h3>${escapeHtml(tr("readonly.title"))}</h3>
+      <p>${escapeHtml(tr("readonly.body"))}</p>
+      <button type="button" class="primary" id="readonly-modal-close">${escapeHtml(tr("readonly.ok"))}</button>
+    </div>`;
+  document.body.appendChild(host);
+  document.getElementById("readonly-modal-close").addEventListener("click", () => { host.hidden = true; });
+  host.addEventListener("click", (e) => { if (e.target === host) host.hidden = true; });
+}
+
+// Wrap a fetch call so a 403 surfaces the read-only popup instead of bubbling raw.
+async function fetchWriteOrPopup(url, opts) {
+  if (!requireWriteOrPopup()) return null;
+  const res = await fetch(url, opts);
+  if (res.status === 403) { showReadOnlyAdminPopup(); return null; }
+  return res;
 }
 
 function updateEditPrevBtn() {
@@ -2516,7 +2556,7 @@ async function initReview() {
   }
   // Role gate (v85y, peer-review model): authors + admin can review;
   // contributors are annotators-only. Legacy "reviewer" role is treated as author.
-  const allowedReview = role === "author" || role === "reviewer" || username === "masiyuan";
+  const allowedReview = role === "author" || role === "reviewer" || role === "admin" || username === "masiyuan";
   if (!allowedReview) {
     renderRoleGate("作者 (author) / 管理员");
     return;
