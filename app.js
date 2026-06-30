@@ -1890,8 +1890,9 @@ function renderGrid(data) {
   // Whether the viewer (this user) can take write actions (delete, role change).
   // Read-only admins like siyuanw/Yu set can_write=false in stats.
   const viewerCanWrite = localStorage.getItem("ewj_can_write") === "1";
-  // Sort by role rank (admin → reviewer → author → contributor), then total_pct desc, then done desc.
-  const roleRank = { admin: 0, reviewer: 1, contributor: 2, author: 3 };
+  // Sort by role rank (admin → author → reviewer → contributor) per siyuan v85ar —
+  // authors above contributors. Then total_pct desc, then done desc.
+  const roleRank = { admin: 0, author: 1, reviewer: 2, contributor: 3 };
   const annotators = (data.annotators || []).slice().sort((a, b) => {
     const aRole = a.role || ((a.user === "masiyuan") ? "admin" : "contributor");
     const bRole = b.role || ((b.user === "masiyuan") ? "admin" : "contributor");
