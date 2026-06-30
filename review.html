@@ -6,7 +6,7 @@
 <title>Review Queue — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85ba">
+<link rel="stylesheet" href="style.css?v=v85bb">
 </head>
 <body>
 <main>
@@ -22,6 +22,12 @@
   </nav>
 
   <section id="loading" class="card"><p data-i18n="review.loading_next">Loading next review task…</p></section>
+
+  <section id="kpi-banner" class="quality-pause-banner pause-rework_pending" hidden>
+    <strong data-i18n="review.kpi_gate.title">⏳ 昨日标注 KPI 未完成</strong>
+    <p data-i18n="review.kpi_gate.body">必须先完成昨日的标注任务,今天才能领取审核任务。<br>Reviewer assignments require yesterday's annotation KPI to be met.</p>
+    <p class="muted small"><span data-i18n="review.kpi_gate.detail">昨日已完成</span> <strong id="kpi-count">0</strong>/<strong id="kpi-quota">—</strong></p>
+  </section>
 
   <section id="item" class="card" hidden>
     <div class="meta">
@@ -121,6 +127,6 @@
 
   <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v85ba" defer></script>
+<script src="app.js?v=v85bb" defer></script>
 </body>
 </html>

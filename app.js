@@ -40,6 +40,10 @@ const LANG = {
     "home.card.review.title": "Review",
     "home.card.review.sub": "Audit annotator queue",
     "home.card.review.sub_reviewer": "Audit yesterday's annotations",
+    "review.kpi_gate.title": "⏳ Yesterday's annotation KPI not met",
+    "review.kpi_gate.body": "Finish yesterday's annotation quota first — review assignments are gated on the previous day's KPI.",
+    "review.kpi_gate.detail": "Yesterday completed",
+    "review.kpi_gate.dashboard": "Yesterday's KPI not met — review locked until you catch up.",
     "home.card.my_reviews.title": "My reviews",
     "home.card.my_reviews.sub": "Decisions you've made",
     "home.card.review_results.title": "Review results",
@@ -348,6 +352,10 @@ const LANG = {
     "home.card.review.title": "审核",
     "home.card.review.sub": "审核标注员队列",
     "home.card.review.sub_reviewer": "审核前一日的标注",
+    "review.kpi_gate.title": "⏳ 昨日标注 KPI 未完成",
+    "review.kpi_gate.body": "必须先完成昨日的标注任务,今天才能领取审核任务。",
+    "review.kpi_gate.detail": "昨日已完成",
+    "review.kpi_gate.dashboard": "昨日 KPI 未完成 — 完成后才能审核。",
     "home.card.my_reviews.title": "我的审核",
     "home.card.my_reviews.sub": "你做过的审核决定",
     "home.card.review_results.title": "审核结果",
@@ -1582,6 +1590,9 @@ async function initDashboard() {
     localStorage.setItem("ewj_is_reviewer", isReviewer ? "1" : "0");
     // v85az: store quota so applyRolePill can detect pure-reviewer (quota null/0).
     localStorage.setItem("ewj_quota", d?.quota == null ? "null" : String(d.quota));
+    // v85bb: stash yesterday-KPI status for the Review card gating below.
+    if (d?.met_yesterday_kpi === false) localStorage.setItem("ewj_kpi_blocked", "1");
+    else localStorage.removeItem("ewj_kpi_blocked");
   } catch (_) { /* fall through */ }
   // user-chip + logout wired by wireGlobalChrome on DOMContentLoaded.
   applyRolePill(user, role);
@@ -1606,6 +1617,22 @@ async function initDashboard() {
   // read-only 'Review results' for plain admins). Toggle based on isReviewer flag.
   document.querySelectorAll('.home-actions [data-show-if="is_reviewer"]').forEach(el => { el.hidden = !isReviewer; });
   document.querySelectorAll('.home-actions [data-show-if="not_reviewer"]').forEach(el => { el.hidden = isReviewer; });
+  // v85bb: KPI gate — reviewers who didn't meet yesterday's annotation quota get the
+  // Review card grayed out + an inline banner. siyuanw (pure reviewer) is exempt by
+  // backend (met_yesterday_kpi === null for non-author reviewers).
+  const kpiBlocked = isReviewer && localStorage.getItem("ewj_kpi_blocked") === "1";
+  document.querySelectorAll('.home-actions a[href="review.html"][data-badge="review"]').forEach(card => {
+    card.classList.toggle("kpi-locked", kpiBlocked);
+    if (kpiBlocked) {
+      card.title = tr("review.kpi_gate.dashboard");
+      card.setAttribute("aria-disabled", "true");
+    } else {
+      card.removeAttribute("title");
+      card.removeAttribute("aria-disabled");
+    }
+  });
+  const dashKpiBanner = document.getElementById("dash-kpi-banner");
+  if (dashKpiBanner) dashKpiBanner.hidden = !kpiBlocked;
   // .reviewer-only nav entries (e.g. links to review.html in shared headers) show only for
   // users with review power: anyone with the reviewer stack flag, or admin (admin sees
   // results read-only via the same link).
@@ -2894,14 +2921,24 @@ async function loadNextReview() {
   const user = localStorage.getItem(CFG.LS_USER);
   try {
     const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=review_next&user=${encodeURIComponent(user)}`);
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    // v85bb: KPI gate. Ham returns {ok:false, code:"yesterday_kpi_not_met", count, quota}
+    // when the reviewer hasn't met yesterday's annotation KPI. Show the banner, hide everything else.
+    if (data?.code === "yesterday_kpi_not_met") {
+      hide("loading"); hide("item");
+      const banner = document.getElementById("kpi-banner");
+      if (banner) {
+        document.getElementById("kpi-count").textContent = data.count ?? 0;
+        document.getElementById("kpi-quota").textContent = data.quota ?? "—";
+        banner.hidden = false;
+      }
+      return;
+    }
     if (data.error) throw new Error(data.error);
     if (data.done) { showError("🎉 No more review tasks in your queue."); return; }
     REVIEW_CURRENT = data;
     renderReviewItem(data);
     hide("loading"); show("item");
-    // Reset modify panel (legacy single modify-btn element no longer exists since v78
-    // 3-decision UX; only modify-fields needs hiding).
     document.getElementById("modify-fields").hidden = true;
   } catch (err) {
     showError("Failed to load review task: " + err.message);
