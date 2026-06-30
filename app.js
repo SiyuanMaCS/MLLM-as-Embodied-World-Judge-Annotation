@@ -2332,6 +2332,10 @@ function getSubTri(id) {
    rebuilds — we parse each rebuild and re-slot the trailing text. */
 // Templates per Ham's v85j design: per-sub phrasing differs by status (0=severe,
 // 1=partial). Sub at 2 (passes) emits no bullet. Header line varies by main score.
+// v85ao (siyuan): predicate phrases were too specific and pre-judged the issue.
+// Switched to neutral sub-axis labels — annotator writes the actual observation
+// after the colon. Overall header also kept short + neutral (no trailing colon
+// since it's now a summary line, not a fill-in).
 const AUTO_NOTE = {
   physical: {
     score_lines: {
@@ -2342,9 +2346,9 @@ const AUTO_NOTE = {
       5: "物理高度真实",
     },
     subs: [
-      ["agent_consistency", "机械手/人手完整性", { 0: "机械手/人手结构破损、融化或扭曲", 1: "机械手/人手轻微变形" }],
-      ["scene_consistency", "背景与物体一致性", { 0: "背景或物体闪烁、瞬移或形变", 1: "背景或物体轻微不一致" }],
-      ["interaction_realism", "交互真实性", { 0: "抓取不闭合、穿模或违反重力惯性", 1: "交互轻微不真实" }],
+      ["agent_consistency", "机械手/人手完整性", { 0: "机械手/人手完整性", 1: "机械手/人手完整性" }],
+      ["scene_consistency", "背景与物体一致性", { 0: "背景与物体一致性", 1: "背景与物体一致性" }],
+      ["interaction_realism", "交互真实性", { 0: "交互真实性", 1: "交互真实性" }],
     ],
     note_id: "physical_notes",
     main_id: "physical_adherence",
@@ -2358,9 +2362,9 @@ const AUTO_NOTE = {
       5: "指令完全符合",
     },
     subs: [
-      ["agent_match", "动作与主体匹配", { 0: "做了无关动作或主体不符", 1: "动作大致对但有偏差" }],
-      ["object_correct", "目标物正确", { 0: "操作了错误物体", 1: "目标物部分正确或有歧义" }],
-      ["goal_completed", "目标完成度", { 0: "目标未完成", 1: "目标仅部分完成" }],
+      ["agent_match", "动作与主体匹配", { 0: "动作与主体匹配", 1: "动作与主体匹配" }],
+      ["object_correct", "目标物正确", { 0: "目标物正确", 1: "目标物正确" }],
+      ["goal_completed", "目标完成度", { 0: "目标完成度", 1: "目标完成度" }],
     ],
     note_id: "instruction_notes",
     main_id: "instruction_alignment",
@@ -2401,8 +2405,9 @@ function buildAutoNote(prefix, axis) {
       }
     }
   }
-  // v85m: overall line ends with colon; sub lines indented with a tab. Both colons full-width.
-  const lines = [(cfg.score_lines[mainScore] || "") + "："];
+  // v85ao: overall header = score summary (no trailing colon — it's not a fill-in).
+  // Sub bullets: indent + neutral label + colon; annotator writes observation after.
+  const lines = [cfg.score_lines[mainScore] || ""];
   for (const [subKey, _subLabel, statusMap] of cfg.subs) {
     const id = prefix + subKey;
     const v = getSubTri(id);
