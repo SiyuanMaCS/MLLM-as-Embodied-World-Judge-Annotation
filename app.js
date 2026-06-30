@@ -1704,6 +1704,10 @@ async function loadMilestoneProgress() {
       _milestoneDoneFired = true;
       toast(tr("milestone.done_toast"), "ok");
     }
+    // siyuan: surface team_today on the total progress line under selfSummary.
+    const teamToday = Number(d?.team_today ?? 0);
+    const teamEl = document.getElementById("total-team-today");
+    if (teamEl && teamToday > 0) teamEl.textContent = tr("leaderboard.team_today_summary").replace("{n}", teamToday);
   } catch (_) {
     card.hidden = true;
   }
