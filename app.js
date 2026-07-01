@@ -4439,8 +4439,10 @@ function wireGlobalChrome() {
     const lo = chip.querySelector("#logout-btn");
     if (lo) chip.insertBefore(btn, lo); else chip.appendChild(btn);
   }
-  // Inject video-source toggle next to lang button if missing.
-  // Only render when there's something to switch to (>=2 hosts in runtime list).
+  // v85bz (siyuan): video-source toggle — visible on ALL pages that have a user-chip,
+  // pinned right after the countdown chip so it's easy to reach when the current video
+  // hangs. Was previously injected only when >=2 hosts were in the runtime list; keep
+  // that guard (nothing to cycle to otherwise) but drop it from the position rule.
   if (chip && !document.getElementById("vsrc-btn") && getVideoHosts().length >= 2) {
     const btn = document.createElement("button");
     btn.id = "vsrc-btn";
@@ -4463,8 +4465,15 @@ function wireGlobalChrome() {
       const cn = getLang() === "cn";
       toast(cn ? `视频源已切换到 ${next.label}` : `Video source: ${next.label}`, "ok");
     });
-    const langBtn = chip.querySelector("#lang-btn");
-    if (langBtn) chip.insertBefore(btn, langBtn); else chip.appendChild(btn);
+    // v85bz: pin the 🌐 button right after the countdown chip (siyuan asked for it "挂在
+    // 倒计时边上"). Falls back to before lang-btn / end of chip when there's no countdown.
+    const countdown = chip.querySelector("#lb-countdown");
+    if (countdown) {
+      countdown.insertAdjacentElement("afterend", btn);
+    } else {
+      const langBtn = chip.querySelector("#lang-btn");
+      if (langBtn) chip.insertBefore(btn, langBtn); else chip.appendChild(btn);
+    }
   }
   const lo = document.getElementById("logout-btn");
   if (lo) {
