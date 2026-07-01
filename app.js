@@ -1245,6 +1245,13 @@ async function refreshStats() {
     const data = await res.json();
     if (typeof data.today === "number") {
       document.getElementById("today").textContent = data.today;
+      // v85by: report-KPI bonus "+R" (red small) rendered next to today count.
+      const R = Number(data.today_reports || 0);
+      const bonusEl = document.getElementById("today-bonus");
+      if (bonusEl) {
+        bonusEl.textContent = R > 0 ? `+${R}` : "";
+        bonusEl.hidden = R === 0;
+      }
       const quotaEl = document.getElementById("quota");
       const quotaBlock = quotaEl?.parentElement;
       // v85aw: pure-reviewer (siyuanw) has no annotation KPI → quota=null. Hide the
@@ -1254,7 +1261,7 @@ async function refreshStats() {
         quotaBlock.hidden = !hasQuota;
         if (hasQuota) {
           quotaEl.textContent = data.quota;
-          quotaBlock.classList.toggle("met", data.today >= data.quota);
+          quotaBlock.classList.toggle("met", (data.today + R) >= data.quota);
         }
       }
     }
@@ -1879,8 +1886,11 @@ async function loadLeaderboard() {
     const admins = Array.isArray(d.admin) ? d.admin : (d.admin ? [d.admin] : []);
     // v85ba: small "审" marker for stacked reviewers (when backend includes is_reviewer).
     const revMark = a => a?.is_reviewer ? ` <span class="lb-rev-mark" title="reviewer / 审核员">审</span>` : "";
+    // v85by: report-KPI display "+R" (red small) — same rule as self-summary.
+    const bonusMark = a => Number(a?.today_reports || 0) > 0
+      ? `<span class="today-bonus lb-bonus">+${Number(a.today_reports)}</span>` : "";
     const adminChips = admins.length
-      ? admins.map(a => `<span class="lb-chip lb-admin-chip">${escapeHtml(a.user)}${revMark(a)} <strong>${Number(a.today ?? 0)}</strong>${a.quota ? `<span class="muted">/${a.quota}</span>` : ""}${a.met ? " ✓" : ""}</span>`).join("")
+      ? admins.map(a => `<span class="lb-chip lb-admin-chip">${escapeHtml(a.user)}${revMark(a)} <strong>${Number(a.today ?? 0)}</strong>${bonusMark(a)}${a.quota ? `<span class="muted">/${a.quota}</span>` : ""}${a.met ? " ✓" : ""}</span>`).join("")
       : `<span class="muted">${tr("leaderboard.none")}</span>`;
     document.getElementById("lb-admin").innerHTML =
       `<span class="lb-label">${tr("leaderboard.admin")}</span> ${adminChips}`;
@@ -1891,7 +1901,7 @@ async function loadLeaderboard() {
     const rankedChips = top3.length
       ? top3.map((u, i) => {
           const medal = ["🥇","🥈","🥉"][i] || `<span class="lb-rank">${i+1}</span>`;
-          return `<span class="lb-chip lb-rank-chip">${medal} ${escapeHtml(u.user)}${revMark(u)} <strong>${Number(u.today ?? 0)}</strong>${u.quota ? `<span class="muted">/${u.quota}</span>` : ""}${u.met ? " ✓" : ""}</span>`;
+          return `<span class="lb-chip lb-rank-chip">${medal} ${escapeHtml(u.user)}${revMark(u)} <strong>${Number(u.today ?? 0)}</strong>${bonusMark(u)}${u.quota ? `<span class="muted">/${u.quota}</span>` : ""}${u.met ? " ✓" : ""}</span>`;
         }).join("")
       : `<span class="muted">${tr("leaderboard.none")}</span>`;
     document.getElementById("lb-top3").innerHTML =
@@ -2525,10 +2535,15 @@ function formatDayLabel(iso, isToday) {
 
 function renderSelfSummary(root, me) {
   const today = me.today ?? 0;
+  // v85by: report-KPI. today = pure annotations; today_reports = today's
+  // report count that counts toward the daily KPI. Display N + R / quota with
+  // +R in red small; met/remaining/pct all use N+R.
+  const todayReports = me.today_reports ?? 0;
+  const effectiveToday = today + todayReports;
   const quota = me.quota ?? 0;
-  const met = quota > 0 && today >= quota;
-  const remaining = Math.max(0, quota - today);
-  const todayPct = quota > 0 ? Math.min(100, Math.round(100 * today / quota)) : 0;
+  const met = quota > 0 && effectiveToday >= quota;
+  const remaining = Math.max(0, quota - effectiveToday);
+  const todayPct = quota > 0 ? Math.min(100, Math.round(100 * effectiveToday / quota)) : 0;
   const done = me.total_done ?? me.total ?? 0;
   const target = me.total_target ?? 0;
   const pct = me.total_pct ?? (target > 0 ? Math.round(100 * done / target) : 0);
@@ -2542,7 +2557,7 @@ function renderSelfSummary(root, me) {
         <span class="today-label">今日 (${me.role ?? "—"})</span>
         ${streakHTML}
       </div>
-      <div class="today-num"><strong>${today}</strong><span class="today-of">/ ${quota}</span></div>
+      <div class="today-num"><strong>${today}</strong>${todayReports > 0 ? `<span class="today-bonus">+${todayReports}</span>` : ""}<span class="today-of">/ ${quota}</span></div>
       <div class="progress-bar today-bar"><div class="progress-fill" style="width:${todayPct}%"></div></div>
       <div class="today-msg">
         ${met
