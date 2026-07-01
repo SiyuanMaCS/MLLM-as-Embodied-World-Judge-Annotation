@@ -1369,11 +1369,13 @@ async function fetchInstructionInto(video_url, targetElId) {
   // Always fetch from HF (text files; the proxy isn't a generic file server). Apply user-host
   // preference for parity with video — though hf-mirror.com 308-redirects this back to HF.
   const base = applyVideoHost(CFG.HF_RESOLVE_BASE + "/" + baseRaw.replace(/^\/+/, ""));
-  // v85bw: some datasets (agibot/gigaworld) store the text as prompt.txt in the same
-  // prompt/ directory, not instruction.txt — fall through to that filename before giving up.
+  // v85bx: REVERTED prompt.txt fallback (Ham: that file is the generator rewrite, not the
+  // annotator-facing spec — using it would bias instruction_alignment scoring). Root cause
+  // of the empty instructions was Ham's get_instruction cache poisoning; he fixed it +
+  // next_item now reliably serves the real instruction.
   const filenames = getLang() === "cn"
-    ? ["instruction_cn.txt", "prompt_cn.txt", "instruction.txt", "prompt.txt"]
-    : ["instruction.txt", "prompt.txt"];
+    ? ["instruction_cn.txt", "instruction.txt"]
+    : ["instruction.txt"];
   for (const fname of filenames) {
     try {
       const res = await fetch(`${base}/${fname}`);
