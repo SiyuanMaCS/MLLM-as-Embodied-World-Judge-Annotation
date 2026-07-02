@@ -2488,22 +2488,29 @@ function renderGrid(data) {
       const td = document.createElement("td");
       td.className = "grid-cell";
       if (i === days.length - 1) td.classList.add("today-cell");
-      const state = cell ? (cell.state || (cell.count === 0 ? "none" : (cell.met ? "met" : "below"))) : "none";
+      // v85ca: Ham added cell.total = count + reports and cell.delta = total - quota.
+      // siyuan: 周格直接显示合并总数(11+2 就写 13), 不拆开。
+      const displayCount = typeof cell?.total === "number" ? cell.total : (cell?.count ?? 0);
+      const state = cell ? (cell.state || (displayCount === 0 ? "none" : (cell.met ? "met" : "below"))) : "none";
       const showNumbers = (isAdmin || a.is_self) && cell && typeof cell.count === "number";
       if (state === "none") {
         td.classList.add("zero");
-        td.textContent = showNumbers && cell.count === 0 ? "·" : "";
+        td.textContent = showNumbers && displayCount === 0 ? "·" : "";
       } else if (state === "met") {
         td.classList.add("met");
-        if (showNumbers) td.innerHTML = `<span class="cell-count">${cell.count}</span><span class="cell-flag">✓</span>`;
+        if (showNumbers) td.innerHTML = `<span class="cell-count">${displayCount}</span><span class="cell-flag">✓</span>`;
       } else {
         td.classList.add("miss");
         if (showNumbers) {
-          const shortBy = Math.max(0, (a.quota ?? 0) - (cell.count || 0));
-          td.innerHTML = `<span class="cell-count">${cell.count}</span><span class="cell-deficit">−${shortBy}</span>`;
+          const shortBy = typeof cell.delta === "number" ? Math.max(0, -cell.delta) : Math.max(0, (a.quota ?? 0) - displayCount);
+          td.innerHTML = `<span class="cell-count">${displayCount}</span><span class="cell-deficit">−${shortBy}</span>`;
         }
       }
-      if (cell && showNumbers) td.title = `${cell.date}: ${cell.count}/${a.quota ?? "?"}`;
+      if (cell && showNumbers) {
+        const rp = Number(cell.reports || 0);
+        const rpNote = rp > 0 ? ` (含 ${rp} 报错)` : "";
+        td.title = `${cell.date}: ${displayCount}/${a.quota ?? "?"}${rpNote}`;
+      }
       row.appendChild(td);
     }
 
