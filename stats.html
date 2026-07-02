@@ -21,6 +21,16 @@
 .hs-sw-all{ background:linear-gradient(180deg,#aab2c0,#8b95a6); }
 .hs-sw-self{ background:linear-gradient(180deg,#4f7be6,#2c5dd9); }
 
+/* ---- PA↔IA correlation banner ---- */
+.hs-corr{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:12px 0 2px;
+  padding:11px 15px; border-radius:12px; background:linear-gradient(90deg,#f4f7ff,#f9fafc);
+  border:1px solid #e6ebf7; font-size:13px; }
+.hs-corr .hs-ct{ font-weight:700; color:#2a3140; }
+.hs-corr .hs-cg{ display:inline-flex; align-items:center; gap:6px; }
+.hs-corr .hs-cv{ font-weight:800; font-variant-numeric:tabular-nums; }
+.hs-corr .hs-ck{ font-size:11px; color:var(--muted,#888); }
+.hs-corr .hs-cd{ width:7px; height:7px; border-radius:50%; }
+.hs-corr .hs-cd.all{ background:#8b95a6; } .hs-corr .hs-cd.self{ background:#2c5dd9; }
 /* ---- score distribution ---- */
 .hs-metric{ margin-top:18px; padding-top:16px; border-top:1px solid var(--hs-line); }
 .hs-metric:first-of-type{ border-top:0; padding-top:2px; margin-top:6px; }
@@ -101,10 +111,11 @@
         <h2>📈 打分分布</h2><span class="hs-sub">Score distribution · 全员 vs 自己</span>
       </div>
       <div class="hs-legend">
-        <span><i class="hs-sw-all"></i>全员 All</span>
-        <span><i class="hs-sw-self"></i>自己 You</span>
-        <span class="hs-sub" style="margin-left:auto">柱高 = 该组内占比 %（已排除隔离/skip/AI辅助）</span>
+        <span><i class="hs-sw-all"></i>全员</span>
+        <span><i class="hs-sw-self"></i>自己</span>
+        <span class="hs-sub" style="margin-left:auto">柱高 = 组内占比 %</span>
       </div>
+      <div id="hs-corr"></div>
       <div id="hs-dist"><div class="hs-empty">加载中…</div></div>
     </section>
 
@@ -186,12 +197,28 @@
     return h;
   }
 
+  function corrWord(r){
+    if(r==null) return "";
+    var a=Math.abs(r), s=a<.2?"几乎无":a<.4?"弱":a<.6?"中等":a<.8?"强":"很强";
+    return (r<0?"负·":"")+s;
+  }
+  function corrColor(r){ return r==null?"#999":scoreColor(1+Math.abs(r)*4); }
+  function renderCorr(d){
+    var box=document.getElementById("hs-corr");
+    if(!box) return;
+    var ar=d.all?d.all.pa_ia_corr:null, mr=d.mine?d.mine.pa_ia_corr:null;
+    var h='<span class="hs-ct">PA ↔ IA 相关度</span>';
+    h+='<span class="hs-cg"><span class="hs-cd all"></span>全员 <span class="hs-cv" style="color:'+corrColor(ar)+'">'+(ar==null?"—":ar.toFixed(2))+'</span><span class="hs-ck">'+corrWord(ar)+'</span></span>';
+    if(d.mine) h+='<span class="hs-cg"><span class="hs-cd self"></span>自己 <span class="hs-cv" style="color:'+corrColor(mr)+'">'+(mr==null?"—":mr.toFixed(2))+'</span><span class="hs-ck">'+corrWord(mr)+'</span></span>';
+    h+='<span class="hs-ck" style="margin-left:auto">Pearson r · 越高说明物理分与指令分越同向</span>';
+    box.innerHTML=h;
+  }
   function renderDist(d){
     var box=document.getElementById("hs-dist");
     if(!d || !d.all){ box.innerHTML='<div class="hs-empty">暂无数据</div>'; return; }
+    renderCorr(d);
     var html = metricBlock("pa","Physical Adherence 物理真实性", d.all, d.mine)
              + metricBlock("ia","Instruction Alignment 指令符合度", d.all, d.mine);
-    if(!d.mine) html += '<div class="hs-axis-cap" style="margin-top:10px">（未登录或你还没有有效标注 → 只显示全员）</div>';
     box.innerHTML = html;
   }
 
