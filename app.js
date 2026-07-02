@@ -2051,27 +2051,35 @@ function renderScoreDistV2(d) {
 }
 
 function renderCompareBars(allCounts, mineCounts) {
-  const allPct = pctize(allCounts);
-  const minePct = mineCounts ? pctize(mineCounts) : null;
-  return `<div class="sd2-bars">${[1,2,3,4,5].map((score, i) => {
-    const aH = allPct[i], mH = minePct ? minePct[i] : 0;
+  // v85cd: max-in-chart normalization + percentage labels. Bars fill the plot area now
+  // (before, %-of-group put max around 30% → tiny bars in a big empty box).
+  const allTotal = allCounts.reduce((a, b) => a + (b || 0), 0);
+  const mineTotal = mineCounts ? mineCounts.reduce((a, b) => a + (b || 0), 0) : 0;
+  const allPct = allTotal ? allCounts.map(c => (c / allTotal) * 100) : allCounts.map(() => 0);
+  const minePct = (mineCounts && mineTotal) ? mineCounts.map(c => (c / mineTotal) * 100) : null;
+  const maxPct = Math.max(...allPct, ...(minePct || [0]));
+  const scale = maxPct > 0 ? (100 / maxPct) : 0;
+  return `<div class="sd2-bars-v3">${[1,2,3,4,5].map((score, i) => {
+    const aH = Math.max(3, allPct[i] * scale);
+    const mH = minePct ? Math.max(3, minePct[i] * scale) : 0;
     const aC = allCounts[i] || 0;
     const mC = mineCounts ? (mineCounts[i] || 0) : null;
-    return `<div class="sd2-slot">
-      <div class="sd2-bar-stack">
-        <div class="sd2-bar sd2-bar-all" style="height:${aH}%" title="全员 score=${score}: ${aC}"><span class="sd2-count">${aC}</span></div>
-        ${minePct ? `<div class="sd2-bar sd2-bar-mine" style="height:${mH}%" title="自己 score=${score}: ${mC}"><span class="sd2-count">${mC}</span></div>` : ""}
+    const aP = allPct[i].toFixed(0);
+    const mP = minePct ? minePct[i].toFixed(0) : null;
+    return `<div class="sd3-slot">
+      <div class="sd3-stack">
+        <div class="sd3-bar sd3-bar-all" style="height:${aH}%" title="全员 score=${score}: ${aC} (${aP}%)">
+          <span class="sd3-count">${aC}</span>
+          <span class="sd3-pct">${aP}%</span>
+        </div>
+        ${minePct ? `<div class="sd3-bar sd3-bar-mine" style="height:${mH}%" title="自己 score=${score}: ${mC} (${mP}%)">
+          <span class="sd3-count">${mC}</span>
+          <span class="sd3-pct">${mP}%</span>
+        </div>` : ""}
       </div>
-      <div class="sd2-label">${score}</div>
+      <div class="sd3-label">${score}</div>
     </div>`;
   }).join("")}</div>`;
-}
-
-// Convert raw counts into %-of-in-group values so bars use their own scale.
-function pctize(counts) {
-  const total = counts.reduce((a, b) => a + (b || 0), 0);
-  if (!total) return counts.map(() => 0);
-  return counts.map(c => (c / total) * 100);
 }
 
 /* Legacy dashboard-embedded renderer, kept for graceful fallback. */
