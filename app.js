@@ -3068,6 +3068,14 @@ function registerAutoNote(prefix, axis) {
   _AUTO_NOTE_REGISTRY.add(prefix + "|" + axis);
 }
 
+/* v85cj (siyuan): surgical rebuild — only replace the prefill segments that changed.
+   Old behavior rebuilt the whole note from scratch, which nuked any freeform
+   paragraphs the user wrote and re-shuffled sub bullet order. Now we walk each
+   existing line, keep unknown lines verbatim, replace the header line if it
+   matches an old score_line, and replace the phrase prefix on each sub bullet
+   while keeping the user's tail after the colon. Sub bullets that don't already
+   exist for the current sub value get appended. Sub value=2 (passes) drops that
+   sub's bullet if it exists. */
 function buildAutoNote(prefix, axis) {
   const cfg = AUTO_NOTE[axis];
   if (!cfg) return;
@@ -3075,38 +3083,80 @@ function buildAutoNote(prefix, axis) {
   const noteEl = document.getElementById(prefix + cfg.note_id);
   if (!mainEl || !noteEl) return;
   const current = noteEl.value || "";
-  // Edit-mode safety: leave freeform content alone.
   const allHeaders = Object.values(cfg.score_lines);
   const allStatusPhrases = cfg.subs.flatMap(([_k, _l, statusMap]) => Object.values(statusMap));
+  // Fresh textareas that don't yet look like our format get the full scaffold.
   const matchesOurFormat = current === "" ||
     allHeaders.some(h => current.startsWith(h)) ||
     allStatusPhrases.some(p => current.includes(p));
   if (!matchesOurFormat) return;
   const mainScore = Math.min(5, Math.max(1, Number(mainEl.value) || 3));
-  // Preserve user text after the colon on each sub bullet line.
-  // Matches optional leading whitespace (tab indent) + status phrase + colon (CJK or ASCII).
-  const userTextBySub = {};
-  for (const line of current.split("\n")) {
+  const newHeader = cfg.score_lines[mainScore] || "";
+
+  // Empty textarea → emit full scaffold with empty tails.
+  if (current === "") {
+    const lines = [newHeader];
     for (const [subKey, _subLabel, statusMap] of cfg.subs) {
-      for (const phrase of Object.values(statusMap)) {
-        const m = line.match(new RegExp("^\\s*" + escapeRegex(phrase) + "[：:]\\s*(.*)$"));
-        if (m) { userTextBySub[subKey] = m[1]; break; }
+      const v = getSubTri(prefix + subKey);
+      const phrase = statusMap[v];
+      if (phrase) lines.push(`\t${phrase}：`);
+    }
+    noteEl.value = lines.join("\n");
+    return;
+  }
+
+  // Existing content: walk lines, mutate matching ones, leave the rest alone.
+  const oldLines = current.split("\n");
+  const seenSubKeys = new Set();
+  const outLines = [];
+  let headerReplaced = false;
+  for (const line of oldLines) {
+    // Header replacement: only on the FIRST occurrence of a score_line, so a
+    // later paragraph that happens to start with "物理明显不一致" stays untouched.
+    if (!headerReplaced && allHeaders.some(h => line === h || line.startsWith(h))) {
+      const suffix = allHeaders.reduce((acc, h) => {
+        if (acc !== null) return acc;
+        if (line === h) return "";
+        if (line.startsWith(h)) return line.slice(h.length);
+        return null;
+      }, null);
+      outLines.push(newHeader + (suffix ?? ""));
+      headerReplaced = true;
+      continue;
+    }
+    // Sub-bullet replacement: identify which sub this line describes by matching
+    // any of that sub's possible phrases; then swap the phrase for the current
+    // value's phrase (or drop the bullet if the sub is now 2/passes).
+    let handled = false;
+    for (const [subKey, _subLabel, statusMap] of cfg.subs) {
+      for (const oldPhrase of Object.values(statusMap)) {
+        const m = line.match(new RegExp("^(\\s*)" + escapeRegex(oldPhrase) + "([：:]\\s*)(.*)$"));
+        if (m) {
+          const [, indent, sep, tail] = m;
+          const v = getSubTri(prefix + subKey);
+          const newPhrase = statusMap[v];
+          if (newPhrase) outLines.push(`${indent}${newPhrase}${sep}${tail}`);
+          // else v === 2 → drop this bullet (passes doesn't emit)
+          seenSubKeys.add(subKey);
+          handled = true;
+          break;
+        }
       }
+      if (handled) break;
     }
+    if (!handled) outLines.push(line);
   }
-  // v85ao: overall header = score summary (no trailing colon — it's not a fill-in).
-  // Sub bullets: indent + neutral label + colon; annotator writes observation after.
-  const lines = [cfg.score_lines[mainScore] || ""];
+  // Append bullets for subs that need one but weren't present in the existing note
+  // (e.g. user just moved a sub from 2 → 0/1). Preserve stable order from AUTO_NOTE.
   for (const [subKey, _subLabel, statusMap] of cfg.subs) {
-    const id = prefix + subKey;
-    const v = getSubTri(id);
+    if (seenSubKeys.has(subKey)) continue;
+    const v = getSubTri(prefix + subKey);
     const phrase = statusMap[v];
-    if (phrase) {
-      const tail = userTextBySub[subKey] || "";
-      lines.push(`\t${phrase}：${tail}`);
-    }
+    if (phrase) outLines.push(`\t${phrase}：`);
   }
-  noteEl.value = lines.join("\n");
+  // If the note never had a header line (unusual), prepend the new one.
+  if (!headerReplaced && newHeader) outLines.unshift(newHeader);
+  noteEl.value = outLines.join("\n");
 }
 
 function escapeRegex(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
