@@ -204,48 +204,50 @@
     var a=Math.abs(r), s=a<.2?"几乎无":a<.4?"弱":a<.6?"中等":a<.8?"强":"很强";
     return (r<0?"负·":"")+s+"相关";
   }
-  // deterministic-ish jitter so points don't stack on the 5x5 grid
-  function jit(){ return (Math.random()-0.5)*0.66; }
-  // one scatter panel (SVG): x=PA 1-5, y=IA 1-5, points per annotation, trend line, r label
+  // one correlation panel (SVG bubble grid): x=PA 1-5, y=IA 1-5, bubble area = #annotations at
+  // that (PA,IA) cell + least-squares trend line + Pearson r. Clean for discrete 1-5 data.
   function scatterPanel(name, cls, grp){
-    var pairs=(grp&&grp.pa_ia_pairs)||[], r=grp?grp.pa_ia_corr:null;
-    var W=260,H=232, pL=30,pR=10,pT=10,pB=28;
+    var joint=(grp&&grp.joint)||null, r=grp?grp.pa_ia_corr:null;
+    var W=280,H=250, pL=40,pR=16,pT=16,pB=34;
     var plotW=W-pL-pR, plotH=H-pT-pB;
-    var color = cls==="self" ? "#2c5dd9" : "#8b95a6";
+    var accent = cls==="self" ? "#2c5dd9" : "#5b6b8c";
+    var accent2 = cls==="self" ? "#1f47a8" : "#3c4a66";
     function X(v){ return pL + (v-1)/4*plotW; }
     function Y(v){ return pT + (5-v)/4*plotH; }   // IA=5 at top
+    var maxC=0,total=0,sx=0,sy=0,sxy=0,sxx=0;
+    if(joint){ for(var i=0;i<5;i++)for(var j=0;j<5;j++){var c=joint[i][j]; if(c>maxC)maxC=c; total+=c;
+      sx+=c*(i+1); sy+=c*(j+1); sxy+=c*(i+1)*(j+1); sxx+=c*(i+1)*(i+1);} }
+    var rMax=Math.min(plotW,plotH)/4*0.5;
+    function rad(c){ return c<=0?0:Math.max(4, Math.sqrt(c/maxC)*rMax); }
     var svg='<svg viewBox="0 0 '+W+' '+H+'" role="img">';
-    // gridlines + ticks
+    // soft grid
     for(var g=1; g<=5; g++){
-      svg+='<line x1="'+X(g)+'" y1="'+pT+'" x2="'+X(g)+'" y2="'+(pT+plotH)+'" stroke="#eceef3"/>';
-      svg+='<line x1="'+pL+'" y1="'+Y(g)+'" x2="'+(pL+plotW)+'" y2="'+Y(g)+'" stroke="#eceef3"/>';
-      svg+='<text x="'+X(g)+'" y="'+(pT+plotH+15)+'" font-size="9" fill="#9aa0ad" text-anchor="middle">'+g+'</text>';
-      svg+='<text x="'+(pL-7)+'" y="'+(Y(g)+3)+'" font-size="9" fill="#9aa0ad" text-anchor="end">'+g+'</text>';
+      svg+='<line x1="'+X(g)+'" y1="'+pT+'" x2="'+X(g)+'" y2="'+(pT+plotH)+'" stroke="#eef0f5"/>';
+      svg+='<line x1="'+pL+'" y1="'+Y(g)+'" x2="'+(pL+plotW)+'" y2="'+Y(g)+'" stroke="#eef0f5"/>';
+      svg+='<text x="'+X(g)+'" y="'+(pT+plotH+16)+'" font-size="10" fill="#9aa0ad" text-anchor="middle">'+g+'</text>';
+      svg+='<text x="'+(pL-9)+'" y="'+(Y(g)+3.5)+'" font-size="10" fill="#9aa0ad" text-anchor="end">'+g+'</text>';
     }
-    // axis titles
-    svg+='<text x="'+(pL+plotW/2)+'" y="'+(H-2)+'" font-size="10" fill="#7a808c" text-anchor="middle">PA 物理 →</text>';
-    svg+='<text x="10" y="'+(pT+plotH/2)+'" font-size="10" fill="#7a808c" text-anchor="middle" transform="rotate(-90 10 '+(pT+plotH/2)+')">IA 指令 →</text>';
-    // points (jittered)
-    for(var i=0;i<pairs.length;i++){
-      var px=pairs[i][0]+jit(), py=pairs[i][1]+jit();
-      px=Math.max(1,Math.min(5,px)); py=Math.max(1,Math.min(5,py));
-      svg+='<circle cx="'+X(px).toFixed(1)+'" cy="'+Y(py).toFixed(1)+'" r="2.4" fill="'+color+'" fill-opacity="0.34"/>';
-    }
-    // least-squares trend line over integer pairs
-    if(pairs.length>=2){
-      var n=pairs.length, sx=0,sy=0,sxy=0,sxx=0;
-      pairs.forEach(function(p){ sx+=p[0]; sy+=p[1]; sxy+=p[0]*p[1]; sxx+=p[0]*p[0]; });
-      var den=n*sxx-sx*sx;
+    svg+='<text x="'+(pL+plotW/2)+'" y="'+(H-4)+'" font-size="10.5" fill="#6b7280" text-anchor="middle" font-weight="600">PA 物理真实性 →</text>';
+    svg+='<text x="13" y="'+(pT+plotH/2)+'" font-size="10.5" fill="#6b7280" text-anchor="middle" font-weight="600" transform="rotate(-90 13 '+(pT+plotH/2)+')">IA 指令符合度 →</text>';
+    // trend line (drawn under bubbles)
+    if(total>=2){
+      var den=total*sxx-sx*sx;
       if(den!==0){
-        var b=(n*sxy-sx*sy)/den, a=(sy-b*sx)/n;
-        var x1=1,x2=5, y1=a+b*x1, y2=a+b*x2;
-        y1=Math.max(1,Math.min(5,y1)); y2=Math.max(1,Math.min(5,y2));
-        svg+='<line x1="'+X(x1)+'" y1="'+Y(y1)+'" x2="'+X(x2)+'" y2="'+Y(y2)+'" stroke="'+(cls==="self"?"#1f47a8":"#5a6472")+'" stroke-width="2" stroke-dasharray="5 3" stroke-linecap="round"/>';
+        var b=(total*sxy-sx*sy)/den, a=(sy-b*sx)/total;
+        var x1=1,x2=5, y1=Math.max(1,Math.min(5,a+b*x1)), y2=Math.max(1,Math.min(5,a+b*x2));
+        svg+='<line x1="'+X(x1)+'" y1="'+Y(y1)+'" x2="'+X(x2)+'" y2="'+Y(y2)+'" stroke="'+accent2+'" stroke-width="2.5" stroke-dasharray="6 4" stroke-linecap="round" opacity="0.75"/>';
       }
+    }
+    // bubbles
+    if(joint) for(var pa=1; pa<=5; pa++) for(var ia=1; ia<=5; ia++){
+      var c=joint[pa-1][ia-1]; if(c<=0) continue;
+      var rr=rad(c);
+      svg+='<circle cx="'+X(pa)+'" cy="'+Y(ia)+'" r="'+rr.toFixed(1)+'" fill="'+accent+'" fill-opacity="0.5" stroke="'+accent2+'" stroke-opacity="0.55"/>';
+      if(rr>=11) svg+='<text x="'+X(pa)+'" y="'+(Y(ia)+3.5)+'" font-size="10" fill="#fff" text-anchor="middle" font-weight="700">'+c+'</text>';
     }
     svg+='</svg>';
     var h='<div class="hs-sc"><div class="hs-sc-top">';
-    h+='<span class="hs-sc-name '+cls+'"><span class="hs-dot"></span>'+name+'</span>';
+    h+='<span class="hs-sc-name '+cls+'"><span class="hs-dot"></span>'+name+' <span style="font-weight:500;color:#999">n='+(total||0)+'</span></span>';
     h+='<span class="hs-sc-r">r <b style="color:'+(r==null?"#999":scoreColor(1+Math.abs(r)*4))+'">'+(r==null?"—":r.toFixed(2))+'</b> '+corrWord(r)+'</span>';
     h+='</div>'+svg+'</div>';
     return h;
@@ -253,7 +255,7 @@
   function renderCorr(d){
     var box=document.getElementById("hs-corr");
     if(!box) return;
-    var h='<div class="hs-corr-h">PA ↔ IA 散点（每点=一条标注，虚线=拟合趋势，右上角 Pearson r）</div><div class="hs-scwrap">';
+    var h='<div class="hs-corr-h">PA ↔ IA 相关（气泡大小=该(物理,指令)组合的标注数，虚线=拟合趋势，右上角 Pearson r）</div><div class="hs-scwrap">';
     h+=scatterPanel("全员","all",d.all);
     if(d.mine) h+=scatterPanel("自己","self",d.mine);
     h+='</div>';
