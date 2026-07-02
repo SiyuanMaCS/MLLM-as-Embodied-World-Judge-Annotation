@@ -32,7 +32,8 @@
 .hs-sc-name.all .hs-dot{ background:#8b95a6; } .hs-sc-name.self .hs-dot{ background:#2c5dd9; }
 .hs-sc-r{ margin-left:auto; font-size:12px; color:var(--muted,#888); }
 .hs-sc-r b{ font-size:15px; font-variant-numeric:tabular-nums; }
-.hs-sc svg{ width:100%; height:auto; display:block; border-radius:10px; background:linear-gradient(180deg,#fbfcfe,#f7f8fb); border:1px solid #eef0f5; }
+.hs-sc svg,.hs-sc canvas.hs-heat{ width:100%; height:auto; display:block; border-radius:10px;
+  background:linear-gradient(180deg,#fcfdff,#f6f8fc); border:1px solid #eef0f5; }
 /* ---- score distribution ---- */
 .hs-metric{ margin-top:18px; padding-top:16px; border-top:1px solid var(--hs-line); }
 .hs-metric:first-of-type{ border-top:0; padding-top:2px; margin-top:6px; }
@@ -204,62 +205,81 @@
     var a=Math.abs(r), s=a<.2?"几乎无":a<.4?"弱":a<.6?"中等":a<.8?"强":"很强";
     return (r<0?"负·":"")+s+"相关";
   }
-  // one correlation panel (SVG bubble grid): x=PA 1-5, y=IA 1-5, bubble area = #annotations at
-  // that (PA,IA) cell + least-squares trend line + Pearson r. Clean for discrete 1-5 data.
+  // KDE colormap: t in [0,1] -> rgba (transparent low -> deep indigo high)
+  function heatColor(t){
+    t=Math.max(0,Math.min(1,t));
+    var st=[[255,255,255,0],[214,228,250,0.55],[135,178,240,0.82],[52,104,220,0.92],[26,36,104,0.96]];
+    var seg=t*(st.length-1), i=Math.floor(seg), f=seg-i;
+    if(i>=st.length-1){ i=st.length-2; f=1; }
+    var a=st[i], b=st[i+1];
+    return [Math.round(a[0]+(b[0]-a[0])*f), Math.round(a[1]+(b[1]-a[1])*f),
+            Math.round(a[2]+(b[2]-a[2])*f), a[3]+(b[3]-a[3])*f];
+  }
+  // one correlation panel: 2D KERNEL-DENSITY heatmap (x=PA, y=IA) + trend line + Pearson r.
+  // Canvas: KDE computed on a small offscreen grid then upscaled (smoothing) => smooth gradient.
   function scatterPanel(name, cls, grp){
-    var joint=(grp&&grp.joint)||null, r=grp?grp.pa_ia_corr:null;
-    var W=280,H=250, pL=40,pR=16,pT=16,pB=34;
-    var plotW=W-pL-pR, plotH=H-pT-pB;
-    var accent = cls==="self" ? "#2c5dd9" : "#5b6b8c";
-    var accent2 = cls==="self" ? "#1f47a8" : "#3c4a66";
-    function X(v){ return pL + (v-1)/4*plotW; }
-    function Y(v){ return pT + (5-v)/4*plotH; }   // IA=5 at top
-    var maxC=0,total=0,sx=0,sy=0,sxy=0,sxx=0;
-    if(joint){ for(var i=0;i<5;i++)for(var j=0;j<5;j++){var c=joint[i][j]; if(c>maxC)maxC=c; total+=c;
-      sx+=c*(i+1); sy+=c*(j+1); sxy+=c*(i+1)*(j+1); sxx+=c*(i+1)*(i+1);} }
-    var rMax=Math.min(plotW,plotH)/4*0.5;
-    function rad(c){ return c<=0?0:Math.max(4, Math.sqrt(c/maxC)*rMax); }
-    var svg='<svg viewBox="0 0 '+W+' '+H+'" role="img">';
-    // soft grid
-    for(var g=1; g<=5; g++){
-      svg+='<line x1="'+X(g)+'" y1="'+pT+'" x2="'+X(g)+'" y2="'+(pT+plotH)+'" stroke="#eef0f5"/>';
-      svg+='<line x1="'+pL+'" y1="'+Y(g)+'" x2="'+(pL+plotW)+'" y2="'+Y(g)+'" stroke="#eef0f5"/>';
-      svg+='<text x="'+X(g)+'" y="'+(pT+plotH+16)+'" font-size="10" fill="#9aa0ad" text-anchor="middle">'+g+'</text>';
-      svg+='<text x="'+(pL-9)+'" y="'+(Y(g)+3.5)+'" font-size="10" fill="#9aa0ad" text-anchor="end">'+g+'</text>';
-    }
-    svg+='<text x="'+(pL+plotW/2)+'" y="'+(H-4)+'" font-size="10.5" fill="#6b7280" text-anchor="middle" font-weight="600">PA 物理真实性 →</text>';
-    svg+='<text x="13" y="'+(pT+plotH/2)+'" font-size="10.5" fill="#6b7280" text-anchor="middle" font-weight="600" transform="rotate(-90 13 '+(pT+plotH/2)+')">IA 指令符合度 →</text>';
-    // trend line (drawn under bubbles)
-    if(total>=2){
-      var den=total*sxx-sx*sx;
-      if(den!==0){
-        var b=(total*sxy-sx*sy)/den, a=(sy-b*sx)/total;
-        var x1=1,x2=5, y1=Math.max(1,Math.min(5,a+b*x1)), y2=Math.max(1,Math.min(5,a+b*x2));
-        svg+='<line x1="'+X(x1)+'" y1="'+Y(y1)+'" x2="'+X(x2)+'" y2="'+Y(y2)+'" stroke="'+accent2+'" stroke-width="2.5" stroke-dasharray="6 4" stroke-linecap="round" opacity="0.75"/>';
-      }
-    }
-    // bubbles
-    if(joint) for(var pa=1; pa<=5; pa++) for(var ia=1; ia<=5; ia++){
-      var c=joint[pa-1][ia-1]; if(c<=0) continue;
-      var rr=rad(c);
-      svg+='<circle cx="'+X(pa)+'" cy="'+Y(ia)+'" r="'+rr.toFixed(1)+'" fill="'+accent+'" fill-opacity="0.5" stroke="'+accent2+'" stroke-opacity="0.55"/>';
-      if(rr>=11) svg+='<text x="'+X(pa)+'" y="'+(Y(ia)+3.5)+'" font-size="10" fill="#fff" text-anchor="middle" font-weight="700">'+c+'</text>';
-    }
-    svg+='</svg>';
+    var joint=(grp&&grp.joint)||null, r=grp?grp.pa_ia_corr:null, total=0;
+    if(joint) for(var i=0;i<5;i++)for(var j=0;j<5;j++) total+=joint[i][j];
     var h='<div class="hs-sc"><div class="hs-sc-top">';
-    h+='<span class="hs-sc-name '+cls+'"><span class="hs-dot"></span>'+name+' <span style="font-weight:500;color:#999">n='+(total||0)+'</span></span>';
+    h+='<span class="hs-sc-name '+cls+'"><span class="hs-dot"></span>'+name+' <span style="font-weight:500;color:#999">n='+total+'</span></span>';
     h+='<span class="hs-sc-r">r <b style="color:'+(r==null?"#999":scoreColor(1+Math.abs(r)*4))+'">'+(r==null?"—":r.toFixed(2))+'</b> '+corrWord(r)+'</span>';
-    h+='</div>'+svg+'</div>';
+    h+='</div><canvas class="hs-heat" width="560" height="500" data-joint=\''+JSON.stringify(joint||[])+'\'></canvas></div>';
     return h;
+  }
+  function drawHeat(cv){
+    var joint; try{ joint=JSON.parse(cv.getAttribute("data-joint")); }catch(e){ joint=null; }
+    var ctx=cv.getContext("2d"); var W=cv.width, H=cv.height;
+    ctx.clearRect(0,0,W,H);
+    var pL=64,pR=24,pT=22,pB=54, plotW=W-pL-pR, plotH=H-pT-pB;
+    function X(v){ return pL+(v-1)/4*plotW; }
+    function Y(v){ return pT+(5-v)/4*plotH; }
+    var total=0,mx=0; if(joint) for(var i=0;i<5;i++)for(var j=0;j<5;j++){ total+=joint[i][j]; }
+    // KDE on offscreen grid
+    if(joint && total>0){
+      var GW=64, GH=57, sig=0.52, off=document.createElement("canvas"); off.width=GW; off.height=GH;
+      var octx=off.getContext("2d"), img=octx.createImageData(GW,GH), dmax=0, dens=[];
+      for(var gy=0; gy<GH; gy++){ var iaV=5-gy/(GH-1)*4; for(var gx=0; gx<GW; gx++){ var paV=1+gx/(GW-1)*4, s=0;
+        for(var a=0;a<5;a++)for(var b=0;b<5;b++){ var c=joint[a][b]; if(!c)continue; var dx=paV-(a+1),dy=iaV-(b+1); s+=c*Math.exp(-(dx*dx+dy*dy)/(2*sig*sig)); }
+        dens.push(s); if(s>dmax)dmax=s; } }
+      for(var k=0;k<dens.length;k++){ var col=heatColor(dmax>0?dens[k]/dmax:0), o=k*4;
+        img.data[o]=col[0]; img.data[o+1]=col[1]; img.data[o+2]=col[2]; img.data[o+3]=Math.round(col[3]*255); }
+      octx.putImageData(img,0,0);
+      ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality="high";
+      ctx.drawImage(off, pL,pT, plotW,plotH);
+    }
+    // gridlines + ticks
+    ctx.strokeStyle="rgba(150,160,180,0.28)"; ctx.lineWidth=1; ctx.font="20px -apple-system,sans-serif";
+    ctx.fillStyle="#9aa0ad"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    for(var g=1; g<=5; g++){
+      ctx.beginPath(); ctx.moveTo(X(g),pT); ctx.lineTo(X(g),pT+plotH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pL,Y(g)); ctx.lineTo(pL+plotW,Y(g)); ctx.stroke();
+      ctx.fillText(g, X(g), pT+plotH+18);
+      ctx.textAlign="right"; ctx.fillText(g, pL-14, Y(g)); ctx.textAlign="center";
+    }
+    // axis titles
+    ctx.fillStyle="#6b7280"; ctx.font="600 21px -apple-system,sans-serif";
+    ctx.fillText("PA 物理真实性 →", pL+plotW/2, H-16);
+    ctx.save(); ctx.translate(20, pT+plotH/2); ctx.rotate(-Math.PI/2); ctx.fillText("IA 指令符合度 →",0,0); ctx.restore();
+    // trend line (least squares from joint)
+    if(joint && total>=2){
+      var sx=0,sy=0,sxy=0,sxx=0; for(var a2=0;a2<5;a2++)for(var b2=0;b2<5;b2++){ var c2=joint[a2][b2]; if(!c2)continue;
+        sx+=c2*(a2+1); sy+=c2*(b2+1); sxy+=c2*(a2+1)*(b2+1); sxx+=c2*(a2+1)*(a2+1); }
+      var den=total*sxx-sx*sx;
+      if(den!==0){ var m=(total*sxy-sx*sy)/den, q=(sy-m*sx)/total;
+        var y1=Math.max(1,Math.min(5,q+m*1)), y2=Math.max(1,Math.min(5,q+m*5));
+        ctx.strokeStyle="rgba(20,30,90,0.8)"; ctx.lineWidth=3; ctx.setLineDash([10,7]); ctx.lineCap="round";
+        ctx.beginPath(); ctx.moveTo(X(1),Y(y1)); ctx.lineTo(X(5),Y(y2)); ctx.stroke(); ctx.setLineDash([]); }
+    }
   }
   function renderCorr(d){
     var box=document.getElementById("hs-corr");
     if(!box) return;
-    var h='<div class="hs-corr-h">PA ↔ IA 相关（气泡大小=该(物理,指令)组合的标注数，虚线=拟合趋势，右上角 Pearson r）</div><div class="hs-scwrap">';
+    var h='<div class="hs-corr-h">PA ↔ IA 核密度热力图（颜色越深=该(物理,指令)分数区标注越密集，虚线=拟合趋势，右上角 Pearson r）</div><div class="hs-scwrap">';
     h+=scatterPanel("全员","all",d.all);
     if(d.mine) h+=scatterPanel("自己","self",d.mine);
     h+='</div>';
     box.innerHTML=h;
+    box.querySelectorAll("canvas.hs-heat").forEach(drawHeat);
   }
   function renderDist(d){
     var box=document.getElementById("hs-dist");
