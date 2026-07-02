@@ -7,6 +7,77 @@
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="style.css?v=v85cd">
+<style>
+/* ===== Ham stats redesign (siyuan 2026-07-02: 好好设计) — self-contained, scoped .hs- ===== */
+.hs-wrap{ --hs-gray:#9aa3b2; --hs-gray-d:#6b7280; --hs-blue:#2c5dd9; --hs-blue-d:#1f47a8;
+  --hs-track:#eef0f5; --hs-line:#edeef2; }
+.hs-card{ background:#fff; border:1px solid var(--border,#e5e5ea); border-radius:16px;
+  padding:22px 24px; margin:0 0 20px; box-shadow:0 1px 3px rgba(20,25,40,.05),0 8px 24px -18px rgba(20,25,40,.25); }
+.hs-h{ display:flex; align-items:baseline; gap:10px; margin:0 0 2px; }
+.hs-h h2{ font-size:19px; font-weight:700; margin:0; letter-spacing:-.01em; }
+.hs-h .hs-sub{ color:var(--muted,#666); font-size:12.5px; }
+.hs-legend{ display:flex; gap:16px; align-items:center; margin:12px 0 4px; font-size:12.5px; color:var(--muted,#555); }
+.hs-legend i{ display:inline-block; width:13px; height:13px; border-radius:4px; margin-right:6px; vertical-align:-2px; }
+.hs-sw-all{ background:linear-gradient(180deg,#aab2c0,#8b95a6); }
+.hs-sw-self{ background:linear-gradient(180deg,#4f7be6,#2c5dd9); }
+
+/* ---- score distribution ---- */
+.hs-metric{ margin-top:18px; padding-top:16px; border-top:1px solid var(--hs-line); }
+.hs-metric:first-of-type{ border-top:0; padding-top:2px; margin-top:6px; }
+.hs-mrow{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.hs-mname{ font-weight:700; font-size:15px; }
+.hs-mfull{ color:var(--muted,#888); font-size:12px; font-weight:500; }
+.hs-stats{ display:flex; gap:8px; margin-left:auto; flex-wrap:wrap; }
+.hs-pill{ font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--border,#e5e5ea);
+  background:#fbfbfd; display:inline-flex; gap:7px; align-items:center; }
+.hs-pill b{ font-weight:700; }
+.hs-pill .hs-dot{ width:8px; height:8px; border-radius:50%; }
+.hs-pill.all .hs-dot{ background:#8b95a6; } .hs-pill.self .hs-dot{ background:#2c5dd9; }
+.hs-pill .hs-n{ color:var(--muted,#999); }
+
+.hs-chart{ position:relative; height:184px; margin:6px 0 2px; padding-left:34px; }
+.hs-grid{ position:absolute; left:34px; right:0; top:0; bottom:26px; }
+.hs-gl{ position:absolute; left:0; right:0; border-top:1px dashed #e9ebf1; }
+.hs-gl span{ position:absolute; left:-34px; top:-8px; width:30px; text-align:right;
+  font-size:10px; color:#b3b8c4; }
+.hs-bars{ position:absolute; left:34px; right:0; top:0; bottom:26px; display:flex; justify-content:space-around; align-items:flex-end; }
+.hs-grp{ flex:1; display:flex; justify-content:center; align-items:flex-end; gap:7px; height:100%; }
+.hs-bar{ width:34px; border-radius:7px 7px 3px 3px; position:relative; min-height:2px;
+  transition:height .55s cubic-bezier(.22,.61,.36,1); box-shadow:0 1px 2px rgba(20,25,40,.14); }
+.hs-bar.all{ background:linear-gradient(180deg,#aab2c0,#7f8a9c); }
+.hs-bar.self{ background:linear-gradient(180deg,#4f7be6,#2350c9); }
+.hs-bar .hs-lab{ position:absolute; top:-17px; left:50%; transform:translateX(-50%);
+  font-size:11px; font-weight:700; color:#4a5262; white-space:nowrap; }
+.hs-bar.self .hs-lab{ color:#2350c9; }
+.hs-bar .hs-cnt{ position:absolute; top:6px; left:50%; transform:translateX(-50%);
+  font-size:9.5px; color:#fff; opacity:.85; font-weight:600; }
+.hs-xaxis{ position:absolute; left:34px; right:0; bottom:0; height:22px; display:flex; justify-content:space-around; }
+.hs-xt{ flex:1; text-align:center; font-size:12px; font-weight:700; color:#555; position:relative; }
+.hs-xt .hs-chip{ display:inline-block; width:20px; height:20px; line-height:20px; border-radius:6px; color:#fff; }
+.hs-axis-cap{ text-align:center; font-size:11px; color:#b3b8c4; margin-top:-2px; }
+
+/* ---- model leaderboard ---- */
+.hs-lb-row{ display:grid; grid-template-columns:30px 1fr; gap:12px; align-items:center; padding:9px 0; border-top:1px solid var(--hs-line); }
+.hs-lb-row:first-child{ border-top:0; }
+.hs-rank{ width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:13px; color:#fff; background:#c3c8d4; }
+.hs-rank.r1{ background:linear-gradient(135deg,#f6c650,#e0a020); }
+.hs-rank.r2{ background:linear-gradient(135deg,#cfd4de,#a7aebc); }
+.hs-rank.r3{ background:linear-gradient(135deg,#e0a878,#c07d45); }
+.hs-lb-main{ min-width:0; }
+.hs-lb-top{ display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
+.hs-lb-name{ font-weight:700; font-size:14px; }
+.hs-lb-n{ font-size:11.5px; color:var(--muted,#999); }
+.hs-lb-score{ margin-left:auto; font-weight:800; font-size:15px; font-variant-numeric:tabular-nums; }
+.hs-track{ height:15px; border-radius:8px; background:var(--hs-track); overflow:hidden; position:relative; }
+.hs-fill{ height:100%; border-radius:8px; width:0; transition:width .6s cubic-bezier(.22,.61,.36,1);
+  display:flex; align-items:center; }
+.hs-subs{ display:flex; gap:14px; margin-top:5px; font-size:11px; color:var(--muted,#888); }
+.hs-subs b{ color:#3a4150; font-weight:700; }
+.hs-scale{ display:flex; justify-content:space-between; font-size:10px; color:#c0c5d0; margin-top:8px; padding-top:4px; }
+.hs-empty{ color:var(--muted,#999); font-size:13px; padding:8px 0; }
+@media(max-width:640px){ .hs-bar,.hs-bar.self{ width:24px; } .hs-stats{ margin-left:0; } }
+</style>
 </head>
 <body>
 <main>
@@ -20,26 +91,158 @@
   </header>
   <nav class="page-nav">
     <a href="dashboard.html" class="back-link" data-i18n="nav.back">← Back</a>
-    <span class="nav-stat muted small" data-i18n="stats.updated_daily">每天更新</span>
+    <span class="nav-stat muted small">每天更新 · daily</span>
   </nav>
 
-  <section class="card" id="score-dist-card">
-    <h3 data-i18n="stats.score_dist.title">📈 分数分布</h3>
-    <p class="muted small" data-i18n="stats.score_dist.hint">PA / IA 1-5 直方 · 全员 vs 自己 · 排除隔离/skip</p>
-    <div id="score-dist-body" class="sd-v2-body"></div>
-  </section>
+  <div class="hs-wrap">
+    <!-- SCORE DISTRIBUTION -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>📈 打分分布</h2><span class="hs-sub">Score distribution · 全员 vs 自己</span>
+      </div>
+      <div class="hs-legend">
+        <span><i class="hs-sw-all"></i>全员 All</span>
+        <span><i class="hs-sw-self"></i>自己 You</span>
+        <span class="hs-sub" style="margin-left:auto">柱高 = 该组内占比 %（已排除隔离/skip/AI辅助）</span>
+      </div>
+      <div id="hs-dist"><div class="hs-empty">加载中…</div></div>
+    </section>
 
-  <section class="card" id="model-averages-card">
-    <h3 data-i18n="stats.model_leaderboard.title">🏁 Model 均分榜</h3>
-    <p class="muted small" data-i18n="stats.model_leaderboard.hint">按整体均分(=(PA+IA)/2)降序</p>
-    <div id="model-averages-body"></div>
-  </section>
+    <!-- MODEL LEADERBOARD -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>🏁 Model 均分榜</h2><span class="hs-sub">按整体均分 (PA+IA)/2 降序 · 满分 5</span>
+      </div>
+      <div id="hs-lb"><div class="hs-empty">加载中…</div></div>
+    </section>
 
-  <section id="dash-error" class="card error" hidden>
-    <h3 data-i18n="common.failed_to_load">Failed to load</h3>
-    <p id="dash-err-msg">—</p>
-  </section>
+    <section id="hs-err" class="hs-card" style="display:none;border-color:#f2c0c8;background:#fdf3f5">
+      <div class="hs-h"><h2 style="color:#b00020">加载失败</h2></div>
+      <p id="hs-err-msg" class="hs-sub"></p>
+    </section>
+  </div>
 </main>
 <script src="app.js?v=v85cd" defer></script>
+<script>
+(function(){
+  var API = window.__APPS_SCRIPT_URL__;
+  var USER = "";
+  try{ USER = localStorage.getItem("ewj_annotator") || ""; }catch(e){}
+
+  // score value -> color (1 red .. 5 green), for x-axis chips + leaderboard fill
+  function scoreColor(v){
+    var stops=[[229,72,77],[240,138,52],[240,180,40],[120,170,70],[46,139,87]];
+    var t=Math.max(1,Math.min(5,v)), i=Math.floor(t)-1, f=t-Math.floor(t);
+    if(i>=4){i=3;f=1;}
+    var a=stops[i], b=stops[i+1];
+    var c=a.map(function(x,k){return Math.round(x+(b[k]-x)*f);});
+    return "rgb("+c[0]+","+c[1]+","+c[2]+")";
+  }
+  function pct(arr){ var s=arr.reduce(function(a,b){return a+b;},0)||1; return arr.map(function(c){return c/s*100;}); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];}); }
+  function fmt(x){ return (x==null)?"—":(Math.round(x*100)/100).toFixed(2); }
+
+  // one metric block (PA or IA): grouped bars all vs self, 1-5
+  function metricBlock(name, full, all, mine){
+    var aC = all[name], mC = mine ? mine[name] : null;
+    var aP = pct(aC), mP = mC ? pct(mC) : null;
+    var maxP = Math.max.apply(null, aP.concat(mP||[0]).concat([1]));
+    var scale = maxP>0 ? 92/maxP : 0;   // tallest bar ~92% of chart height
+    var aMean = all[name+"_mean"], aStd = all[name+"_std"], aN = all.n;
+    var full2 = full;
+    var h = '<div class="hs-metric"><div class="hs-mrow">';
+    h += '<span class="hs-mname">'+name.toUpperCase()+'</span><span class="hs-mfull">'+full2+'</span>';
+    h += '<span class="hs-stats">';
+    h += '<span class="hs-pill all"><span class="hs-dot"></span>全员 μ<b>'+fmt(aMean)+'</b> σ<b>'+fmt(aStd)+'</b><span class="hs-n">n='+aN+'</span></span>';
+    if(mC) h += '<span class="hs-pill self"><span class="hs-dot"></span>自己 μ<b>'+fmt(mine[name+"_mean"])+'</b> σ<b>'+fmt(mine[name+"_std"])+'</b><span class="hs-n">n='+mine.n+'</span></span>';
+    h += '</span></div>';
+    // chart — gridlines aligned to the same 92%-of-height scale the bars use
+    h += '<div class="hs-chart"><div class="hs-grid">';
+    [1,.75,.5,.25].forEach(function(fr){
+      var val = maxP*fr;
+      var top = 100 - fr*92;   // bar of value maxP reaches 92% height
+      h += '<div class="hs-gl" style="top:'+top+'%"><span>'+Math.round(val)+'%</span></div>';
+    });
+    h += '</div><div class="hs-bars">';
+    for(var i=0;i<5;i++){
+      h += '<div class="hs-grp">';
+      h += '<div class="hs-bar all" style="height:'+(aP[i]*scale)+'%">'
+         + '<span class="hs-lab">'+Math.round(aP[i])+'%</span>'
+         + (aC[i]?'<span class="hs-cnt">'+aC[i]+'</span>':'')+'</div>';
+      if(mP){
+        h += '<div class="hs-bar self" style="height:'+(mP[i]*scale)+'%">'
+           + '<span class="hs-lab">'+Math.round(mP[i])+'%</span>'
+           + (mC[i]?'<span class="hs-cnt">'+mC[i]+'</span>':'')+'</div>';
+      }
+      h += '</div>';
+    }
+    h += '</div><div class="hs-xaxis">';
+    for(var s=1;s<=5;s++){
+      h += '<div class="hs-xt"><span class="hs-chip" style="background:'+scoreColor(s)+'">'+s+'</span></div>';
+    }
+    h += '</div></div>';
+    h += '<div class="hs-axis-cap">分值 1（差）→ 5（好）</div>';
+    h += '</div>';
+    return h;
+  }
+
+  function renderDist(d){
+    var box=document.getElementById("hs-dist");
+    if(!d || !d.all){ box.innerHTML='<div class="hs-empty">暂无数据</div>'; return; }
+    var html = metricBlock("pa","Physical Adherence 物理真实性", d.all, d.mine)
+             + metricBlock("ia","Instruction Alignment 指令符合度", d.all, d.mine);
+    if(!d.mine) html += '<div class="hs-axis-cap" style="margin-top:10px">（未登录或你还没有有效标注 → 只显示全员）</div>';
+    box.innerHTML = html;
+  }
+
+  function renderLB(d){
+    var box=document.getElementById("hs-lb");
+    var models=(d&&d.models)||[];
+    if(!models.length){ box.innerHTML='<div class="hs-empty">暂无数据</div>'; return; }
+    var html="";
+    models.forEach(function(m,idx){
+      var ov=m.overall_mean||0;
+      var rk=idx+1, rcls = rk<=3?(" r"+rk):"";
+      var col=scoreColor(ov);
+      html += '<div class="hs-lb-row">';
+      html += '<div class="hs-rank'+rcls+'">'+rk+'</div>';
+      html += '<div class="hs-lb-main"><div class="hs-lb-top">';
+      html += '<span class="hs-lb-name">'+esc(m.model)+'</span><span class="hs-lb-n">n='+m.n_annotations+'</span>';
+      html += '<span class="hs-lb-score" style="color:'+col+'">'+fmt(ov)+'</span></div>';
+      html += '<div class="hs-track"><div class="hs-fill" data-w="'+(ov/5*100)+'" style="background:linear-gradient(90deg,'+col+'cc,'+col+')"></div></div>';
+      html += '<div class="hs-subs"><span>PA <b>'+fmt(m.pa_mean)+'</b></span><span>IA <b>'+fmt(m.ia_mean)+'</b></span></div>';
+      html += '</div></div>';
+    });
+    html += '<div class="hs-scale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>';
+    box.innerHTML = html;
+    // animate fills
+    requestAnimationFrame(function(){
+      box.querySelectorAll(".hs-fill").forEach(function(el){ el.style.width=el.getAttribute("data-w")+"%"; });
+    });
+  }
+
+  function showErr(msg){
+    var e=document.getElementById("hs-err"); e.style.display="block";
+    document.getElementById("hs-err-msg").textContent=msg;
+  }
+  function jget(action, extra){
+    return fetch(API+"/?action="+action+(extra||""),{cache:"no-store"}).then(function(r){
+      if(!r.ok && r.status!==403) throw new Error(action+" HTTP "+r.status);
+      return r.json();
+    });
+  }
+  function load(){
+    if(!API){ showErr("后端地址未配置"); return; }
+    jget("score_distribution","&user="+encodeURIComponent(USER)).then(renderDist)
+      .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
+    jget("model_averages","&user="+encodeURIComponent(USER)).then(function(d){
+      if(d && d.error){ document.getElementById("hs-lb").innerHTML='<div class="hs-empty">'+esc(d.error)+'</div>'; return; }
+      renderLB(d);
+    }).catch(function(e){ document.getElementById("hs-lb").innerHTML='<div class="hs-empty">均分榜加载失败</div>'; });
+  }
+  if(document.readyState!=="loading") load(); else document.addEventListener("DOMContentLoaded", load);
+  setInterval(load, 60000);
+})();
+</script>
 </body>
 </html>
