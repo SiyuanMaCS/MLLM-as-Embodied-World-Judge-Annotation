@@ -21,16 +21,18 @@
 .hs-sw-all{ background:linear-gradient(180deg,#aab2c0,#8b95a6); }
 .hs-sw-self{ background:linear-gradient(180deg,#4f7be6,#2c5dd9); }
 
-/* ---- PA↔IA correlation banner ---- */
-.hs-corr{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:12px 0 2px;
-  padding:11px 15px; border-radius:12px; background:linear-gradient(90deg,#f4f7ff,#f9fafc);
-  border:1px solid #e6ebf7; font-size:13px; }
-.hs-corr .hs-ct{ font-weight:700; color:#2a3140; }
-.hs-corr .hs-cg{ display:inline-flex; align-items:center; gap:6px; }
-.hs-corr .hs-cv{ font-weight:800; font-variant-numeric:tabular-nums; }
-.hs-corr .hs-ck{ font-size:11px; color:var(--muted,#888); }
-.hs-corr .hs-cd{ width:7px; height:7px; border-radius:50%; }
-.hs-corr .hs-cd.all{ background:#8b95a6; } .hs-corr .hs-cd.self{ background:#2c5dd9; }
+/* ---- PA↔IA 2D scatter ---- */
+.hs-corr{ margin:12px 0 4px; }
+.hs-corr-h{ font-size:12.5px; color:var(--muted,#666); margin:2px 0 8px; }
+.hs-scwrap{ display:flex; gap:18px; flex-wrap:wrap; }
+.hs-sc{ flex:1 1 260px; min-width:250px; }
+.hs-sc-top{ display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
+.hs-sc-name{ font-weight:700; font-size:13.5px; }
+.hs-sc-name .hs-dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:0; }
+.hs-sc-name.all .hs-dot{ background:#8b95a6; } .hs-sc-name.self .hs-dot{ background:#2c5dd9; }
+.hs-sc-r{ margin-left:auto; font-size:12px; color:var(--muted,#888); }
+.hs-sc-r b{ font-size:15px; font-variant-numeric:tabular-nums; }
+.hs-sc svg{ width:100%; height:auto; display:block; border-radius:10px; background:linear-gradient(180deg,#fbfcfe,#f7f8fb); border:1px solid #eef0f5; }
 /* ---- score distribution ---- */
 .hs-metric{ margin-top:18px; padding-top:16px; border-top:1px solid var(--hs-line); }
 .hs-metric:first-of-type{ border-top:0; padding-top:2px; margin-top:6px; }
@@ -200,17 +202,61 @@
   function corrWord(r){
     if(r==null) return "";
     var a=Math.abs(r), s=a<.2?"几乎无":a<.4?"弱":a<.6?"中等":a<.8?"强":"很强";
-    return (r<0?"负·":"")+s;
+    return (r<0?"负·":"")+s+"相关";
   }
-  function corrColor(r){ return r==null?"#999":scoreColor(1+Math.abs(r)*4); }
+  // deterministic-ish jitter so points don't stack on the 5x5 grid
+  function jit(){ return (Math.random()-0.5)*0.66; }
+  // one scatter panel (SVG): x=PA 1-5, y=IA 1-5, points per annotation, trend line, r label
+  function scatterPanel(name, cls, grp){
+    var pairs=(grp&&grp.pa_ia_pairs)||[], r=grp?grp.pa_ia_corr:null;
+    var W=260,H=232, pL=30,pR=10,pT=10,pB=28;
+    var plotW=W-pL-pR, plotH=H-pT-pB;
+    var color = cls==="self" ? "#2c5dd9" : "#8b95a6";
+    function X(v){ return pL + (v-1)/4*plotW; }
+    function Y(v){ return pT + (5-v)/4*plotH; }   // IA=5 at top
+    var svg='<svg viewBox="0 0 '+W+' '+H+'" role="img">';
+    // gridlines + ticks
+    for(var g=1; g<=5; g++){
+      svg+='<line x1="'+X(g)+'" y1="'+pT+'" x2="'+X(g)+'" y2="'+(pT+plotH)+'" stroke="#eceef3"/>';
+      svg+='<line x1="'+pL+'" y1="'+Y(g)+'" x2="'+(pL+plotW)+'" y2="'+Y(g)+'" stroke="#eceef3"/>';
+      svg+='<text x="'+X(g)+'" y="'+(pT+plotH+15)+'" font-size="9" fill="#9aa0ad" text-anchor="middle">'+g+'</text>';
+      svg+='<text x="'+(pL-7)+'" y="'+(Y(g)+3)+'" font-size="9" fill="#9aa0ad" text-anchor="end">'+g+'</text>';
+    }
+    // axis titles
+    svg+='<text x="'+(pL+plotW/2)+'" y="'+(H-2)+'" font-size="10" fill="#7a808c" text-anchor="middle">PA 物理 →</text>';
+    svg+='<text x="10" y="'+(pT+plotH/2)+'" font-size="10" fill="#7a808c" text-anchor="middle" transform="rotate(-90 10 '+(pT+plotH/2)+')">IA 指令 →</text>';
+    // points (jittered)
+    for(var i=0;i<pairs.length;i++){
+      var px=pairs[i][0]+jit(), py=pairs[i][1]+jit();
+      px=Math.max(1,Math.min(5,px)); py=Math.max(1,Math.min(5,py));
+      svg+='<circle cx="'+X(px).toFixed(1)+'" cy="'+Y(py).toFixed(1)+'" r="2.4" fill="'+color+'" fill-opacity="0.34"/>';
+    }
+    // least-squares trend line over integer pairs
+    if(pairs.length>=2){
+      var n=pairs.length, sx=0,sy=0,sxy=0,sxx=0;
+      pairs.forEach(function(p){ sx+=p[0]; sy+=p[1]; sxy+=p[0]*p[1]; sxx+=p[0]*p[0]; });
+      var den=n*sxx-sx*sx;
+      if(den!==0){
+        var b=(n*sxy-sx*sy)/den, a=(sy-b*sx)/n;
+        var x1=1,x2=5, y1=a+b*x1, y2=a+b*x2;
+        y1=Math.max(1,Math.min(5,y1)); y2=Math.max(1,Math.min(5,y2));
+        svg+='<line x1="'+X(x1)+'" y1="'+Y(y1)+'" x2="'+X(x2)+'" y2="'+Y(y2)+'" stroke="'+(cls==="self"?"#1f47a8":"#5a6472")+'" stroke-width="2" stroke-dasharray="5 3" stroke-linecap="round"/>';
+      }
+    }
+    svg+='</svg>';
+    var h='<div class="hs-sc"><div class="hs-sc-top">';
+    h+='<span class="hs-sc-name '+cls+'"><span class="hs-dot"></span>'+name+'</span>';
+    h+='<span class="hs-sc-r">r <b style="color:'+(r==null?"#999":scoreColor(1+Math.abs(r)*4))+'">'+(r==null?"—":r.toFixed(2))+'</b> '+corrWord(r)+'</span>';
+    h+='</div>'+svg+'</div>';
+    return h;
+  }
   function renderCorr(d){
     var box=document.getElementById("hs-corr");
     if(!box) return;
-    var ar=d.all?d.all.pa_ia_corr:null, mr=d.mine?d.mine.pa_ia_corr:null;
-    var h='<span class="hs-ct">PA ↔ IA 相关度</span>';
-    h+='<span class="hs-cg"><span class="hs-cd all"></span>全员 <span class="hs-cv" style="color:'+corrColor(ar)+'">'+(ar==null?"—":ar.toFixed(2))+'</span><span class="hs-ck">'+corrWord(ar)+'</span></span>';
-    if(d.mine) h+='<span class="hs-cg"><span class="hs-cd self"></span>自己 <span class="hs-cv" style="color:'+corrColor(mr)+'">'+(mr==null?"—":mr.toFixed(2))+'</span><span class="hs-ck">'+corrWord(mr)+'</span></span>';
-    h+='<span class="hs-ck" style="margin-left:auto">Pearson r · 越高说明物理分与指令分越同向</span>';
+    var h='<div class="hs-corr-h">PA ↔ IA 散点（每点=一条标注，虚线=拟合趋势，右上角 Pearson r）</div><div class="hs-scwrap">';
+    h+=scatterPanel("全员","all",d.all);
+    if(d.mine) h+=scatterPanel("自己","self",d.mine);
+    h+='</div>';
     box.innerHTML=h;
   }
   function renderDist(d){
