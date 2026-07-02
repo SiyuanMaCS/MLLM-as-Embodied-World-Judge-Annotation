@@ -80,6 +80,10 @@ const LANG = {
     "stats.score_dist.hint": "PA / IA histograms 1-5 · all vs mine · quarantine / skip excluded · daily",
     "stats.score_dist.all": "All annotators",
     "stats.score_dist.mine": "Mine",
+    "home.card.stats.title": "Stats",
+    "home.card.stats.sub": "Model + score distribution",
+    "page.stats": "📊 Stats",
+    "stats.updated_daily": "refreshed daily",
     "review.accuracy": "Reviewer accuracy (vs meta arbitration)",
     "review.accuracy.correct": "✓ Reject upheld",
     "review.accuracy.over_reject": "✗ Over-rejected",
@@ -453,6 +457,10 @@ const LANG = {
     "stats.score_dist.hint": "PA / IA 1-5 直方 · 全员 vs 自己 · 排除隔离/skip · 每天更新",
     "stats.score_dist.all": "全员",
     "stats.score_dist.mine": "自己",
+    "home.card.stats.title": "统计",
+    "home.card.stats.sub": "Model 均分 + 分数分布",
+    "page.stats": "📊 统计",
+    "stats.updated_daily": "每天更新",
     "review.accuracy": "审核准确率(对比仲裁结果)",
     "review.accuracy.correct": "✓ 反对成立",
     "review.accuracy.over_reject": "✗ 误拒",
@@ -1815,8 +1823,7 @@ async function initDashboard() {
   await loadBadges();
   await loadMilestoneProgress();
   await loadLeaderboard();
-  loadModelAverages();      // v85cb: horizontal bar chart of per-model overall_mean
-  loadScoreDistribution();  // v85cb: side-by-side PA/IA histograms (all vs mine)
+  // v85cc: model averages + score distribution moved to dedicated /stats.html page.
   if (isAdmin) await loadDataReports();
   let timer = setInterval(() => {
     if (!document.hidden) {
@@ -1930,6 +1937,18 @@ async function loadLeaderboard() {
   }
 }
 
+/* v85cc: dedicated /stats.html init — loads both charts + auto-refresh every 60s. */
+async function initStats() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  if (!user) { window.location.href = "index.html"; return; }
+  document.getElementById("who").textContent = user;
+  applyRolePill(user, localStorage.getItem(CFG.LS_ROLE));
+  await Promise.all([loadModelAverages(), loadScoreDistribution()]);
+  setInterval(() => {
+    if (!document.hidden) { loadModelAverages(); loadScoreDistribution(); }
+  }, 60000);
+}
+
 /* v85cb: model-average horizontal bar chart (admin-only if backend flags it that way).
    Ham returns {models:[{model, n_annotations, pa_mean, pa_std, ia_mean, ia_std, overall_mean}]}.
    Bars are rendered as flex-width divs (no chart library) — one row per model, width
@@ -1968,9 +1987,12 @@ async function loadModelAverages() {
   } catch (_) { card.hidden = true; }
 }
 
-/* v85cb: side-by-side PA/IA distribution histograms (all vs mine) with mean/std/var. */
+/* v85cc: redesigned score distribution — one axis per row (PA then IA), each row
+   overlays "all" (gray) and "mine" (colored) bars per score bucket so the two
+   distributions are easy to compare at a glance. Big μ/σ header per axis. */
 async function loadScoreDistribution() {
   const card = document.getElementById("score-dist-card");
+  const body = document.getElementById("score-dist-body");
   if (!card) return;
   const user = localStorage.getItem(CFG.LS_USER) || "";
   try {
@@ -1978,20 +2000,82 @@ async function loadScoreDistribution() {
     if (!r.ok) { card.hidden = true; return; }
     const d = await r.json();
     if (d?.ok === false) { card.hidden = true; return; }
-    const allBlock = document.getElementById("sd-all");
-    const mineBlock = document.getElementById("sd-mine");
-    allBlock.innerHTML = renderScoreDistBlock(d.all || {}, tr("stats.score_dist.all"));
-    if (d.mine && d.mine.n > 0) {
-      mineBlock.innerHTML = renderScoreDistBlock(d.mine, tr("stats.score_dist.mine"));
-      mineBlock.hidden = false;
+    if (body) {
+      body.innerHTML = renderScoreDistV2(d);
     } else {
-      mineBlock.hidden = true;
+      // Legacy dashboard placement (removed after v85cc but kept for safety).
+      const allBlock = document.getElementById("sd-all");
+      const mineBlock = document.getElementById("sd-mine");
+      if (allBlock) allBlock.innerHTML = renderScoreDistLegacy(d.all || {}, tr("stats.score_dist.all"));
+      if (mineBlock) {
+        if (d.mine && d.mine.n > 0) {
+          mineBlock.innerHTML = renderScoreDistLegacy(d.mine, tr("stats.score_dist.mine"));
+          mineBlock.hidden = false;
+        } else mineBlock.hidden = true;
+      }
     }
     card.hidden = false;
   } catch (_) { card.hidden = true; }
 }
 
-function renderScoreDistBlock(g, title) {
+function renderScoreDistV2(d) {
+  const all = d.all || {};
+  const mine = d.mine || {};
+  const hasMine = mine.n > 0;
+  const paBars = renderCompareBars(all.pa || [], hasMine ? (mine.pa || []) : null);
+  const iaBars = renderCompareBars(all.ia || [], hasMine ? (mine.ia || []) : null);
+  const stats = (g, lbl) => g && g.n > 0
+    ? `<span class="sd2-stat"><span class="sd2-stat-name">${escapeHtml(lbl)}</span> n=<strong>${g.n}</strong> · μ=<strong>${Number(g.mean ?? 0).toFixed(2)}</strong> · σ=<strong>${Number(g.std ?? 0).toFixed(2)}</strong></span>`
+    : "";
+  return `
+    <div class="sd2-legend">
+      <span class="sd2-swatch sd2-swatch-all"></span> <span data-i18n="stats.score_dist.all">全员</span>
+      ${hasMine ? `<span class="sd2-swatch sd2-swatch-mine"></span> <span data-i18n="stats.score_dist.mine">自己</span>` : ""}
+    </div>
+    <div class="sd2-row">
+      <h4 class="sd2-axis-label">PA <span class="muted small">Physical Adherence</span></h4>
+      <div class="sd2-stats">
+        ${stats({n: all.n, mean: all.pa_mean, std: all.pa_std}, tr("stats.score_dist.all"))}
+        ${hasMine ? stats({n: mine.n, mean: mine.pa_mean, std: mine.pa_std}, tr("stats.score_dist.mine")) : ""}
+      </div>
+      ${paBars}
+    </div>
+    <div class="sd2-row">
+      <h4 class="sd2-axis-label">IA <span class="muted small">Instruction Alignment</span></h4>
+      <div class="sd2-stats">
+        ${stats({n: all.n, mean: all.ia_mean, std: all.ia_std}, tr("stats.score_dist.all"))}
+        ${hasMine ? stats({n: mine.n, mean: mine.ia_mean, std: mine.ia_std}, tr("stats.score_dist.mine")) : ""}
+      </div>
+      ${iaBars}
+    </div>`;
+}
+
+function renderCompareBars(allCounts, mineCounts) {
+  const allPct = pctize(allCounts);
+  const minePct = mineCounts ? pctize(mineCounts) : null;
+  return `<div class="sd2-bars">${[1,2,3,4,5].map((score, i) => {
+    const aH = allPct[i], mH = minePct ? minePct[i] : 0;
+    const aC = allCounts[i] || 0;
+    const mC = mineCounts ? (mineCounts[i] || 0) : null;
+    return `<div class="sd2-slot">
+      <div class="sd2-bar-stack">
+        <div class="sd2-bar sd2-bar-all" style="height:${aH}%" title="全员 score=${score}: ${aC}"><span class="sd2-count">${aC}</span></div>
+        ${minePct ? `<div class="sd2-bar sd2-bar-mine" style="height:${mH}%" title="自己 score=${score}: ${mC}"><span class="sd2-count">${mC}</span></div>` : ""}
+      </div>
+      <div class="sd2-label">${score}</div>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+// Convert raw counts into %-of-in-group values so bars use their own scale.
+function pctize(counts) {
+  const total = counts.reduce((a, b) => a + (b || 0), 0);
+  if (!total) return counts.map(() => 0);
+  return counts.map(c => (c / total) * 100);
+}
+
+/* Legacy dashboard-embedded renderer, kept for graceful fallback. */
+function renderScoreDistLegacy(g, title) {
   const pa = g.pa || [0, 0, 0, 0, 0];
   const ia = g.ia || [0, 0, 0, 0, 0];
   const n = Number(g.n ?? 0);
@@ -4616,6 +4700,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("ma-list")) initMyAnnotations();
   if (document.getElementById("dr-list")) initDataReports();
   if (document.getElementById("arb-form")) initArbitration();
+  if (document.getElementById("score-dist-body")) initStats();  // v85cc
 });
 
 /* ===================== Reviewer Alignment v2 (multi-campaign concurrent) ===================== */

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stats — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css?v=v85cc">
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1 data-i18n="page.stats">📊 Stats</h1>
+    <div class="user-chip">
+      <span class="lb-countdown" id="lb-countdown" hidden></span>
+      <span id="who">—</span> <span class="role-pill" id="role">—</span>
+      <button id="logout-btn" class="link" data-i18n="chip.logout">logout</button>
+    </div>
+  </header>
+  <nav class="page-nav">
+    <a href="dashboard.html" class="back-link" data-i18n="nav.back">← Back</a>
+    <span class="nav-stat muted small" data-i18n="stats.updated_daily">每天更新</span>
+  </nav>
+
+  <section class="card" id="score-dist-card">
+    <h3 data-i18n="stats.score_dist.title">📈 分数分布</h3>
+    <p class="muted small" data-i18n="stats.score_dist.hint">PA / IA 1-5 直方 · 全员 vs 自己 · 排除隔离/skip</p>
+    <div id="score-dist-body" class="sd-v2-body"></div>
+  </section>
+
+  <section class="card" id="model-averages-card">
+    <h3 data-i18n="stats.model_leaderboard.title">🏁 Model 均分榜</h3>
+    <p class="muted small" data-i18n="stats.model_leaderboard.hint">按整体均分(=(PA+IA)/2)降序</p>
+    <div id="model-averages-body"></div>
+  </section>
+
+  <section id="dash-error" class="card error" hidden>
+    <h3 data-i18n="common.failed_to_load">Failed to load</h3>
+    <p id="dash-err-msg">—</p>
+  </section>
+</main>
+<script src="app.js?v=v85cc" defer></script>
+</body>
+</html>

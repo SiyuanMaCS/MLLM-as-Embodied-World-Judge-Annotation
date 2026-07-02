@@ -496,6 +496,28 @@ fieldset.role-row.known .role-opt:has(input:checked) {
 .sd-bar.pa { background: linear-gradient(180deg, #60a5fa, #1e40af); }
 .sd-bar.ia { background: linear-gradient(180deg, #34d399, #047857); }
 .sd-bar-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+/* v85cc: stats.html — improved score distribution overlay layout. */
+.sd-v2-body { margin-top: 8px; }
+.sd2-legend { display: flex; gap: 12px; align-items: center; font-size: 13px; margin-bottom: 12px; color: var(--muted); }
+.sd2-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: middle; margin-right: 3px; }
+.sd2-swatch-all { background: #cbd5e1; }
+.sd2-swatch-mine { background: linear-gradient(180deg, #6366f1, #1e40af); }
+.sd2-row { margin: 20px 0 28px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+.sd2-row:last-child { border-bottom: none; }
+.sd2-axis-label { margin: 0 0 6px; font-size: 16px; font-weight: 700; color: var(--text); }
+.sd2-axis-label .muted { font-weight: 400; }
+.sd2-stats { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px; font-size: 13px; }
+.sd2-stat { padding: 4px 10px; background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.sd2-stat-name { font-family: inherit; font-weight: 700; margin-right: 6px; color: var(--accent-dark); }
+.sd2-bars { display: flex; align-items: flex-end; gap: 12px; padding: 8px 4px 0; height: 180px; border-bottom: 2px solid #cbd5e1; position: relative; }
+.sd2-slot { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.sd2-bar-stack { display: flex; align-items: flex-end; gap: 6px; height: 100%; width: 100%; justify-content: center; }
+.sd2-bar { position: relative; width: 30px; min-height: 3px; border-radius: 4px 4px 0 0; transition: height 0.4s ease; display: flex; justify-content: center; align-items: flex-start; }
+.sd2-bar-all { background: linear-gradient(180deg, #cbd5e1, #64748b); }
+.sd2-bar-mine { background: linear-gradient(180deg, #6366f1, #1e40af); }
+.sd2-count { position: absolute; top: -18px; font-size: 11px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.sd2-label { margin-top: 6px; font-size: 15px; font-weight: 600; color: var(--text); }
+@media (max-width: 640px) { .sd2-bars { height: 140px; gap: 6px; } .sd2-bar { width: 20px; } }
 /* v85bb: Review card grayed when reviewer's yesterday KPI not met. Pointer events kept
    so the user can still click and land on review.html (which surfaces the same banner
    + the count detail) — siyuan wants discoverable feedback, not a fully-dead button. */
