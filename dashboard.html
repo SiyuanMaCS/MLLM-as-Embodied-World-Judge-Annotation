@@ -6,7 +6,7 @@
 <title>Home — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85ca">
+<link rel="stylesheet" href="style.css?v=v85cb">
 </head>
 <body>
 <main>
@@ -160,6 +160,23 @@
     <div class="lb-row" id="lb-done"></div>
   </section>
 
+  <!-- v85cb: model-average leaderboard (horizontal bars) + score-distribution
+       histograms (all vs mine, vertical bars). Both refresh on dashboard reload. -->
+  <section class="card" id="model-averages-card" hidden>
+    <h3 data-i18n="stats.model_leaderboard.title">🏁 Model 均分榜</h3>
+    <p class="muted small" data-i18n="stats.model_leaderboard.hint">按整体均分(=(PA+IA)/2)降序 · 每天更新</p>
+    <div id="model-averages-body"></div>
+  </section>
+
+  <section class="card" id="score-dist-card" hidden>
+    <h3 data-i18n="stats.score_dist.title">📈 分数分布</h3>
+    <p class="muted small" data-i18n="stats.score_dist.hint">PA / IA 1-5 直方 · 全员 vs 自己 · 排除隔离/skip · 每天更新</p>
+    <div class="score-dist-grid">
+      <div class="score-dist-block" id="sd-all"></div>
+      <div class="score-dist-block" id="sd-mine"></div>
+    </div>
+  </section>
+
   <section class="card">
     <p id="ann-loading">Loading…</p>
     <div id="grid-wrap" hidden>
@@ -178,6 +195,6 @@
     <p id="dash-err-msg">—</p>
   </section>
 </main>
-<script src="app.js?v=v85ca" defer></script>
+<script src="app.js?v=v85cb" defer></script>
 </body>
 </html>

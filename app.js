@@ -74,6 +74,12 @@ const LANG = {
     "arbitration.badge.overturn": "⚖ Overturned",
     "arbitration.badge.modify": "⚖ Modified",
     "arbitration.badge.pending": "⚖ Pending arbitration",
+    "stats.model_leaderboard.title": "🏁 Model average scores",
+    "stats.model_leaderboard.hint": "Ranked by overall mean = (PA + IA) / 2 · daily refresh",
+    "stats.score_dist.title": "📈 Score distribution",
+    "stats.score_dist.hint": "PA / IA histograms 1-5 · all vs mine · quarantine / skip excluded · daily",
+    "stats.score_dist.all": "All annotators",
+    "stats.score_dist.mine": "Mine",
     "review.accuracy": "Reviewer accuracy (vs meta arbitration)",
     "review.accuracy.correct": "✓ Reject upheld",
     "review.accuracy.over_reject": "✗ Over-rejected",
@@ -441,6 +447,12 @@ const LANG = {
     "arbitration.badge.overturn": "⚖ 推翻不通过",
     "arbitration.badge.modify": "⚖ 仲裁修改",
     "arbitration.badge.pending": "⚖ 待仲裁",
+    "stats.model_leaderboard.title": "🏁 Model 均分榜",
+    "stats.model_leaderboard.hint": "按整体均分(=(PA+IA)/2)降序 · 每天更新",
+    "stats.score_dist.title": "📈 分数分布",
+    "stats.score_dist.hint": "PA / IA 1-5 直方 · 全员 vs 自己 · 排除隔离/skip · 每天更新",
+    "stats.score_dist.all": "全员",
+    "stats.score_dist.mine": "自己",
     "review.accuracy": "审核准确率(对比仲裁结果)",
     "review.accuracy.correct": "✓ 反对成立",
     "review.accuracy.over_reject": "✗ 误拒",
@@ -1803,6 +1815,8 @@ async function initDashboard() {
   await loadBadges();
   await loadMilestoneProgress();
   await loadLeaderboard();
+  loadModelAverages();      // v85cb: horizontal bar chart of per-model overall_mean
+  loadScoreDistribution();  // v85cb: side-by-side PA/IA histograms (all vs mine)
   if (isAdmin) await loadDataReports();
   let timer = setInterval(() => {
     if (!document.hidden) {
@@ -1914,6 +1928,96 @@ async function loadLeaderboard() {
   } catch (_) {
     card.hidden = true;
   }
+}
+
+/* v85cb: model-average horizontal bar chart (admin-only if backend flags it that way).
+   Ham returns {models:[{model, n_annotations, pa_mean, pa_std, ia_mean, ia_std, overall_mean}]}.
+   Bars are rendered as flex-width divs (no chart library) — one row per model, width
+   proportional to overall_mean/5. */
+async function loadModelAverages() {
+  const card = document.getElementById("model-averages-card");
+  const body = document.getElementById("model-averages-body");
+  if (!card || !body) return;
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=model_averages&user=${encodeURIComponent(user)}`);
+    if (!r.ok) { card.hidden = true; return; }
+    const d = await r.json();
+    if (d?.ok === false || d?.code === "admin_only") { card.hidden = true; return; }
+    const models = d.models || [];
+    if (!models.length) { card.hidden = true; return; }
+    const MAX = 5;
+    body.innerHTML = models.map((m, i) => {
+      const overall = Number(m.overall_mean || 0);
+      const pct = Math.max(0, Math.min(100, (overall / MAX) * 100));
+      const pa = Number(m.pa_mean || 0), ia = Number(m.ia_mean || 0);
+      const n = Number(m.n_annotations || 0);
+      const paStd = m.pa_std != null ? Number(m.pa_std).toFixed(2) : "—";
+      const iaStd = m.ia_std != null ? Number(m.ia_std).toFixed(2) : "—";
+      return `<div class="ma-row">
+        <div class="ma-head">
+          <span class="ma-rank">${i + 1}</span>
+          <span class="ma-model" title="${escapeHtml(m.model)}">${escapeHtml(m.model)}</span>
+          <span class="ma-overall">${overall.toFixed(2)}</span>
+        </div>
+        <div class="ma-bar-track"><div class="ma-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
+        <p class="ma-detail muted small">PA ${pa.toFixed(2)} <span class="ma-std">±${paStd}</span> · IA ${ia.toFixed(2)} <span class="ma-std">±${iaStd}</span> · n=${n}</p>
+      </div>`;
+    }).join("");
+    card.hidden = false;
+  } catch (_) { card.hidden = true; }
+}
+
+/* v85cb: side-by-side PA/IA distribution histograms (all vs mine) with mean/std/var. */
+async function loadScoreDistribution() {
+  const card = document.getElementById("score-dist-card");
+  if (!card) return;
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=score_distribution&user=${encodeURIComponent(user)}`);
+    if (!r.ok) { card.hidden = true; return; }
+    const d = await r.json();
+    if (d?.ok === false) { card.hidden = true; return; }
+    const allBlock = document.getElementById("sd-all");
+    const mineBlock = document.getElementById("sd-mine");
+    allBlock.innerHTML = renderScoreDistBlock(d.all || {}, tr("stats.score_dist.all"));
+    if (d.mine && d.mine.n > 0) {
+      mineBlock.innerHTML = renderScoreDistBlock(d.mine, tr("stats.score_dist.mine"));
+      mineBlock.hidden = false;
+    } else {
+      mineBlock.hidden = true;
+    }
+    card.hidden = false;
+  } catch (_) { card.hidden = true; }
+}
+
+function renderScoreDistBlock(g, title) {
+  const pa = g.pa || [0, 0, 0, 0, 0];
+  const ia = g.ia || [0, 0, 0, 0, 0];
+  const n = Number(g.n ?? 0);
+  const paMean = g.pa_mean != null ? Number(g.pa_mean).toFixed(2) : "—";
+  const iaMean = g.ia_mean != null ? Number(g.ia_mean).toFixed(2) : "—";
+  const paStd = g.pa_std != null ? Number(g.pa_std).toFixed(2) : "—";
+  const iaStd = g.ia_std != null ? Number(g.ia_std).toFixed(2) : "—";
+  const bars = (counts, cls) => {
+    const max = Math.max(1, ...counts);
+    return counts.map((c, i) => {
+      const h = Math.max(2, Math.round((c / max) * 100));
+      return `<div class="sd-bar-slot"><div class="sd-bar-count">${c}</div><div class="sd-bar ${cls}" style="height:${h}%"></div><div class="sd-bar-label">${i + 1}</div></div>`;
+    }).join("");
+  };
+  return `
+    <h4 class="sd-title">${escapeHtml(title)} <span class="muted small">n=${n}</span></h4>
+    <div class="sd-pair">
+      <div class="sd-axis">
+        <div class="sd-axis-label">PA <span class="muted">μ=${paMean} σ=${paStd}</span></div>
+        <div class="sd-bars">${bars(pa, "pa")}</div>
+      </div>
+      <div class="sd-axis">
+        <div class="sd-axis-label">IA <span class="muted">μ=${iaMean} σ=${iaStd}</span></div>
+        <div class="sd-bars">${bars(ia, "ia")}</div>
+      </div>
+    </div>`;
 }
 
 /* v85at — dedicated data_reports.html page. siyuan: 别堆在 home, 专门页 like

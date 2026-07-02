@@ -473,6 +473,29 @@ fieldset.role-row.known .role-opt:has(input:checked) {
 /* v85by: "+R" report-KPI bonus badge — red, smaller than the count it decorates. */
 .today-bonus { color: #dc2626; font-size: 0.7em; font-weight: 700; margin-left: 2px; vertical-align: super; }
 .lb-bonus { vertical-align: baseline; margin-left: 1px; }
+/* v85cb — home stats: model averages (horizontal bars) + score distribution (vertical). */
+.ma-row { margin: 8px 0 12px; }
+.ma-head { display: flex; align-items: baseline; gap: 8px; font-size: 14px; }
+.ma-rank { min-width: 22px; text-align: right; color: var(--muted); font-weight: 600; }
+.ma-model { flex: 1; font-weight: 600; }
+.ma-overall { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; color: var(--accent-dark); font-weight: 700; }
+.ma-bar-track { height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden; margin: 4px 0 3px; }
+.ma-bar-fill { height: 100%; background: linear-gradient(90deg, #60a5fa, #2563eb); transition: width 0.25s; }
+.ma-detail { margin: 2px 0 0 22px; }
+.ma-std { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.score-dist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+@media (max-width: 640px) { .score-dist-grid { grid-template-columns: 1fr; } }
+.score-dist-block { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.sd-title { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.sd-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sd-axis-label { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.sd-bars { display: flex; align-items: flex-end; gap: 4px; height: 90px; padding: 4px 2px 0; border-bottom: 1px solid var(--border); }
+.sd-bar-slot { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; }
+.sd-bar-count { font-size: 10px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; height: 12px; line-height: 12px; }
+.sd-bar { width: 100%; min-height: 2px; border-radius: 3px 3px 0 0; }
+.sd-bar.pa { background: linear-gradient(180deg, #60a5fa, #1e40af); }
+.sd-bar.ia { background: linear-gradient(180deg, #34d399, #047857); }
+.sd-bar-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
 /* v85bb: Review card grayed when reviewer's yesterday KPI not met. Pointer events kept
    so the user can still click and land on review.html (which surfaces the same banner
    + the count detail) — siyuan wants discoverable feedback, not a fully-dead button. */
