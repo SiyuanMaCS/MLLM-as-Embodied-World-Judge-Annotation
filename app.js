@@ -74,6 +74,15 @@ const LANG = {
     "arbitration.badge.overturn": "⚖ Overturned",
     "arbitration.badge.modify": "⚖ Modified",
     "arbitration.badge.pending": "⚖ Pending arbitration",
+    "arbitration.tab.dispute": "Disputes",
+    "arbitration.tab.allreviews": "All reviews",
+    "arbitration.only_flagged": "Flagged only",
+    "arbitration.allreviews_empty": "No reviews match.",
+    "arbitration.flagged_count": "flagged",
+    "arbitration.total_count": "total",
+    "review.ai_flag.high": "AI ⚠ HIGH",
+    "review.ai_flag.mid": "AI ⚠",
+    "review.coverage": "test coverage",
     "stats.model_leaderboard.title": "🏁 Model average scores",
     "stats.model_leaderboard.hint": "Ranked by overall mean = (PA + IA) / 2 · daily refresh",
     "stats.score_dist.title": "📈 Score distribution",
@@ -451,6 +460,15 @@ const LANG = {
     "arbitration.badge.overturn": "⚖ 推翻不通过",
     "arbitration.badge.modify": "⚖ 仲裁修改",
     "arbitration.badge.pending": "⚖ 待仲裁",
+    "arbitration.tab.dispute": "仲裁队列",
+    "arbitration.tab.allreviews": "全览",
+    "arbitration.only_flagged": "只看异常",
+    "arbitration.allreviews_empty": "没有匹配的审核。",
+    "arbitration.flagged_count": "条异常",
+    "arbitration.total_count": "条",
+    "review.ai_flag.high": "AI ⚠ 高",
+    "review.ai_flag.mid": "AI ⚠",
+    "review.coverage": "test 覆盖",
     "stats.model_leaderboard.title": "🏁 Model 均分榜",
     "stats.model_leaderboard.hint": "按整体均分(=(PA+IA)/2)降序 · 每天更新",
     "stats.score_dist.title": "📈 分数分布",
@@ -3481,8 +3499,10 @@ async function initReview() {
   }
 }
 
-/* v85bd: surface per-user review KPI (siyuanw = 5/day). Hidden when review_quota is null.
-   Backend treats the quota as a target/floor, not a cap — reviewer can keep going past N. */
+/* v85bd → v85ck: per-user review KPI progress.
+   Ham's review-week fields: stats.review_target_today (20 for 6 regular reviewers,
+   5 for siyuanw, null for non-reviewers), stats.review_done_today, stats.testset_review_coverage
+   = {reviewed, remaining, total}. */
 async function refreshReviewProgress() {
   const user = localStorage.getItem(CFG.LS_USER);
   if (!user) return;
@@ -3491,13 +3511,28 @@ async function refreshReviewProgress() {
     const d = await r.json();
     const wrap = document.getElementById("review-progress");
     if (!wrap) return;
-    const quota = d?.review_quota;
-    if (quota == null) { wrap.hidden = true; return; }
-    const today = Number(d?.review_today ?? 0);
-    document.getElementById("review-today").textContent = today;
-    document.getElementById("review-quota").textContent = quota;
-    wrap.hidden = false;
-    wrap.classList.toggle("met", today >= quota);
+    const quota = d?.review_target_today ?? d?.review_quota;
+    if (quota == null) { wrap.hidden = true; } else {
+      const today = Number(d?.review_done_today ?? d?.review_today ?? 0);
+      document.getElementById("review-today").textContent = today;
+      document.getElementById("review-quota").textContent = quota;
+      wrap.hidden = false;
+      wrap.classList.toggle("met", today >= quota);
+    }
+    // v85ck: test-set coverage progress bar (visible to reviewer + admin).
+    const cov = d?.testset_review_coverage;
+    const covEl = document.getElementById("review-coverage");
+    if (covEl) {
+      if (cov && typeof cov.total === "number" && cov.total > 0) {
+        const done = Number(cov.reviewed ?? 0);
+        const total = Number(cov.total);
+        const pct = Math.round((done / total) * 100);
+        covEl.innerHTML = `<span data-i18n="review.coverage">test 覆盖</span> <strong>${done}</strong>/<strong>${total}</strong> (${pct}%)`;
+        covEl.hidden = false;
+      } else {
+        covEl.hidden = true;
+      }
+    }
   } catch (_) { /* silent */ }
 }
 
@@ -3583,6 +3618,20 @@ function renderReviewItem(it) {
   document.getElementById("meta-dataset").textContent = it.dataset || "?";
   document.getElementById("meta-task").textContent = it.task || "?";
   document.getElementById("meta-self-report").hidden = !it.is_report;
+  // v85ck: AI anomaly flag ⚠ — Ham's System-A. red = solid ⚠ (high severity), yellow = outline.
+  const flagEl = document.getElementById("ai-flag-badge");
+  if (flagEl) {
+    if (it.ai_flag) {
+      const sev = it.ai_severity === "red" ? "high" : "mid";
+      const glyph = sev === "high" ? "⚠" : "⚠";
+      flagEl.className = `ai-flag ai-flag-${sev}`;
+      flagEl.textContent = `${glyph} ${sev === "high" ? tr("review.ai_flag.high") : tr("review.ai_flag.mid")}`;
+      flagEl.title = it.ai_reason || "";
+      flagEl.hidden = false;
+    } else {
+      flagEl.hidden = true;
+    }
+  }
   // v85be: show annotator id (siyuan: 把标注者 id 给显示出来) — previously anonymized.
   const annEl = document.getElementById("orig-annotator");
   if (annEl) annEl.textContent = it.target || it.annotator || "—";
@@ -3705,6 +3754,13 @@ async function initArbitration() {
   wireScoreHint("mr-physical_adherence", "mr-physical_adherence-hint", "pa");
   wireScoreHint("mr-instruction_alignment", "mr-instruction_alignment-hint", "ia");
   wireSubTriButtons();
+  // v85ck: tab switcher — 仲裁队列 (existing) vs 全览 (all reviews for meta).
+  document.querySelectorAll(".arb-tab").forEach(btn => btn.addEventListener("click", () => {
+    document.querySelectorAll(".arb-tab").forEach(b => b.classList.toggle("active", b === btn));
+    switchArbTab(btn.dataset.tab);
+  }));
+  const onlyFlaggedEl = document.getElementById("ar-only-flagged");
+  if (onlyFlaggedEl) onlyFlaggedEl.addEventListener("change", () => loadAllReviews());
   document.getElementById("uphold-btn").addEventListener("click", () => submitArbitration("uphold"));
   document.getElementById("overturn-btn").addEventListener("click", () => submitArbitration("overturn"));
   // Modify opens the meta-reviewer's own scoring form, prefilled with reviewer's final values;
@@ -3771,6 +3827,65 @@ function setArbRemaining(n) {
   if (!wrap) return;
   document.getElementById("arb-pending").textContent = n;
   wrap.hidden = false;
+}
+
+/* v85ck: switch between 仲裁队列 (existing arbitration_queue) and 全览 (meta_all_reviews). */
+function switchArbTab(tab) {
+  const disputeSections = ["loading","item","error"];
+  const allReviewsSection = document.getElementById("all-reviews");
+  if (tab === "allreviews") {
+    disputeSections.forEach(id => { const el = document.getElementById(id); if (el) el.hidden = true; });
+    if (allReviewsSection) allReviewsSection.hidden = false;
+    loadAllReviews();
+  } else {
+    if (allReviewsSection) allReviewsSection.hidden = true;
+    loadNextArbitration();
+  }
+}
+
+async function loadAllReviews() {
+  const user = localStorage.getItem(CFG.LS_USER);
+  if (!user) return;
+  const list = document.getElementById("ar-list");
+  const empty = document.getElementById("ar-empty");
+  const countEl = document.getElementById("ar-count");
+  const onlyFlagged = document.getElementById("ar-only-flagged")?.checked ? 1 : 0;
+  list.innerHTML = "";
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=meta_all_reviews&user=${encodeURIComponent(user)}&only_flagged=${onlyFlagged}`);
+    const d = await r.json();
+    if (d?.ok === false) throw new Error(d.error || "fetch failed");
+    const reviews = d.reviews || d.items || [];
+    countEl.textContent = onlyFlagged
+      ? `${reviews.length} ${tr("arbitration.flagged_count")}`
+      : `${reviews.length} ${tr("arbitration.total_count")}`;
+    if (reviews.length === 0) { empty.hidden = false; return; }
+    empty.hidden = true;
+    for (const rr of reviews) list.appendChild(renderAllReviewsRow(rr));
+  } catch (err) {
+    countEl.textContent = err.message;
+  }
+}
+
+function renderAllReviewsRow(rr) {
+  const li = document.createElement("li");
+  const dec = rr.decision === "modify" ? "minor" : (rr.decision || "approve");
+  const flag = rr.ai_flag ? `<span class="ai-flag ai-flag-${rr.ai_severity === "red" ? "high" : "mid"}" title="${escapeHtml(rr.ai_reason || "")}">⚠ ${rr.ai_severity === "red" ? tr("review.ai_flag.high") : tr("review.ai_flag.mid")}</span>` : "";
+  const target = rr.target || "—";
+  const reviewer = rr.reviewer || "—";
+  const ts = String(rr.ts || "").slice(0, 16).replace("T", " ");
+  li.className = `ar-row ${rr.ai_flag ? "ar-flagged" : ""} ar-${dec}`;
+  li.innerHTML = `
+    <div class="meta">
+      <span class="row-badge decision-${dec}">${tr("review.decision." + dec)}</span>
+      ${flag}
+      <span class="tag">${escapeHtml(rr.dataset || "?")}</span>
+      <span class="tag">${escapeHtml(rr.task || "?")}</span>
+      <span class="muted small">annotator: <strong>${escapeHtml(target)}</strong> · reviewer: <strong>${escapeHtml(reviewer)}</strong> · ${escapeHtml(ts)}</span>
+    </div>
+    <p class="muted small">PA ${rr.final?.physical_adherence ?? "—"} · IA ${rr.final?.instruction_alignment ?? "—"}</p>
+  `;
+  return li;
 }
 
 function renderArbitrationItem(it) {

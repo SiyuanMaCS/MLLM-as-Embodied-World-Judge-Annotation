@@ -6,7 +6,7 @@
 <title>Review Queue — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85cj">
+<link rel="stylesheet" href="style.css?v=v85ck">
 </head>
 <body>
 <main>
@@ -22,6 +22,7 @@
     <a href="dashboard.html" class="back-link" data-i18n="nav.back">← Back</a>
     <span class="nav-stat" id="review-progress" hidden><span data-i18n="review.today">today</span> <strong id="review-today">0</strong>/<strong id="review-quota">—</strong></span>
     <span class="nav-stat" id="review-remaining" hidden><span data-i18n="review.remaining">queue</span> <strong id="review-pending">—</strong></span>
+    <span class="nav-stat" id="review-coverage" hidden></span>
   </nav>
 
   <section id="loading" class="card"><p data-i18n="review.loading_next">Loading next review task…</p></section>
@@ -38,6 +39,7 @@
       <span class="tag" id="meta-dataset">—</span>
       <span class="tag" id="meta-task">—</span>
       <span class="tag" id="meta-self-report" hidden>⚠ SELF-REPORTED</span>
+      <span class="ai-flag" id="ai-flag-badge" hidden></span>
     </div>
 
     <div class="video-row">
@@ -147,6 +149,6 @@
 
   <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v85cj" defer></script>
+<script src="app.js?v=v85ck" defer></script>
 </body>
 </html>

@@ -6,7 +6,7 @@
 <title>Arbitration — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85cj">
+<link rel="stylesheet" href="style.css?v=v85ck">
 </head>
 <body>
 <main>
@@ -23,7 +23,23 @@
     <span class="nav-stat" id="arb-remaining" hidden><span data-i18n="arbitration.queue">queue</span> <strong id="arb-pending">—</strong></span>
   </nav>
 
+  <section class="card arb-tabs-card">
+    <div class="arb-tabs">
+      <button type="button" class="arb-tab active" data-tab="dispute" data-i18n="arbitration.tab.dispute">仲裁队列</button>
+      <button type="button" class="arb-tab" data-tab="allreviews" data-i18n="arbitration.tab.allreviews">全览</button>
+    </div>
+  </section>
+
   <section id="loading" class="card"><p data-i18n="arbitration.loading">Loading next arbitration…</p></section>
+
+  <section id="all-reviews" class="card" hidden>
+    <div class="ar-head">
+      <label class="ar-toggle"><input type="checkbox" id="ar-only-flagged" checked> <span data-i18n="arbitration.only_flagged">只看异常</span></label>
+      <span class="muted small" id="ar-count">—</span>
+    </div>
+    <ul id="ar-list" class="ar-list"></ul>
+    <p id="ar-empty" class="muted small" hidden data-i18n="arbitration.allreviews_empty">No reviews.</p>
+  </section>
 
   <section id="item" class="card" hidden>
     <div class="meta">
@@ -133,6 +149,6 @@
 
   <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v85cj" defer></script>
+<script src="app.js?v=v85ck" defer></script>
 </body>
 </html>
