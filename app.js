@@ -3095,6 +3095,11 @@ function registerAutoNote(prefix, axis) {
    exist for the current sub value get appended. Sub value=2 (passes) drops that
    sub's bullet if it exists. */
 function buildAutoNote(prefix, axis) {
+  // Note pre-fill disabled globally. Existing notes on already-saved items
+  // are preserved (backend never mutates them); new items get empty textareas
+  // so users write freeform. Function body below kept as dead code for easy
+  // restore, but never executes.
+  return;
   const cfg = AUTO_NOTE[axis];
   if (!cfg) return;
   const mainEl = document.getElementById(prefix + cfg.main_id);
