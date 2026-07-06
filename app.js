@@ -278,6 +278,9 @@ const LANG = {
     "review.minor": "✏ Adjust",
     "review.major": "🛑 Reject",
     "review.submit_decision": "📤 Submit",
+    "review.action.approve": "✅ Approve",
+    "review.action.modify": "✏ Modify",
+    "review.action.reject": "🛑 Reject",
     "review.decision.approve": "✅ Approved",
     "review.decision.minor": "✏ Adjusted",
     "review.decision.major": "🛑 Rejected",
@@ -659,6 +662,9 @@ const LANG = {
     "sub.goal_completed": "目标达成",
     "sub.goal_completed_hint": "指令的目标已完整达成",
     "review.your_decision": "你的决定",
+    "review.action.approve": "✅ 通过 / Approve",
+    "review.action.modify": "✏ 修改 / Modify",
+    "review.action.reject": "🛑 打回 / Reject",
     "review.approve": "✅ 通过",
     "review.modify": "✏ 调整",
     "review.minor": "✏ 调整",
@@ -3414,44 +3420,34 @@ async function initReview() {
   }
   wireScoreHint("m-physical_adherence", "m-physical_adherence-hint", "pa");
   wireScoreHint("m-instruction_alignment", "m-instruction_alignment-hint", "ia");
-  // Reviewer 3-decision UX (siyuan v78): 通过 / 小修改 / 大修改(打回).
-  // 通过 = approve as-is; 小修改 = reviewer 改后 final, 算"通过"; 大修改 = 打回标注员重标, 不付钱.
-  document.getElementById("approve-btn").addEventListener("click", () => submitReview("approve"));
-  const openModifyForm = (asDecision) => {
-    const fields = document.getElementById("modify-fields");
-    if (fields.hidden) {
-      // First click → open prefilled form, button label becomes "submit <decision>".
-      const orig = REVIEW_CURRENT?.annotation || REVIEW_CURRENT?.annotation_payload || {};
-      for (const id of ["physical_adherence", "instruction_alignment"]) {
-        const v = orig[id] ?? 3;
-        document.getElementById("m-" + id).value = v;
-        document.getElementById("m-" + id + "-out").value = v;
-      }
-      for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
-        setSubTri("m-" + id, orig[id] ?? 2);  // 3-class (v72), default fresh=2
-      }
-      document.getElementById("m-physical_notes").value = "";
-      document.getElementById("m-instruction_notes").value = "";
-      fields.hidden = false;
-      // Highlight which decision the open form is for; clicking same button again submits.
-      REVIEW_PENDING_DECISION = asDecision;
-      const minorBtn = document.getElementById("minor-btn");
-      const majorBtn = document.getElementById("major-btn");
-      // v85bf: cleaner button text — "📤 提交" on the active button, reset the other.
-      const submitLbl = tr("review.submit_decision");
-      if (asDecision === "minor") {
-        minorBtn.textContent = submitLbl;
-        majorBtn.textContent = tr("review.major");
-      } else {
-        majorBtn.textContent = submitLbl;
-        minorBtn.textContent = tr("review.minor");
-      }
-    } else {
-      submitReview(REVIEW_PENDING_DECISION || asDecision);
+  // v85cm: single adaptive action button. Modify fields are always visible + pre-filled
+  // with annotator's originals. Reviewer edits scores/subs freely; button label auto-updates
+  // to reflect the decision the backend (`_auto_decision`) will assign:
+  //   no changes                                 → 通过 / Approve
+  //   any change AND |ΔPA|+|ΔIA| < 2             → 修改 / Modify (minor)
+  //   |ΔPA|+|ΔIA| >= 2                           → 打回 / Reject (major)
+  // Backend is authoritative (Ham `_auto_decision`); this is display-only preview.
+  const actionBtn = document.getElementById("action-btn");
+  const recomputeActionLabel = () => reviewActionLabel(actionBtn);
+  // Live listeners: main sliders, sub-tri hidden inputs, notes textareas.
+  for (const id of ["m-physical_adherence", "m-instruction_alignment"]) {
+    document.getElementById(id)?.addEventListener("input", recomputeActionLabel);
+  }
+  for (const id of ["m-agent_consistency","m-scene_consistency","m-interaction_realism",
+                    "m-agent_match","m-object_correct","m-goal_completed"]) {
+    // sub-tri change fires on button click via setSubTri → attach to the hidden input's parent tri buttons.
+    const wrap = document.querySelector(`.sub-tri[data-key="${id}"]`);
+    if (wrap) {
+      wrap.querySelectorAll(".sub-tri-btn").forEach(b => b.addEventListener("click", () => {
+        // setSubTri handles the value update; run label refresh on next tick so read is stable.
+        setTimeout(recomputeActionLabel, 0);
+      }));
     }
-  };
-  document.getElementById("minor-btn").addEventListener("click", () => openModifyForm("minor"));
-  document.getElementById("major-btn").addEventListener("click", () => openModifyForm("major"));
+  }
+  actionBtn?.addEventListener("click", () => {
+    const decision = actionBtn.dataset.decision || "approve";
+    submitReview(decision);
+  });
   document.getElementById("retry-btn").addEventListener("click", () => loadNextReview());
   wireVideoFallback(document.getElementById("gen-video"), { onSkip: () => loadNextReview() });
   // v85be: report-data-issue flow mirrored from task.html (skip removed per siyuan).
@@ -3670,6 +3666,66 @@ function renderReviewItem(it) {
     ? `<strong>Physical:</strong> ${nl2br(pNote || "—")}<br><strong>Instruction:</strong> ${nl2br(iNote || "—")}`
     : "(no notes)";
   fetchPrompt(it);
+  // v85cm: pre-fill modify-fields with annotator's originals so the single adaptive
+  // action-btn starts as "通过" (no delta). Reviewer edits → button switches to 修改/Reject.
+  for (const id of ["physical_adherence", "instruction_alignment"]) {
+    const v = payload[id] ?? 3;
+    const inp = document.getElementById("m-" + id);
+    const out = document.getElementById("m-" + id + "-out");
+    if (inp) inp.value = v;
+    if (out) out.value = v;
+    // Refresh score-hint level class.
+    const hint = document.getElementById("m-" + id + "-hint");
+    if (hint) { hint.className = `score-hint level-${v}`; }
+  }
+  for (const id of ["agent_consistency","scene_consistency","interaction_realism",
+                    "agent_match","object_correct","goal_completed"]) {
+    setSubTri("m-" + id, payload[id] ?? 2);
+  }
+  document.getElementById("m-physical_notes").value = "";
+  document.getElementById("m-instruction_notes").value = "";
+  // Reset button to 通过 (no delta at initial state).
+  reviewActionLabel(document.getElementById("action-btn"));
+}
+
+// v85cm: derive display decision from current form state vs original annotation.
+// Must mirror Ham's `_auto_decision` (backend authoritative). Rule B:
+//   no scoresChanged → approve; L1 <  2 → minor; L1 >= 2 → major.
+// Notes-only changes do NOT count as scoresChanged (per siyuan).
+function reviewCurrentDelta() {
+  const orig = REVIEW_CURRENT?.annotation || REVIEW_CURRENT?.annotation_payload || {};
+  const cur = {};
+  for (const id of ["physical_adherence", "instruction_alignment"]) {
+    cur[id] = Number(document.getElementById("m-" + id)?.value);
+  }
+  for (const id of ["agent_consistency","scene_consistency","interaction_realism",
+                    "agent_match","object_correct","goal_completed"]) {
+    cur[id] = getSubTri("m-" + id);
+  }
+  const dPA = Math.abs((cur.physical_adherence ?? 0) - (Number(orig.physical_adherence) || 0));
+  const dIA = Math.abs((cur.instruction_alignment ?? 0) - (Number(orig.instruction_alignment) || 0));
+  let subChanged = false;
+  for (const id of ["agent_consistency","scene_consistency","interaction_realism",
+                    "agent_match","object_correct","goal_completed"]) {
+    if ((cur[id] ?? 2) !== (orig[id] ?? 2)) subChanged = true;
+  }
+  return { dPA, dIA, subChanged, cur };
+}
+
+function reviewActionLabel(btn) {
+  if (!btn) return;
+  const { dPA, dIA, subChanged } = reviewCurrentDelta();
+  const scoresChanged = dPA > 0 || dIA > 0 || subChanged;
+  const l1 = dPA + dIA;
+  let decision, key;
+  if (!scoresChanged) { decision = "approve"; key = "review.action.approve"; }
+  else if (l1 >= 2)   { decision = "major";   key = "review.action.reject";  }
+  else                { decision = "minor";   key = "review.action.modify";  }
+  btn.dataset.decision = decision;
+  btn.classList.remove("warn", "danger");
+  if (decision === "minor") btn.classList.add("warn");
+  if (decision === "major") btn.classList.add("danger");
+  btn.textContent = tr(key);
 }
 
 async function submitReview(decision) {
@@ -3683,10 +3739,17 @@ async function submitReview(decision) {
   // 3-decision flow (v78): approve = no edit; minor = reviewer's edit, counts as pass for annotator;
   // major = reviewer's edit + flag for re-annotation (annotator gets it back, doesn't get paid until
   // a subsequent review passes). Both minor and major require the modify form to be filled.
-  if (decision === "minor" || decision === "major" || decision === "modify") {
+  // v85cm: always send the current final_payload from the modify-fields (which are always
+  // visible + prefilled with originals). Backend `_auto_decision` derives decision from
+  // (orig vs final) regardless of what we send in `decision`. Notes required only when
+  // scores actually changed vs originals (approve = no note required).
+  {
     const physical_notes = document.getElementById("m-physical_notes").value.trim();
     const instruction_notes = document.getElementById("m-instruction_notes").value.trim();
-    if (!physical_notes || !instruction_notes) { toast(tr("toast.modify_note_required"), "err"); return; }
+    if (decision !== "approve" && (!physical_notes || !instruction_notes)) {
+      toast(tr("toast.modify_note_required"), "err");
+      return;
+    }
     payload = {
       physical_adherence: Number(document.getElementById("m-physical_adherence").value),
       instruction_alignment: Number(document.getElementById("m-instruction_alignment").value),
