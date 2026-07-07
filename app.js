@@ -1555,7 +1555,18 @@ function setInitFrame(url, prefix) {
   const img = document.getElementById(p + "init-frame-img");
   if (!fig || !img) return;
   if (url) {
-    img.src = applyVideoHost(url);
+    // v85dd (Alice diag): if the manifest-derived URL 404s (or the backend
+    // handed us the legacy gt_data URL for a per-model item like droid), try
+    // the sibling layout as a fallback: gt_data/... ↔ generated_data/<model>/.../1/prompt/.
+    const first = applyVideoHost(url);
+    img.onerror = () => {
+      const alt = derivateInitFrameAlt(url);
+      if (alt && alt !== url) {
+        img.onerror = null;
+        img.src = applyVideoHost(alt);
+      }
+    };
+    img.src = first;
     fig.hidden = false;
     img.onclick = () => openImageLightbox(img.src);
     img.style.cursor = "zoom-in";
@@ -1563,6 +1574,28 @@ function setInitFrame(url, prefix) {
     fig.hidden = true;
     img.removeAttribute("src");
   }
+}
+
+/* Given an init_frame URL that ends in .../gt_data/<task>/<ep>/prompt/init_frame.png,
+   return the sibling .../generated_data/<model>/<task>/<ep>/1/prompt/init_frame.png
+   (and vice-versa) — used as the setInitFrame onerror fallback. Extracts <model>
+   from a sibling video URL when needed via CURRENT_INSTRUCTION.video_url. */
+function derivateInitFrameAlt(url) {
+  if (!url) return null;
+  const gtMatch = url.match(/^(.*?)\/gt_data\/(task_\d+)\/(episode_\d+)\/prompt\/(init_frame\.png)$/);
+  if (gtMatch) {
+    const [, prefix, task, ep, file] = gtMatch;
+    // Need the model from the video URL to build the per-model path.
+    const vidUrl = (window.CURRENT_INSTRUCTION && CURRENT_INSTRUCTION.video_url) || "";
+    const vidMatch = vidUrl.match(/\/generated_data\/([^/]+)\//);
+    if (vidMatch) return `${prefix}/generated_data/${vidMatch[1]}/${task}/${ep}/1/prompt/${file}`;
+  }
+  const perModel = url.match(/^(.*?)\/generated_data\/([^/]+)\/(task_\d+)\/(episode_\d+)\/1\/prompt\/(init_frame\.png)$/);
+  if (perModel) {
+    const [, prefix, , task, ep, file] = perModel;
+    return `${prefix}/gt_data/${task}/${ep}/prompt/${file}`;
+  }
+  return null;
 }
 
 /* Simple lightbox: dim the page, show the image full-size, click to close. */
