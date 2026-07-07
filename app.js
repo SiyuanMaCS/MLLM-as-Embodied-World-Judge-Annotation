@@ -2138,15 +2138,12 @@ function renderAlignmentMetricsBlock(m) {
         ? r.needs_realignment
         : ((r.pa != null && r.pa < consensusPA) || (r.ia != null && r.ia < consensusIA))
     );
-    // v85ed (siyuan: 这个 tag 不要 就都是 user): drop the USER / 你 tags;
-    // just show the name. Model rows keep the MODEL tag so reference judge
-    // rows are still visually distinguishable.
-    const isMe = r.kind === "annotator" && r.is_self === true;
-    let rowClass = r.kind === "model" ? "am-row am-row-model" : "am-row am-row-annotator";
-    if (isMe) rowClass += " am-row-me";
+    // v85ee (Ham reading of siyuan: 就都是 user): all real-annotator rows show a
+    // uniform USER tag; the 「你」 self-tag + amber self-highlight are gone.
+    const rowClass = r.kind === "model" ? "am-row am-row-model" : "am-row am-row-annotator";
     const kindTag = r.kind === "model"
       ? `<span class="am-tag am-tag-model">MODEL</span>`
-      : "";
+      : `<span class="am-tag am-tag-user">USER</span>`;
     return `<tr class="${rowClass}">
       <td class="am-rank">${i + 1}</td>
       <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong></td>
