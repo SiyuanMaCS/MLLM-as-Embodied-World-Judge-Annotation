@@ -5849,7 +5849,14 @@ async function loadAlignStatus() {
     // Backend marks completed non-admin participants with read_only:true and returns the same
     // items[] payload that admins see. read_only now reflects all_disclosed (not all_submitted).
     ALIGN_READ_ONLY = !!(d.read_only && !ALIGN_IS_ADMIN);
-    if (ALIGN_IS_ADMIN || ALIGN_READ_ONLY) {
+    // v85dk (siyuan: msy 标完之后卡住了 应该自动进入一个author的alignment审阅界面):
+    // author who submitted all items but hasn't disclosed all yet should ALSO see the
+    // admin-like overview (peer-review-style), not a blank screen. Backend read_only is
+    // stricter (all_disclosed). Add a client-side trigger on all_submitted.
+    const allSubmitted = (typeof d.my_done === "number" && typeof d.total === "number"
+      && d.total > 0 && d.my_done >= d.total);
+    const showOverview = ALIGN_IS_ADMIN || ALIGN_READ_ONLY || (allSubmitted && !ALIGN_IS_ADMIN);
+    if (showOverview) {
       document.getElementById("al-final-count").textContent = ALIGN_IS_ADMIN
         ? `${d.n_finalized ?? 0} finalized / ${d.total ?? 50}`
         : `${d.n_finalized ?? 0} finalized · ${tr("align.read_only_badge")}`;
@@ -5881,9 +5888,13 @@ async function loadAlignStatus() {
       if (viewResultsBtn) viewResultsBtn.hidden = true;
       return;
     }
-    if (ALIGN_READ_ONLY) {
+    if (ALIGN_READ_ONLY || (allSubmitted && !ALIGN_IS_ADMIN)) {
+      // v85dk: overview shown above; also surface the done banner + hide any residual item form.
       document.getElementById("al-done-msg").hidden = false;
       document.getElementById("al-item").hidden = true;
+      // Hide the admin-only end/export buttons for authors.
+      const endBtn = document.getElementById("al-end-btn");
+      if (endBtn) endBtn.hidden = true;
       return;
     }
     await loadAlignNext();
