@@ -2023,42 +2023,43 @@ function renderAlignmentMetricsBlock(m) {
       exact_pa: x.pa_exact })),
   ].filter(r => r.pa != null || r.ia != null);
   rows.sort((a, b) => (b.pa ?? -999) - (a.pa ?? -999));
-  const bar = (v, floor) => {
-    if (v == null) return `<span class="am-bar am-bar-empty"></span>`;
+  // v85da: bar fill color = row semantics (green pass / red fail). Model rows
+  // (kind='model') get blue regardless of value. Caller passes rowKind in via
+  // `kindOverride` so we can render the bar based on the whole-row status,
+  // not just this individual metric's pass/fail.
+  const bar = (v, threshold, rowKind, failsRow) => {
+    if (v == null) return `<span class="am-bar am-bar-empty">—</span>`;
     const pct = Math.max(0, Math.min(100, v * 100));
-    const passed = v >= floor;
-    return `<span class="am-bar ${passed ? "am-bar-pass" : "am-bar-fail"}">
+    const cls = rowKind === "model" ? "am-bar-model" : (failsRow ? "am-bar-fail" : "am-bar-pass");
+    return `<span class="am-bar ${cls}">
       <span class="am-bar-fill" style="width:${pct.toFixed(1)}%"></span>
       <span class="am-bar-num">${v.toFixed(3)}</span>
     </span>`;
   };
   const fmt = v => v == null ? "—" : Number(v).toFixed(3);
+  // v85da: 3-color regime — model=blue, fail annotator=red, pass annotator=green.
+  // No ❗须重考 badge, no ⚠ outlier. Row color alone signals status.
+  const consensusPA = m?.annotator_threshold?.pa_pearson ?? m?.floor?.consensus_pa ?? 0.70;
+  const consensusIA = m?.annotator_threshold?.ia_pearson ?? m?.floor?.consensus_ia ?? 0.70;
   const rowsHtml = rows.map((r, i) => {
-    const kindTag = r.kind === "model"
-      ? `<span class="am-tag am-tag-model">MODEL</span>`
-      : `<span class="am-tag am-tag-annotator">USER</span>`;
-    // v85cx: Ham per-row `needs_realignment` is authoritative; fall back to a
-    // client-side check on the top-level `annotator_threshold` only if the flag
-    // is missing (older-payload compat). Model rows never carry this field.
-    const consensusPA = m?.annotator_threshold?.pa_pearson ?? m?.floor?.consensus_pa ?? 0.50;
-    const consensusIA = m?.annotator_threshold?.ia_pearson ?? m?.floor?.consensus_ia ?? 0.50;
     const failsFloor = r.kind === "annotator" && (
       typeof r.needs_realignment === "boolean"
         ? r.needs_realignment
         : ((r.pa != null && r.pa < consensusPA) || (r.ia != null && r.ia < consensusIA))
     );
-    const failBadge = failsFloor
-      ? `<span class="am-fail" title="${tr("alignment_metrics.fail_tip")}">❗ ${tr("alignment_metrics.retake")}</span>`
-      : "";
-    const outlier = r.is_outlier
-      ? `<span class="am-outlier" title="${tr("alignment_metrics.outlier_tip")}">⚠</span>`
-      : "";
-    return `<tr class="am-row am-row-${r.kind}${r.is_outlier ? " am-row-outlier" : ""}${failsFloor ? " am-row-fail" : ""}">
+    const rowClass = r.kind === "model"
+      ? "am-row am-row-model"
+      : (failsFloor ? "am-row am-row-fail" : "am-row am-row-pass");
+    const tagClass = r.kind === "model"
+      ? "am-tag am-tag-model"
+      : (failsFloor ? "am-tag am-tag-fail" : "am-tag am-tag-pass");
+    const kindTag = `<span class="${tagClass}">${r.kind === "model" ? "MODEL" : "USER"}</span>`;
+    return `<tr class="${rowClass}">
       <td class="am-rank">${i + 1}</td>
-      <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong> ${outlier} ${failBadge}</td>
+      <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong></td>
       <td class="am-n muted small">${r.n ?? "—"}</td>
-      <td class="am-metric am-pa">${bar(r.pa, consensusPA)}</td>
-      <td class="am-metric am-ia">${bar(r.ia, consensusIA)}</td>
+      <td class="am-metric am-pa">${bar(r.pa, consensusPA, r.kind, failsFloor)}</td>
+      <td class="am-metric am-ia">${bar(r.ia, consensusIA, r.kind, failsFloor)}</td>
       <td class="am-metric muted small">${fmt(r.qwk_pa)}</td>
       <td class="am-metric muted small">${fmt(r.exact_pa)}</td>
     </tr>`;
@@ -5483,10 +5484,14 @@ async function loadAlignHistory() {
   } catch (_) { /* silent — endpoint may be optional */ }
 }
 
-async function toggleIAAPanel() {
+// v85da: auto-load (no button) — same fetch/render path as the old toggle.
+async function loadAndRenderIAAPanel() { return toggleIAAPanel(true); }
+
+async function toggleIAAPanel(forceShow) {
   const panel = document.getElementById("al-iaa-panel");
-  if (!panel.hidden) { panel.hidden = true; return; }
-  if (!ALIGN_CAMPAIGN_ID) return;
+  if (!panel) return;
+  if (!forceShow && !panel.hidden) { panel.hidden = true; return; }
+  if (!ALIGN_CAMPAIGN_ID) { panel.innerHTML = ""; return; }
   panel.hidden = false;
   panel.innerHTML = `<p class="muted">${tr("common.loading")}</p>`;
   try {
@@ -5747,6 +5752,9 @@ async function loadAlignStatus() {
       if (endBtn) endBtn.hidden = !ALIGN_IS_ADMIN;
       const exportBtn = document.getElementById("al-export-btn");
       if (exportBtn) exportBtn.hidden = false;
+      // v85da (siyuan: 一致性不要设置一个按钮了 直接显示就好了): auto-load the
+      // alignment metrics panel when the admin overview shows.
+      loadAndRenderIAAPanel();
     }
     // v85az: admin alignment = create + finalize-overview ONLY. Hide the participant UI:
     // - "progress N/M" stat (annotator counter, not relevant to admin)
