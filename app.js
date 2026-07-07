@@ -4158,26 +4158,77 @@ function renderReviewWorkRow(it) {
   const editBtn = it.editable
     ? `<a class="btn-edit" href="review.html?edit_review=${encodeURIComponent(it.item_id)}">✏ ${tr("my_reviews.edit_btn")}</a>`
     : `<span class="muted small">${tr("my_annotations.locked")}</span>`;
-  // v85bn: arbitration outcome on reviewer's past major decisions (uphold/overturn/modify/pending).
+  // v85bn: arbitration outcome on reviewer's past major decisions.
   const arbDec = it.arbitration_decision;
   const arbBadge = arbDec ? `<span class="row-badge arb-${arbDec}" title="${tr("arbitration.tag")}">${tr("arbitration.badge." + arbDec)}</span>` : "";
-  // v85bo: reviewer accuracy signal from Ham (correct|over_reject|adjusted) — actionable feedback.
+  // v85bo: reviewer accuracy signal from Ham.
   const accuracy = it.reviewer_accuracy;
   const accBadge = accuracy ? `<span class="row-badge acc-${accuracy}" title="${tr("review.accuracy")}">${tr("review.accuracy." + accuracy)}</span>` : "";
+  // v85cn: reuse renderReviewRow's click-to-expand detail so reviewers can inspect their own
+  // submission (scores + subs + notes) side-by-side with the annotator's original, and play
+  // the video. Previously only the two main scores were shown → siyuan reported "无法显示审核内容".
+  const subsP = ["agent_consistency","scene_consistency","interaction_realism"];
+  const subsI = ["agent_match","object_correct","goal_completed"];
+  function subBadges(p, keys) {
+    return keys.map(k => {
+      const v = p[k];
+      if (v === undefined || v === null) return "";
+      const glyph = v === 0 ? "✗" : (v === 1 ? "⚠" : "✓");
+      const cls = v === 0 ? "no" : (v === 1 ? "partial" : "yes");
+      return `<span class="sub-badge ${cls}" title="${k}">${glyph} ${k.replace(/_/g," ")}</span>`;
+    }).join("");
+  }
+  const physChanged = !isApprove && (fin.physical_adherence ?? fin.quality) !== (orig.physical_adherence ?? orig.quality);
+  const instChanged = !isApprove && (fin.instruction_alignment ?? fin.faithful) !== (orig.instruction_alignment ?? orig.faithful);
+  const nChanged = !isApprove && (
+    (orig.physical_notes || orig.notes || "") !== (fin.physical_notes || fin.notes || "") ||
+    (orig.instruction_notes || "") !== (fin.instruction_notes || "")
+  );
   li.innerHTML = `
-    <div class="meta">
-      <span class="row-badge decision-${dec}">${decisionLbl}</span>${arbBadge}${accBadge}
-      <span class="tag">${escapeHtml(it.dataset || "?")}</span>
-      <span class="tag">${escapeHtml(it.task || "?")}</span>
-      <span class="muted small">→ <strong>${escapeHtml(target)}</strong></span>
-      <span class="muted small">${escapeHtml(String(ts).slice(0, 16).replace("T", " "))}</span>
+    <header class="row-head">
+      <span class="row-decision">${decisionLbl}</span>${arbBadge}${accBadge}
+      <span class="row-meta">${escapeHtml(it.dataset || "?")} · ${escapeHtml(it.task || "?")}</span>
+      <span class="row-spacer"></span>
+      <span class="row-by muted">→ <strong>${escapeHtml(target)}</strong></span>
+      <time class="row-ts muted">${escapeHtml(String(ts).slice(0, 16).replace("T", " "))}</time>
+      <span class="row-chev" aria-hidden="true">▾</span>
+    </header>
+    <div class="row-detail" hidden>
+      ${initFrame ? `<div class="detail-initframe">${initFrame}</div>` : ""}
+      <div class="detail-grid">
+        <div class="detail-card detail-orig">
+          <h4>Annotator's submission</h4>
+          <p>Physical: <strong>${orig.physical_adherence ?? orig.quality ?? "—"}</strong> · Instruction: <strong>${orig.instruction_alignment ?? orig.faithful ?? "—"}</strong></p>
+          <p class="sub-line">${subBadges(orig, subsP)}${subBadges(orig, subsI)}</p>
+          ${renderNotesBlock(orig)}
+        </div>
+        <div class="detail-arrow">→</div>
+        <div class="detail-card detail-final ${isApprove ? "unchanged" : ""}">
+          <h4>${isApprove ? "Your review (approved as-is)" : "Your review (modified)"}</h4>
+          <p>Physical: <strong class="${physChanged ? "diff" : ""}">${fin.physical_adherence ?? fin.quality ?? "—"}</strong> · Instruction: <strong class="${instChanged ? "diff" : ""}">${fin.instruction_alignment ?? fin.faithful ?? "—"}</strong></p>
+          <p class="sub-line">${subBadges(fin, subsP)}${subBadges(fin, subsI)}</p>
+          ${renderNotesBlock(fin, nChanged)}
+        </div>
+      </div>
+      ${it.video_url ? `
+        <figure class="detail-video">
+          <figcaption>Generated video</figcaption>
+          <video controls preload="none" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${pickVideoUrl(it.video_sources, it.video_url)}" data-sources-json='${escapeHtml(JSON.stringify(it.video_sources || []))}'></video>
+        </figure>` : ""}
+      <p class="detail-id muted">Item: <code>${escapeHtml(it.item_id || "")}</code></p>
+      <div class="ma-foot">${editBtn}</div>
     </div>
-    ${initFrame}
-    <p class="ma-scores">
-      <strong>Final</strong> — Physical: <strong>${fin.physical_adherence ?? "—"}</strong> · Instruction: <strong>${fin.instruction_alignment ?? "—"}</strong>
-    </p>
-    <div class="ma-foot">${editBtn}</div>
   `;
+  li.querySelector(".row-head").addEventListener("click", () => {
+    const detail = li.querySelector(".row-detail");
+    const open = detail.hasAttribute("hidden");
+    if (open) detail.removeAttribute("hidden"); else detail.setAttribute("hidden", "");
+    li.classList.toggle("expanded", open);
+    if (open) {
+      const v = detail.querySelector("video");
+      if (v) wireVideoFallback(v);
+    }
+  });
   return li;
 }
 
