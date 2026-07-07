@@ -1442,29 +1442,36 @@ async function fetchInstructionInto(video_url, targetElId) {
     }
   } catch { /* not a URL — fall through */ }
   if (!relPath) { target.textContent = "(no prompt)"; return; }
-  // v85dd (Alice diag): try BOTH layouts. Older gt_data layout AND the newer
-  // generated_data/<model>/<task>/<ep>/1/prompt/ layout that droid + others use
-  // (init_frame.png + instruction*.txt live next to the video, not in gt_data).
-  const candidates = [];
-  // Layout A: `<prefix>/gt_data/<task>/<ep>/prompt` (legacy)
-  const legacyBase = relPath.replace(
+  // v85df (Alice correction): the GT-level instruction file is
+  // `<prefix>/gt_data/<task>/<ep>/prompt/prompt.txt` (NOT instruction.txt at that
+  // path). The per-model generated_data path uses instruction.txt as a fallback.
+  // Ham's v85bx warning was about the generated_data/.../prompt.txt file being
+  // the generator rewrite — the gt_data/prompt.txt file is the GT-level canonical
+  // instruction (Alice uses it daily for data-reports).
+  const gtBase = relPath.replace(
     /^(.+?)\/generated_data\/[^/]+\/(task_\d+)\/(episode_\d+)\/1\/[^/]+\.mp4$/,
     "$1/gt_data/$2/$3/prompt"
   );
-  if (legacyBase !== relPath) candidates.push(legacyBase);
-  // Layout B: `<prefix>/generated_data/<model>/<task>/<ep>/1/prompt` (per-model / droid).
   const perModelBase = relPath.replace(
     /^(.+?)\/generated_data\/([^/]+)\/(task_\d+)\/(episode_\d+)\/1\/[^/]+\.mp4$/,
     "$1/generated_data/$2/$3/$4/1/prompt"
   );
-  if (perModelBase !== relPath && perModelBase !== legacyBase) candidates.push(perModelBase);
-  if (!candidates.length) { target.textContent = "(no prompt)"; return; }
-  const filenames = getLang() === "cn"
-    ? ["instruction_cn.txt", "instruction.txt"]
-    : ["instruction.txt"];
-  for (const baseRaw of candidates) {
+  const attempts = [];
+  if (gtBase !== relPath) {
+    // gt_data uses prompt.txt (Alice canonical). No cn variant guaranteed there.
+    attempts.push({ base: gtBase, fnames: ["prompt.txt"] });
+  }
+  if (perModelBase !== relPath) {
+    // generated_data uses instruction.txt (+optional _cn); this is the tie-breaker.
+    const perModelFnames = getLang() === "cn"
+      ? ["instruction_cn.txt", "instruction.txt"]
+      : ["instruction.txt"];
+    attempts.push({ base: perModelBase, fnames: perModelFnames });
+  }
+  if (!attempts.length) { target.textContent = "(no prompt)"; return; }
+  for (const { base: baseRaw, fnames } of attempts) {
     const base = applyVideoHost(CFG.HF_RESOLVE_BASE + "/" + baseRaw.replace(/^\/+/, ""));
-    for (const fname of filenames) {
+    for (const fname of fnames) {
       try {
         const res = await fetch(`${base}/${fname}`);
         if (!res.ok) continue;
