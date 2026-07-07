@@ -6080,13 +6080,23 @@ function renderMyAlignmentCard(it) {
   const scoresLine = it.annotated
     ? `<p class="ma-scores">Physical: <strong>${phys}</strong> · Instruction: <strong>${inst}</strong></p>`
     : "";
+  // v85dh (siyuan: 这个列表不要直接放视频链接了 我说了多少遍了 所有这种列表 都是补上视频的
+  // 可以放 init frame 和 instruction): list rows show init_frame thumbnail + instruction
+  // preview only. Video plays only when the user clicks in to annotate/edit.
+  const instrText = (it.instruction || it.instruction_cn || "").trim();
+  const instrPreview = instrText
+    ? `<p class="ma-instr">${escapeHtml(instrText.length > 140 ? instrText.slice(0, 140) + "…" : instrText)}</p>`
+    : "";
+  const initThumb = it.init_frame_url
+    ? `<img class="ma-thumb" src="${escapeHtml(applyVideoHost(it.init_frame_url))}" alt="init frame" loading="lazy" onerror="this.onerror=null;this.style.display='none';">`
+    : "";
   li.innerHTML = `
     <div class="meta"><span class="${badgeClass}">${tr("align.state." + state)}</span><span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span></div>
-    ${it.video_url ? `<video class="ma-thumb" controls preload="none" muted playsinline webkit-playsinline="true" x5-playsinline="true" src="${pickVideoUrl(it.video_sources, it.video_url)}" data-sources-json='${escapeHtml(JSON.stringify(it.video_sources || []))}'></video>` : ""}
+    ${initThumb}
+    ${instrPreview}
     ${scoresLine}
     <div class="ma-foot">${action}</div>
   `;
-  const v = li.querySelector("video"); if (v) wireVideoFallback(v);
   // Wire row actions
   const editBtn = li.querySelector(".al-row-edit");
   if (editBtn) editBtn.addEventListener("click", () => loadAlignItemForEdit(it));
