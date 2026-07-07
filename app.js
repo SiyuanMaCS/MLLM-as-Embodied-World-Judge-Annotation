@@ -220,6 +220,7 @@ const LANG = {
     "alignment_metrics.low_conf_short": "n<20 (wide CI)",
     "alignment_metrics.fail_tip": "Below the human-IAA floor — this annotator should retake the next alignment round.",
     "alignment_metrics.retake": "retake",
+    "alignment_metrics.not_ready": "Few completed · updates as more finish",
     "my_alignment_card.title": "🎯 Alignment scores (all annotators)",
     "my_alignment_card.sub": "Latest alignment campaign — every annotator's PA/IA vs group consensus, with reference judge scores from the 875-item leaderboard for scale.",
     "gold_library.search": "Search",
@@ -625,6 +626,7 @@ const LANG = {
     "alignment_metrics.low_conf_short": "n<20 CI 宽",
     "alignment_metrics.fail_tip": "低于人-人 IAA 门槛 — 该标注员应参加下一轮 alignment。",
     "alignment_metrics.retake": "需重考",
+    "alignment_metrics.not_ready": "完成人数较少 · 更多人完成后自动计算",
     "my_alignment_card.title": "🎯 对齐分(全体标注员)",
     "my_alignment_card.sub": "最近一次 alignment campaign — 全体标注员对齐群体共识的 PA/IA,附 875 leaderboard 上的 judge 参考行作为尺度。",
     "gold_library.search": "搜索",
@@ -2076,6 +2078,20 @@ async function loadLeaderboard() {
    Small-n campaigns (n_items<20) get a low-confidence banner. */
 function renderAlignmentMetricsBlock(m) {
   if (!m || !m.annotators || !m.annotators.length) return "";
+  // v85ea (siyuan: 完成 alignment 的人数不足时不出总分; Alice softer copy):
+  // when backend flags n_ready=false, show the not-enough-yet empty state
+  // instead of the score table (still shows heading so the section isn't blank).
+  if (m.n_ready === false) {
+    return `
+      <div class="am-block">
+        <h5 class="iaa-subtitle">${tr("alignment_metrics.title_v2")}</h5>
+        <div class="am-empty">
+          <div class="am-empty-icon">👥</div>
+          <p class="am-empty-msg">${tr("alignment_metrics.not_ready")}</p>
+        </div>
+      </div>
+    `;
+  }
   // v85do (Ham note): use backend `is_self` per annotator row instead of frontend
   // handle string-matching — display name ≠ handle can miss the match.
   const meUser = (localStorage.getItem(CFG.LS_USER) || "").trim();
