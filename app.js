@@ -5427,6 +5427,40 @@ async function initAlign() {
   }
   wireSubTriButtons();  // 6 sub-tri groups in the align form
   wireAutoNote("al-");  // v85j note prefill (align form uses al- prefix)
+  // v85dj (siyuan: alignment 也可以 report 了): report-data-issue flow.
+  const reportBtn = document.getElementById("al-report-btn");
+  const reportModal = document.getElementById("al-report-modal");
+  if (reportBtn && reportModal) {
+    reportBtn.addEventListener("click", () => { reportModal.hidden = false; });
+    document.getElementById("al-report-cancel-btn").addEventListener("click", () => { reportModal.hidden = true; });
+    document.getElementById("al-report-submit-btn").addEventListener("click", async () => {
+      if (!ALIGN_CURRENT) return;
+      const btn = document.getElementById("al-report-submit-btn");
+      const issue_type = document.getElementById("al-report-type").value;
+      const note = document.getElementById("al-report-note").value.trim();
+      btn.disabled = true;
+      try {
+        const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+          method: "POST", headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({
+            report: true, user: localStorage.getItem(CFG.LS_USER),
+            item_id: ALIGN_CURRENT.id, issue_type, note,
+            source: "align", campaign_id: ALIGN_CAMPAIGN_ID,
+          }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || d?.ok === false) throw new Error(d?.error || "HTTP " + r.status);
+        toast(tr("report.submitted_toast"), "ok");
+        reportModal.hidden = true;
+        document.getElementById("al-report-note").value = "";
+        await loadAlignNext();
+      } catch (err) {
+        toast(tr("toast.report_failed") + ": " + err.message, "err");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
   await loadAlignList();
 }
 
