@@ -497,19 +497,37 @@ fieldset.role-row.known .role-opt:has(input:checked) {
 .sd-bar.ia { background: linear-gradient(180deg, #34d399, #047857); }
 .sd-bar-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
-/* v85co: alignment metrics table (admin dashboard card). */
-.am-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
-.am-table th, .am-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--border, #e5e7eb); }
-.am-table th:first-child, .am-table td:first-child { text-align: left; }
-.am-table th { background: #f8fafc; font-weight: 600; color: #334155; }
-.am-row-model { background: #f0f9ff; }
-.am-row-model td { color: #075985; font-weight: 500; }
-.am-tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px; margin-right: 4px; letter-spacing: 0.3px; font-weight: 600; }
+/* v85co: alignment metrics block embedded in align.html IAA panel — pretty table
+   with per-metric horizontal bars, outlier + model row highlighting. */
+.am-block { margin-top: 18px; padding: 14px 16px 4px; background: linear-gradient(180deg, #fafbfc 0%, transparent 100%); border-radius: 8px; border: 1px solid #e5e7eb; }
+.am-caption { margin: 4px 0 8px; font-size: 12px; color: #64748b; }
+.am-caveat { margin: 6px 0 10px; padding: 6px 10px; background: #fefce8; border-left: 3px solid #eab308; color: #713f12; font-size: 12px; border-radius: 3px; }
+.am-lowconf { margin: 6px 0 10px; padding: 6px 10px; background: #fef2f2; border-left: 3px solid #ef4444; color: #7f1d1d; font-size: 12px; border-radius: 3px; }
+.am-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; margin-top: 6px; background: #fff; border-radius: 6px; overflow: hidden; }
+.am-table th, .am-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+.am-table th { background: #f8fafc; font-weight: 600; color: #334155; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+.am-table tr:last-child td { border-bottom: none; }
+.am-row-annotator:hover { background: #f8fafc; }
+.am-row-model { background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%); border-left: 3px solid #3b82f6; }
+.am-row-model td { color: #1e3a8a; }
+.am-row-outlier { background: linear-gradient(90deg, #fef2f2 0%, #ffffff 100%); border-left: 3px solid #f87171; }
+.am-rank { width: 32px; text-align: center; color: #94a3b8; font-weight: 600; font-variant-numeric: tabular-nums; }
+.am-label { min-width: 160px; }
+.am-tag { display: inline-block; font-size: 9px; padding: 1px 6px; border-radius: 3px; margin-right: 6px; letter-spacing: 0.4px; font-weight: 700; vertical-align: middle; }
 .am-tag-model { background: #dbeafe; color: #1e40af; }
 .am-tag-annotator { background: #dcfce7; color: #166534; }
-.am-pass { color: #16a34a; margin-left: 4px; font-weight: 700; }
-.am-self { display: inline-block; margin-left: 8px; }
-.am-metric { font-variant-numeric: tabular-nums; }
+.am-outlier { display: inline-block; margin-left: 6px; padding: 1px 6px; background: #fee2e2; color: #991b1b; border-radius: 3px; font-size: 11px; font-weight: 600; }
+.am-n { width: 40px; text-align: center; font-variant-numeric: tabular-nums; }
+.am-metric { font-variant-numeric: tabular-nums; min-width: 120px; }
+.am-bar { display: inline-flex; align-items: center; gap: 6px; position: relative; width: 100%; height: 20px; }
+.am-bar-empty { background: transparent; }
+.am-bar-fill { position: absolute; left: 0; top: 4px; bottom: 4px; border-radius: 3px; transition: width 0.25s; }
+.am-bar-pass .am-bar-fill { background: linear-gradient(90deg, #22c55e, #15803d); }
+.am-bar-fail .am-bar-fill { background: linear-gradient(90deg, #f97316, #b91c1c); opacity: 0.7; }
+.am-bar-num { position: relative; z-index: 1; margin-left: auto; padding-right: 4px; color: #0f172a; font-weight: 600; font-size: 12px; text-shadow: 0 0 3px rgba(255,255,255,0.9); }
+.am-bar-empty .am-bar-num { color: #94a3b8; }
+.am-pa, .am-ia { width: 180px; }
+/* removed dashboard-card block (moved into IAA panel) */
 /* v85cc: stats.html — improved score distribution overlay layout. */
 .sd-v2-body { margin-top: 8px; }
 .sd2-legend { display: flex; gap: 12px; align-items: center; font-size: 13px; margin-bottom: 12px; color: var(--muted); }

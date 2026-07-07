@@ -206,10 +206,16 @@ const LANG = {
     "my_reviews.stats.approved": "approved",
     "my_reviews.stats.modified": "modified",
     "my_reviews.stats.rate": "approval rate",
-    "alignment_metrics.title": "🎯 Annotator alignment vs finalized gold",
-    "alignment_metrics.sub": "Per-annotator PA/IA vs Alice-finalized gold, with reference judge rows on the same items for scale.",
+    "alignment_metrics.title": "🎯 Annotator alignment vs consensus",
+    "alignment_metrics.sub": "Per-annotator PA/IA vs leave-one-out consensus (Alice-computed), with reference judge rows on the same items for scale (when available).",
+    "alignment_metrics.title_v2": "🎯 Per-annotator alignment vs consensus",
     "alignment_metrics.floor": "Human-IAA floor",
     "alignment_metrics.col.who": "Who",
+    "alignment_metrics.default_ref": "leave-one-out consensus",
+    "alignment_metrics.ref_prefix": "Reference:",
+    "alignment_metrics.no_model_yet": "⏳ Reference judge rows pending — Alice will add fair-comparison model rows once flash finishes on this campaign's items.",
+    "alignment_metrics.outlier_tip": "Alice flagged: annotator's scores diverge notably from the group consensus.",
+    "alignment_metrics.low_conf": "Small campaign (n_items < 20) — CI is wide, treat single-annotator outliers as tentative.",
     "gold_library.search": "Search",
     "gold_library.no_match": "No matching items.",
     "docs.intro_title": "Embodied World-Model Video Evaluation",
@@ -599,10 +605,16 @@ const LANG = {
     "my_reviews.stats.approved": "通过",
     "my_reviews.stats.modified": "修改",
     "my_reviews.stats.rate": "通过率",
-    "alignment_metrics.title": "🎯 标注员对齐指标 vs 定稿 gold",
-    "alignment_metrics.sub": "每位标注员在 Alice 定稿 gold 上的 PA/IA 表现,同表附 judge 模型参考行用于同尺度对比。",
+    "alignment_metrics.title": "🎯 标注员对齐指标 vs 群体共识",
+    "alignment_metrics.sub": "每位标注员在留一共识(leave-one-out,Alice 计算)上的 PA/IA,同表可附 judge 模型公平对照行。",
+    "alignment_metrics.title_v2": "🎯 各标注员相对群体共识的对齐度",
     "alignment_metrics.floor": "人-人 IAA 门槛",
     "alignment_metrics.col.who": "标注员/模型",
+    "alignment_metrics.default_ref": "留一共识 (leave-one-out)",
+    "alignment_metrics.ref_prefix": "参考:",
+    "alignment_metrics.no_model_yet": "⏳ 模型公平对照行待补 — Alice 会在 flash 跑完本 campaign 后加。",
+    "alignment_metrics.outlier_tip": "Alice 标记:该标注员分数明显偏离群体共识。",
+    "alignment_metrics.low_conf": "样本量小 (n_items < 20) — 置信区间宽,单个 outlier 建议保守判读。",
     "gold_library.search": "搜索",
     "gold_library.no_match": "没有匹配的金标。",
     "docs.intro_title": "具身世界模型视频评测",
@@ -1857,9 +1869,8 @@ async function initDashboard() {
   await loadLeaderboard();
   // v85cc: model averages + score distribution moved to dedicated /stats.html page.
   if (isAdmin) await loadDataReports();
-  // v85co: per-annotator alignment metrics vs Alice-finalized gold, with reference
-  // judge rows (from bench leaderboard) for scale. Admin-only surface.
-  if (isAdmin) await loadAlignmentMetrics();
+  // v85co-alt: per-annotator alignment metrics moved to align.html IAA panel
+  // (siyuan: 我这个指标是要每个alignment campaign单算的，改在那个一致性那个界面里).
   let timer = setInterval(() => {
     if (!document.hidden) {
       loadDashboard(); loadBadges(); loadMilestoneProgress(); loadLeaderboard();
@@ -1972,14 +1983,91 @@ async function loadLeaderboard() {
   }
 }
 
-/* v85co: admin-only card — per-annotator alignment metrics vs Alice-finalized gold,
-   plus reference judge rows (bench/results leaderboard) on same-scale for comparison.
-   Ham endpoint `?action=alignment_metrics&user=<admin>` returns:
-     {gold_n, floor: {pa_pearson, ia_pearson}, annotators: [{user, n, pa_pearson,
-      spearman_pa, q_kappa_pa, cohen_pa, exact_pa, within1_pa, mse_pa, same shape
-      for ia, joint_f1, self_ratio}], reference_models: [{model, pa_pearson, ...}]}
-   Non-admin returns 403/admin_only → card stays hidden. */
-async function loadAlignmentMetrics() {
+/* v85co: renders the per-annotator alignment-metrics block inside the alignment
+   IAA panel (align.html #al-iaa-panel). Ham endpoint per-campaign:
+     ?action=alignment_metrics&campaign_id=<CID>&user=<admin>
+   Returns (per current campaign only):
+     {n_items, n_annotators, reference_kind, floor, annotators:[{user,n,
+       pa_pearson,ia_pearson,pa_qwk,ia_qwk,pa_exact,is_outlier}], reference_models:[]}
+   Small-n campaigns (n_items<20) get a low-confidence banner. */
+function renderAlignmentMetricsBlock(m) {
+  if (!m || !m.annotators || !m.annotators.length) return "";
+  const floorPA = m?.floor?.pa_pearson ?? 0.336;
+  const floorIA = m?.floor?.ia_pearson ?? 0.354;
+  const models = m.reference_models || [];
+  const nItems = m.n_items ?? "?";
+  const nAnn = m.n_annotators ?? m.annotators.length;
+  const refKind = m.reference_kind || tr("alignment_metrics.default_ref");
+  const lowConf = typeof nItems === "number" && nItems < 20;
+  const rows = [
+    ...m.annotators.map(a => ({ kind: "annotator", label: a.user, n: a.n,
+      pa: a.pa_pearson, ia: a.ia_pearson, qwk_pa: a.pa_qwk, qwk_ia: a.ia_qwk,
+      exact_pa: a.pa_exact, is_outlier: a.is_outlier === true })),
+    ...models.map(x => ({ kind: "model", label: x.model, n: x.n ?? nItems,
+      pa: x.pa_pearson, ia: x.ia_pearson, qwk_pa: x.pa_qwk, qwk_ia: x.ia_qwk,
+      exact_pa: x.pa_exact })),
+  ].filter(r => r.pa != null || r.ia != null);
+  rows.sort((a, b) => (b.pa ?? -999) - (a.pa ?? -999));
+  const bar = (v, floor) => {
+    if (v == null) return `<span class="am-bar am-bar-empty"></span>`;
+    const pct = Math.max(0, Math.min(100, v * 100));
+    const passed = v >= floor;
+    return `<span class="am-bar ${passed ? "am-bar-pass" : "am-bar-fail"}">
+      <span class="am-bar-fill" style="width:${pct.toFixed(1)}%"></span>
+      <span class="am-bar-num">${v.toFixed(3)}</span>
+    </span>`;
+  };
+  const fmt = v => v == null ? "—" : Number(v).toFixed(3);
+  const rowsHtml = rows.map((r, i) => {
+    const kindTag = r.kind === "model"
+      ? `<span class="am-tag am-tag-model">MODEL</span>`
+      : `<span class="am-tag am-tag-annotator">USER</span>`;
+    const outlier = r.is_outlier
+      ? `<span class="am-outlier" title="${tr("alignment_metrics.outlier_tip")}">⚠</span>`
+      : "";
+    return `<tr class="am-row am-row-${r.kind}${r.is_outlier ? " am-row-outlier" : ""}">
+      <td class="am-rank">${i + 1}</td>
+      <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong> ${outlier}</td>
+      <td class="am-n muted small">${r.n ?? "—"}</td>
+      <td class="am-metric am-pa">${bar(r.pa, floorPA)}</td>
+      <td class="am-metric am-ia">${bar(r.ia, floorIA)}</td>
+      <td class="am-metric muted small">${fmt(r.qwk_pa)}</td>
+      <td class="am-metric muted small">${fmt(r.exact_pa)}</td>
+    </tr>`;
+  }).join("");
+  const modelCaveat = models.length === 0
+    ? `<p class="am-caveat">${tr("alignment_metrics.no_model_yet")}</p>`
+    : "";
+  const lowConfBanner = lowConf
+    ? `<p class="am-lowconf">⚠ ${tr("alignment_metrics.low_conf")}</p>`
+    : "";
+  return `
+    <div class="am-block">
+      <h5 class="iaa-subtitle">${tr("alignment_metrics.title_v2")}</h5>
+      <p class="muted small am-caption">${tr("alignment_metrics.ref_prefix")} <strong>${escapeHtml(refKind)}</strong>, n_items=${nItems}, n_annotators=${nAnn}. ${tr("alignment_metrics.floor")}: PA ≥ <strong>${floorPA.toFixed(3)}</strong> · IA ≥ <strong>${floorIA.toFixed(3)}</strong></p>
+      ${lowConfBanner}
+      ${modelCaveat}
+      <table class="am-table">
+        <thead>
+          <tr>
+            <th class="am-rank">#</th>
+            <th class="am-label">${tr("alignment_metrics.col.who")}</th>
+            <th class="am-n">n</th>
+            <th class="am-metric am-pa">PA · Pearson</th>
+            <th class="am-metric am-ia">IA · Pearson</th>
+            <th class="am-metric" title="Quadratic-weighted Kappa on PA">PA · QWK</th>
+            <th class="am-metric" title="Exact-match PA">PA · Exact</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* v85co: (deprecated dashboard load; kept as no-op for back-compat if a page still calls it) */
+async function loadAlignmentMetrics() { /* moved to align.html IAA panel */ }
+async function _loadAlignmentMetricsLegacy() {
   const card = document.getElementById("alignment-metrics-card");
   const body = document.getElementById("alignment-metrics-body");
   if (!card || !body) return;
@@ -1994,16 +2082,19 @@ async function loadAlignmentMetrics() {
     const floorPA = d?.floor?.pa_pearson ?? 0.336;   // Ham-published human-IAA floor
     const floorIA = d?.floor?.ia_pearson ?? 0.354;
     if (!annots.length && !models.length) { card.hidden = true; return; }
+    const refKind = d.reference_kind || "gold";
+    const refN = d.reference_n_items ?? d.gold_n ?? "?";
+    const campaign = d.campaign_id ? ` · campaign ${d.campaign_id.slice(0,8)}` : "";
     // Combine + sort by PA-Pearson desc so annotators vs models mix on one axis.
     const rows = [
       ...annots.map(a => ({
         kind: "annotator", label: a.user, n: a.n,
         pa_p: a.pa_pearson, ia_p: a.ia_pearson, jf1: a.joint_f1,
         exact_pa: a.exact_pa, w1_pa: a.within1_pa, mse_pa: a.mse_pa,
-        self_ratio: a.self_ratio, // Ham's "self-annotation share" caveat
+        is_outlier: a.is_outlier === true,
       })),
       ...models.map(m => ({
-        kind: "model", label: m.model, n: m.n ?? d.gold_n,
+        kind: "model", label: m.model, n: m.n ?? refN,
         pa_p: m.pa_pearson, ia_p: m.ia_pearson, jf1: m.joint_f1,
         exact_pa: m.exact_pa, w1_pa: m.within1_pa, mse_pa: m.mse_pa,
       })),
@@ -2015,11 +2106,11 @@ async function loadAlignmentMetrics() {
       const kindTag = r.kind === "model"
         ? `<span class="am-tag am-tag-model">MODEL</span>`
         : `<span class="am-tag am-tag-annotator">USER</span>`;
-      const self = r.self_ratio != null
-        ? `<span class="am-self muted small" title="self-annotation share of the gold this user contributed to">self ${Math.round(r.self_ratio * 100)}%</span>`
+      const outlier = r.is_outlier
+        ? `<span class="am-outlier" title="${tr("alignment_metrics.outlier_tip")}">⚠ outlier</span>`
         : "";
-      return `<tr class="am-row am-row-${r.kind}">
-        <td class="am-label">${kindTag} ${escapeHtml(r.label)} ${self}</td>
+      return `<tr class="am-row am-row-${r.kind}${r.is_outlier ? ' am-row-outlier' : ''}">
+        <td class="am-label">${kindTag} ${escapeHtml(r.label)} ${outlier}</td>
         <td class="am-n">${r.n ?? "—"}</td>
         <td class="am-metric">${fmt(r.pa_p)} ${badge(r.pa_p, floorPA)}</td>
         <td class="am-metric">${fmt(r.ia_p)} ${badge(r.ia_p, floorIA)}</td>
@@ -2029,8 +2120,12 @@ async function loadAlignmentMetrics() {
         <td class="am-metric">${fmt(r.mse_pa)}</td>
       </tr>`;
     }).join("");
+    const modelCaveat = models.length === 0
+      ? `<p class="am-caveat muted small">${tr("alignment_metrics.no_model_yet")}</p>`
+      : "";
     body.innerHTML = `
-      <p class="muted small">${tr("alignment_metrics.floor")}: PA ≥ <strong>${floorPA.toFixed(3)}</strong> · IA ≥ <strong>${floorIA.toFixed(3)}</strong> (human-IAA n=10) — passing = <span class="am-pass">✓</span>. Gold n=${d.gold_n ?? "?"}.</p>
+      <p class="muted small">Reference: <strong>${escapeHtml(refKind)}</strong>, n=${refN}${campaign}. ${tr("alignment_metrics.floor")}: PA ≥ <strong>${floorPA.toFixed(3)}</strong> · IA ≥ <strong>${floorIA.toFixed(3)}</strong> (human-IAA n=10) — passing = <span class="am-pass">✓</span>.</p>
+      ${modelCaveat}
       <table class="am-table">
         <thead>
           <tr>
@@ -5314,22 +5409,25 @@ async function toggleIAAPanel() {
   panel.hidden = false;
   panel.innerHTML = `<p class="muted">${tr("common.loading")}</p>`;
   try {
-    // Ham's completed-only gate (Alice's IAA-validity guard #1) is keyed on `user` — pass it
-    // explicitly so admin AND completed participants both get 200 (regression caught by v63 QA).
     const user = localStorage.getItem(CFG.LS_USER) || "";
-    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_agreement&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}&user=${encodeURIComponent(user)}`);
-    const d = await r.json();
-    renderIAAPanel(panel, d);
+    // v85co: fire agreement + per-annotator alignment metrics in parallel; render together.
+    const [agreeRes, metricsRes] = await Promise.all([
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_agreement&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}&user=${encodeURIComponent(user)}`),
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=alignment_metrics&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}&user=${encodeURIComponent(user)}`).catch(() => null),
+    ]);
+    const d = await agreeRes.json();
+    const metrics = metricsRes && metricsRes.ok ? await metricsRes.json().catch(() => null) : null;
+    renderIAAPanel(panel, d, metrics);
   } catch (err) {
     panel.innerHTML = `<p class="warn-text">Failed to load agreement: ${escapeHtml(err.message)}</p>`;
   }
 }
 
-function renderIAAPanel(panel, d) {
+function renderIAAPanel(panel, d, alignMetrics) {
   const perDim = d.per_dim || {};
   const items = d.items || [];
   const nMulti = d.n_items_multi ?? 0;
-  if (nMulti === 0) {
+  if (nMulti === 0 && !alignMetrics) {
     panel.innerHTML = `<p class="muted">${tr("align.iaa.no_data")}</p>`;
     return;
   }
@@ -5390,6 +5488,7 @@ function renderIAAPanel(panel, d) {
       </a>
     </li>`;
   }).join("");
+  const metricsHtml = alignMetrics ? renderAlignmentMetricsBlock(alignMetrics) : "";
   panel.innerHTML = `
     <h4 class="iaa-title">${tr("align.iaa.title")} <span class="muted small">· ${d.n_raters || "?"} raters · ${nMulti} multi-rater items</span></h4>
     <h5 class="iaa-subtitle">${tr("align.iaa.main_scores")}</h5>
@@ -5397,6 +5496,7 @@ function renderIAAPanel(panel, d) {
     <h5 class="iaa-subtitle">${tr("align.iaa.sub_scores")}</h5>
     <table class="iaa-table iaa-table-sub">${tableHead}<tbody>${subRows}</tbody></table>
     ${topItems ? `<h5 class="iaa-subtitle">${tr("align.iaa.top_items")}</h5><ul class="iaa-top-list">${topItems}</ul>` : ""}
+    ${metricsHtml}
   `;
   // Wire click handlers on top-divergent rows → jump to side-by-side for that item.
   panel.querySelectorAll(".iaa-top-link").forEach(a => {
