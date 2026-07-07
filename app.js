@@ -5972,14 +5972,7 @@ async function loadAlignNext() {
 
 async function submitAlign() {
   if (!ALIGN_CURRENT) return;
-  // v85au: respect server-side immutability. If this item was already finalized/disclosed by
-  // the time the form opened (or in the interim), refuse the submit locally — backend also
-  // returns 409 finalized_locked, but blocking here avoids a wasted round trip + tells the
-  // user *why*. Triggered the "PA reset to 5" bug when stale grid payloads were re-saved.
-  if (ALIGN_CURRENT.editable === false || ALIGN_CURRENT.finalized || ALIGN_CURRENT.disclosed) {
-    toast(tr("toast.align_locked"), "err");
-    return;
-  }
+  // v85dz: finalize/disclose lock removed — any submitted item stays editable.
   const user = localStorage.getItem(CFG.LS_USER);
   const physical_notes = document.getElementById("al-physical_notes").value.trim();
   const instruction_notes = document.getElementById("al-instruction_notes").value.trim();
@@ -6102,18 +6095,14 @@ async function loadMyAlignment() {
 
 function renderMyAlignmentCard(it) {
   const li = document.createElement("li");
-  // State: not_started / editable / disclosed / finalized
+  // v85dz (siyuan: 已 final 这个还是在锁啊; ai final 给我暂停掉; 都用全体均值算).
+  // The finalize/disclose lock states are gone — any submitted item is editable,
+  // the gold is now the all-annotator mean (Ham backend switch). We only need
+  // 'annotated' vs 'todo' here.
   let state, badgeClass, action;
-  if (it.finalized) {
-    state = "finalized"; badgeClass = "gold-tag";
-    action = `<button type="button" class="link al-row-view" data-id="${escapeHtml(it.item_id)}">${tr("align.row.view_finalized")}</button>`;
-  } else if (it.disclosed) {
-    state = "disclosed"; badgeClass = "tag";
-    action = `<button type="button" class="link al-row-view" data-id="${escapeHtml(it.item_id)}">${tr("align.row.view_disclosed")}</button>`;
-  } else if (it.annotated) {
+  if (it.annotated) {
     state = "editable"; badgeClass = "tag aud-tag tag-custom";
-    action = `<button type="button" class="link al-row-edit" data-id="${escapeHtml(it.item_id)}">${tr("align.row.edit")}</button>
-              <button type="button" class="link al-row-disclose" data-id="${escapeHtml(it.item_id)}">${tr("align.row.disclose")}</button>`;
+    action = `<button type="button" class="link al-row-edit" data-id="${escapeHtml(it.item_id)}">${tr("align.row.edit")}</button>`;
   } else {
     state = "todo"; badgeClass = "tag";
     action = `<button type="button" class="link al-row-annotate" data-id="${escapeHtml(it.item_id)}">${tr("align.row.annotate")}</button>`;
@@ -6157,15 +6146,9 @@ function renderMyAlignmentCard(it) {
   return li;
 }
 
-/* Load an editable (submitted-but-undisclosed) item back into al-form for re-scoring. */
+/* Load a submitted item back into al-form for re-scoring. v85dz: no more
+   finalize/disclose lock — any submitted item is editable. */
 function loadAlignItemForEdit(it) {
-  // v85au: hard gate — if grid passed us a finalized/disclosed/non-editable row by mistake,
-  // refuse to open the edit form and refresh the grid (lets user see the up-to-date state).
-  if (it.finalized || it.disclosed || it.editable === false) {
-    toast(tr("toast.align_locked"), "err");
-    loadMyAlignment();
-    return;
-  }
   hideAlignSections();
   setVideoSourcesFromItem(it);
   ALIGN_CURRENT = { id: it.item_id, video_url: it.video_url, dataset: it.dataset, task: it.task,
@@ -6205,15 +6188,9 @@ function loadAlignItemForEdit(it) {
   document.getElementById("al-others").hidden = true;
 }
 
-/* Load a not-yet-annotated item directly (skip the loadAlignNext queue ordering). */
+/* Load a not-yet-annotated item directly (skip the loadAlignNext queue ordering).
+   v85dz: finalize/disclose gate removed — mean-of-all replaces the lock. */
 function loadAlignItemForAnnotate(it) {
-  // v85au: belt-and-suspenders — same gate as loadAlignItemForEdit, in case the grid hands
-  // over a stale "not annotated" row that was finalized by an admin between fetch and click.
-  if (it.finalized || it.disclosed || it.editable === false) {
-    toast(tr("toast.align_locked"), "err");
-    loadMyAlignment();
-    return;
-  }
   hideAlignSections();
   setVideoSourcesFromItem(it);
   ALIGN_CURRENT = { id: it.item_id, video_url: it.video_url, dataset: it.dataset, task: it.task,
