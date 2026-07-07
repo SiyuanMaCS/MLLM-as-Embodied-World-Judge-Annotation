@@ -1442,31 +1442,37 @@ async function fetchInstructionInto(video_url, targetElId) {
     }
   } catch { /* not a URL — fall through */ }
   if (!relPath) { target.textContent = "(no prompt)"; return; }
-  // Step 2: derive the prompt directory: replace generated_data/<model>/<task>/<ep>/1/<file>.mp4
-  // → gt_data/<task>/<ep>/prompt
-  const baseRaw = relPath.replace(
+  // v85dd (Alice diag): try BOTH layouts. Older gt_data layout AND the newer
+  // generated_data/<model>/<task>/<ep>/1/prompt/ layout that droid + others use
+  // (init_frame.png + instruction*.txt live next to the video, not in gt_data).
+  const candidates = [];
+  // Layout A: `<prefix>/gt_data/<task>/<ep>/prompt` (legacy)
+  const legacyBase = relPath.replace(
     /^(.+?)\/generated_data\/[^/]+\/(task_\d+)\/(episode_\d+)\/1\/[^/]+\.mp4$/,
     "$1/gt_data/$2/$3/prompt"
   );
-  if (baseRaw === relPath) { target.textContent = "(no prompt)"; return; }
-  // Always fetch from HF (text files; the proxy isn't a generic file server). Apply user-host
-  // preference for parity with video — though hf-mirror.com 308-redirects this back to HF.
-  const base = applyVideoHost(CFG.HF_RESOLVE_BASE + "/" + baseRaw.replace(/^\/+/, ""));
-  // v85bx: REVERTED prompt.txt fallback (Ham: that file is the generator rewrite, not the
-  // annotator-facing spec — using it would bias instruction_alignment scoring). Root cause
-  // of the empty instructions was Ham's get_instruction cache poisoning; he fixed it +
-  // next_item now reliably serves the real instruction.
+  if (legacyBase !== relPath) candidates.push(legacyBase);
+  // Layout B: `<prefix>/generated_data/<model>/<task>/<ep>/1/prompt` (per-model / droid).
+  const perModelBase = relPath.replace(
+    /^(.+?)\/generated_data\/([^/]+)\/(task_\d+)\/(episode_\d+)\/1\/[^/]+\.mp4$/,
+    "$1/generated_data/$2/$3/$4/1/prompt"
+  );
+  if (perModelBase !== relPath && perModelBase !== legacyBase) candidates.push(perModelBase);
+  if (!candidates.length) { target.textContent = "(no prompt)"; return; }
   const filenames = getLang() === "cn"
     ? ["instruction_cn.txt", "instruction.txt"]
     : ["instruction.txt"];
-  for (const fname of filenames) {
-    try {
-      const res = await fetch(`${base}/${fname}`);
-      if (!res.ok) continue;
-      const text = await res.text();
-      target.textContent = text.trim() || "(empty)";
-      return;
-    } catch (err) { /* try next */ }
+  for (const baseRaw of candidates) {
+    const base = applyVideoHost(CFG.HF_RESOLVE_BASE + "/" + baseRaw.replace(/^\/+/, ""));
+    for (const fname of filenames) {
+      try {
+        const res = await fetch(`${base}/${fname}`);
+        if (!res.ok) continue;
+        const text = await res.text();
+        target.textContent = text.trim() || "(empty)";
+        return;
+      } catch (err) { /* try next */ }
+    }
   }
   target.textContent = "(prompt unavailable)";
 }
