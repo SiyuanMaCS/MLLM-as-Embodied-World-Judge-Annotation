@@ -2076,7 +2076,8 @@ async function loadLeaderboard() {
    Small-n campaigns (n_items<20) get a low-confidence banner. */
 function renderAlignmentMetricsBlock(m) {
   if (!m || !m.annotators || !m.annotators.length) return "";
-  // v85dn: highlight the viewer's own row so they can find themselves in the table.
+  // v85do (Ham note): use backend `is_self` per annotator row instead of frontend
+  // handle string-matching — display name ≠ handle can miss the match.
   const meUser = (localStorage.getItem(CFG.LS_USER) || "").trim();
   const floorPA = m?.floor?.pa_pearson ?? 0.336;
   const floorIA = m?.floor?.ia_pearson ?? 0.354;
@@ -2089,7 +2090,8 @@ function renderAlignmentMetricsBlock(m) {
     ...m.annotators.map(a => ({ kind: "annotator", label: a.user, n: a.n,
       pa: a.pa_pearson, ia: a.ia_pearson, qwk_pa: a.pa_qwk, qwk_ia: a.ia_qwk,
       exact_pa: a.pa_exact, is_outlier: a.is_outlier === true,
-      needs_realignment: a.needs_realignment })),
+      needs_realignment: a.needs_realignment,
+      is_self: a.is_self === true || a.user === meUser })),
     ...models.map(x => ({ kind: "model", label: x.model, n: x.n ?? nItems,
       pa: x.pa_pearson, ia: x.ia_pearson, qwk_pa: x.pa_qwk, qwk_ia: x.ia_qwk,
       exact_pa: x.pa_exact })),
@@ -2121,8 +2123,10 @@ function renderAlignmentMetricsBlock(m) {
         : ((r.pa != null && r.pa < consensusPA) || (r.ia != null && r.ia < consensusIA))
     );
     // v85db: user row = neutral (no row tint, no fail tag). Model row stays blue.
-    // v85dn: viewer's own row gets `am-row-me` — bold + subtle tint + "你" tag.
-    const isMe = r.kind === "annotator" && meUser && r.label === meUser;
+    // v85dn/do: viewer's own row gets `am-row-me` — bold + subtle tint + "你" tag.
+    // Prefer backend `is_self` (from Ham); fall back to handle match when scope=self
+    // pre-restricts the annotators list.
+    const isMe = r.kind === "annotator" && r.is_self === true;
     let rowClass = r.kind === "model" ? "am-row am-row-model" : "am-row am-row-annotator";
     if (isMe) rowClass += " am-row-me";
     const kindTag = r.kind === "model"
