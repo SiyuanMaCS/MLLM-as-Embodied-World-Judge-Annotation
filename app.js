@@ -208,7 +208,7 @@ const LANG = {
     "my_reviews.stats.rate": "approval rate",
     "alignment_metrics.title": "🎯 Annotator alignment vs consensus",
     "alignment_metrics.sub": "Per-annotator PA/IA vs leave-one-out consensus (Alice-computed), with reference judge rows on the same items for scale (when available).",
-    "alignment_metrics.title_v2": "🎯 Per-annotator alignment vs consensus",
+    "alignment_metrics.title_v2": "Annotator alignment",
     "alignment_metrics.floor": "Human-IAA floor",
     "alignment_metrics.col.who": "Who",
     "alignment_metrics.default_ref": "leave-one-out consensus",
@@ -614,7 +614,7 @@ const LANG = {
     "my_reviews.stats.rate": "通过率",
     "alignment_metrics.title": "🎯 标注员对齐指标 vs 群体共识",
     "alignment_metrics.sub": "每位标注员在留一共识(leave-one-out,Alice 计算)上的 PA/IA,同表可附 judge 模型公平对照行。",
-    "alignment_metrics.title_v2": "🎯 各标注员相对群体共识的对齐度",
+    "alignment_metrics.title_v2": "标注对齐度",
     "alignment_metrics.floor": "人-人 IAA 门槛",
     "alignment_metrics.col.who": "标注员/模型",
     "alignment_metrics.default_ref": "留一共识 (leave-one-out)",
@@ -2138,18 +2138,15 @@ function renderAlignmentMetricsBlock(m) {
         ? r.needs_realignment
         : ((r.pa != null && r.pa < consensusPA) || (r.ia != null && r.ia < consensusIA))
     );
-    // v85db: user row = neutral (no row tint, no fail tag). Model row stays blue.
-    // v85dn/do: viewer's own row gets `am-row-me` — bold + subtle tint + "你" tag.
-    // Prefer backend `is_self` (from Ham); fall back to handle match when scope=self
-    // pre-restricts the annotators list.
+    // v85ed (siyuan: 这个 tag 不要 就都是 user): drop the USER / 你 tags;
+    // just show the name. Model rows keep the MODEL tag so reference judge
+    // rows are still visually distinguishable.
     const isMe = r.kind === "annotator" && r.is_self === true;
     let rowClass = r.kind === "model" ? "am-row am-row-model" : "am-row am-row-annotator";
     if (isMe) rowClass += " am-row-me";
     const kindTag = r.kind === "model"
       ? `<span class="am-tag am-tag-model">MODEL</span>`
-      : (isMe
-          ? `<span class="am-tag am-tag-me">你</span>`
-          : `<span class="am-tag am-tag-user">USER</span>`);
+      : "";
     return `<tr class="${rowClass}">
       <td class="am-rank">${i + 1}</td>
       <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong></td>
