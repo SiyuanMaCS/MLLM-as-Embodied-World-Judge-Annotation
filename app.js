@@ -2136,13 +2136,29 @@ function renderAlignmentMetricsBlock(m) {
   // v85cw (siyuan simplify + Alice methodology fix): drop the 875-scale floor
   // from caption — it comes from vs-single-annotation gold and doesn't match the
   // leave-one-out consensus scale here. One short line only.
+  // v85dm: campaign_all_done gate — Alice's split (see-overview vs re-exam-gate).
+  // Not-final snapshot must be visually distinguished so 3-4-person early views
+  // are not read as retake conclusions.
   const extras = [];
   if (lowConf) extras.push("小样本仅参考");
   if (models.length === 0) extras.push(tr("alignment_metrics.no_model_short"));
   const caption = `${nItems}题 · ${nAnn}人 · <span class="muted">Pearson vs 共识 (0–1)</span>${extras.length ? " · " + extras.join(" · ") : ""}`;
+  const finished = m?.finished;
+  const active = m?.active;
+  const assigned = m?.assigned;
+  const allDone = m?.campaign_all_done;
+  let stateLine = "";
+  if (allDone === true) {
+    stateLine = `<p class="am-state am-state-final muted small">✅ 全员完成 · 最终对齐 (重考门槛 ≥ 0.70)</p>`;
+  } else if (allDone === false) {
+    const done = (finished ?? 0);
+    const total = (assigned ?? active ?? nAnn);
+    stateLine = `<p class="am-state am-state-partial muted small">⏳ ${done}/${total} 完成 · 分数会随剩余标注移动 · 最终重考判定在全员完成后</p>`;
+  }
   return `
     <div class="am-block">
       <h5 class="iaa-subtitle">${tr("alignment_metrics.title_v2")}</h5>
+      ${stateLine}
       <table class="am-table">
         <thead>
           <tr>
