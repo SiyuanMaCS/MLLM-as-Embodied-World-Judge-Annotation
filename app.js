@@ -2023,14 +2023,15 @@ function renderAlignmentMetricsBlock(m) {
       exact_pa: x.pa_exact })),
   ].filter(r => r.pa != null || r.ia != null);
   rows.sort((a, b) => (b.pa ?? -999) - (a.pa ?? -999));
-  // v85da: bar fill color = row semantics (green pass / red fail). Model rows
-  // (kind='model') get blue regardless of value. Caller passes rowKind in via
-  // `kindOverride` so we can render the bar based on the whole-row status,
-  // not just this individual metric's pass/fail.
-  const bar = (v, threshold, rowKind, failsRow) => {
+  // v85db (siyuan: 某个指标绿色就显示绿色 不要整行 / user 整行就正常颜色 / 不需要红色):
+  // per-metric coloring only. Model bars = blue. Annotator bars: green if ≥ threshold,
+  // neutral gray if below (no red). Row backgrounds neutralized for USER rows.
+  const bar = (v, threshold, rowKind) => {
     if (v == null) return `<span class="am-bar am-bar-empty">—</span>`;
     const pct = Math.max(0, Math.min(100, v * 100));
-    const cls = rowKind === "model" ? "am-bar-model" : (failsRow ? "am-bar-fail" : "am-bar-pass");
+    let cls;
+    if (rowKind === "model") cls = "am-bar-model";
+    else cls = (v >= threshold) ? "am-bar-pass" : "am-bar-neutral";
     return `<span class="am-bar ${cls}">
       <span class="am-bar-fill" style="width:${pct.toFixed(1)}%"></span>
       <span class="am-bar-num">${v.toFixed(3)}</span>
@@ -2047,19 +2048,17 @@ function renderAlignmentMetricsBlock(m) {
         ? r.needs_realignment
         : ((r.pa != null && r.pa < consensusPA) || (r.ia != null && r.ia < consensusIA))
     );
-    const rowClass = r.kind === "model"
-      ? "am-row am-row-model"
-      : (failsFloor ? "am-row am-row-fail" : "am-row am-row-pass");
-    const tagClass = r.kind === "model"
-      ? "am-tag am-tag-model"
-      : (failsFloor ? "am-tag am-tag-fail" : "am-tag am-tag-pass");
-    const kindTag = `<span class="${tagClass}">${r.kind === "model" ? "MODEL" : "USER"}</span>`;
+    // v85db: user row = neutral (no row tint, no fail tag). Model row stays blue.
+    const rowClass = r.kind === "model" ? "am-row am-row-model" : "am-row am-row-annotator";
+    const kindTag = r.kind === "model"
+      ? `<span class="am-tag am-tag-model">MODEL</span>`
+      : `<span class="am-tag am-tag-user">USER</span>`;
     return `<tr class="${rowClass}">
       <td class="am-rank">${i + 1}</td>
       <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong></td>
       <td class="am-n muted small">${r.n ?? "—"}</td>
-      <td class="am-metric am-pa">${bar(r.pa, consensusPA, r.kind, failsFloor)}</td>
-      <td class="am-metric am-ia">${bar(r.ia, consensusIA, r.kind, failsFloor)}</td>
+      <td class="am-metric am-pa">${bar(r.pa, consensusPA, r.kind)}</td>
+      <td class="am-metric am-ia">${bar(r.ia, consensusIA, r.kind)}</td>
       <td class="am-metric muted small">${fmt(r.qwk_pa)}</td>
       <td class="am-metric muted small">${fmt(r.exact_pa)}</td>
     </tr>`;
