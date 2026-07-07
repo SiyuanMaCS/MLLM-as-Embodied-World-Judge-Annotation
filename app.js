@@ -326,8 +326,8 @@ const LANG = {
     "align.no_campaign_hint": "An admin must start an alignment task before reviewers can begin.",
     "align.start_btn": "Start alignment (admin)",
     "align.start_hint": "Randomly samples 50 items shared across all reviewers + admin.",
-    "align.done_title": "✨ Submitted — not locked yet",
-    "align.done_hint": "⚠️ Pearson ≥ 0.70. Editable until you lock.",
+    "align.done_title": "✨ Submitted",
+    "align.done_hint": "⚠️ Pearson ≥ 0.70. Scores are still editable.",
     "align.view_results_btn": "📊 View alignment results (read-only)",
     "align.view_results_short": "📊 View results (read-only)",
     "align.read_only_badge": "read-only",
@@ -731,8 +731,8 @@ const LANG = {
     "align.no_campaign_hint": "管理员需先发起对齐任务,审核员才能开始。",
     "align.start_btn": "发起对齐(管理员)",
     "align.start_hint": "随机抽 50 条,所有审核员 + 管理员共标。",
-    "align.done_title": "✨ 已提交,尚未锁定",
-    "align.done_hint": "⚠️ Pearson ≥ 0.70,未锁定可改。",
+    "align.done_title": "✨ 已提交",
+    "align.done_hint": "⚠️ Pearson ≥ 0.70。仍可继续修改分数。",
     "align.view_results_btn": "📊 查看 alignment 结果(只读)",
     "align.view_results_short": "📊 查看结果(只读)",
     "align.read_only_badge": "只读",
@@ -5896,18 +5896,10 @@ async function loadAlignStatus() {
       if (endBtn) endBtn.hidden = true;
       return;
     }
-    if (allSubmitted && !ALIGN_IS_ADMIN) {
-      // v85dr: submitted-all-but-not-disclosed → done-msg with 🔒 lock CTA + browse-mine.
-      // v85dx (siyuan: 这个界面可以看到分数的 只是不能看到其他人的标注):
-      //   also render the alignment-metrics block scoped to self (backend filters
-      //   to just this user's row + reference models when not disclosed).
-      document.getElementById("al-done-msg").hidden = false;
-      document.getElementById("al-item").hidden = true;
-      const endBtn = document.getElementById("al-end-btn");
-      if (endBtn) endBtn.hidden = true;
-      loadSelfMetricsPanel();
-      return;
-    }
+    // v85dy (siyuan: 算了 不设置锁了 · 标完之后自动可以看所有 · 也可以改;
+    //   backend flipped its read_only gate from all_disclosed → my_done==total,
+    //   so the ALIGN_READ_ONLY branch above already fires for state B).
+    // Nothing to do here anymore.
     await loadAlignNext();
   } catch (err) {
     document.getElementById("al-err-msg").textContent = err.message;
