@@ -2150,8 +2150,8 @@ function renderAlignmentMetricsBlock(m) {
       <td class="am-n muted small">${r.n ?? "—"}</td>
       <td class="am-metric am-pa">${bar(r.pa, consensusPA, r.kind)}</td>
       <td class="am-metric am-ia">${bar(r.ia, consensusIA, r.kind)}</td>
-      <td class="am-metric muted small">${fmt(r.qwk_pa)}</td>
-      <td class="am-metric muted small">${fmt(r.exact_pa)}</td>
+      <td class="am-metric muted small qwk-col">${fmt(r.qwk_pa)}</td>
+      <td class="am-metric muted small exact-col">${fmt(r.exact_pa)}</td>
     </tr>`;
   }).join("");
   // v85cw (siyuan simplify + Alice methodology fix): drop the 875-scale floor
@@ -2174,8 +2174,8 @@ function renderAlignmentMetricsBlock(m) {
             <th class="am-n">n</th>
             <th class="am-metric am-pa">PA · Pearson</th>
             <th class="am-metric am-ia">IA · Pearson</th>
-            <th class="am-metric" title="Quadratic-weighted Kappa on PA">PA · QWK</th>
-            <th class="am-metric" title="Exact-match PA">PA · Exact</th>
+            <th class="am-metric qwk-col" title="Quadratic-weighted Kappa on PA">PA · QWK</th>
+            <th class="am-metric exact-col" title="Exact-match PA">PA · Exact</th>
           </tr>
         </thead>
         <tbody>${rowsHtml}</tbody>
