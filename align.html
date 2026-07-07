@@ -6,7 +6,7 @@
 <title>Reviewer Alignment — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85dp">
+<link rel="stylesheet" href="style.css?v=v85dq">
 </head>
 <body>
 <main>
@@ -158,27 +158,9 @@
       </fieldset>
       <div class="form-row actions">
         <button type="submit" data-i18n="task.save_next">Save &amp; next →</button>
-        <button type="button" id="al-report-btn" class="danger-outline" data-i18n="task.report_data">🚨 报错 / Report</button>
         <button type="button" id="al-back-picker" class="ghost" data-i18n="align.back_to_picker">↩ Back to campaigns</button>
       </div>
     </form>
-    <div class="card report-modal" id="al-report-modal" hidden>
-      <h3 data-i18n="report.title">Report data issue</h3>
-      <label data-i18n="report.type_label">Issue type</label>
-      <select id="al-report-type">
-        <option value="instruction_init_mismatch" data-i18n="report.type.instruction_init_mismatch">Instruction doesn't match init frame</option>
-        <option value="init_no_agent" data-i18n="report.type.init_no_agent">No agent in init frame</option>
-        <option value="video_unplayable" data-i18n="report.type.video_unplayable">Video unplayable</option>
-        <option value="video_static_black" data-i18n="report.type.video_static_black">Video static / black</option>
-        <option value="other" data-i18n="report.type.other">Other</option>
-      </select>
-      <label data-i18n="report.note_label">Note (optional)</label>
-      <textarea id="al-report-note" rows="2" maxlength="300" data-i18n-placeholder="report.note_placeholder" placeholder="Optional detail — admin will review"></textarea>
-      <div class="form-row actions">
-        <button type="button" id="al-report-submit-btn" data-i18n="report.submit">Submit report</button>
-        <button type="button" id="al-report-cancel-btn" class="ghost" data-i18n="common.cancel">Cancel</button>
-      </div>
-    </div>
   </section>
 
   <!-- After own submission, side-by-side view of all annotators on this item -->
@@ -223,6 +205,6 @@
 
   <section id="al-error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="al-err-msg">—</p><button id="al-retry" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v85dp" defer></script>
+<script src="app.js?v=v85dq" defer></script>
 </body>
 </html>
