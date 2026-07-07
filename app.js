@@ -5436,7 +5436,10 @@ async function loadAlignList() {
     document.getElementById("al-list-loading").hidden = true;
     renderCampaignList(d.campaigns || []);
     document.getElementById("al-picker").hidden = false;
-    if (ALIGN_IS_ADMIN) await loadAlignHistory();
+    // v85dc: siyuan asked why siyuanw (reviewer) can't see past alignment campaigns.
+    // Load history for every user — non-admin will see their own past enrollments
+    // (Ham backend to return user-scoped list on ?action=align_history&user=<self>).
+    await loadAlignHistory();
   } catch (err) {
     document.getElementById("al-list-loading").hidden = true;
     document.getElementById("al-err-msg").textContent = err.message;
@@ -5445,9 +5448,11 @@ async function loadAlignList() {
 }
 
 async function loadAlignHistory() {
-  const admin = localStorage.getItem(CFG.LS_USER);
+  const user = localStorage.getItem(CFG.LS_USER);
   try {
-    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_history&admin=${encodeURIComponent(admin)}`);
+    // v85dc: pass both admin= (legacy admin-view) and user= (non-admin self-view).
+    // Ham backend may serve either; harmless when both provided.
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_history&admin=${encodeURIComponent(user)}&user=${encodeURIComponent(user)}`);
     const d = await r.json();
     const ended = (d.campaigns || d || []).filter(c => c.status === "ended" || c.ended);
     const section = document.getElementById("al-history");
