@@ -178,14 +178,14 @@ const LANG = {
     "align.disclose.label": "🔒 disclosed:",
     "align.browse_mine_btn": "📋 Browse / edit my items",
     "align.my_items_title": "My items in this campaign",
-    "align.my_items_hint": "Mixed states: submitted-editable items can still be re-scored; disclosed items are locked. Click 「👁 See others」 to disclose + lock an item.",
+    "align.my_items_hint": "All items in this campaign — click any card to view or re-score.",
     "align.my_back_btn": "← Back",
     "align.state.todo": "TODO",
     "align.state.editable": "EDITABLE",
     "align.state.disclosed": "DISCLOSED",
     "align.state.finalized": "FINALIZED",
     "align.row.annotate": "📝 Annotate",
-    "align.row.edit": "✏ Edit",
+    "align.row.edit": "View / edit",
     "align.row.disclose": "👁 See others (locks)",
     "align.row.view_disclosed": "👁 View",
     "align.row.view_finalized": "✓ View finalized",
@@ -584,14 +584,14 @@ const LANG = {
     "align.disclose.label": "🔒 已锁:",
     "align.browse_mine_btn": "📋 浏览 / 修改我标的条目",
     "align.my_items_title": "我在这个 campaign 的条目",
-    "align.my_items_hint": "混合态:提交但未 disclose 的条目可改;disclose 后锁定。点「👁 看大家(会锁)」可 disclose + 锁定。",
+    "align.my_items_hint": "本 campaign 的全部条目 — 点任一卡查看或重新打分。",
     "align.my_back_btn": "← 返回",
     "align.state.todo": "未标",
     "align.state.editable": "可改",
     "align.state.disclosed": "已锁",
     "align.state.finalized": "已 final",
     "align.row.annotate": "📝 标注",
-    "align.row.edit": "✏ 编辑",
+    "align.row.edit": "查看 / 编辑",
     "align.row.disclose": "👁 看大家(会锁)",
     "align.row.view_disclosed": "👁 查看",
     "align.row.view_finalized": "✓ 查看金标",
@@ -6115,13 +6115,16 @@ function renderMyAlignmentCard(it) {
   // The finalize/disclose lock states are gone — any submitted item is editable,
   // the gold is now the all-annotator mean (Ham backend switch). We only need
   // 'annotated' vs 'todo' here.
-  let state, badgeClass, action;
+  // v85eb (siyuan: 编辑根本就没用 · 给我改成查看/编辑按钮 · 别用这么丑的按钮 · 可改这个标签给我去掉)
+  // The '可改' state badge is dropped. Any annotated item's action is a single
+  // primary button labeled 查看/编辑; unannotated items keep the annotate CTA.
+  let state, action;
   if (it.annotated) {
-    state = "editable"; badgeClass = "tag aud-tag tag-custom";
-    action = `<button type="button" class="link al-row-edit" data-id="${escapeHtml(it.item_id)}">${tr("align.row.edit")}</button>`;
+    state = "editable";
+    action = `<button type="button" class="ma-primary-btn al-row-edit" data-id="${escapeHtml(it.item_id)}">${tr("align.row.edit")}</button>`;
   } else {
-    state = "todo"; badgeClass = "tag";
-    action = `<button type="button" class="link al-row-annotate" data-id="${escapeHtml(it.item_id)}">${tr("align.row.annotate")}</button>`;
+    state = "todo";
+    action = `<button type="button" class="ma-primary-btn al-row-annotate" data-id="${escapeHtml(it.item_id)}">${tr("align.row.annotate")}</button>`;
   }
   li.className = `my-annot-card ma-state-${state}`;
   const p = it.payload || {};
@@ -6141,7 +6144,7 @@ function renderMyAlignmentCard(it) {
     ? `<img class="ma-thumb" src="${escapeHtml(applyVideoHost(it.init_frame_url))}" alt="init frame" loading="lazy" onerror="this.onerror=null;this.style.display='none';">`
     : "";
   li.innerHTML = `
-    <div class="meta"><span class="${badgeClass}">${tr("align.state." + state)}</span><span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span></div>
+    <div class="meta"><span class="tag">${escapeHtml(it.dataset || "?")}</span><span class="tag">${escapeHtml(it.task || "?")}</span></div>
     ${initThumb}
     ${instrPreview}
     ${scoresLine}
