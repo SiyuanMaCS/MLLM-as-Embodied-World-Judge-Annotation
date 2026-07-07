@@ -1673,12 +1673,18 @@ td.progress-cell {
 .my-annot-card.ma-state-editable { border-left: 3px solid #16a34a; }
 .my-annot-card.ma-state-disclosed { border-left: 3px solid #2563eb; opacity: 0.95; }
 .my-annot-card.ma-state-finalized { border-left: 3px solid #d4a017; opacity: 0.92; }
+/* v85ef (siyuan: init_frame 比例拉的太离谱 · 调整布局不要调比例):
+   fixed-height frame with contain so the natural aspect ratio is preserved
+   regardless of the underlying image dimensions. */
 .my-annot-card .ma-thumb {
-  width: 100%;
-  max-height: 240px;
-  margin-top: 6px;
-  border-radius: 6px;
-  background: #000;
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 200px;
+  object-fit: contain;
+  margin: 6px auto 0;
+  border-radius: 8px;
+  background: #f1f5f9;
 }
 .my-annot-card .ma-scores { margin: 8px 0 4px; font-size: 13.5px; }
 .my-annot-card .ma-foot { margin-top: 8px; text-align: right; }
