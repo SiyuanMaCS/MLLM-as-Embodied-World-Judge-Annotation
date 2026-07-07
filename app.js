@@ -2841,6 +2841,9 @@ async function loadBadges() {
   const goldreviewedNew = Math.max(0, (data.goldreviewed_total || 0) - seenGold);
 
   // Align badge: sum across all active campaigns the user is enrolled in.
+  // v85dp: prefer backend `pending` per campaign (subtracts items the user has
+  // reported — report = fulfilled duty per Alice/Ham). Falls back to
+  // `total - my_done` when the field is absent.
   // Admin: take max(myRemain, adminFinalRemain) per campaign, then sum.
   let alignBadge = 0;
   const isAdminBadge = !!(alignListData && alignListData.is_admin);
@@ -2848,7 +2851,9 @@ async function loadBadges() {
     for (const c of alignListData.campaigns) {
       if (!c.is_participant && !isAdminBadge) continue;
       const total = c.total ?? 50;
-      const myRemain = (c.is_participant) ? Math.max(0, total - (c.my_done ?? 0)) : 0;
+      const myRemain = (c.is_participant)
+        ? (typeof c.pending === "number" ? c.pending : Math.max(0, total - (c.my_done ?? 0)))
+        : 0;
       if (isAdminBadge) {
         const adminFinalRemain = Math.max(0, total - (c.n_finalized ?? 0));
         alignBadge += Math.max(myRemain, adminFinalRemain);
