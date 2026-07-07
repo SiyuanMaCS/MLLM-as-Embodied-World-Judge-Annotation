@@ -3934,7 +3934,10 @@ async function loadReviewForEdit(itemId) {
     };
     renderReviewItem(REVIEW_CURRENT);
     hide("loading"); show("item");
-    document.getElementById("modify-fields").hidden = true;
+    // v85eg (siyuan: 这个审核界面为啥不能修改了): modify-fields must stay
+    // visible so the reviewer can actually adjust scores. v85cm always intended
+    // this ("Modify fields are always visible") — the stale hide line was
+    // left over from the older click-to-open flow.
   } catch (err) {
     showError("Failed to load review item: " + err.message);
   }
@@ -3970,7 +3973,7 @@ async function loadNextReview() {
     REVIEW_CURRENT = data;
     renderReviewItem(data);
     hide("loading"); show("item");
-    document.getElementById("modify-fields").hidden = true;
+    // v85eg: keep modify-fields visible (see loadNextReview sibling for details).
   } catch (err) {
     showError("Failed to load review task: " + err.message);
   }
