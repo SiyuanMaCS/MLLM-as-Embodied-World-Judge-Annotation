@@ -2076,6 +2076,8 @@ async function loadLeaderboard() {
    Small-n campaigns (n_items<20) get a low-confidence banner. */
 function renderAlignmentMetricsBlock(m) {
   if (!m || !m.annotators || !m.annotators.length) return "";
+  // v85dn: highlight the viewer's own row so they can find themselves in the table.
+  const meUser = (localStorage.getItem(CFG.LS_USER) || "").trim();
   const floorPA = m?.floor?.pa_pearson ?? 0.336;
   const floorIA = m?.floor?.ia_pearson ?? 0.354;
   const models = m.reference_models || [];
@@ -2119,10 +2121,15 @@ function renderAlignmentMetricsBlock(m) {
         : ((r.pa != null && r.pa < consensusPA) || (r.ia != null && r.ia < consensusIA))
     );
     // v85db: user row = neutral (no row tint, no fail tag). Model row stays blue.
-    const rowClass = r.kind === "model" ? "am-row am-row-model" : "am-row am-row-annotator";
+    // v85dn: viewer's own row gets `am-row-me` — bold + subtle tint + "你" tag.
+    const isMe = r.kind === "annotator" && meUser && r.label === meUser;
+    let rowClass = r.kind === "model" ? "am-row am-row-model" : "am-row am-row-annotator";
+    if (isMe) rowClass += " am-row-me";
     const kindTag = r.kind === "model"
       ? `<span class="am-tag am-tag-model">MODEL</span>`
-      : `<span class="am-tag am-tag-user">USER</span>`;
+      : (isMe
+          ? `<span class="am-tag am-tag-me">你</span>`
+          : `<span class="am-tag am-tag-user">USER</span>`);
     return `<tr class="${rowClass}">
       <td class="am-rank">${i + 1}</td>
       <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong></td>
@@ -2136,29 +2143,15 @@ function renderAlignmentMetricsBlock(m) {
   // v85cw (siyuan simplify + Alice methodology fix): drop the 875-scale floor
   // from caption — it comes from vs-single-annotation gold and doesn't match the
   // leave-one-out consensus scale here. One short line only.
-  // v85dm: campaign_all_done gate — Alice's split (see-overview vs re-exam-gate).
-  // Not-final snapshot must be visually distinguished so 3-4-person early views
-  // are not read as retake conclusions.
+  // v85dn (siyuan: 这个栏给我去掉): partial/final state banner dropped;
+  // Alice's floor still gates the retake list on her side.
   const extras = [];
   if (lowConf) extras.push("小样本仅参考");
   if (models.length === 0) extras.push(tr("alignment_metrics.no_model_short"));
   const caption = `${nItems}题 · ${nAnn}人 · <span class="muted">Pearson vs 共识 (0–1)</span>${extras.length ? " · " + extras.join(" · ") : ""}`;
-  const finished = m?.finished;
-  const active = m?.active;
-  const assigned = m?.assigned;
-  const allDone = m?.campaign_all_done;
-  let stateLine = "";
-  if (allDone === true) {
-    stateLine = `<p class="am-state am-state-final muted small">✅ 全员完成 · 最终对齐 (重考门槛 ≥ 0.70)</p>`;
-  } else if (allDone === false) {
-    const done = (finished ?? 0);
-    const total = (assigned ?? active ?? nAnn);
-    stateLine = `<p class="am-state am-state-partial muted small">⏳ ${done}/${total} 完成 · 分数会随剩余标注移动 · 最终重考判定在全员完成后</p>`;
-  }
   return `
     <div class="am-block">
       <h5 class="iaa-subtitle">${tr("alignment_metrics.title_v2")}</h5>
-      ${stateLine}
       <table class="am-table">
         <thead>
           <tr>
@@ -5806,22 +5799,11 @@ function renderCampaignList(campaigns) {
         </div>
         <button type="button" class="al-enter-btn" data-cid="${escapeHtml(c.campaign_id)}" data-cname="${escapeHtml(c.name || '')}">${tr("align.select_btn")} →</button>
       </div>
-      ${(c.can_view_results && !ALIGN_IS_ADMIN) ? `
-        <div class="campaign-readonly-row">
-          <button type="button" class="link al-view-readonly-btn" data-cid="${escapeHtml(c.campaign_id)}" data-cname="${escapeHtml(c.name || '')}">${tr("align.view_results_short")}</button>
-        </div>
-      ` : ""}
     `;
     li.querySelector(".al-enter-btn").addEventListener("click", (e) => {
       const cid = e.currentTarget.dataset.cid;
       const cname = e.currentTarget.dataset.cname;
       selectCampaign(cid, cname);
-    });
-    const roBtn = li.querySelector(".al-view-readonly-btn");
-    if (roBtn) roBtn.addEventListener("click", (e) => {
-      const cid = e.currentTarget.dataset.cid;
-      const cname = e.currentTarget.dataset.cname;
-      selectCampaign(cid, cname);  // selectCampaign → loadAlignStatus, which detects read_only from backend
     });
     ul.appendChild(li);
   }
