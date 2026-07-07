@@ -5580,6 +5580,29 @@ async function loadAlignHistory() {
 // v85da: auto-load (no button) — same fetch/render path as the old toggle.
 async function loadAndRenderIAAPanel() { return toggleIAAPanel(true); }
 
+/* v85dx: state B (submitted, not disclosed) self-scores panel. Renders the
+   alignment metrics block scoped to just the viewer (backend already filters
+   annotators[] to self when the user is not disclosed). Peer rows stay
+   hidden until the user clicks 🔒 → all_disclosed=true → al-admin-overview. */
+async function loadSelfMetricsPanel() {
+  const card = document.getElementById("al-self-metrics");
+  const body = document.getElementById("al-self-metrics-body");
+  if (!card || !body || !ALIGN_CAMPAIGN_ID) return;
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  body.innerHTML = `<p class="muted">${tr("common.loading")}</p>`;
+  card.hidden = false;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=alignment_metrics&campaign=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}&user=${encodeURIComponent(user)}`);
+    if (!r.ok) { card.hidden = true; return; }
+    const d = await r.json();
+    if (!d || !d.annotators || !d.annotators.length) {
+      body.innerHTML = `<p class="muted small">${tr("align.iaa.no_data")}</p>`;
+      return;
+    }
+    body.innerHTML = renderAlignmentMetricsBlock(d);
+  } catch (_) { card.hidden = true; }
+}
+
 async function toggleIAAPanel(forceShow) {
   const panel = document.getElementById("al-iaa-panel");
   if (!panel) return;
@@ -5875,11 +5898,14 @@ async function loadAlignStatus() {
     }
     if (allSubmitted && !ALIGN_IS_ADMIN) {
       // v85dr: submitted-all-but-not-disclosed → done-msg with 🔒 lock CTA + browse-mine.
-      // No peer overview yet — that unlocks only after they click 🔒.
+      // v85dx (siyuan: 这个界面可以看到分数的 只是不能看到其他人的标注):
+      //   also render the alignment-metrics block scoped to self (backend filters
+      //   to just this user's row + reference models when not disclosed).
       document.getElementById("al-done-msg").hidden = false;
       document.getElementById("al-item").hidden = true;
       const endBtn = document.getElementById("al-end-btn");
       if (endBtn) endBtn.hidden = true;
+      loadSelfMetricsPanel();
       return;
     }
     await loadAlignNext();
@@ -5890,7 +5916,7 @@ async function loadAlignStatus() {
 }
 
 function hideAlignSections() {
-  for (const id of ["al-picker", "al-done-msg", "al-item", "al-others", "al-admin-overview", "al-error", "al-start-form"]) {
+  for (const id of ["al-picker", "al-done-msg", "al-item", "al-others", "al-admin-overview", "al-error", "al-start-form", "al-self-metrics"]) {
     const el = document.getElementById(id); if (el) el.hidden = true;
   }
 }
