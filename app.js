@@ -218,6 +218,8 @@ const LANG = {
     "alignment_metrics.outlier_tip": "Alice flagged: annotator's scores diverge notably from the group consensus.",
     "alignment_metrics.low_conf": "Small campaign (n_items < 20) — CI is wide, treat single-annotator outliers as tentative.",
     "alignment_metrics.low_conf_short": "n<20 (wide CI)",
+    "my_alignment_card.title": "🎯 Your alignment score",
+    "my_alignment_card.sub": "Your latest alignment campaign vs the group consensus, alongside reference judge scores from the 875-item leaderboard.",
     "gold_library.search": "Search",
     "gold_library.no_match": "No matching items.",
     "docs.intro_title": "Embodied World-Model Video Evaluation",
@@ -619,6 +621,8 @@ const LANG = {
     "alignment_metrics.outlier_tip": "Alice 标记:该标注员分数明显偏离群体共识。",
     "alignment_metrics.low_conf": "样本量小 (n_items < 20) — 置信区间宽,单个 outlier 建议保守判读。",
     "alignment_metrics.low_conf_short": "n<20 CI 宽",
+    "my_alignment_card.title": "🎯 我的对齐分",
+    "my_alignment_card.sub": "你最近一次 alignment campaign 相对群体共识的分数,同表附 875 leaderboard 上的 judge 参考行。",
     "gold_library.search": "搜索",
     "gold_library.no_match": "没有匹配的金标。",
     "docs.intro_title": "具身世界模型视频评测",
@@ -1875,6 +1879,8 @@ async function initDashboard() {
   if (isAdmin) await loadDataReports();
   // v85co-alt: per-annotator alignment metrics moved to align.html IAA panel
   // (siyuan: 我这个指标是要每个alignment campaign单算的，改在那个一致性那个界面里).
+  // v85cs (siyuan: 每个人都要看到自己的 alignment 分数): compact per-user card.
+  await loadMyAlignmentCard();
   let timer = setInterval(() => {
     if (!document.hidden) {
       loadDashboard(); loadBadges(); loadMilestoneProgress(); loadLeaderboard();
@@ -2065,6 +2071,63 @@ function renderAlignmentMetricsBlock(m) {
       </table>
     </div>
   `;
+}
+
+/* v85cs: per-user alignment card on the dashboard. Fetch the current user's
+   latest alignment metrics (Ham endpoint auto-picks latest completed campaign)
+   and render a compact block showing YOUR row + reference judge rows for scale.
+   No hardcoded models — reference_models comes from Ham (siyuan: 直接用 gemini
+   和 qwen 的 test 分数作为 ref, from the 875-item leaderboard). */
+async function loadMyAlignmentCard() {
+  const card = document.getElementById("my-alignment-card");
+  const body = document.getElementById("my-alignment-body");
+  if (!card || !body) return;
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  if (!user) { card.hidden = true; return; }
+  try {
+    // Ham: `campaign=latest` auto-picks the most recent campaign the user completed.
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=alignment_metrics&campaign=latest&user=${encodeURIComponent(user)}&scope=self`);
+    if (!r.ok) { card.hidden = true; return; }
+    const d = await r.json();
+    if (d?.ok === false || d?.code === "admin_only" || !d.annotators || !d.annotators.length) {
+      card.hidden = true; return;
+    }
+    // Only render the current user's row + reference_models (Ham should already
+    // filter to self when scope=self, but double-check client-side).
+    const me = d.annotators.find(a => a.user === user);
+    if (!me) { card.hidden = true; return; }
+    const restricted = { ...d, annotators: [me] };
+    body.innerHTML = renderAlignmentMetricsBlock(restricted);
+    card.hidden = false;
+  } catch (_) { card.hidden = true; }
+}
+
+/* v85cs: per-user alignment card on the dashboard. Fetch the current user's
+   latest alignment metrics (Ham endpoint auto-picks latest completed campaign
+   when campaign=latest) and render a compact block showing YOUR row + reference
+   judge rows for scale. Reference models come from Ham (siyuan: 直接用 gemini
+   和 qwen 的 test 分数作为 ref, from the 875-item leaderboard). */
+async function loadMyAlignmentCard() {
+  const card = document.getElementById("my-alignment-card");
+  const body = document.getElementById("my-alignment-body");
+  if (!card || !body) return;
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  if (!user) { card.hidden = true; return; }
+  try {
+    // Ham: `campaign=latest` auto-picks the most recent campaign the user completed;
+    // `scope=self` limits `annotators` to just this user's row.
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=alignment_metrics&campaign=latest&user=${encodeURIComponent(user)}&scope=self`);
+    if (!r.ok) { card.hidden = true; return; }
+    const d = await r.json();
+    if (d?.ok === false || d?.code === "admin_only" || !d.annotators || !d.annotators.length) {
+      card.hidden = true; return;
+    }
+    const me = d.annotators.find(a => a.user === user) || d.annotators[0];
+    if (!me) { card.hidden = true; return; }
+    const restricted = { ...d, annotators: [me] };
+    body.innerHTML = renderAlignmentMetricsBlock(restricted);
+    card.hidden = false;
+  } catch (_) { card.hidden = true; }
 }
 
 /* v85co: (deprecated dashboard load; kept as no-op for back-compat if a page still calls it) */
