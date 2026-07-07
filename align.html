@@ -6,7 +6,7 @@
 <title>Reviewer Alignment — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85dq">
+<link rel="stylesheet" href="style.css?v=v85dr">
 </head>
 <body>
 <main>
@@ -67,10 +67,11 @@
   </section>
 
   <section id="al-done-msg" class="card done-card" hidden>
-    <h3 data-i18n="align.done_title">✨ 你已标完全部条目</h3>
-    <p class="muted small" data-i18n="align.done_hint">下方是本 campaign 全部条目的对齐总览。等管理员定稿。</p>
+    <h3 data-i18n="align.done_title">✨ 你已提交全部条目(还未锁定)</h3>
+    <p class="muted small" data-i18n="align.done_hint">分数未锁定 —— 可在「浏览我标的条目」里继续修改。锁定后即可查看其他人的对齐分数。</p>
     <p class="done-actions">
-      <button type="button" id="al-browse-mine-btn" class="link" data-i18n="align.browse_mine_btn">📋 浏览我标的条目</button>
+      <button type="button" id="al-disclose-all-btn" class="primary" data-i18n="align.disclose_all_btn">🔒 锁定并查看他人分数</button>
+      <button type="button" id="al-browse-mine-btn" class="link" data-i18n="align.browse_mine_btn">📋 浏览 / 修改我标的条目</button>
     </p>
   </section>
 
@@ -205,6 +206,6 @@
 
   <section id="al-error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="al-err-msg">—</p><button id="al-retry" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v85dq" defer></script>
+<script src="app.js?v=v85dr" defer></script>
 </body>
 </html>
