@@ -214,8 +214,10 @@ const LANG = {
     "alignment_metrics.default_ref": "leave-one-out consensus",
     "alignment_metrics.ref_prefix": "Reference:",
     "alignment_metrics.no_model_yet": "⏳ Reference judge rows pending — Alice will add fair-comparison model rows once flash finishes on this campaign's items.",
+    "alignment_metrics.no_model_short": "model rows pending",
     "alignment_metrics.outlier_tip": "Alice flagged: annotator's scores diverge notably from the group consensus.",
     "alignment_metrics.low_conf": "Small campaign (n_items < 20) — CI is wide, treat single-annotator outliers as tentative.",
+    "alignment_metrics.low_conf_short": "n<20 (wide CI)",
     "gold_library.search": "Search",
     "gold_library.no_match": "No matching items.",
     "docs.intro_title": "Embodied World-Model Video Evaluation",
@@ -613,8 +615,10 @@ const LANG = {
     "alignment_metrics.default_ref": "留一共识 (leave-one-out)",
     "alignment_metrics.ref_prefix": "参考:",
     "alignment_metrics.no_model_yet": "⏳ 模型公平对照行待补 — Alice 会在 flash 跑完本 campaign 后加。",
+    "alignment_metrics.no_model_short": "模型行待补",
     "alignment_metrics.outlier_tip": "Alice 标记:该标注员分数明显偏离群体共识。",
     "alignment_metrics.low_conf": "样本量小 (n_items < 20) — 置信区间宽,单个 outlier 建议保守判读。",
+    "alignment_metrics.low_conf_short": "n<20 CI 宽",
     "gold_library.search": "搜索",
     "gold_library.no_match": "没有匹配的金标。",
     "docs.intro_title": "具身世界模型视频评测",
@@ -2035,18 +2039,16 @@ function renderAlignmentMetricsBlock(m) {
       <td class="am-metric muted small">${fmt(r.exact_pa)}</td>
     </tr>`;
   }).join("");
-  const modelCaveat = models.length === 0
-    ? `<p class="am-caveat">${tr("alignment_metrics.no_model_yet")}</p>`
-    : "";
-  const lowConfBanner = lowConf
-    ? `<p class="am-lowconf">⚠ ${tr("alignment_metrics.low_conf")}</p>`
-    : "";
+  // v85cr (siyuan): dropped the low-confidence + missing-model banners — 太丑.
+  // If the caveats matter, they live in the caption text now.
+  const captionExtras = [];
+  if (lowConf) captionExtras.push(tr("alignment_metrics.low_conf_short"));
+  if (models.length === 0) captionExtras.push(tr("alignment_metrics.no_model_short"));
+  const caption = `${tr("alignment_metrics.ref_prefix")} <strong>${escapeHtml(refKind)}</strong>, n_items=${nItems}, n_annotators=${nAnn}. ${tr("alignment_metrics.floor")}: PA ≥ <strong>${floorPA.toFixed(3)}</strong> · IA ≥ <strong>${floorIA.toFixed(3)}</strong>${captionExtras.length ? " · " + captionExtras.join(" · ") : ""}`;
   return `
     <div class="am-block">
       <h5 class="iaa-subtitle">${tr("alignment_metrics.title_v2")}</h5>
-      <p class="muted small am-caption">${tr("alignment_metrics.ref_prefix")} <strong>${escapeHtml(refKind)}</strong>, n_items=${nItems}, n_annotators=${nAnn}. ${tr("alignment_metrics.floor")}: PA ≥ <strong>${floorPA.toFixed(3)}</strong> · IA ≥ <strong>${floorIA.toFixed(3)}</strong></p>
-      ${lowConfBanner}
-      ${modelCaveat}
+      <p class="muted small am-caption">${caption}</p>
       <table class="am-table">
         <thead>
           <tr>
