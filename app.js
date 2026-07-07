@@ -5413,7 +5413,7 @@ async function toggleIAAPanel() {
     // v85co: fire agreement + per-annotator alignment metrics in parallel; render together.
     const [agreeRes, metricsRes] = await Promise.all([
       fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_agreement&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}&user=${encodeURIComponent(user)}`),
-      fetch(`${CFG.APPS_SCRIPT_URL}/?action=alignment_metrics&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}&user=${encodeURIComponent(user)}`).catch(() => null),
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=alignment_metrics&campaign=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}&user=${encodeURIComponent(user)}`).catch(() => null),
     ]);
     const d = await agreeRes.json();
     const metrics = metricsRes && metricsRes.ok ? await metricsRes.json().catch(() => null) : null;
