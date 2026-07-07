@@ -2073,7 +2073,6 @@ function renderAlignmentMetricsBlock(m) {
   return `
     <div class="am-block">
       <h5 class="iaa-subtitle">${tr("alignment_metrics.title_v2")}</h5>
-      <p class="muted small am-caption">${caption}</p>
       <table class="am-table">
         <thead>
           <tr>
