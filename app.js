@@ -218,8 +218,8 @@ const LANG = {
     "alignment_metrics.outlier_tip": "Alice flagged: annotator's scores diverge notably from the group consensus.",
     "alignment_metrics.low_conf": "Small campaign (n_items < 20) — CI is wide, treat single-annotator outliers as tentative.",
     "alignment_metrics.low_conf_short": "n<20 (wide CI)",
-    "my_alignment_card.title": "🎯 Your alignment score",
-    "my_alignment_card.sub": "Your latest alignment campaign vs the group consensus, alongside reference judge scores from the 875-item leaderboard.",
+    "my_alignment_card.title": "🎯 Alignment scores (all annotators)",
+    "my_alignment_card.sub": "Latest alignment campaign — every annotator's PA/IA vs group consensus, with reference judge scores from the 875-item leaderboard for scale.",
     "gold_library.search": "Search",
     "gold_library.no_match": "No matching items.",
     "docs.intro_title": "Embodied World-Model Video Evaluation",
@@ -621,8 +621,8 @@ const LANG = {
     "alignment_metrics.outlier_tip": "Alice 标记:该标注员分数明显偏离群体共识。",
     "alignment_metrics.low_conf": "样本量小 (n_items < 20) — 置信区间宽,单个 outlier 建议保守判读。",
     "alignment_metrics.low_conf_short": "n<20 CI 宽",
-    "my_alignment_card.title": "🎯 我的对齐分",
-    "my_alignment_card.sub": "你最近一次 alignment campaign 相对群体共识的分数,同表附 875 leaderboard 上的 judge 参考行。",
+    "my_alignment_card.title": "🎯 对齐分(全体标注员)",
+    "my_alignment_card.sub": "最近一次 alignment campaign — 全体标注员对齐群体共识的 PA/IA,附 875 leaderboard 上的 judge 参考行作为尺度。",
     "gold_library.search": "搜索",
     "gold_library.no_match": "没有匹配的金标。",
     "docs.intro_title": "具身世界模型视频评测",
@@ -2108,24 +2108,22 @@ async function loadMyAlignmentCard() {
    judge rows for scale. Reference models come from Ham (siyuan: 直接用 gemini
    和 qwen 的 test 分数作为 ref, from the 875-item leaderboard). */
 async function loadMyAlignmentCard() {
+  // siyuan v85cu: 算了 直接让所有人看到所有人的alignment分数吧 / id都露出来.
+  // No scope filter — full annotator table + reference models, transparent for
+  // everyone on the dashboard. Ham endpoint returns real user IDs (no anon).
   const card = document.getElementById("my-alignment-card");
   const body = document.getElementById("my-alignment-body");
   if (!card || !body) return;
   const user = localStorage.getItem(CFG.LS_USER) || "";
   if (!user) { card.hidden = true; return; }
   try {
-    // Ham: `campaign=latest` auto-picks the most recent campaign the user completed;
-    // `scope=self` limits `annotators` to just this user's row.
-    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=alignment_metrics&campaign=latest&user=${encodeURIComponent(user)}&scope=self`);
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=alignment_metrics&campaign=latest&user=${encodeURIComponent(user)}`);
     if (!r.ok) { card.hidden = true; return; }
     const d = await r.json();
-    if (d?.ok === false || d?.code === "admin_only" || !d.annotators || !d.annotators.length) {
+    if (d?.ok === false || !d.annotators || !d.annotators.length) {
       card.hidden = true; return;
     }
-    const me = d.annotators.find(a => a.user === user) || d.annotators[0];
-    if (!me) { card.hidden = true; return; }
-    const restricted = { ...d, annotators: [me] };
-    body.innerHTML = renderAlignmentMetricsBlock(restricted);
+    body.innerHTML = renderAlignmentMetricsBlock(d);
     card.hidden = false;
   } catch (_) { card.hidden = true; }
 }
