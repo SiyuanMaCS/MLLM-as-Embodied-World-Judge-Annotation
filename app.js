@@ -2016,7 +2016,8 @@ function renderAlignmentMetricsBlock(m) {
   const rows = [
     ...m.annotators.map(a => ({ kind: "annotator", label: a.user, n: a.n,
       pa: a.pa_pearson, ia: a.ia_pearson, qwk_pa: a.pa_qwk, qwk_ia: a.ia_qwk,
-      exact_pa: a.pa_exact, is_outlier: a.is_outlier === true })),
+      exact_pa: a.pa_exact, is_outlier: a.is_outlier === true,
+      needs_realignment: a.needs_realignment })),
     ...models.map(x => ({ kind: "model", label: x.model, n: x.n ?? nItems,
       pa: x.pa_pearson, ia: x.ia_pearson, qwk_pa: x.pa_qwk, qwk_ia: x.ia_qwk,
       exact_pa: x.pa_exact })),
@@ -2036,13 +2037,16 @@ function renderAlignmentMetricsBlock(m) {
     const kindTag = r.kind === "model"
       ? `<span class="am-tag am-tag-model">MODEL</span>`
       : `<span class="am-tag am-tag-annotator">USER</span>`;
-    // v85cw: fail-threshold uses a consensus-scale floor (siyuan/Alice: 875 floor
-    // is on a different reference, don't apply it here). Backend can override via
-    // `floor.consensus_pa` / `floor.consensus_ia`; default to 0.50 which cleanly
-    // separates the top-5 (0.72+) from masiyuan (0.32) in the current data.
-    const consensusPA = m?.floor?.consensus_pa ?? 0.50;
-    const consensusIA = m?.floor?.consensus_ia ?? 0.50;
-    const failsFloor = r.kind === "annotator" && ((r.pa != null && r.pa < consensusPA) || (r.ia != null && r.ia < consensusIA));
+    // v85cx: Ham per-row `needs_realignment` is authoritative; fall back to a
+    // client-side check on the top-level `annotator_threshold` only if the flag
+    // is missing (older-payload compat). Model rows never carry this field.
+    const consensusPA = m?.annotator_threshold?.pa_pearson ?? m?.floor?.consensus_pa ?? 0.50;
+    const consensusIA = m?.annotator_threshold?.ia_pearson ?? m?.floor?.consensus_ia ?? 0.50;
+    const failsFloor = r.kind === "annotator" && (
+      typeof r.needs_realignment === "boolean"
+        ? r.needs_realignment
+        : ((r.pa != null && r.pa < consensusPA) || (r.ia != null && r.ia < consensusIA))
+    );
     const failBadge = failsFloor
       ? `<span class="am-fail" title="${tr("alignment_metrics.fail_tip")}">❗ ${tr("alignment_metrics.retake")}</span>`
       : "";
