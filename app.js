@@ -2069,7 +2069,7 @@ function renderAlignmentMetricsBlock(m) {
   const extras = [];
   if (lowConf) extras.push("小样本仅参考");
   if (models.length === 0) extras.push(tr("alignment_metrics.no_model_short"));
-  const caption = `${nItems}题 · ${nAnn}人 · <span class="muted">越高越贴群体</span>${extras.length ? " · " + extras.join(" · ") : ""}`;
+  const caption = `${nItems}题 · ${nAnn}人 · <span class="muted">Pearson vs 共识 (0–1)</span>${extras.length ? " · " + extras.join(" · ") : ""}`;
   return `
     <div class="am-block">
       <h5 class="iaa-subtitle">${tr("alignment_metrics.title_v2")}</h5>
