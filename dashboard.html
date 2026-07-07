@@ -6,7 +6,7 @@
 <title>Home — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85cn">
+<link rel="stylesheet" href="style.css?v=v85co">
 </head>
 <body>
 <main>
@@ -190,11 +190,21 @@
 
   <section class="card" id="met-by-day" hidden></section>
 
+  <!-- v85co: admin-only — per-annotator alignment metrics vs Alice-finalized gold,
+       with reference judge model rows for comparison. Hidden for non-admins. -->
+  <section class="card" id="alignment-metrics-card" hidden>
+    <h3 data-i18n="alignment_metrics.title">🎯 Annotator alignment vs finalized gold</h3>
+    <p class="muted small" data-i18n="alignment_metrics.sub">Per-annotator PA/IA vs Alice-finalized gold, with reference judge rows on the same items for scale.</p>
+    <div id="alignment-metrics-body">
+      <p class="muted small" data-i18n="common.loading">Loading…</p>
+    </div>
+  </section>
+
   <section id="dash-error" class="card error" hidden>
     <h3 data-i18n="common.failed_to_load">Failed to load</h3>
     <p id="dash-err-msg">—</p>
   </section>
 </main>
-<script src="app.js?v=v85cn" defer></script>
+<script src="app.js?v=v85co" defer></script>
 </body>
 </html>

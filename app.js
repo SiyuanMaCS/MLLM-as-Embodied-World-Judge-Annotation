@@ -206,6 +206,10 @@ const LANG = {
     "my_reviews.stats.approved": "approved",
     "my_reviews.stats.modified": "modified",
     "my_reviews.stats.rate": "approval rate",
+    "alignment_metrics.title": "🎯 Annotator alignment vs finalized gold",
+    "alignment_metrics.sub": "Per-annotator PA/IA vs Alice-finalized gold, with reference judge rows on the same items for scale.",
+    "alignment_metrics.floor": "Human-IAA floor",
+    "alignment_metrics.col.who": "Who",
     "gold_library.search": "Search",
     "gold_library.no_match": "No matching items.",
     "docs.intro_title": "Embodied World-Model Video Evaluation",
@@ -595,6 +599,10 @@ const LANG = {
     "my_reviews.stats.approved": "通过",
     "my_reviews.stats.modified": "修改",
     "my_reviews.stats.rate": "通过率",
+    "alignment_metrics.title": "🎯 标注员对齐指标 vs 定稿 gold",
+    "alignment_metrics.sub": "每位标注员在 Alice 定稿 gold 上的 PA/IA 表现,同表附 judge 模型参考行用于同尺度对比。",
+    "alignment_metrics.floor": "人-人 IAA 门槛",
+    "alignment_metrics.col.who": "标注员/模型",
     "gold_library.search": "搜索",
     "gold_library.no_match": "没有匹配的金标。",
     "docs.intro_title": "具身世界模型视频评测",
@@ -1849,6 +1857,9 @@ async function initDashboard() {
   await loadLeaderboard();
   // v85cc: model averages + score distribution moved to dedicated /stats.html page.
   if (isAdmin) await loadDataReports();
+  // v85co: per-annotator alignment metrics vs Alice-finalized gold, with reference
+  // judge rows (from bench leaderboard) for scale. Admin-only surface.
+  if (isAdmin) await loadAlignmentMetrics();
   let timer = setInterval(() => {
     if (!document.hidden) {
       loadDashboard(); loadBadges(); loadMilestoneProgress(); loadLeaderboard();
@@ -1959,6 +1970,84 @@ async function loadLeaderboard() {
   } catch (_) {
     card.hidden = true;
   }
+}
+
+/* v85co: admin-only card — per-annotator alignment metrics vs Alice-finalized gold,
+   plus reference judge rows (bench/results leaderboard) on same-scale for comparison.
+   Ham endpoint `?action=alignment_metrics&user=<admin>` returns:
+     {gold_n, floor: {pa_pearson, ia_pearson}, annotators: [{user, n, pa_pearson,
+      spearman_pa, q_kappa_pa, cohen_pa, exact_pa, within1_pa, mse_pa, same shape
+      for ia, joint_f1, self_ratio}], reference_models: [{model, pa_pearson, ...}]}
+   Non-admin returns 403/admin_only → card stays hidden. */
+async function loadAlignmentMetrics() {
+  const card = document.getElementById("alignment-metrics-card");
+  const body = document.getElementById("alignment-metrics-body");
+  if (!card || !body) return;
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=alignment_metrics&user=${encodeURIComponent(user)}`);
+    if (!r.ok) { card.hidden = true; return; }
+    const d = await r.json();
+    if (d?.ok === false || d?.code === "admin_only") { card.hidden = true; return; }
+    const annots = d.annotators || [];
+    const models = d.reference_models || [];
+    const floorPA = d?.floor?.pa_pearson ?? 0.336;   // Ham-published human-IAA floor
+    const floorIA = d?.floor?.ia_pearson ?? 0.354;
+    if (!annots.length && !models.length) { card.hidden = true; return; }
+    // Combine + sort by PA-Pearson desc so annotators vs models mix on one axis.
+    const rows = [
+      ...annots.map(a => ({
+        kind: "annotator", label: a.user, n: a.n,
+        pa_p: a.pa_pearson, ia_p: a.ia_pearson, jf1: a.joint_f1,
+        exact_pa: a.exact_pa, w1_pa: a.within1_pa, mse_pa: a.mse_pa,
+        self_ratio: a.self_ratio, // Ham's "self-annotation share" caveat
+      })),
+      ...models.map(m => ({
+        kind: "model", label: m.model, n: m.n ?? d.gold_n,
+        pa_p: m.pa_pearson, ia_p: m.ia_pearson, jf1: m.joint_f1,
+        exact_pa: m.exact_pa, w1_pa: m.within1_pa, mse_pa: m.mse_pa,
+      })),
+    ].filter(r => r.pa_p != null || r.ia_p != null);
+    rows.sort((a, b) => (b.pa_p ?? -999) - (a.pa_p ?? -999));
+    const fmt = v => v == null ? "—" : Number(v).toFixed(3);
+    const badge = (v, floor) => (v != null && v >= floor) ? '<span class="am-pass">✓</span>' : '';
+    const rowsHtml = rows.map(r => {
+      const kindTag = r.kind === "model"
+        ? `<span class="am-tag am-tag-model">MODEL</span>`
+        : `<span class="am-tag am-tag-annotator">USER</span>`;
+      const self = r.self_ratio != null
+        ? `<span class="am-self muted small" title="self-annotation share of the gold this user contributed to">self ${Math.round(r.self_ratio * 100)}%</span>`
+        : "";
+      return `<tr class="am-row am-row-${r.kind}">
+        <td class="am-label">${kindTag} ${escapeHtml(r.label)} ${self}</td>
+        <td class="am-n">${r.n ?? "—"}</td>
+        <td class="am-metric">${fmt(r.pa_p)} ${badge(r.pa_p, floorPA)}</td>
+        <td class="am-metric">${fmt(r.ia_p)} ${badge(r.ia_p, floorIA)}</td>
+        <td class="am-metric">${fmt(r.jf1)}</td>
+        <td class="am-metric">${fmt(r.exact_pa)}</td>
+        <td class="am-metric">${fmt(r.w1_pa)}</td>
+        <td class="am-metric">${fmt(r.mse_pa)}</td>
+      </tr>`;
+    }).join("");
+    body.innerHTML = `
+      <p class="muted small">${tr("alignment_metrics.floor")}: PA ≥ <strong>${floorPA.toFixed(3)}</strong> · IA ≥ <strong>${floorIA.toFixed(3)}</strong> (human-IAA n=10) — passing = <span class="am-pass">✓</span>. Gold n=${d.gold_n ?? "?"}.</p>
+      <table class="am-table">
+        <thead>
+          <tr>
+            <th>${tr("alignment_metrics.col.who")}</th>
+            <th>n</th>
+            <th title="Pearson PA vs gold">PA-P</th>
+            <th title="Pearson IA vs gold">IA-P</th>
+            <th title="Joint F1 (PA≥4 & IA≥4)">JF1</th>
+            <th title="Exact-match PA">Exact PA</th>
+            <th title="±1 agreement PA">±1 PA</th>
+            <th title="Mean-squared error PA">MSE PA</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>`;
+    card.hidden = false;
+  } catch (_) { card.hidden = true; }
 }
 
 /* v85cc: dedicated /stats.html init — loads both charts + auto-refresh every 60s. */
