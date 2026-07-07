@@ -2036,9 +2036,13 @@ function renderAlignmentMetricsBlock(m) {
     const kindTag = r.kind === "model"
       ? `<span class="am-tag am-tag-model">MODEL</span>`
       : `<span class="am-tag am-tag-annotator">USER</span>`;
-    // v85cv: fail-floor badge — surfaces the business rule (siyuan: alignment不达标的
-    // 要过下一轮alignment). Only applies to annotator rows (model rows don't retake).
-    const failsFloor = r.kind === "annotator" && ((r.pa != null && r.pa < floorPA) || (r.ia != null && r.ia < floorIA));
+    // v85cw: fail-threshold uses a consensus-scale floor (siyuan/Alice: 875 floor
+    // is on a different reference, don't apply it here). Backend can override via
+    // `floor.consensus_pa` / `floor.consensus_ia`; default to 0.50 which cleanly
+    // separates the top-5 (0.72+) from masiyuan (0.32) in the current data.
+    const consensusPA = m?.floor?.consensus_pa ?? 0.50;
+    const consensusIA = m?.floor?.consensus_ia ?? 0.50;
+    const failsFloor = r.kind === "annotator" && ((r.pa != null && r.pa < consensusPA) || (r.ia != null && r.ia < consensusIA));
     const failBadge = failsFloor
       ? `<span class="am-fail" title="${tr("alignment_metrics.fail_tip")}">❗ ${tr("alignment_metrics.retake")}</span>`
       : "";
@@ -2049,17 +2053,19 @@ function renderAlignmentMetricsBlock(m) {
       <td class="am-rank">${i + 1}</td>
       <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong> ${outlier} ${failBadge}</td>
       <td class="am-n muted small">${r.n ?? "—"}</td>
-      <td class="am-metric am-pa">${bar(r.pa, floorPA)}</td>
-      <td class="am-metric am-ia">${bar(r.ia, floorIA)}</td>
+      <td class="am-metric am-pa">${bar(r.pa, consensusPA)}</td>
+      <td class="am-metric am-ia">${bar(r.ia, consensusIA)}</td>
       <td class="am-metric muted small">${fmt(r.qwk_pa)}</td>
       <td class="am-metric muted small">${fmt(r.exact_pa)}</td>
     </tr>`;
   }).join("");
-  // v85cv (siyuan: 这段太啰嗦了吧 简洁点): one-line minimal caption.
+  // v85cw (siyuan simplify + Alice methodology fix): drop the 875-scale floor
+  // from caption — it comes from vs-single-annotation gold and doesn't match the
+  // leave-one-out consensus scale here. One short line only.
   const extras = [];
-  if (lowConf) extras.push(`⚠ n<20`);
+  if (lowConf) extras.push("小样本仅参考");
   if (models.length === 0) extras.push(tr("alignment_metrics.no_model_short"));
-  const caption = `${nItems}题 · ${nAnn}人 · 门槛 PA≥<strong>${floorPA.toFixed(2)}</strong> / IA≥<strong>${floorIA.toFixed(2)}</strong>${extras.length ? " · " + extras.join(" · ") : ""}`;
+  const caption = `${nItems}题 · ${nAnn}人 · <span class="muted">越高越贴群体</span>${extras.length ? " · " + extras.join(" · ") : ""}`;
   return `
     <div class="am-block">
       <h5 class="iaa-subtitle">${tr("alignment_metrics.title_v2")}</h5>
