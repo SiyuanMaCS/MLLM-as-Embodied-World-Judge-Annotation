@@ -1469,16 +1469,29 @@ async function fetchInstructionInto(video_url, targetElId) {
     attempts.push({ base: perModelBase, fnames: perModelFnames });
   }
   if (!attempts.length) { target.textContent = "(no prompt)"; return; }
+  // v85dg (siyuan: 你把换source也应用于prompt不就好了): when HF rate-limits
+  // (429), cascade through all available video-source hosts — the same set the
+  // 🌐 video-source chip toggles. Try current preferred host first, then any
+  // other hosts registered in getVideoHosts() (e.g. hf-mirror.com, Ham's
+  // cloudflared tunnel).
+  const hosts = getVideoHosts();
+  const primary = getVideoHost();
+  const orderedHosts = [primary, ...hosts.map(h => h.key).filter(k => k && k !== primary)];
   for (const { base: baseRaw, fnames } of attempts) {
-    const base = applyVideoHost(CFG.HF_RESOLVE_BASE + "/" + baseRaw.replace(/^\/+/, ""));
-    for (const fname of fnames) {
-      try {
-        const res = await fetch(`${base}/${fname}`);
-        if (!res.ok) continue;
-        const text = await res.text();
-        target.textContent = text.trim() || "(empty)";
-        return;
-      } catch (err) { /* try next */ }
+    const canonical = CFG.HF_RESOLVE_BASE + "/" + baseRaw.replace(/^\/+/, "");
+    for (const host of orderedHosts) {
+      const rewritten = host === "huggingface.co"
+        ? canonical
+        : canonical.replace(/^https?:\/\/(?:www\.)?huggingface\.co\//i, `https://${host}/`);
+      for (const fname of fnames) {
+        try {
+          const res = await fetch(`${rewritten}/${fname}`);
+          if (!res.ok) continue;
+          const text = await res.text();
+          target.textContent = text.trim() || "(empty)";
+          return;
+        } catch (err) { /* try next */ }
+      }
     }
   }
   target.textContent = "(prompt unavailable)";
@@ -1562,18 +1575,29 @@ function setInitFrame(url, prefix) {
   const img = document.getElementById(p + "init-frame-img");
   if (!fig || !img) return;
   if (url) {
-    // v85dd (Alice diag): if the manifest-derived URL 404s (or the backend
-    // handed us the legacy gt_data URL for a per-model item like droid), try
-    // the sibling layout as a fallback: gt_data/... ↔ generated_data/<model>/.../1/prompt/.
-    const first = applyVideoHost(url);
-    img.onerror = () => {
-      const alt = derivateInitFrameAlt(url);
-      if (alt && alt !== url) {
-        img.onerror = null;
-        img.src = applyVideoHost(alt);
+    // v85dg: cascade — try each host + each layout candidate. Same escape hatch
+    // as fetchInstructionInto for the HF 429 storm siyuan hit today.
+    const alt = derivateInitFrameAlt(url);
+    const urlCandidates = alt ? [url, alt] : [url];
+    const hosts = getVideoHosts();
+    const primary = getVideoHost();
+    const orderedHosts = [primary, ...hosts.map(h => h.key).filter(k => k && k !== primary)];
+    const queue = [];
+    for (const u of urlCandidates) {
+      for (const host of orderedHosts) {
+        const rewritten = host === "huggingface.co"
+          ? u
+          : u.replace(/^https?:\/\/(?:www\.)?huggingface\.co\//i, `https://${host}/`);
+        queue.push(rewritten);
       }
+    }
+    let idx = 0;
+    const tryNext = () => {
+      if (idx >= queue.length) { img.onerror = null; return; }
+      img.src = queue[idx++];
     };
-    img.src = first;
+    img.onerror = tryNext;
+    tryNext();
     fig.hidden = false;
     img.onclick = () => openImageLightbox(img.src);
     img.style.cursor = "zoom-in";
