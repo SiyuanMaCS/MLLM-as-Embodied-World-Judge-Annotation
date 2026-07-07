@@ -4048,8 +4048,13 @@ function renderReviewItem(it) {
                     "agent_match","object_correct","goal_completed"]) {
     setSubTri("m-" + id, payload[id] ?? 2);
   }
-  document.getElementById("m-physical_notes").value = "";
-  document.getElementById("m-instruction_notes").value = "";
+  // v85eh (siyuan: 要把原始 note 填进去 · reviewer 只修改 不需要重写):
+  // pre-fill the reviewer's notes textareas with the annotator's originals so
+  // small tweaks don't force retyping the whole justification.
+  const origPhysNote = payload.physical_notes || (payload.physical_notes ? "" : payload.notes) || "";
+  const origInstNote = payload.instruction_notes || (payload.physical_notes ? "" : payload.notes) || "";
+  document.getElementById("m-physical_notes").value = origPhysNote;
+  document.getElementById("m-instruction_notes").value = origInstNote;
   // Reset button to 通过 (no delta at initial state).
   reviewActionLabel(document.getElementById("action-btn"));
 }
