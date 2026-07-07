@@ -5989,13 +5989,10 @@ async function submitAlign() {
       await showAlignOthers(submittedItemId);
       return;
     }
-    const wantSee = confirm(tr("align.disclose.confirm"));
-    if (wantSee) {
-      await discloseAndShowOthers(submittedItemId);
-    } else {
-      // Advance to next un-annotated item; this one remains submitted-but-editable until later disclose.
-      await loadAlignNext();
-    }
+    // v85di (siyuan: 这个弹窗给我取消掉): drop the see-others confirm dialog on submit.
+    // Default is now "advance to next item, this one stays editable" — the user can still
+    // disclose later via the "See others (lock)" button on the my-alignment row.
+    await loadAlignNext();
   } catch (err) {
     toast(tr("toast.submit_failed") + ": " + err.message, "err");
   }
