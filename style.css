@@ -523,6 +523,8 @@ fieldset.role-row.known .role-opt:has(input:checked) {
 .am-tag-model { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
 .am-tag-annotator { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
 .am-outlier { display: inline-block; margin-left: 8px; padding: 2px 8px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 4px; font-size: 10.5px; font-weight: 600; vertical-align: 1px; }
+.am-fail { display: inline-block; margin-left: 8px; padding: 2px 8px; background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 4px; font-size: 10.5px; font-weight: 700; vertical-align: 1px; }
+.am-row-fail .am-label strong { color: #7f1d1d; }
 .am-n { width: 40px; text-align: center; font-variant-numeric: tabular-nums; color: #64748b; }
 .am-metric { font-variant-numeric: tabular-nums; }
 .am-pa, .am-ia { width: 180px; }

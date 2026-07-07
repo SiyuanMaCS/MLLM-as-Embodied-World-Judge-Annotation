@@ -2032,12 +2032,18 @@ function renderAlignmentMetricsBlock(m) {
     const kindTag = r.kind === "model"
       ? `<span class="am-tag am-tag-model">MODEL</span>`
       : `<span class="am-tag am-tag-annotator">USER</span>`;
+    // v85cv: fail-floor badge — surfaces the business rule (siyuan: alignment不达标的
+    // 要过下一轮alignment). Only applies to annotator rows (model rows don't retake).
+    const failsFloor = r.kind === "annotator" && ((r.pa != null && r.pa < floorPA) || (r.ia != null && r.ia < floorIA));
+    const failBadge = failsFloor
+      ? `<span class="am-fail" title="${tr("alignment_metrics.fail_tip")}">❗ ${tr("alignment_metrics.retake")}</span>`
+      : "";
     const outlier = r.is_outlier
       ? `<span class="am-outlier" title="${tr("alignment_metrics.outlier_tip")}">⚠</span>`
       : "";
-    return `<tr class="am-row am-row-${r.kind}${r.is_outlier ? " am-row-outlier" : ""}">
+    return `<tr class="am-row am-row-${r.kind}${r.is_outlier ? " am-row-outlier" : ""}${failsFloor ? " am-row-fail" : ""}">
       <td class="am-rank">${i + 1}</td>
-      <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong> ${outlier}</td>
+      <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong> ${outlier} ${failBadge}</td>
       <td class="am-n muted small">${r.n ?? "—"}</td>
       <td class="am-metric am-pa">${bar(r.pa, floorPA)}</td>
       <td class="am-metric am-ia">${bar(r.ia, floorIA)}</td>
@@ -2045,12 +2051,11 @@ function renderAlignmentMetricsBlock(m) {
       <td class="am-metric muted small">${fmt(r.exact_pa)}</td>
     </tr>`;
   }).join("");
-  // v85cr (siyuan): dropped the low-confidence + missing-model banners — 太丑.
-  // If the caveats matter, they live in the caption text now.
-  const captionExtras = [];
-  if (lowConf) captionExtras.push(tr("alignment_metrics.low_conf_short"));
-  if (models.length === 0) captionExtras.push(tr("alignment_metrics.no_model_short"));
-  const caption = `${tr("alignment_metrics.ref_prefix")} <strong>${escapeHtml(refKind)}</strong>, n_items=${nItems}, n_annotators=${nAnn}. ${tr("alignment_metrics.floor")}: PA ≥ <strong>${floorPA.toFixed(3)}</strong> · IA ≥ <strong>${floorIA.toFixed(3)}</strong>${captionExtras.length ? " · " + captionExtras.join(" · ") : ""}`;
+  // v85cv (siyuan: 这段太啰嗦了吧 简洁点): one-line minimal caption.
+  const extras = [];
+  if (lowConf) extras.push(`⚠ n<20`);
+  if (models.length === 0) extras.push(tr("alignment_metrics.no_model_short"));
+  const caption = `${nItems}题 · ${nAnn}人 · 门槛 PA≥<strong>${floorPA.toFixed(2)}</strong> / IA≥<strong>${floorIA.toFixed(2)}</strong>${extras.length ? " · " + extras.join(" · ") : ""}`;
   return `
     <div class="am-block">
       <h5 class="iaa-subtitle">${tr("alignment_metrics.title_v2")}</h5>
