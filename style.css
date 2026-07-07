@@ -497,37 +497,42 @@ fieldset.role-row.known .role-opt:has(input:checked) {
 .sd-bar.ia { background: linear-gradient(180deg, #34d399, #047857); }
 .sd-bar-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
-/* v85co: alignment metrics block embedded in align.html IAA panel — pretty table
-   with per-metric horizontal bars, outlier + model row highlighting. */
-.am-block { margin-top: 18px; padding: 14px 16px 4px; background: linear-gradient(180deg, #fafbfc 0%, transparent 100%); border-radius: 8px; border: 1px solid #e5e7eb; }
-.am-caption { margin: 4px 0 8px; font-size: 12px; color: #64748b; }
-.am-caveat { margin: 6px 0 10px; padding: 6px 10px; background: #fefce8; border-left: 3px solid #eab308; color: #713f12; font-size: 12px; border-radius: 3px; }
-.am-lowconf { margin: 6px 0 10px; padding: 6px 10px; background: #fef2f2; border-left: 3px solid #ef4444; color: #7f1d1d; font-size: 12px; border-radius: 3px; }
-.am-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; margin-top: 6px; background: #fff; border-radius: 6px; overflow: hidden; }
-.am-table th, .am-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #f1f5f9; }
-.am-table th { background: #f8fafc; font-weight: 600; color: #334155; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
-.am-table tr:last-child td { border-bottom: none; }
-.am-row-annotator:hover { background: #f8fafc; }
-.am-row-model { background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%); border-left: 3px solid #3b82f6; }
-.am-row-model td { color: #1e3a8a; }
-.am-row-outlier { background: linear-gradient(90deg, #fef2f2 0%, #ffffff 100%); border-left: 3px solid #f87171; }
-.am-rank { width: 32px; text-align: center; color: #94a3b8; font-weight: 600; font-variant-numeric: tabular-nums; }
-.am-label { min-width: 160px; }
-.am-tag { display: inline-block; font-size: 9px; padding: 1px 6px; border-radius: 3px; margin-right: 6px; letter-spacing: 0.4px; font-weight: 700; vertical-align: middle; }
-.am-tag-model { background: #dbeafe; color: #1e40af; }
-.am-tag-annotator { background: #dcfce7; color: #166534; }
-.am-outlier { display: inline-block; margin-left: 6px; padding: 1px 6px; background: #fee2e2; color: #991b1b; border-radius: 3px; font-size: 11px; font-weight: 600; }
-.am-n { width: 40px; text-align: center; font-variant-numeric: tabular-nums; }
-.am-metric { font-variant-numeric: tabular-nums; min-width: 120px; }
-.am-bar { display: inline-flex; align-items: center; gap: 6px; position: relative; width: 100%; height: 20px; }
-.am-bar-empty { background: transparent; }
-.am-bar-fill { position: absolute; left: 0; top: 4px; bottom: 4px; border-radius: 3px; transition: width 0.25s; }
-.am-bar-pass .am-bar-fill { background: linear-gradient(90deg, #22c55e, #15803d); }
-.am-bar-fail .am-bar-fill { background: linear-gradient(90deg, #f97316, #b91c1c); opacity: 0.7; }
-.am-bar-num { position: relative; z-index: 1; margin-left: auto; padding-right: 4px; color: #0f172a; font-weight: 600; font-size: 12px; text-shadow: 0 0 3px rgba(255,255,255,0.9); }
-.am-bar-empty .am-bar-num { color: #94a3b8; }
+/* v85ct: alignment metrics block — clean, modern, no-frame design.
+   Bars use a subtle track + colored fill; text sits inside the bar for
+   compactness. Rows have a hairline separator + hover highlight. */
+.am-block { margin-top: 20px; }
+.am-block .iaa-subtitle { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #0f172a; letter-spacing: -0.01em; }
+.am-caption { margin: 0 0 14px; font-size: 12px; color: #64748b; line-height: 1.5; }
+.am-caption strong { color: #334155; font-weight: 600; }
+.am-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.am-table th, .am-table td { padding: 10px 12px; text-align: left; }
+.am-table th { font-weight: 500; color: #94a3b8; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 1px solid #e2e8f0; padding-top: 0; padding-bottom: 8px; }
+.am-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+.am-table tbody tr:hover { background: #f8fafc; }
+.am-table tbody tr:last-child { border-bottom: none; }
+.am-row-model { background: linear-gradient(90deg, rgba(59,130,246,0.06) 0%, transparent 60%); }
+.am-row-model:hover { background: linear-gradient(90deg, rgba(59,130,246,0.10) 0%, rgba(59,130,246,0.02) 60%); }
+.am-row-outlier { background: linear-gradient(90deg, rgba(248,113,113,0.08) 0%, transparent 60%); }
+.am-row-outlier:hover { background: linear-gradient(90deg, rgba(248,113,113,0.14) 0%, rgba(248,113,113,0.02) 60%); }
+.am-rank { width: 28px; text-align: center; color: #cbd5e1; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 12px; }
+.am-label { min-width: 200px; }
+.am-label strong { font-weight: 600; color: #0f172a; }
+.am-row-model .am-label strong { color: #1e3a8a; }
+.am-row-outlier .am-label strong { color: #7f1d1d; }
+.am-tag { display: inline-block; font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-right: 8px; letter-spacing: 0.5px; font-weight: 700; vertical-align: 1px; }
+.am-tag-model { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.am-tag-annotator { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.am-outlier { display: inline-block; margin-left: 8px; padding: 2px 8px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 4px; font-size: 10.5px; font-weight: 600; vertical-align: 1px; }
+.am-n { width: 40px; text-align: center; font-variant-numeric: tabular-nums; color: #64748b; }
+.am-metric { font-variant-numeric: tabular-nums; }
 .am-pa, .am-ia { width: 180px; }
-/* removed dashboard-card block (moved into IAA panel) */
+.am-bar { display: block; position: relative; height: 22px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
+.am-bar-empty { background: transparent; height: 22px; display: flex; align-items: center; padding: 0 8px; color: #cbd5e1; }
+.am-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px 0 0 5px; transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
+.am-bar-pass .am-bar-fill { background: linear-gradient(90deg, #34d399, #10b981); box-shadow: inset 0 -1px 0 rgba(0,0,0,0.05); }
+.am-bar-fail .am-bar-fill { background: linear-gradient(90deg, #fb923c, #f97316); box-shadow: inset 0 -1px 0 rgba(0,0,0,0.05); }
+.am-bar-num { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); z-index: 1; color: #0f172a; font-weight: 600; font-size: 12px; text-shadow: 0 0 4px rgba(255,255,255,0.85); font-variant-numeric: tabular-nums; }
+.am-bar-pass .am-bar-num, .am-bar-fail .am-bar-num { color: #0f172a; }
 /* v85cc: stats.html — improved score distribution overlay layout. */
 .sd-v2-body { margin-top: 8px; }
 .sd2-legend { display: flex; gap: 12px; align-items: center; font-size: 13px; margin-bottom: 12px; color: var(--muted); }

@@ -5489,6 +5489,18 @@ async function toggleIAAPanel() {
 }
 
 function renderIAAPanel(panel, d, alignMetrics) {
+  // v85ct (siyuan: 之前的一致性分析直接全隐藏吧 先不删除 但是我暂时不要了):
+  // suppress the old IAA analysis (Krippendorff alpha / std_dev / top divergent
+  // items). Only render the per-annotator alignment metrics block. If neither
+  // is available, show empty state. Keeping the old code paths reachable in
+  // case siyuan brings it back.
+  if (!alignMetrics || !alignMetrics.annotators || !alignMetrics.annotators.length) {
+    panel.innerHTML = `<p class="muted">${tr("align.iaa.no_data")}</p>`;
+    return;
+  }
+  panel.innerHTML = renderAlignmentMetricsBlock(alignMetrics);
+  return;
+  // eslint-disable-next-line no-unreachable
   const perDim = d.per_dim || {};
   const items = d.items || [];
   const nMulti = d.n_items_multi ?? 0;
