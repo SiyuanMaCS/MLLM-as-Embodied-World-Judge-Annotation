@@ -533,6 +533,13 @@ fieldset.role-row.known .role-opt:has(input:checked) {
 .am-bar-pass .am-bar-fill { background: linear-gradient(90deg, #34d399, #10b981); box-shadow: inset 0 -1px 0 rgba(0,0,0,0.05); }
 .am-bar-neutral .am-bar-fill { background: linear-gradient(90deg, #cbd5e1, #94a3b8); box-shadow: inset 0 -1px 0 rgba(0,0,0,0.05); }
 .am-bar-model .am-bar-fill { background: linear-gradient(90deg, #60a5fa, #2563eb); box-shadow: inset 0 -1px 0 rgba(0,0,0,0.05); }
+
+/* v85dl: alignment "done" panel — minimal card, small link-style secondary actions. */
+.done-card { background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%); border: 1px solid #d1fae5; }
+.done-card h3 { color: #14532d; margin: 0 0 4px; }
+.done-card .done-actions { display: flex; gap: 16px; align-items: center; margin: 12px 0 0; font-size: 14px; }
+.done-card .done-jump { color: #16a34a; font-weight: 500; }
+.done-card .done-actions .link { color: #475569; font-weight: 500; }
 .am-bar-num { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); z-index: 1; color: #0f172a; font-weight: 600; font-size: 12px; text-shadow: 0 0 4px rgba(255,255,255,0.85); font-variant-numeric: tabular-nums; }
 .am-bar-pass .am-bar-num, .am-bar-fail .am-bar-num { color: #0f172a; }
 /* v85cc: stats.html — improved score distribution overlay layout. */

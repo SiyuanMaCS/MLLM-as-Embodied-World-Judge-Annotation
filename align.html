@@ -6,7 +6,7 @@
 <title>Reviewer Alignment — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85dk">
+<link rel="stylesheet" href="style.css?v=v85dl">
 </head>
 <body>
 <main>
@@ -66,13 +66,12 @@
     </div>
   </section>
 
-  <section id="al-done-msg" class="card" hidden>
-    <h3 data-i18n="align.done_title">You're done with all items ✨</h3>
-    <p class="muted" data-i18n="align.done_hint">All items annotated. Review others' annotations below or wait for admin finalize.</p>
-    <p>
-      <button type="button" id="al-disclose-all-btn" class="primary" data-i18n="align.disclose_all_btn">✅ See everyone (lock all my items)</button>
-      <button type="button" id="al-browse-mine-btn" class="ghost" data-i18n="align.browse_mine_btn">📋 Browse my items</button>
-      <button type="button" id="al-view-results-btn" class="primary" data-i18n="align.view_results_btn">📊 View alignment results (read-only)</button>
+  <section id="al-done-msg" class="card done-card" hidden>
+    <h3 data-i18n="align.done_title">✨ 你已标完全部条目</h3>
+    <p class="muted small" data-i18n="align.done_hint">下方是本 campaign 全部条目的对齐总览。等管理员定稿。</p>
+    <p class="done-actions">
+      <a href="#al-admin-overview" class="link done-jump" data-i18n="align.jump_overview">↓ 跳到总览</a>
+      <button type="button" id="al-browse-mine-btn" class="link" data-i18n="align.browse_mine_btn">📋 浏览我标的条目</button>
     </p>
   </section>
 
@@ -226,6 +225,6 @@
 
   <section id="al-error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="al-err-msg">—</p><button id="al-retry" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v85dk" defer></script>
+<script src="app.js?v=v85dl" defer></script>
 </body>
 </html>
