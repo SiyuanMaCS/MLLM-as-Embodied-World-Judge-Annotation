@@ -1921,6 +1921,9 @@ async function initDashboard() {
   else if (isReviewer) rowKey = "reviewer";
   else if (role === "author") rowKey = "author";
   document.querySelectorAll(".home-actions .action-row").forEach(r => {
+    // v85en: an action-row marked data-row="all" is visible to every role
+    // (e.g. the shared Leaderboard entry). Only role-specific rows follow rowKey.
+    if (r.dataset.row === "all") { r.hidden = false; return; }
     r.hidden = r.dataset.row !== rowKey;
   });
   // v85ax: admin row has two Review cards (primary if admin+reviewer like masiyuan;

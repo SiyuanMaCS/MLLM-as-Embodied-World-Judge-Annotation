@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Leaderboard — Embodied World Judge</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85em">
+<link rel="stylesheet" href="style.css?v=v85en">
 <style>
   .lb-page { max-width: 1100px; margin: 0 auto; padding: 16px; }
   .lb-hero { padding: 24px 20px; background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 20px; }
@@ -107,7 +107,7 @@
 <script>
   async function loadJudge() {
     try {
-      const md = await fetch('bench/leaderboard.md?v=v85em').then(r => r.text());
+      const md = await fetch('bench/leaderboard.md?v=v85en').then(r => r.text());
       const rows = md.split('\n')
         .filter(l => l.startsWith('|') && !l.match(/^\|\s*(-|Model|-{2,})/))
         .map(l => l.split('|').map(c => c.trim()).filter(c => c !== ''))
@@ -150,7 +150,7 @@
 
   async function loadVideogen() {
     try {
-      const data = await fetch('bench/videogen_leaderboard.json?v=v85em').then(r => r.json());
+      const data = await fetch('bench/videogen_leaderboard.json?v=v85en').then(r => r.json());
       const sorted = data.slice().sort((a, b) => (b.overall || 0) - (a.overall || 0));
       const tbody = document.getElementById('vg-tbody');
       tbody.innerHTML = sorted.map((m, i) => `
