@@ -6187,9 +6187,21 @@ function renderMyAlignmentCard(it) {
 }
 
 /* Load a submitted item back into al-form for re-scoring. v85dz: no more
-   finalize/disclose lock — any submitted item is editable. */
-function loadAlignItemForEdit(it) {
+   finalize/disclose lock — any submitted item is editable.
+   v85em (Ham + Alice fix): my_alignment items may not carry instruction/video
+   fields, so fetch fresh from align_item first; that's the endpoint that
+   guarantees instruction/instruction_cn/init_frame_url/video_url. */
+async function loadAlignItemForEdit(itSeed) {
   hideAlignSections();
+  const user = localStorage.getItem(CFG.LS_USER);
+  let it = itSeed;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_item&user=${encodeURIComponent(user)}&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}&item_id=${encodeURIComponent(itSeed.item_id)}`);
+    if (r.ok) {
+      const fresh = await r.json();
+      it = { ...itSeed, ...fresh, item_id: itSeed.item_id };
+    }
+  } catch (_) { /* keep seed if fetch fails; fetchInstructionInto fallback stays */ }
   setVideoSourcesFromItem(it);
   ALIGN_CURRENT = { id: it.item_id, video_url: it.video_url, dataset: it.dataset, task: it.task,
                     video_sources: it.video_sources, instruction: it.instruction, instruction_cn: it.instruction_cn,
@@ -6229,9 +6241,16 @@ function loadAlignItemForEdit(it) {
 }
 
 /* Load a not-yet-annotated item directly (skip the loadAlignNext queue ordering).
-   v85dz: finalize/disclose gate removed — mean-of-all replaces the lock. */
-function loadAlignItemForAnnotate(it) {
+   v85dz: finalize/disclose gate removed — mean-of-all replaces the lock.
+   v85em: same fresh-fetch pattern as loadAlignItemForEdit. */
+async function loadAlignItemForAnnotate(itSeed) {
   hideAlignSections();
+  const user = localStorage.getItem(CFG.LS_USER);
+  let it = itSeed;
+  try {
+    const r = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=align_item&user=${encodeURIComponent(user)}&campaign_id=${encodeURIComponent(ALIGN_CAMPAIGN_ID)}&item_id=${encodeURIComponent(itSeed.item_id)}`);
+    if (r.ok) { const fresh = await r.json(); it = { ...itSeed, ...fresh, item_id: itSeed.item_id }; }
+  } catch (_) { /* keep seed if fetch fails */ }
   setVideoSourcesFromItem(it);
   ALIGN_CURRENT = { id: it.item_id, video_url: it.video_url, dataset: it.dataset, task: it.task,
                     video_sources: it.video_sources, instruction: it.instruction, instruction_cn: it.instruction_cn,
