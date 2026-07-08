@@ -223,6 +223,8 @@ const LANG = {
     "alignment_metrics.not_ready": "Few completed · updates as more finish",
     "align.per_item_title": "👥 Per-item · click to see everyone's scores",
     "alignment_metrics.model_low_conf": "ⓘ Model rows: n=10 · low confidence (Pearson CI ±0.5). See /leaderboard for authoritative rankings.",
+    "home.card.leaderboard.title": "Leaderboard",
+    "home.card.leaderboard.sub": "Judge + video-gen model rankings",
     "my_alignment_card.title": "🎯 Alignment scores (all annotators)",
     "my_alignment_card.sub": "Latest alignment campaign — every annotator's PA/IA vs group consensus, with reference judge scores from the 875-item leaderboard for scale.",
     "gold_library.search": "Search",
@@ -631,6 +633,8 @@ const LANG = {
     "alignment_metrics.not_ready": "完成人数较少 · 更多人完成后自动计算",
     "align.per_item_title": "👥 每条查看所有人的分数",
     "alignment_metrics.model_low_conf": "ⓘ 模型行仅本 10 条 · 低可信(Pearson 波动 ±0.5) · 权威排名见 /leaderboard",
+    "home.card.leaderboard.title": "🏆 排行榜",
+    "home.card.leaderboard.sub": "Judge + 视频生成模型排名",
     "my_alignment_card.title": "🎯 对齐分(全体标注员)",
     "my_alignment_card.sub": "最近一次 alignment campaign — 全体标注员对齐群体共识的 PA/IA,附 875 leaderboard 上的 judge 参考行作为尺度。",
     "gold_library.search": "搜索",
@@ -5937,7 +5941,11 @@ async function loadAlignStatus() {
 }
 
 function hideAlignSections() {
-  for (const id of ["al-picker", "al-done-msg", "al-item", "al-others", "al-admin-overview", "al-error", "al-start-form", "al-self-metrics"]) {
+  // v85el (siyuan: 为啥修改界面在最下面): al-my-alignment was missing from this
+  // list, so clicking Edit on a browse-mine row surfaced al-item BELOW the still-
+  // visible list instead of replacing it. Add it here so the edit form takes
+  // full focus like the annotation flow.
+  for (const id of ["al-picker", "al-done-msg", "al-item", "al-others", "al-admin-overview", "al-error", "al-start-form", "al-self-metrics", "al-my-alignment"]) {
     const el = document.getElementById(id); if (el) el.hidden = true;
   }
 }
@@ -6316,6 +6324,12 @@ async function refreshAlignStatusOnly() {
       }
     }
   } catch (_) { /* silent */ }
+  // v85el (siyuan: alignment 修改后分数要重新算的 自动重新算更新表):
+  // re-fetch alignment_metrics so the "标注对齐度" table shows the just-edited
+  // scores' effect on Pearson/QWK immediately. Silent — panel hidden state
+  // decides whether to render.
+  const iaaPanel = document.getElementById("al-iaa-panel");
+  if (iaaPanel && !iaaPanel.hidden) { loadAndRenderIAAPanel(); }
 }
 
 async function showAlignOthers(item_id) {

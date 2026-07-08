@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboard — Embodied World Judge</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css?v=v85el">
+<style>
+  .lb-page { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  .lb-hero { padding: 24px 20px; background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 20px; }
+  .lb-hero h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: -0.01em; }
+  .lb-hero p { margin: 0; color: #64748b; font-size: 14px; line-height: 1.55; }
+  .lb-section { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 18px; }
+  .lb-section h2 { margin: 0 0 4px; font-size: 17px; letter-spacing: -0.01em; }
+  .lb-section .lb-sub { margin: 0 0 14px; font-size: 12.5px; color: #64748b; }
+  .lb-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .lb-table th, .lb-table td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+  .lb-table th { font-weight: 500; color: #94a3b8; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px; padding-top: 0; padding-bottom: 8px; }
+  .lb-table tbody tr:hover { background: #f8fafc; }
+  .lb-rank { width: 32px; color: #cbd5e1; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
+  .lb-model { font-weight: 600; color: #0f172a; }
+  .lb-num { font-variant-numeric: tabular-nums; text-align: right; }
+  .lb-bar { display: inline-block; position: relative; width: 100px; height: 14px; background: #f1f5f9; border-radius: 4px; overflow: hidden; margin-right: 8px; vertical-align: middle; }
+  .lb-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #60a5fa, #2563eb); border-radius: 4px 0 0 4px; }
+  .lb-bar-fill.vg { background: linear-gradient(90deg, #34d399, #10b981); }
+  .lb-caption { margin-top: 12px; font-size: 12px; color: #64748b; line-height: 1.6; }
+  .lb-caption strong { color: #334155; }
+  .lb-partial-tag { display: inline-block; padding: 1px 6px; margin-left: 6px; background: #fef3c7; border: 1px solid #fde68a; color: #92400e; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.4px; }
+  .lb-loading { color: #94a3b8; padding: 8px 0; font-size: 13px; }
+  @media (max-width: 640px) {
+    .lb-page { padding: 10px; }
+    .lb-hero { padding: 16px 14px; }
+    .lb-hero h1 { font-size: 18px; }
+    .lb-section { padding: 14px; }
+    .lb-table { font-size: 12px; }
+    .lb-table th, .lb-table td { padding: 7px 6px; }
+    .lb-bar { width: 60px; height: 12px; }
+    .lb-hide-mobile { display: none; }
+  }
+  .lb-nav { margin-bottom: 12px; }
+  .lb-nav .back-link { display: inline-block; padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 6px; text-decoration: none; color: #475569; font-size: 13px; }
+  .lb-nav .back-link:hover { background: #f1f5f9; }
+</style>
+</head>
+<body>
+<main class="lb-page">
+  <nav class="lb-nav">
+    <a href="dashboard.html" class="back-link">← Home</a>
+  </nav>
+
+  <section class="lb-hero">
+    <h1>🏆 Leaderboard</h1>
+    <p>Two boards: (1) <strong>judge models</strong> — how well an MLLM's PA/IA scoring agrees with human consensus on the 875-item test set; (2) <strong>video-gen models</strong> — how humans rate the outputs of embodied-world generation models on PA / IA (1–5).</p>
+  </section>
+
+  <section class="lb-section">
+    <h2>🧑‍⚖️ Judge Leaderboard (875 in-domain items)</h2>
+    <p class="lb-sub">Correlation with the human consensus PA / IA scores on <code>bench/gold_875.jsonl</code>. Higher = better judge. Sorted by PA-Pearson.</p>
+    <div id="judge-loading" class="lb-loading">Loading…</div>
+    <div id="judge-table-wrap" hidden>
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th class="lb-rank">#</th>
+            <th>Model</th>
+            <th class="lb-num">n</th>
+            <th class="lb-num">PA · Pearson</th>
+            <th class="lb-num">IA · Pearson</th>
+            <th class="lb-num lb-hide-mobile">Joint-F1</th>
+            <th class="lb-num lb-hide-mobile">Exact PA</th>
+            <th class="lb-num lb-hide-mobile">±1 PA</th>
+          </tr>
+        </thead>
+        <tbody id="judge-tbody"></tbody>
+      </table>
+    </div>
+    <p class="lb-caption">
+      <strong>Legend</strong>:
+      <span class="lb-partial-tag">partial</span> = coverage &lt; 90% (partial free-quota runs); interpret PA/IA with wider CI.
+      Mode-baseline exact: PA = 0.281 · IA = 0.278. Human IAA (n=10, wide CI): PA Pearson 0.336 · IA Pearson 0.354.
+    </p>
+  </section>
+
+  <section class="lb-section">
+    <h2>🎬 Video-Gen Leaderboard</h2>
+    <p class="lb-sub">Mean human PA / IA scores (1–5) across annotated items per video-gen model. Sorted by overall = (PA + IA) / 2.</p>
+    <div id="vg-loading" class="lb-loading">Loading…</div>
+    <div id="vg-table-wrap" hidden>
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th class="lb-rank">#</th>
+            <th>Model</th>
+            <th class="lb-num">n</th>
+            <th class="lb-num">PA (1–5)</th>
+            <th class="lb-num">IA (1–5)</th>
+            <th class="lb-num">Overall</th>
+          </tr>
+        </thead>
+        <tbody id="vg-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+  async function loadJudge() {
+    try {
+      const md = await fetch('bench/leaderboard.md?v=v85el').then(r => r.text());
+      const rows = md.split('\n')
+        .filter(l => l.startsWith('|') && !l.match(/^\|\s*(-|Model|-{2,})/))
+        .map(l => l.split('|').map(c => c.trim()).filter(c => c !== ''))
+        .filter(r => r.length >= 6 && !r[0].startsWith('---'));
+      const parsed = rows.map(r => {
+        const rawName = r[0];
+        const partial = rawName.endsWith('*');
+        return {
+          model: rawName.replace(/\s*\*$/, '').trim(),
+          n: parseInt(r[1].replace(/,/g, ''), 10),
+          cov: r[2],
+          pa: parseFloat(r[3]),
+          ia: parseFloat(r[4]),
+          jf1: parseFloat(r[5]),
+          exact: parseFloat(r[6]),
+          plus1: parseFloat(r[7]),
+          partial,
+        };
+      });
+      parsed.sort((a, b) => (b.pa || -9) - (a.pa || -9));
+      const tbody = document.getElementById('judge-tbody');
+      tbody.innerHTML = parsed.map((m, i) => `
+        <tr>
+          <td class="lb-rank">${i + 1}</td>
+          <td class="lb-model">${escapeHtml(m.model)}${m.partial ? '<span class="lb-partial-tag">partial</span>' : ''}</td>
+          <td class="lb-num">${m.n}</td>
+          <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill" style="width:${Math.max(0, m.pa) * 100}%"></span></span>${m.pa.toFixed(3)}</td>
+          <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill" style="width:${Math.max(0, m.ia) * 100}%"></span></span>${m.ia.toFixed(3)}</td>
+          <td class="lb-num lb-hide-mobile">${m.jf1.toFixed(3)}</td>
+          <td class="lb-num lb-hide-mobile">${m.exact.toFixed(3)}</td>
+          <td class="lb-num lb-hide-mobile">${m.plus1.toFixed(3)}</td>
+        </tr>
+      `).join('');
+      document.getElementById('judge-loading').hidden = true;
+      document.getElementById('judge-table-wrap').hidden = false;
+    } catch (e) {
+      document.getElementById('judge-loading').textContent = 'Failed to load judge leaderboard: ' + e.message;
+    }
+  }
+
+  async function loadVideogen() {
+    try {
+      const data = await fetch('bench/videogen_leaderboard.json?v=v85el').then(r => r.json());
+      const sorted = data.slice().sort((a, b) => (b.overall || 0) - (a.overall || 0));
+      const tbody = document.getElementById('vg-tbody');
+      tbody.innerHTML = sorted.map((m, i) => `
+        <tr>
+          <td class="lb-rank">${i + 1}</td>
+          <td class="lb-model">${escapeHtml(m.model)}</td>
+          <td class="lb-num">${m.n}</td>
+          <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill vg" style="width:${(m.pa / 5) * 100}%"></span></span>${m.pa.toFixed(2)}</td>
+          <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill vg" style="width:${(m.ia / 5) * 100}%"></span></span>${m.ia.toFixed(2)}</td>
+          <td class="lb-num"><strong>${m.overall.toFixed(2)}</strong></td>
+        </tr>
+      `).join('');
+      document.getElementById('vg-loading').hidden = true;
+      document.getElementById('vg-table-wrap').hidden = false;
+    } catch (e) {
+      document.getElementById('vg-loading').textContent = 'Failed to load video-gen leaderboard: ' + e.message;
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  loadJudge();
+  loadVideogen();
+</script>
+</body>
+</html>

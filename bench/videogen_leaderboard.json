@@ -1,0 +1,142 @@
+[
+ {
+  "model": "happyhorse_prefix",
+  "n": 16,
+  "pa": 4.0,
+  "ia": 4.69,
+  "overall": 4.34
+ },
+ {
+  "model": "wan26_flash_rewrite",
+  "n": 42,
+  "pa": 4.1,
+  "ia": 4.45,
+  "overall": 4.27
+ },
+ {
+  "model": "kling_prefix",
+  "n": 11,
+  "pa": 3.91,
+  "ia": 4.55,
+  "overall": 4.23
+ },
+ {
+  "model": "veo31_lite_rewrite",
+  "n": 12,
+  "pa": 4.0,
+  "ia": 4.42,
+  "overall": 4.21
+ },
+ {
+  "model": "happyhorse_rewrite",
+  "n": 21,
+  "pa": 3.81,
+  "ia": 4.52,
+  "overall": 4.17
+ },
+ {
+  "model": "kling_rewrite",
+  "n": 15,
+  "pa": 3.8,
+  "ia": 4.47,
+  "overall": 4.13
+ },
+ {
+  "model": "wan26_flash_prefix",
+  "n": 31,
+  "pa": 3.97,
+  "ia": 4.16,
+  "overall": 4.06
+ },
+ {
+  "model": "veo31_lite_prefix",
+  "n": 23,
+  "pa": 4.04,
+  "ia": 3.78,
+  "overall": 3.91
+ },
+ {
+  "model": "cosmos3_rewrite",
+  "n": 65,
+  "pa": 3.43,
+  "ia": 3.92,
+  "overall": 3.68
+ },
+ {
+  "model": "cosmos3_prefix",
+  "n": 55,
+  "pa": 3.67,
+  "ia": 3.64,
+  "overall": 3.65
+ },
+ {
+  "model": "abot_physworld_f113_prefix",
+  "n": 64,
+  "pa": 3.52,
+  "ia": 3.67,
+  "overall": 3.59
+ },
+ {
+  "model": "abot_physworld_f113_rewrite",
+  "n": 45,
+  "pa": 3.13,
+  "ia": 3.64,
+  "overall": 3.39
+ },
+ {
+  "model": "gigaworld_gr1_2b_f113_rewrite",
+  "n": 63,
+  "pa": 2.63,
+  "ia": 3.29,
+  "overall": 2.96
+ },
+ {
+  "model": "gigaworld_gr1_2b_f113_prefix",
+  "n": 51,
+  "pa": 2.96,
+  "ia": 2.92,
+  "overall": 2.94
+ },
+ {
+  "model": "wow_wan14b_f105_prefix",
+  "n": 55,
+  "pa": 3.11,
+  "ia": 2.64,
+  "overall": 2.87
+ },
+ {
+  "model": "wan22_ti2v5b_1280x704_f169_prefix",
+  "n": 61,
+  "pa": 2.85,
+  "ia": 2.62,
+  "overall": 2.74
+ },
+ {
+  "model": "wow_wan14b_f105_rewrite",
+  "n": 73,
+  "pa": 2.74,
+  "ia": 2.71,
+  "overall": 2.73
+ },
+ {
+  "model": "wan22_ti2v5b_1280x704_f169_rewrite",
+  "n": 62,
+  "pa": 2.56,
+  "ia": 2.79,
+  "overall": 2.68
+ },
+ {
+  "model": "cogvideo_i2v_f113_prefix",
+  "n": 53,
+  "pa": 1.96,
+  "ia": 2.11,
+  "overall": 2.04
+ },
+ {
+  "model": "cogvideo_i2v_f113_rewrite",
+  "n": 57,
+  "pa": 1.77,
+  "ia": 2.09,
+  "overall": 1.93
+ }
+]
