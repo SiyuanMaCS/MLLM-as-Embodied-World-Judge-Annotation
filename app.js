@@ -222,6 +222,7 @@ const LANG = {
     "alignment_metrics.retake": "retake",
     "alignment_metrics.not_ready": "Few completed · updates as more finish",
     "align.per_item_title": "👥 Per-item · click to see everyone's scores",
+    "alignment_metrics.model_low_conf": "ⓘ Model rows: n=10 · low confidence (Pearson CI ±0.5). See /leaderboard for authoritative rankings.",
     "my_alignment_card.title": "🎯 Alignment scores (all annotators)",
     "my_alignment_card.sub": "Latest alignment campaign — every annotator's PA/IA vs group consensus, with reference judge scores from the 875-item leaderboard for scale.",
     "gold_library.search": "Search",
@@ -629,6 +630,7 @@ const LANG = {
     "alignment_metrics.retake": "需重考",
     "alignment_metrics.not_ready": "完成人数较少 · 更多人完成后自动计算",
     "align.per_item_title": "👥 每条查看所有人的分数",
+    "alignment_metrics.model_low_conf": "ⓘ 模型行仅本 10 条 · 低可信(Pearson 波动 ±0.5) · 权威排名见 /leaderboard",
     "my_alignment_card.title": "🎯 对齐分(全体标注员)",
     "my_alignment_card.sub": "最近一次 alignment campaign — 全体标注员对齐群体共识的 PA/IA,附 875 leaderboard 上的 judge 参考行作为尺度。",
     "gold_library.search": "搜索",
@@ -2165,9 +2167,16 @@ function renderAlignmentMetricsBlock(m) {
   if (lowConf) extras.push("小样本仅参考");
   if (models.length === 0) extras.push(tr("alignment_metrics.no_model_short"));
   const caption = `${nItems}题 · ${nAnn}人 · <span class="muted">Pearson vs 共识 (0–1)</span>${extras.length ? " · " + extras.join(" · ") : ""}`;
+  // v85ek: when model rows are present with n <= 20 (fair-comparison mode), warn
+  // that per-model Pearson on a small campaign is noisy (±0.5 CI) and point to
+  // the authoritative leaderboard for real rankings.
+  const modelNote = (models.length > 0 && (models[0].n ?? 999) <= 20)
+    ? `<p class="am-model-note muted small">${tr("alignment_metrics.model_low_conf")}</p>`
+    : "";
   return `
     <div class="am-block">
       <h5 class="iaa-subtitle">${tr("alignment_metrics.title_v2")}</h5>
+      ${modelNote}
       <table class="am-table">
         <thead>
           <tr>
