@@ -133,7 +133,21 @@
   async function loadVideogen() {
     try {
       const data = await fetch('bench/videogen_leaderboard.json?v=v85es').then(r => r.json());
-      const sorted = data.slice().sort((a, b) => (b.overall || 0) - (a.overall || 0));
+      // v85es (siyuan: 这里不要区分 rewrite 和 prefix): collapse variants into
+      // their base model, weighting PA / IA / overall by n.
+      const byBase = new Map();
+      for (const m of data) {
+        const base = String(m.model || '').replace(/_(rewrite|prefix)$/, '');
+        const cur = byBase.get(base) || { model: base, n: 0, paSum: 0, iaSum: 0 };
+        cur.n += m.n; cur.paSum += m.pa * m.n; cur.iaSum += m.ia * m.n;
+        byBase.set(base, cur);
+      }
+      const merged = Array.from(byBase.values()).map(x => {
+        const pa = x.n ? x.paSum / x.n : 0;
+        const ia = x.n ? x.iaSum / x.n : 0;
+        return { model: x.model, n: x.n, pa, ia, overall: (pa + ia) / 2 };
+      });
+      const sorted = merged.sort((a, b) => (b.overall || 0) - (a.overall || 0));
       const tbody = document.getElementById('vg-tbody');
       tbody.innerHTML = sorted.map((m, i) => `
         <tr>
