@@ -3113,19 +3113,12 @@ function renderGrid(data) {
       // v85ca: Ham added cell.total = count + reports and cell.delta = total - quota.
       // siyuan: 周格直接显示合并总数(11+2 就写 13), 不拆开。
       const displayCount = typeof cell?.total === "number" ? cell.total : (cell?.count ?? 0);
-      // v85fc (siyuan: 这个页面咋都红了): quota was recently zeroed for the
-      // week window, but historical cells still carry stale cell.state="below"
-      // / cell.met=false from the old quota. Treat cell.delta as the source of
-      // truth for met/miss: delta >= 0 means the user hit whatever quota
-      // applied that day. Only fall back to cell.met/state when delta absent.
-      let state;
-      if (!cell || displayCount === 0) {
-        state = "none";
-      } else if (typeof cell.delta === "number") {
-        state = cell.delta >= 0 ? "met" : "below";
-      } else {
-        state = cell.state || (cell.met ? "met" : "below");
-      }
+      // v85fh: trust backend cell.state (Ham fixed _role_quota_on to judge each
+      // historical day against THAT day's quota; paused days now return delta=null
+      // + state="none" and never misfire as "below"). Reverts the v85fc heuristic
+      // — with null delta, `null >= 0` is true in JS and would falsely turn
+      // paused-day cells green.
+      const state = cell ? (cell.state || (displayCount === 0 ? "none" : (cell.met ? "met" : "below"))) : "none";
       const showNumbers = (isAdmin || a.is_self) && cell && typeof cell.count === "number";
       if (state === "none") {
         td.classList.add("zero");
