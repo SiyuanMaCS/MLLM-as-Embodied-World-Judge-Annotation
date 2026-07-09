@@ -1,0 +1,162 @@
+{
+ "gemini-3.5-flash": {
+  "PA": {
+   "spearman": 0.915,
+   "kendall": 0.822,
+   "tau_ap": 0.733,
+   "kendall_distance_norm": 0.089,
+   "inversions": "4/45"
+  },
+  "IA": {
+   "spearman": 0.479,
+   "kendall": 0.467,
+   "tau_ap": 0.39,
+   "kendall_distance_norm": 0.267,
+   "inversions": "12/45"
+  }
+ },
+ "seed2.1_lite": {
+  "PA": {
+   "spearman": 0.976,
+   "kendall": 0.911,
+   "tau_ap": 0.881,
+   "kendall_distance_norm": 0.044,
+   "inversions": "2/45"
+  },
+  "IA": {
+   "spearman": 0.976,
+   "kendall": 0.911,
+   "tau_ap": 0.75,
+   "kendall_distance_norm": 0.044,
+   "inversions": "2/45"
+  }
+ },
+ "seed2.0_pro": {
+  "PA": {
+   "spearman": 0.903,
+   "kendall": 0.778,
+   "tau_ap": 0.706,
+   "kendall_distance_norm": 0.111,
+   "inversions": "5/45"
+  },
+  "IA": {
+   "spearman": 0.988,
+   "kendall": 0.956,
+   "tau_ap": 0.972,
+   "kendall_distance_norm": 0.022,
+   "inversions": "1/45"
+  }
+ },
+ "gpt5.5": {
+  "PA": {
+   "spearman": 0.855,
+   "kendall": 0.689,
+   "tau_ap": 0.485,
+   "kendall_distance_norm": 0.156,
+   "inversions": "7/45"
+  },
+  "IA": {
+   "spearman": 0.976,
+   "kendall": 0.911,
+   "tau_ap": 0.75,
+   "kendall_distance_norm": 0.044,
+   "inversions": "2/45"
+  }
+ },
+ "gpt-5.2": {
+  "PA": {
+   "spearman": 0.867,
+   "kendall": 0.733,
+   "tau_ap": 0.502,
+   "kendall_distance_norm": 0.133,
+   "inversions": "6/45"
+  },
+  "IA": {
+   "spearman": 0.976,
+   "kendall": 0.911,
+   "tau_ap": 0.75,
+   "kendall_distance_norm": 0.044,
+   "inversions": "2/45"
+  }
+ },
+ "gemini-3.1-pro-preview": {
+  "PA": {
+   "spearman": 0.83,
+   "kendall": 0.733,
+   "tau_ap": 0.567,
+   "kendall_distance_norm": 0.133,
+   "inversions": "6/45"
+  },
+  "IA": {
+   "spearman": 0.539,
+   "kendall": 0.556,
+   "tau_ap": 0.492,
+   "kendall_distance_norm": 0.222,
+   "inversions": "10/45"
+  }
+ },
+ "qwen3-vl-32b-instruct": {
+  "PA": {
+   "spearman": 0.988,
+   "kendall": 0.956,
+   "tau_ap": 0.778,
+   "kendall_distance_norm": 0.022,
+   "inversions": "1/45"
+  },
+  "IA": {
+   "spearman": 0.539,
+   "kendall": 0.556,
+   "tau_ap": 0.529,
+   "kendall_distance_norm": 0.222,
+   "inversions": "10/45"
+  }
+ },
+ "gemini-2.5-flash": {
+  "PA": {
+   "spearman": 0.867,
+   "kendall": 0.733,
+   "tau_ap": 0.467,
+   "kendall_distance_norm": 0.133,
+   "inversions": "6/45"
+  },
+  "IA": {
+   "spearman": 0.539,
+   "kendall": 0.556,
+   "tau_ap": 0.492,
+   "kendall_distance_norm": 0.222,
+   "inversions": "10/45"
+  }
+ },
+ "qwen3-vl-8b-instruct": {
+  "PA": {
+   "spearman": 0.952,
+   "kendall": 0.867,
+   "tau_ap": 0.807,
+   "kendall_distance_norm": 0.067,
+   "inversions": "3/45"
+  },
+  "IA": {
+   "spearman": 0.442,
+   "kendall": 0.378,
+   "tau_ap": 0.3,
+   "kendall_distance_norm": 0.311,
+   "inversions": "14/45"
+  }
+ },
+ "gemini-2.5-pro": {
+  "PA": {
+   "spearman": 0.976,
+   "kendall": 0.911,
+   "tau_ap": 0.928,
+   "kendall_distance_norm": 0.044,
+   "inversions": "2/45"
+  },
+  "IA": {
+   "spearman": 0.952,
+   "kendall": 0.822,
+   "tau_ap": 0.631,
+   "kendall_distance_norm": 0.089,
+   "inversions": "4/45"
+  }
+ }
+}

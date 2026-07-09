@@ -6,7 +6,7 @@
 <title>Leaderboard — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85fq">
+<link rel="stylesheet" href="style.css?v=v85fr">
 <style>
   .lb-section { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
   .lb-section h2 { margin: 0 0 10px; font-size: 15px; letter-spacing: -0.01em; font-weight: 600; color: #0f172a; }
@@ -54,8 +54,8 @@
     <h2 data-i18n="leaderboard.judge_title">🧑‍⚖️ Judge model · 875</h2>
     <div id="judge-loading" class="lb-loading" data-i18n="common.loading">Loading…</div>
     <div class="lb-legend" id="judge-legend" hidden>
-      <b>两种能力,不是同一件事</b>:<b>PA·Pearson / IA·Pearson</b> = 每条打分的精度(逐条准);<b>PA·Rankρ / IA·Rankρ</b> = judge 给 10 个视频生成模型排名的 Spearman(打榜准)。
-      <b>注意</b>:本榜 10 个生成模型 gold PA 跨 1.86–4.04(<b>差距大</b>),粗排容易 → 塌缩 / 弱 judge 也常能对(qwen32b 逐条 0.36 但打榜 0.988)。差距接近的 SOTA 池上,细排仍需逐条准的 judge。n=10 · Spearman CI 宽,别把 Rankρ 当主排序。
+      <b>两种能力,不是同一件事</b>:<b>PA·Pearson / IA·Pearson</b> = 每条打分的精度(逐条准);<b>PA·K_norm / IA·K_norm</b> = judge 给 10 个视频生成模型排名的**归一化 Kendall 距离**——45 对模型对比里错排了几对(除以 45)。<b>0 = 完美、0.5 = 随机、1 = 完全反转</b>,越低越准。
+      <b>注意</b>:本榜 10 个生成模型 gold PA 跨 1.86–4.04(<b>差距大</b>),粗排容易 → 塌缩 / 弱 judge 也常能对(qwen32b 逐条 0.36 但 K_norm 0.02)。差距接近的 SOTA 池上,细排仍需逐条准的 judge。
     </div>
     <div id="judge-table-wrap" hidden>
       <table class="lb-table">
@@ -66,8 +66,8 @@
             <th class="lb-num">n</th>
             <th class="lb-num" title="逐条 Pearson: judge 每条打分 vs 人类每条打分的相关度 · 判分精度">PA·Pearson</th>
             <th class="lb-num" title="逐条 Pearson: judge 每条打分 vs 人类每条打分的相关度 · 判分精度">IA·Pearson</th>
-            <th class="lb-num" title="模型排名 Spearman: judge 给 10 个视频生成模型排名 vs 人类排名 · 打榜能力">PA·Rankρ</th>
-            <th class="lb-num" title="模型排名 Spearman: judge 给 10 个视频生成模型排名 vs 人类排名 · 打榜能力">IA·Rankρ</th>
+            <th class="lb-num" title="归一化 Kendall 距离: 45 对模型对比里错排几对/45,0=完美 · 越低越准">PA·K_norm</th>
+            <th class="lb-num" title="归一化 Kendall 距离: 45 对模型对比里错排几对/45,0=完美 · 越低越准">IA·K_norm</th>
             <th class="lb-num lb-hide-mobile">Joint-F1</th>
             <th class="lb-num lb-hide-mobile">Exact PA</th>
             <th class="lb-num lb-hide-mobile">±1 PA</th>
@@ -98,7 +98,7 @@
     </div>
   </section>
 </main>
-<script src="app.js?v=v85fq"></script>
+<script src="app.js?v=v85fr"></script>
 <script>
   async function loadJudge() {
     try {
@@ -106,10 +106,23 @@
       // for public visitors. Route the primary fetch through the HF mirror
       // instead — HF is public, GHA sync keeps it byte-identical with GitHub.
       const primary = 'https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main/bench/results/leaderboard.md';
-      const fallback = 'bench/leaderboard.md?v=v85fq';
+      const fallback = 'bench/leaderboard.md?v=v85fr';
       let md;
       try { md = await fetch(primary).then(r => { if (!r.ok) throw new Error('primary ' + r.status); return r.text(); }); }
       catch (_) { md = await fetch(fallback).then(r => r.text()); }
+      // v85fr: pull K_norm (normalized Kendall distance) from Alice's strict
+      // rank json — merged by judge name into each parsed row. Falls back to
+      // deriving from Spearman column if the strict file is unreachable.
+      let strictMap = {};
+      try {
+        const strict = await fetch('bench/model_ranking_strict.json?v=v85fr').then(r => r.json());
+        for (const [j, dims] of Object.entries(strict)) {
+          strictMap[j] = {
+            pa_knorm: dims?.PA?.kendall_distance_norm,
+            ia_knorm: dims?.IA?.kendall_distance_norm
+          };
+        }
+      } catch (_) { /* leave strictMap empty; render will show — */ }
       const rows = md.split('\n')
         .filter(l => l.startsWith('|') && !l.match(/^\|\s*(-|Model|-{2,})/))
         .map(l => l.split('|').map(c => c.trim()).filter(c => c !== ''))
@@ -127,10 +140,18 @@
         // IA-Pearson (Ham commit 84a9fc8). Column layout is now:
         //   0:Model 1:n 2:cov 3:PA-Pearson 4:IA-Pearson
         //   5:PA·Rankρ 6:IA·Rankρ 7:Joint-F1 8:Exact PA 9:±1 PA
+        // v85fr: render K_norm (from strict json) instead of Rankρ; keep
+        // parsing Rankρ from md so we can compute a fallback K_norm = (1-τ)/2
+        // if the strict file isn't there yet.
+        const paRank = parseFloat(r[5]);
+        const iaRank = parseFloat(r[6]);
+        const s = strictMap[model] || {};
         return { model, n: parseInt(r[1].replace(/,/g, ''), 10),
                  cov: covPct,
                  pa: parseFloat(r[3]), ia: parseFloat(r[4]),
-                 paRank: parseFloat(r[5]), iaRank: parseFloat(r[6]),
+                 pa_knorm: s.pa_knorm,
+                 ia_knorm: s.ia_knorm,
+                 pa_rank_fallback: paRank, ia_rank_fallback: iaRank,
                  jf1: parseFloat(r[7]),
                  exact: parseFloat(r[8]), plus1: parseFloat(r[9]) };
       });
@@ -148,8 +169,8 @@
           <td class="lb-num">${m.n}</td>
           <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill" style="width:${Math.max(0, m.pa) * 100}%"></span></span>${m.pa.toFixed(3)}</td>
           <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill" style="width:${Math.max(0, m.ia) * 100}%"></span></span>${m.ia.toFixed(3)}</td>
-          <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill rank" style="width:${Math.max(0, m.paRank || 0) * 100}%"></span></span>${isFinite(m.paRank) ? m.paRank.toFixed(3) : '—'}</td>
-          <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill rank" style="width:${Math.max(0, m.iaRank || 0) * 100}%"></span></span>${isFinite(m.iaRank) ? m.iaRank.toFixed(3) : '—'}</td>
+          <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill rank" style="width:${Math.max(0, 1 - (isFinite(m.pa_knorm) ? m.pa_knorm : 1)) * 100}%"></span></span>${isFinite(m.pa_knorm) ? m.pa_knorm.toFixed(3) : '—'}</td>
+          <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill rank" style="width:${Math.max(0, 1 - (isFinite(m.ia_knorm) ? m.ia_knorm : 1)) * 100}%"></span></span>${isFinite(m.ia_knorm) ? m.ia_knorm.toFixed(3) : '—'}</td>
           <td class="lb-num lb-hide-mobile">${m.jf1.toFixed(3)}</td>
           <td class="lb-num lb-hide-mobile">${m.exact.toFixed(3)}</td>
           <td class="lb-num lb-hide-mobile">${m.plus1.toFixed(3)}</td>
@@ -168,7 +189,7 @@
       // the HF mirror instead of raw.githubusercontent (which 404s for a
       // private source). Client merge regex is still an idempotent safety net.
       const vgPrimary = 'https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main/bench/videogen_leaderboard.json';
-      const vgFallback = 'bench/videogen_leaderboard.json?v=v85fq';
+      const vgFallback = 'bench/videogen_leaderboard.json?v=v85fr';
       let data;
       try { data = await fetch(vgPrimary).then(r => { if (!r.ok) throw new Error('primary ' + r.status); return r.json(); }); }
       catch (_) { data = await fetch(vgFallback).then(r => r.json()); }

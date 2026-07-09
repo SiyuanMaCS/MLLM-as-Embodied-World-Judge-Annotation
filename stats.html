@@ -202,21 +202,9 @@
       <div id="hs-dist"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- v85fb: Closed-loop Spearman + judge-judge agreement (Alice bundle) -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2>🔁 闭环验证 · Closed-loop model ranking</h2>
-        <span class="hs-sub">能否用 judge 代替人类给视频生成模型排名?</span>
-      </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #2563eb;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **本卡回答**:能否用 judge 代替人工评测给视频生成模型排名?<br>
-        **流程**:10 个视频生成模型(Kling/Sora/Veo/…),每模型 ~87 段测试视频。① 让 flash judge 给每段打分再取均值 → 得到 flash 眼里的每模型得分;② 人类给同批视频打分再取均值 → 得到人类的每模型得分;③ 对 10 组 (judge 均分, 人类均分) 算 **Spearman 排名相关**。<br>
-        **结论**:**PA 排名 ρ = 0.915** → judge 排出来的物理榜和人类的几乎一致,**能替代人类打榜**(paper 卖点之一);IA 排名 0.48 弱得多。<br>
-        **机理**:每模型 87 条聚合 → 噪声降 √87 ≈ 9× → 信号几乎不变、排名可信(HELM / LMSYS 榜也靠这个)。<br>
-        **⚠️ 诚实警告**:n=10 生成模型 → bootstrap 95% CI = [0.56, 1.00],10 个点 Spearman 本身抖;flash 高估 kling(judge 4.85 vs 人类 3.85)是一处已知偏差。paper 里 0.915 必须挂 n=10 · CI 一起报,别裸念这个数。
-      </div>
-      <div id="hs-cl"><div class="hs-empty">加载中…</div></div>
-    </section>
+    <!-- v85fr (siyuan): closed-loop card removed. Model-ranking metric now
+         lives as a K_norm column in the leaderboard table. -->
+
 
     <!-- v85fm: Judge ensemble — mean of top-k strong judges vs single best -->
     <section class="hs-card">
@@ -920,36 +908,39 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fq", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fr", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
-    // v85fb: closed-loop headline + per-embodiment heatmap + bootstrap CI
-    // (Alice bundle, static bench/ file for now; will move to HF pipeline).
-    fetch("bench/judge_judge_closedloop.json?v=v85fq", {cache:"no-store"})
-      .then(function(r){ if(!r.ok) throw new Error("cl " + r.status); return r.json(); })
-      .then(renderClosedLoop)
-      .catch(function(e){ document.getElementById("hs-cl").innerHTML='<div class="hs-empty">闭环数据加载失败</div>'; });
-    fetch("bench/per_embodiment_pa.json?v=v85fq", {cache:"no-store"})
+    // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
+    // Judge-judge summary still needed for the ensemble card; fetch it silently.
+    fetch("bench/judge_judge_closedloop.json?v=v85fr", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
+      .then(function(d){
+        window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
+        if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
+      })
+      .catch(function(){});
+    fetch("bench/per_embodiment_pa.json?v=v85fr", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fq", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85fr", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85fj: calibration reliability curves.
-    fetch("bench/calibration.json?v=v85fq", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85fr", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(renderCalibration)
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
     // v85fm: judge ensemble baseline-vs-mean + gains curve.
-    fetch("bench/ensemble_judge.json?v=v85fq", {cache:"no-store"})
+    fetch("bench/ensemble_judge.json?v=v85fr", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ens " + r.status); return r.json(); })
       .then(renderEnsemble)
       .catch(function(e){ var el=document.getElementById("hs-ens"); if(el) el.innerHTML='<div class="hs-empty">ensemble 加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fq", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85fr", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
