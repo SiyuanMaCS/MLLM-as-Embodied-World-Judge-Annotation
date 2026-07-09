@@ -2125,7 +2125,11 @@ function renderAlignmentMetricsBlock(m) {
       pa: a.pa_pearson, ia: a.ia_pearson, qwk_pa: a.pa_qwk, qwk_ia: a.ia_qwk,
       exact_pa: a.pa_exact, is_outlier: a.is_outlier === true,
       needs_realignment: a.needs_realignment,
-      is_self: a.is_self === true || a.user === meUser })),
+      is_self: a.is_self === true || a.user === meUser,
+      // v85eq: ghost overlay from Ham's live fields. Rendered only when
+      // live_differs=true. snapshot stays authoritative for gate/retake.
+      pa_live: a.pa_pearson_live, ia_live: a.ia_pearson_live,
+      live_differs: a.live_differs === true })),
     ...models.map(x => ({ kind: "model", label: x.model, n: x.n ?? nItems,
       pa: x.pa_pearson, ia: x.ia_pearson, qwk_pa: x.pa_qwk, qwk_ia: x.ia_qwk,
       exact_pa: x.pa_exact })),
@@ -2134,15 +2138,24 @@ function renderAlignmentMetricsBlock(m) {
   // v85db (siyuan: 某个指标绿色就显示绿色 不要整行 / user 整行就正常颜色 / 不需要红色):
   // per-metric coloring only. Model bars = blue. Annotator bars: green if ≥ threshold,
   // neutral gray if below (no red). Row backgrounds neutralized for USER rows.
-  const bar = (v, threshold, rowKind) => {
+  // v85eq (siyuan): overlay a paler "live" ghost bar when the user has edited
+  // scores after completion; snapshot stays authoritative for gate/retake.
+  const bar = (v, threshold, rowKind, live, showLive) => {
     if (v == null) return `<span class="am-bar am-bar-empty">—</span>`;
     const pct = Math.max(0, Math.min(100, v * 100));
     let cls;
     if (rowKind === "model") cls = "am-bar-model";
     else cls = (v >= threshold) ? "am-bar-pass" : "am-bar-neutral";
+    const showGhost = showLive && typeof live === "number" && Math.abs(live - v) > 1e-4;
+    const livePct = showGhost ? Math.max(0, Math.min(100, live * 100)) : 0;
+    const ghost = showGhost
+      ? `<span class="am-bar-live" style="width:${livePct.toFixed(1)}%"></span>`
+      : "";
+    const liveNum = showGhost ? ` <span class="am-bar-live-num">(${live.toFixed(3)})</span>` : "";
     return `<span class="am-bar ${cls}">
       <span class="am-bar-fill" style="width:${pct.toFixed(1)}%"></span>
-      <span class="am-bar-num">${v.toFixed(3)}</span>
+      ${ghost}
+      <span class="am-bar-num">${v.toFixed(3)}${liveNum}</span>
     </span>`;
   };
   const fmt = v => v == null ? "—" : Number(v).toFixed(3);
@@ -2166,8 +2179,8 @@ function renderAlignmentMetricsBlock(m) {
       <td class="am-rank">${i + 1}</td>
       <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong></td>
       <td class="am-n muted small">${r.n ?? "—"}</td>
-      <td class="am-metric am-pa">${bar(r.pa, consensusPA, r.kind)}</td>
-      <td class="am-metric am-ia">${bar(r.ia, consensusIA, r.kind)}</td>
+      <td class="am-metric am-pa">${bar(r.pa, consensusPA, r.kind, r.pa_live, r.live_differs === true)}</td>
+      <td class="am-metric am-ia">${bar(r.ia, consensusIA, r.kind, r.ia_live, r.live_differs === true)}</td>
       <td class="am-metric muted small qwk-col">${fmt(r.qwk_pa)}</td>
       <td class="am-metric muted small exact-col">${fmt(r.exact_pa)}</td>
     </tr>`;

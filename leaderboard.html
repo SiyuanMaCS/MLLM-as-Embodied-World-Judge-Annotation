@@ -6,7 +6,7 @@
 <title>Leaderboard — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85ep">
+<link rel="stylesheet" href="style.css?v=v85eq">
 <style>
   .lb-section { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
   .lb-section h2 { margin: 0 0 10px; font-size: 15px; letter-spacing: -0.01em; font-weight: 600; color: #0f172a; }
@@ -88,11 +88,11 @@
     </div>
   </section>
 </main>
-<script src="app.js?v=v85ep"></script>
+<script src="app.js?v=v85eq"></script>
 <script>
   async function loadJudge() {
     try {
-      const md = await fetch('bench/leaderboard.md?v=v85ep').then(r => r.text());
+      const md = await fetch('bench/leaderboard.md?v=v85eq').then(r => r.text());
       const rows = md.split('\n')
         .filter(l => l.startsWith('|') && !l.match(/^\|\s*(-|Model|-{2,})/))
         .map(l => l.split('|').map(c => c.trim()).filter(c => c !== ''))
@@ -126,7 +126,7 @@
   }
   async function loadVideogen() {
     try {
-      const data = await fetch('bench/videogen_leaderboard.json?v=v85ep').then(r => r.json());
+      const data = await fetch('bench/videogen_leaderboard.json?v=v85eq').then(r => r.json());
       const sorted = data.slice().sort((a, b) => (b.overall || 0) - (a.overall || 0));
       const tbody = document.getElementById('vg-tbody');
       tbody.innerHTML = sorted.map((m, i) => `
