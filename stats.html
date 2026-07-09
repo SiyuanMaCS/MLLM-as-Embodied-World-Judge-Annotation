@@ -204,106 +204,127 @@
   </nav>
 
   <div class="hs-wrap">
-    <!-- v85fy (siyuan: 按 insight 重要度排序;越重要越靠上,置信度/分布类的往下扔) -->
+    <!-- v85g7 (siyuan academic-chapter rewrite + Ham prose): main analysis
+         reads as a paper Analysis chapter — clean prose findings, no
+         inline detail panels. Detailed panels + reference exhibits live
+         in the Appendix and are cross-referenced as (App. A/B/C/D). -->
 
-    <!-- ═══ TOP-TIER · paper-facing insights ═══ -->
-
-    <!-- v85fy (Alice 连续检验诚实版): PA-complexity is n.s., IA is real -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2>📏 指令复杂度分析 · Instruction complexity</h2>
-        <span class="hs-sub">诚实版 · PA-complexity 效应 n.s. · IA 效应显著</span>
-      </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #ec4899;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **一句话结论**(整体连续检验,n=597):**complexity has no significant effect on PA judging (r = 0.047, p = 0.25); significantly improves IA judging (r = −0.10, p = 0.015)**。<br>
-        翻成人话 —— **judge 判物理一致地弱,不随复杂度变;判指令随复杂度反而好**。PA null 反倒是 judge 局限的更硬证据:能力卡在 0.53,连"哪些任务更难"都区分不出。IA 那条机理清晰(长指令有可核验步骤,短指令近乎二元)。<br>
-        **⚠️ 别把 IA 画成漂亮单调 bin 线**:每 5 词 bin 里 31-35 词那档 Pearson 掉到 0.10(n=16 太小)。整体 r 才可信,bin 是噪声。paper 里就报 r/p,底下 2-tier bar 只当可视化插图。<br>
-        **✅ 排除"是不是生成质量差异导致 judge 差异"的 reviewer 混淆问题**(Alice partial correlation):**控制 gold 后 raw ≈ partial**,IA 效应扛过控制,PA 前后都 n.s.。见下方 Partial-correlation 对比板。<br>
-        **生成侧 finding(独立留)**:难指令生成变差(gold PA 3.20→2.89, IA 3.44→3.01)—— 关于**生成模型**扛不住,不是关于**判分**。
-      </div>
-      <!-- v85g5: partial-correlation visualization (raw vs partial-controlling-gold) -->
-      <div id="hs-icx-partial"><div class="hs-empty" style="font-size:11.5px">partial-correlation 对比加载中…</div></div>
-      <div id="hs-icx"><div class="hs-empty">加载中…</div></div>
-    </section>
-
-    <!-- v85g4 (Alice reviewer-proof reframe): compression IS regression to
-         mean; frame the *consequence* (top-of-ranking resolution loss). -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2>🎚️ Human 真实质量 → Judge 打分 · bias-by-band</h2>
-        <span class="hs-sub">主 headline · 回归导致质量量程压缩 → 顶部打榜失分辨率</span>
-      </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #8b5cf6;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **研究问题**:视频真实质量(人类 gold)高 / 低时,judge 会不会**系统性偏**?<br>
-        **观察(8 条 judge×dim 全中,单调 monotone)**:human=1 时几乎所有 judge 高估(bias > 0);human=5 时几乎所有 judge 低估(bias -1 到 -3.2)。<br>
-        <b>例(PA)</b>:human=1 → human=5 —— flash +0.60 → -1.14 · seed2.1 +1.25 → -1.64 · gpt-5.2 +1.62 → -1.18 · gemini-2.5-pro +0.07 → -3.21<br>
-        **⚠️ 诚实统计**(Alice reviewer-proof):这种"高估最差、低估最好"就是 <b>regression to mean 的定义</b> —— 任何 r<1 预测器都长这样。Alice 实测各 judge 观察 bias 落在自己 regression baseline **±0.15 内**,**没有超出回归的额外 judge 特有缺陷**。**不能声称"judge 特有质量盲"**,那会被审稿人"that's just regression to the mean"秒杀。<br>
-        **正确 framing = 回归的后果(reviewer-proof)**:因为 judge 分数向均值回归,**质量量程被压缩** —— judge 分辨中等质量 OK,但**把两端(尤其顶部 human 4 vs 5)挤到一起,分不开最强的几个生成器**。<br>
-        **主 insight**:**这是顶部打榜失分辨率(K_norm 在强模型间失真)的机制** —— 讲的是回归的**打榜后果**,不是 judge 特有缺陷。paper headline:*"Judge scores regress toward the mean, compressing the quality range so top-ranked generators become indistinguishable — this is the mechanism behind top-of-leaderboard resolution loss."*
-      </div>
-      <div id="hs-cal"><div class="hs-empty">加载中…</div></div>
-    </section>
-
-    <!-- v85fb: Per-embodiment breakdown -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2>🏷️ 各 embodiment 类别 · Per-embodiment breakdown</h2>
-        <span class="hs-sub">生成质量在 embodiment 上真有差异 · 判分能力无 robust 差异</span>
-      </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #10b981;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **定义**:按末端执行器(人手 / 灵巧手 / 夹爪)分组,同时报**生成质量**(人类 gold 均分)和 **judge 准确度**(PA Pearson)。<br>
-        **主结论(硬)**:AI 生成**人手视频物理最真**(gold 3.39 vs 机器人 ≈2.95),灵巧手最难生成(gold 2.93)—— 生成质量在 embodiment 上有真实差异。<br>
-        **⚠️ 判分准确度差异不 robust**:Pearson 排序(gripper 0.55 > 灵巧 0.51 > 人手 0.49)和 MAE 排序(人手 0.97 > 灵巧 1.04 ≈ gripper 1.03)**方向不一致** → 多半是噪声。诚实结论 = "**judge accuracy is comparable across embodiments**"。<br>
-        **答"是否生成质量差异导致 judge 差异"reviewer 问**:判分准确度**本身就无 robust 差异,所以无混淆可担心** —— embodiment 之间真差的只是**生成质量**(人手最真),那是关于**生成**不是关于**判分**。<br>
-        **排除分数影响**:各组 gold σ 几乎相等(**PA σ 1.23-1.26**),无方差混淆 → 生成质量差异是**真的**,不是分数压缩 artifact。
-      </div>
-      <!-- v85g5 (Alice: 直观展示 "生成质量差 · MAE 齐平" = no confound) -->
-      <div id="hs-emb-confound"><div class="hs-empty" style="font-size:11.5px">质量 vs judge 误差 对比加载中…</div></div>
-      <div id="hs-emb-quality"><div class="hs-empty" style="font-size:12px">生成质量加载中…</div></div>
-      <div id="hs-emb"><div class="hs-empty">judge 准确度加载中…</div></div>
-    </section>
-
-    <!-- v85g2 (siyuan: 混淆矩阵 provides no insight): moved to Appendix as raw
-         visualization. Insight (偏松/偏严/方差塌缩 dir_bias) can be summarized
-         in a one-line paragraph elsewhere. Kept as reference exhibit only. -->
-
-    <!-- ═══ APPENDIX · 补充分析 · not paper-facing ═══ -->
-    <div style="margin:36px 0 14px;padding:8px 12px;border-top:1px dashed #cbd5e1;color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:.8px">
-      📎 以下为补充分析 · Appendix
-      <span style="text-transform:none;color:#cbd5e1;font-size:11px;letter-spacing:0;margin-left:6px">技术性置信区间 · 标注员分布 · 供 sanity check</span>
+    <div style="font-size:12.5px;color:#0f172a;padding:14px 16px;margin-bottom:18px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;line-height:1.65">
+      <div style="font-weight:700;margin-bottom:4px">Analysis — What the Benchmark Reveals About MLLM Judges</div>
+      <div style="font-size:11.5px;color:#64748b">Four main findings on judge behavior in physical-adherence (PA) and instruction-alignment (IA) evaluation over 875 in-domain items. Detailed panels, confound controls, and reference exhibits are collected in the Appendix and cross-referenced as <b>(App. A/B/C/D)</b>.</div>
     </div>
 
-    <!-- Bootstrap CI whiskers -->
+    <!-- ═══ § 1  PA is uniformly weak ═══ -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2>📏 Bootstrap 95% CI · Pearson 置信区间</h2>
-        <span class="hs-sub">技术性检验 · 分数到底稳不稳</span>
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 1</span>Judges are uniformly weak at physical adherence</h2>
+        <span class="hs-sub">PA capped at r ≈ 0.53 · complexity-null</span>
       </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #64748b;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **定义**:每个 Pearson 是单一 875 样本的点估计;对 875 条**有放回重采样 1000 次**,估计该分数在"换一批视频"下会抖多少 → 95% CI。<br>
-        **Note**:PA 头部(flash 0.53 / seed2.1 0.50 / seed2.0 0.49)CI 相互重叠 → PA 榜没有唯一冠军、只有同梯队;IA 才有真分离(gpt5.5 0.61 甩开 flash)。也是我们剔除 <15% 覆盖 judge 的依据(CI 宽达 ±0.15)。
+      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
+        PA agreement with humans caps at Pearson ≈ 0.53 and, unlike instruction alignment, does not track task difficulty — a continuous complexity regression is null (r = 0.047, p = 0.25). The judge cannot even resolve <em>which</em> tasks are physically harder to assess. (Fig. <b>App. C.i</b>; confusion patterns in <b>App. A</b>.)
       </div>
-      <div id="hs-ci"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- v85g2: Confusion matrix demoted to appendix (siyuan: 没 insight,
-         raw visualization). Kept as reference exhibit for reviewer
-         curiosity, no headline claim. -->
+    <!-- ═══ § 2  IA improves with complexity ═══ -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2>🎯 Judge 5×5 混淆矩阵 · reference exhibit</h2>
-        <span class="hs-sub">纯可视化 · 各家 judge 的偏置指纹</span>
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 2</span>Instruction alignment improves with complexity</h2>
+        <span class="hs-sub">IA up to 0.61 · r = −0.10, p = 0.015</span>
       </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #f59e0b;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **说明**:行 = judge 预测,列 = 人类真值;对角线绿框 = 判对。**这张卡是可视化参考,不产生独立 insight** —— 主要观察(qwen32b 偏松 +1.31 · gemini-2.5-pro 方差塌缩 80% 打 1)一行文字就说完。放这里只是给 reviewer 一张具体图对照。
+      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
+        IA agreement is higher (up to 0.61) and rises with instruction complexity (r = −0.10, p = 0.015). The effect survives control for generation quality (partial r = −0.098 vs raw r = −0.099), so it reflects the instruction itself — longer instructions carry explicit, checkable sub-steps — not a quality confound. (Fig. <b>App. C.i</b>.)
+      </div>
+    </section>
+
+    <!-- ═══ § 3  Regression compresses the top of the leaderboard ═══ -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 3</span>Judge scores regress to the mean, compressing the top of the leaderboard</h2>
+        <span class="hs-sub">top-of-leaderboard resolution loss · not a judge-specific defect</span>
+      </div>
+      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
+        With judge–human correlation below 1, scores show central-tendency regression: best clips are under-scored, worst clips are over-scored. Bias(judge − human) decreases monotonically with human gold across all 8 judge × dimension pairs; on PA, flash goes from +0.60 at human = 1 to −1.14 at human = 5; gemini-2.5-pro from +0.07 to −3.21.<br><br>
+        We confirm this <em>is</em> regression to the mean, not a judge-specific defect — every judge's per-quality bias lies within ±0.15 of its own regression baseline E[J|H] = μ<sub>J</sub> + r · (σ<sub>J</sub>/σ<sub>H</sub>)(H − μ<sub>H</sub>). The benchmark-relevant consequence: the quality range is compressed, strong generators (human 4 vs 5) are squeezed together, and the judge loses ranking resolution exactly at the top — reflected in the normalized Kendall distance (K_norm) inflating among the strongest models on the leaderboard.
+      </div>
+      <div id="hs-cal" style="margin-top:6px"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- ═══ § 4  Judge accuracy is invariant to embodiment ═══ -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 4</span>Judge accuracy is invariant to embodiment</h2>
+        <span class="hs-sub">generation quality varies · judge error flat</span>
+      </div>
+      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
+        Generation quality differs sharply by embodiment (human-hand highest, gold PA 3.38 vs ~2.95), yet the judge's absolute error is flat (MAE ≈ 0.93 – 1.05) both raw and after reweighting each embodiment to a common quality mix. Per-embodiment correlation gaps are thus a confound of the true-score distribution, not judge competence — the judge favors no embodiment. (Fig. <b>App. C.ii</b>.)
+      </div>
+    </section>
+
+    <!-- Baselines footnote -->
+    <div style="font-size:12px;color:#64748b;padding:10px 14px;margin:8px 0 6px;background:#f8fafc;border-left:3px solid #64748b;border-radius:4px;line-height:1.6">
+      <b>Baselines.</b> Mode-baseline exact PA = 0.281 / IA = 0.278; human IAA (n = 10) PA Pearson 0.336 / IA 0.354 — the noise floor every judge is measured against.
+    </div>
+
+    <!-- ═══ APPENDIX ═══ -->
+    <div style="margin:44px 0 18px;padding:12px 14px;border-top:1px dashed #cbd5e1;color:#0f172a;font-size:14px;font-weight:600;letter-spacing:.02em">
+      Appendix — Supporting figures &amp; confound controls
+      <div style="font-size:11.5px;color:#94a3b8;font-weight:400;margin-top:4px;letter-spacing:0">Referenced from §§ 1–4 above.</div>
+    </div>
+
+    <!-- A. Confusion matrices — variance collapse reference -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">A</span>Judge 5 × 5 confusion matrices</h2>
+        <span class="hs-sub">reference exhibit for the variance collapse in § 3</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
+        Rows = judge prediction, columns = human gold, diagonal ring = correct call. Reference exhibit for reviewers: qwen32b is systematically lenient (dir_bias +1.31), gemini-2.5-pro collapses ~80% of predictions to the lowest bucket (variance collapse — a static view of the § 3 compression story). Does not carry a headline claim.
       </div>
       <div id="hs-cm"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- Score distribution — annotator baseline sanity -->
+    <!-- B. Bootstrap CIs -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2>📈 打分分布</h2><span class="hs-sub">标注员 sanity check · 全员 vs 自己</span>
+        <h2><span style="color:#94a3b8;margin-right:6px">B</span>Bootstrap 95% confidence intervals · per-judge Pearson</h2>
+        <span class="hs-sub">which judge gaps are significant</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
+        Bootstrap resampling of 875 items × 1000 replicates per judge. CIs among the top PA judges (flash / seed2.1 / seed2.0) overlap, so the PA leaderboard has no unique winner. IA shows a real separation. Also justifies the &lt;15% -coverage cutoff for the leaderboard (CIs widen to ±0.15 below that threshold).
+      </div>
+      <div id="hs-ci"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- C. Quality-confound controls -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">C</span>Quality-confound controls</h2>
+        <span class="hs-sub">supporting §§ 2 &amp; 4</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
+        <b>C.i · Partial-correlation panel (supporting § 2).</b> Partial correlation of (word count, flash judge |error|) with gold score partialed out. If the effect survives the control (partial r ≈ raw r), the finding reflects instruction complexity itself; if it collapses, the raw effect was driven by the correlated video-quality difference.
+      </div>
+      <div id="hs-icx-partial"><div class="hs-empty" style="font-size:11.5px">加载中…</div></div>
+      <div style="font-size:12.5px;color:#334155;padding:14px 4px 6px;line-height:1.6;margin-top:12px;border-top:1px dashed #e2e8f0">
+        <b>C.ii · Generation quality vs judge error (supporting § 4).</b> For each embodiment we contrast generation quality (gold PA, green) against judge error (flash MAE, blue). If judge error tracked generation quality, blue would follow green; instead blue is flat while green varies — refuting the "your embodiment-level judge differences are just quality confound" objection.
+      </div>
+      <div id="hs-emb-confound"><div class="hs-empty" style="font-size:11.5px">加载中…</div></div>
+      <div style="font-size:12.5px;color:#334155;padding:14px 4px 6px;line-height:1.6;margin-top:12px;border-top:1px dashed #e2e8f0">
+        <b>C.iii · Complexity 2-tier illustration + per-5-word bins (supporting § 2).</b> A 2-tier bar (≤ 20 vs &gt; 20 words) for readability, and Alice's per-5-word bin decomposition (careful: the 31–35-word bin has n = 16 and is noise — the overall continuous r/p is the trustworthy estimator; data at <code>bench/instruction_complexity_continuous.json</code>).
+      </div>
+      <div id="hs-icx"><div class="hs-empty">加载中…</div></div>
+      <div style="font-size:12.5px;color:#334155;padding:14px 4px 6px;line-height:1.6;margin-top:12px;border-top:1px dashed #e2e8f0">
+        <b>C.iv · Per-embodiment generation-quality strip + judge accuracy heatmap (supporting § 4).</b> Gold PA/IA per embodiment (top strip) and PA-Pearson heatmap over judges × embodiments (bottom).
+      </div>
+      <div id="hs-emb-quality"><div class="hs-empty" style="font-size:12px">加载中…</div></div>
+      <div id="hs-emb"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- D. Score distributions -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">D</span>Annotator score distributions</h2>
+        <span class="hs-sub">全员 vs 自己 · sanity check</span>
       </div>
       <div class="hs-legend">
         <span><i class="hs-sw-all"></i>全员</span>
@@ -1397,40 +1418,40 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85g5", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85g6", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85g5", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85g6", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85g5", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85g6", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85g5", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85g6", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v85g5", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v85g6", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v85g5", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v85g6", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v85g5", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85g6", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -1441,8 +1462,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85g5", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85g5", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85g6", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85g6", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -1453,11 +1474,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v85g5", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v85g6", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v85g5", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85g6", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -1466,11 +1487,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85g5", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85g6", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85g5", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85g6", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
