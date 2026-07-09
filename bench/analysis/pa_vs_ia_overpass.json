@@ -1,0 +1,28 @@
+{
+ "pa": {
+  "n_violations_human": 296,
+  "confident_overpass_ge3of5": 22,
+  "confident_overpass_all5": 1,
+  "pct_ge3of5": 0.074
+ },
+ "ia": {
+  "n_violations_human": 278,
+  "confident_overpass_ge3of5": 22,
+  "confident_overpass_all5": 5,
+  "pct_ge3of5": 0.079
+ },
+ "_meta": {
+  "judges": [
+   "gpt-5.2",
+   "gpt5.5",
+   "gemini-2.5-pro",
+   "seed2.0_pro",
+   "seed2.1_lite"
+  ],
+  "n_judges": 5,
+  "violation_def": "human gold dim <= 2",
+  "overpass_def": "judge dim score >= 4 (confident pass)",
+  "cluster": "per-item, all-5-covered"
+ },
+ "conclusion": "confident over-pass is dimension-general (PA 7.4% approx IA 7.9%); NOT instruction-driven \u2014 PA judging is instruction-independent yet shows the same rate"
+}
