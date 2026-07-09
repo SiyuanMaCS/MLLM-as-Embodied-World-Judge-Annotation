@@ -89,7 +89,26 @@
 .hs-subs b{ color:#3a4150; font-weight:700; }
 .hs-scale{ display:flex; justify-content:space-between; font-size:10px; color:#c0c5d0; margin-top:8px; padding-top:4px; }
 .hs-empty{ color:var(--muted,#999); font-size:13px; padding:8px 0; }
-@media(max-width:640px){ .hs-bar,.hs-bar.self{ width:24px; } .hs-stats{ margin-left:0; } }
+
+/* v85ey: judge confusion matrices */
+.hs-cm-judge{ margin-bottom:22px; }
+.hs-cm-judge-name{ font-weight:600; font-size:14px; color:#0f172a; margin-bottom:8px; }
+.hs-cm-pair{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.hs-cm-box{ background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; }
+.hs-cm-title{ font-size:12px; color:#334155; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.hs-cm-flag{ font-size:10px; padding:1px 6px; border-radius:4px; font-weight:600; }
+.hs-cm-flag.err{ background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; }
+.hs-cm-grid{ display:grid; grid-template-columns:22px repeat(5, 1fr); gap:2px; font-variant-numeric:tabular-nums; }
+.hs-cm-corner{}
+.hs-cm-hdr{ font-size:10px; color:#94a3b8; text-align:center; padding:2px 0; }
+.hs-cm-hdr.side{ text-align:right; padding:0 4px 0 0; align-self:center; }
+.hs-cm-cell{ aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; font-size:10.5px; color:#0f172a; border-radius:3px; background:rgba(37,99,235,0); }
+.hs-cm-cell.diag{ box-shadow: inset 0 0 0 1.5px #10b981; }
+.hs-cm-cell:empty{ background:transparent; }
+.hs-cm-foot{ display:flex; gap:12px; flex-wrap:wrap; margin-top:8px; font-size:10.5px; color:#64748b; }
+.hs-cm-foot b{ color:#0f172a; font-weight:600; }
+
+@media(max-width:640px){ .hs-bar,.hs-bar.self{ width:24px; } .hs-stats{ margin-left:0; } .hs-cm-pair{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -120,6 +139,15 @@
       </div>
       <div id="hs-corr"></div>
       <div id="hs-dist"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- Judge confusion matrices (v85ey · Ham data) -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>🎯 Judge 5×5 混淆矩阵</h2>
+        <span class="hs-sub">行 = judge 预测 · 列 = 人类 gold · 对角线 = 判对</span>
+      </div>
+      <div id="hs-cm"><div class="hs-empty">加载中…</div></div>
     </section>
 
     <section id="hs-err" class="hs-card" style="display:none;border-color:#f2c0c8;background:#fdf3f5">
@@ -285,6 +313,63 @@
   // v85ex: Model 均分榜 removed from stats — /leaderboard.html is the
   // canonical judge + video-gen ranking surface now.
 
+  // v85ey: judge 5×5 confusion matrices (Ham data). Renders one heat-cell
+  // grid per (judge × dim), diagonal ringed, var-collapse flagged red.
+  function renderCM(payload){
+    var host = document.getElementById("hs-cm");
+    if(!payload || !Object.keys(payload).length){
+      host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return;
+    }
+    // Group by judge — 2 columns per judge (PA / IA), stacked
+    var byJudge = {};
+    Object.keys(payload).forEach(function(key){
+      var parts = key.split("::");
+      var j = parts[0], dim = parts[1];
+      if(!byJudge[j]) byJudge[j] = {};
+      byJudge[j][dim] = payload[key];
+    });
+    var dimLabel = { physical_adherence: "PA", instruction_alignment: "IA" };
+    var html = "";
+    Object.keys(byJudge).forEach(function(j){
+      html += '<div class="hs-cm-judge"><div class="hs-cm-judge-name">' + esc(j) + '</div><div class="hs-cm-pair">';
+      ["physical_adherence","instruction_alignment"].forEach(function(dim){
+        var d = byJudge[j][dim]; if(!d) return;
+        var maxCount = 0;
+        d.matrix.forEach(function(row){ row.forEach(function(v){ if(v>maxCount) maxCount=v; }); });
+        var flag = d.var_collapse
+          ? '<span class="hs-cm-flag err">方差塌缩 · Pearson 不可信</span>' : '';
+        var bias = d.dir_bias>0 ? '偏松 +' + d.dir_bias.toFixed(2)
+                  : '偏严 ' + d.dir_bias.toFixed(2);
+        html += '<div class="hs-cm-box"><div class="hs-cm-title">' + dimLabel[dim] + ' · n=' + d.n + flag + '</div>';
+        html += '<div class="hs-cm-grid">';
+        // headers row
+        html += '<div class="hs-cm-corner"></div>';
+        for(var g=1; g<=5; g++) html += '<div class="hs-cm-hdr">' + g + '</div>';
+        // rows: judge prediction 1..5 (label on left)
+        for(var p=0; p<5; p++){
+          html += '<div class="hs-cm-hdr side">' + (p+1) + '</div>';
+          for(var g2=0; g2<5; g2++){
+            var v = d.matrix[p][g2];
+            var t = maxCount ? v/maxCount : 0;
+            var isDiag = (p === g2);
+            html += '<div class="hs-cm-cell' + (isDiag ? ' diag' : '') + '" '
+                 + 'style="background:rgba(37,99,235,' + t.toFixed(3) + ')" title="pred=' + (p+1) + ' gold=' + (g2+1) + ' · n=' + v + '">'
+                 + (v>0 ? v : '') + '</div>';
+          }
+        }
+        html += '</div>';
+        html += '<div class="hs-cm-foot">'
+             + '<span>exact <b>' + d.exact.toFixed(3) + '</b></span>'
+             + '<span>±1 <b>' + d.within1.toFixed(3) + '</b></span>'
+             + '<span>' + bias + '</span>'
+             + '<span>std ' + d.pred_std.toFixed(2) + '</span></div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    });
+    host.innerHTML = html;
+  }
+
   function showErr(msg){
     var e=document.getElementById("hs-err"); e.style.display="block";
     document.getElementById("hs-err-msg").textContent=msg;
@@ -299,6 +384,12 @@
     if(!API){ showErr("后端地址未配置"); return; }
     jget("score_distribution","&user="+encodeURIComponent(USER)).then(renderDist)
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
+    // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
+    // will move to HF once Alice extends the sync whitelist to bench/analysis/).
+    fetch("bench/confusion_results.json?v=v85ey", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
+      .then(renderCM)
+      .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
   }
   if(document.readyState!=="loading") load(); else document.addEventListener("DOMContentLoaded", load);
   setInterval(load, 60000);
