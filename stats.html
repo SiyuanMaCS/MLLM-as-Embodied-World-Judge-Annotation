@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stats — Embodied World Judge</title>
+<title>Analysis — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="style.css?v=v85cd">
@@ -192,7 +192,7 @@
 <body>
 <main>
   <header class="bar">
-    <h1 data-i18n="page.stats">📊 Stats</h1>
+    <h1 data-i18n="page.stats">📊 分析 · Analysis</h1>
     <div class="user-chip">
       <span class="lb-countdown" id="lb-countdown" hidden></span>
       <span id="who">—</span> <span class="role-pill" id="role">—</span>
@@ -252,19 +252,9 @@
       <div id="hs-emb"><div class="hs-empty">judge 准确度加载中…</div></div>
     </section>
 
-    <!-- v85fs: Fair Common Set gap matrix (Alice's fill list) -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2>🎯 公平公共集补跑清单 · Fair Common Set (n=32)</h2>
-        <span class="hs-sub">同一批 prompt 全部 10 个模型都跑 → 排名无 prompt 池混淆</span>
-      </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #f59e0b;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **问题**:875 test set 里 0 个 tasks 被全 10 模型都跑过 → 现在的模型排名混淆了 prompt 池差异,审稿人会问"你怎么保证 flash 排 kling 是同题目"。<br>
-        **方案**:选 32 个 ≥3-模型覆盖的种子任务 → 320 格子 · 已有 103 · **补 217 个新生成** → 得到一个所有模型都跑过同一批 prompt 的"公平公共集"。<br>
-        **执行**:绿格 = 已有生成 · 琥珀格 = 需补生成。列头 hover 看每模型总补量。paper 里报"controlled fair-comparison subset (n=32)"防守 reviewer。
-      </div>
-      <div id="hs-fcs"><div class="hs-empty">加载中…</div></div>
-    </section>
+    <!-- v85fu (siyuan): Fair Common Set card removed from analysis page —
+         it's an operational planning artifact, not analysis. Data stays
+         in bench/fair_common_set_*.json for internal use. -->
 
     <!-- v85fs: Instruction complexity tercile analysis -->
     <section class="hs-card">
@@ -1098,35 +1088,35 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85ft", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fu", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85ft", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85fu", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85ft", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85fu", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85ft", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85fu", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85fj: calibration reliability curves.
-    fetch("bench/calibration.json?v=v85ft", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85fu", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(renderCalibration)
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
     // v85fm: judge ensemble baseline-vs-mean + gains curve.
-    fetch("bench/ensemble_judge.json?v=v85ft", {cache:"no-store"})
+    fetch("bench/ensemble_judge.json?v=v85fu", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ens " + r.status); return r.json(); })
       .then(renderEnsemble)
       .catch(function(e){ var el=document.getElementById("hs-ens"); if(el) el.innerHTML='<div class="hs-empty">ensemble 加载失败</div>'; });
@@ -1134,8 +1124,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85ft", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85ft", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85fu", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85fu", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -1143,11 +1133,11 @@
       var el=document.getElementById("hs-fcs"); if(el) el.innerHTML='<div class="hs-empty">Fair-common-set 加载失败</div>';
     });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85ft", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85fu", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(renderInstructionComplexity)
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85ft", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85fu", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
