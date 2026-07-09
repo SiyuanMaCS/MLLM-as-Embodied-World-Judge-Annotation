@@ -6,7 +6,7 @@
 <title>Leaderboard — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85fp">
+<link rel="stylesheet" href="style.css?v=v85fq">
 <style>
   .lb-section { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
   .lb-section h2 { margin: 0 0 10px; font-size: 15px; letter-spacing: -0.01em; font-weight: 600; color: #0f172a; }
@@ -98,7 +98,7 @@
     </div>
   </section>
 </main>
-<script src="app.js?v=v85fp"></script>
+<script src="app.js?v=v85fq"></script>
 <script>
   async function loadJudge() {
     try {
@@ -106,7 +106,7 @@
       // for public visitors. Route the primary fetch through the HF mirror
       // instead — HF is public, GHA sync keeps it byte-identical with GitHub.
       const primary = 'https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main/bench/results/leaderboard.md';
-      const fallback = 'bench/leaderboard.md?v=v85fp';
+      const fallback = 'bench/leaderboard.md?v=v85fq';
       let md;
       try { md = await fetch(primary).then(r => { if (!r.ok) throw new Error('primary ' + r.status); return r.text(); }); }
       catch (_) { md = await fetch(fallback).then(r => r.text()); }
@@ -168,7 +168,7 @@
       // the HF mirror instead of raw.githubusercontent (which 404s for a
       // private source). Client merge regex is still an idempotent safety net.
       const vgPrimary = 'https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main/bench/videogen_leaderboard.json';
-      const vgFallback = 'bench/videogen_leaderboard.json?v=v85fp';
+      const vgFallback = 'bench/videogen_leaderboard.json?v=v85fq';
       let data;
       try { data = await fetch(vgPrimary).then(r => { if (!r.ok) throw new Error('primary ' + r.status); return r.json(); }); }
       catch (_) { data = await fetch(vgFallback).then(r => r.json()); }
@@ -204,20 +204,24 @@
       document.getElementById('vg-loading').textContent = e.message;
     }
   }
-  // v85ez: provider logo per model name. SimpleIcons CDN — tiny brand SVGs
-  // served with permissive CORS. Unknown providers → no logo (empty string).
+  // v85fq: provider logo per model name. Two CDNs — cdn.simpleicons.org is
+  // trimmed (dropped `openai`) so use jsdelivr's simple-icons package for
+  // full coverage. Qwen slug exists in SimpleIcons so use it directly instead
+  // of falling back to `alibabacloud`.
   function logoFor(name) {
     const n = String(name || '').toLowerCase();
     let slug = '';
     if (/^gemini/.test(n)) slug = 'googlegemini';
     else if (/^gpt|^o[0-9]|^chatgpt/.test(n)) slug = 'openai';
     else if (/^claude/.test(n)) slug = 'anthropic';
-    else if (/^qwen/.test(n)) slug = 'alibabacloud';
+    else if (/^qwen/.test(n)) slug = 'qwen';
     else if (/^seed|^doubao|^bytedance/.test(n)) slug = 'bytedance';
     else if (/^llama|^meta/.test(n)) slug = 'meta';
     else if (/^grok|^xai/.test(n)) slug = 'x';
     if (!slug) return '';
-    return `<img class="lb-logo" src="https://cdn.simpleicons.org/${slug}" alt="">`;
+    // jsdelivr serves the full simple-icons set including `openai` which
+    // cdn.simpleicons.org 404s on.
+    return `<img class="lb-logo" src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/${slug}.svg" alt="">`;
   }
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
   loadJudge();
