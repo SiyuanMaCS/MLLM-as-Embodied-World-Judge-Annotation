@@ -211,35 +211,38 @@
 
     <div style="font-size:12.5px;color:#0f172a;padding:14px 16px;margin-bottom:18px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;line-height:1.65">
       <div style="font-weight:700;margin-bottom:4px">Analysis — What the Benchmark Reveals About MLLM Judges</div>
-      <div style="font-size:11.5px;color:#64748b">Four main findings on judge behavior in physical-adherence (PA) and instruction-alignment (IA) evaluation over 875 in-domain items. Detailed panels, confound controls, and reference exhibits are collected in the Appendix and cross-referenced as <b>(App. A/B/C/D)</b>.</div>
+      <div style="font-size:11.5px;color:#64748b">Findings on judge behavior in physical-adherence (PA) and instruction-alignment (IA) evaluation over 875 in-domain items. Statistical control panels and reference exhibits are collected in the Appendix and cross-referenced as <b>(App. A/B/C/D)</b>.</div>
     </div>
 
-    <!-- ═══ § 1  PA is uniformly weak ═══ -->
+    <!-- ═══ Table 1 — judge leaderboard anchor (siyuan: 引用这个表) ═══ -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2><span style="color:#94a3b8;margin-right:6px">§ 1</span>Judges are uniformly weak at physical adherence</h2>
-        <span class="hs-sub">PA capped at r ≈ 0.53 · complexity-null</span>
+        <h2><span style="color:#94a3b8;margin-right:6px">Table 1</span>Judge agreement with human gold · 875 in-domain items</h2>
+        <span class="hs-sub">anchor for §§ 1–3 · full leaderboard at <a href="leaderboard.html" style="color:#2563eb">/leaderboard</a></span>
       </div>
-      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
-        PA agreement with humans caps at Pearson ≈ 0.53 and, unlike instruction alignment, does not track task difficulty — a continuous complexity regression is null (r = 0.047, p = 0.25). The judge cannot even resolve <em>which</em> tasks are physically harder to assess. (Fig. <b>App. C.i</b>; confusion patterns in <b>App. A</b>.)
+      <div style="font-size:12.5px;color:#64748b;padding:2px 4px 8px;line-height:1.55">
+        Referenced from § 1 (PA-Pearson column · flash 0.530 cap), § 2 (PA·K_norm inflates among the strongest models = top-of-leaderboard resolution loss), and § 3 (IA-Pearson column · gpt5.5 0.610). 10 judges shown; &lt; 15% -coverage judges hidden per bootstrap-CI cutoff (see App. B).
       </div>
+      <div id="hs-table1"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- ═══ § 2  IA improves with complexity ═══ -->
+    <!-- ═══ § 1  Instruction complexity (full analysis + main viz) ═══ -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2><span style="color:#94a3b8;margin-right:6px">§ 2</span>Instruction alignment improves with complexity</h2>
-        <span class="hs-sub">IA up to 0.61 · r = −0.10, p = 0.015</span>
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 1</span>Instruction complexity</h2>
+        <span class="hs-sub">PA effect null · IA effect significant</span>
       </div>
       <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
-        IA agreement is higher (up to 0.61) and rises with instruction complexity (r = −0.10, p = 0.015). The effect survives control for generation quality (partial r = −0.098 vs raw r = −0.099), so it reflects the instruction itself — longer instructions carry explicit, checkable sub-steps — not a quality confound. (Fig. <b>App. C.i</b>.)
+        Instruction complexity (English word count, n = 597) has <b>no significant effect on PA judging</b> (r = 0.047, p = 0.25) but <b>significantly improves IA judging</b> (r = −0.10, p = 0.015). Judges are uniformly weak at physics regardless of task complexity — they cannot even resolve which tasks are physically harder to assess. Instruction alignment behaves oppositely: longer prompts carry explicit, checkable sub-steps and are easier to score.<br><br>
+        The IA effect survives control for generation quality (partial r = −0.098 vs raw r = −0.099) and therefore reflects the instruction itself, not the correlated video-quality difference. Partial-correlation detail in <b>App. C.i</b>.
       </div>
+      <div id="hs-icx" style="margin-top:6px"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- ═══ § 3  Regression compresses the top of the leaderboard ═══ -->
+    <!-- ═══ § 2  Regression compresses the top of the leaderboard ═══ -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2><span style="color:#94a3b8;margin-right:6px">§ 3</span>Judge scores regress to the mean, compressing the top of the leaderboard</h2>
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 2</span>Judge scores regress to the mean, compressing the top of the leaderboard</h2>
         <span class="hs-sub">top-of-leaderboard resolution loss · not a judge-specific defect</span>
       </div>
       <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
@@ -249,15 +252,19 @@
       <div id="hs-cal" style="margin-top:6px"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- ═══ § 4  Judge accuracy is invariant to embodiment ═══ -->
+    <!-- ═══ § 3  Per-embodiment (analysis + main viz + quality-vs-error confound) ═══ -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2><span style="color:#94a3b8;margin-right:6px">§ 4</span>Judge accuracy is invariant to embodiment</h2>
-        <span class="hs-sub">generation quality varies · judge error flat</span>
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 3</span>Per-embodiment breakdown</h2>
+        <span class="hs-sub">generation quality varies · judge accuracy comparable</span>
       </div>
       <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
-        Generation quality differs sharply by embodiment (human-hand highest, gold PA 3.38 vs ~2.95), yet the judge's absolute error is flat (MAE ≈ 0.93 – 1.05) both raw and after reweighting each embodiment to a common quality mix. Per-embodiment correlation gaps are thus a confound of the true-score distribution, not judge competence — the judge favors no embodiment. (Fig. <b>App. C.ii</b>.)
+        Generation quality varies sharply across end-effector categories: human hand 3.38 &gt; gripper 2.98 &gt; dexterous hand 2.93 (gold PA). AI-generated human-hand videos are the most physically realistic; dexterous-hand videos remain the hardest to generate.<br><br>
+        Judge accuracy, however, shows no robust cross-embodiment pattern — Pearson orders (gripper 0.55 &gt; dexterous 0.51 &gt; human 0.49) and MAE orders (human 0.93 ≈ gripper 1.05 ≈ dexterous 1.04) disagree on which category is best-judged. We report the honest conclusion that <b>judge accuracy is comparable across embodiments</b>. The generation-quality-vs-judge-error contrast below makes this direct: green (generation quality) varies clearly while blue (judge MAE) is flat, so the residual per-embodiment differences are a confound of the true-score distribution, not judge competence. Statistical partial-correlation control in <b>App. C</b>.
       </div>
+      <div id="hs-emb-confound" style="margin-top:6px"><div class="hs-empty" style="font-size:11.5px">生成质量 vs Judge 误差 对比加载中…</div></div>
+      <div id="hs-emb-quality"><div class="hs-empty" style="font-size:12px">generation-quality strip 加载中…</div></div>
+      <div id="hs-emb"><div class="hs-empty">judge accuracy heatmap 加载中…</div></div>
     </section>
 
     <!-- Baselines footnote -->
@@ -295,29 +302,29 @@
       <div id="hs-ci"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- C. Quality-confound controls -->
+    <!-- C. Partial-correlation control — the ONE reviewer-defense panel
+         siyuan moved to Appendix. The other visualizations stay in main §§. -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2><span style="color:#94a3b8;margin-right:6px">C</span>Quality-confound controls</h2>
-        <span class="hs-sub">supporting §§ 2 &amp; 4</span>
+        <h2><span style="color:#94a3b8;margin-right:6px">C</span>Partial-correlation control · Instruction complexity vs judge error</h2>
+        <span class="hs-sub">supporting § 1 · reviewer-defense statistical panel</span>
       </div>
       <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
-        <b>C.i · Partial-correlation panel (supporting § 2).</b> Partial correlation of (word count, flash judge |error|) with gold score partialed out. If the effect survives the control (partial r ≈ raw r), the finding reflects instruction complexity itself; if it collapses, the raw effect was driven by the correlated video-quality difference.
+        Partial correlation of (word count, flash judge |error|) with gold score partialed out. If the effect survives the control (partial r ≈ raw r), the finding reflects instruction complexity itself; if it collapses, the raw effect was driven by the correlated video-quality difference. In practice IA's partial (−0.098) ≈ raw (−0.099), so the IA effect is not a quality confound.
       </div>
       <div id="hs-icx-partial"><div class="hs-empty" style="font-size:11.5px">加载中…</div></div>
-      <div style="font-size:12.5px;color:#334155;padding:14px 4px 6px;line-height:1.6;margin-top:12px;border-top:1px dashed #e2e8f0">
-        <b>C.ii · Generation quality vs judge error (supporting § 4).</b> For each embodiment we contrast generation quality (gold PA, green) against judge error (flash MAE, blue). If judge error tracked generation quality, blue would follow green; instead blue is flat while green varies — refuting the "your embodiment-level judge differences are just quality confound" objection.
+    </section>
+
+    <!-- E. Video-gen leaderboard (siyuan: appendix — not prompt-controlled) -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">E</span>Video-generation model ranking</h2>
+        <span class="hs-sub">not prompt-controlled · appendix per § 3 caveat</span>
       </div>
-      <div id="hs-emb-confound"><div class="hs-empty" style="font-size:11.5px">加载中…</div></div>
-      <div style="font-size:12.5px;color:#334155;padding:14px 4px 6px;line-height:1.6;margin-top:12px;border-top:1px dashed #e2e8f0">
-        <b>C.iii · Complexity 2-tier illustration + per-5-word bins (supporting § 2).</b> A 2-tier bar (≤ 20 vs &gt; 20 words) for readability, and Alice's per-5-word bin decomposition (careful: the 31–35-word bin has n = 16 and is noise — the overall continuous r/p is the trustworthy estimator; data at <code>bench/instruction_complexity_continuous.json</code>).
+      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
+        <b>Caveat.</b> The current video-generation ranking is <em>not</em> prompt-controlled — each model was scored on a different subset of prompts drawn from the 875-item pool. A prompt-controlled fair comparison on the common-set (50 tasks × identical prompts × all models) is forthcoming and will replace this table once complete. In the meantime the ranking below serves as a reference exhibit only; do not read fine differences as model quality.
       </div>
-      <div id="hs-icx"><div class="hs-empty">加载中…</div></div>
-      <div style="font-size:12.5px;color:#334155;padding:14px 4px 6px;line-height:1.6;margin-top:12px;border-top:1px dashed #e2e8f0">
-        <b>C.iv · Per-embodiment generation-quality strip + judge accuracy heatmap (supporting § 4).</b> Gold PA/IA per embodiment (top strip) and PA-Pearson heatmap over judges × embodiments (bottom).
-      </div>
-      <div id="hs-emb-quality"><div class="hs-empty" style="font-size:12px">加载中…</div></div>
-      <div id="hs-emb"><div class="hs-empty">加载中…</div></div>
+      <div id="hs-vg-appendix"><div class="hs-empty">加载中…</div></div>
     </section>
 
     <!-- D. Score distributions -->
@@ -500,6 +507,111 @@
 
   // v85ey: judge 5×5 confusion matrices (Ham data). Renders one heat-cell
   // grid per (judge × dim), diagonal ringed, var-collapse flagged red.
+  // v85g7 (siyuan): Video-gen model leaderboard for Appendix E.
+  function renderVideogenAppendix(){
+    var host = document.getElementById("hs-vg-appendix");
+    if(!host) return;
+    fetch("bench/videogen_leaderboard.json?v=v85g7", {cache:"no-store"})
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(data){
+        // Collapse _prefix / _rewrite variants into base model, weighted by n
+        var byBase = {};
+        data.forEach(function(m){
+          var base = String(m.model || '').replace(/_(rewrite|prefix)$/, '');
+          if(!byBase[base]) byBase[base] = { model: base, n: 0, paSum: 0, iaSum: 0 };
+          byBase[base].n += m.n;
+          byBase[base].paSum += m.pa * m.n;
+          byBase[base].iaSum += m.ia * m.n;
+        });
+        var merged = Object.values(byBase).map(function(x){
+          var pa = x.n ? x.paSum / x.n : 0;
+          var ia = x.n ? x.iaSum / x.n : 0;
+          return { model: x.model, n: x.n, pa: pa, ia: ia, overall: (pa + ia) / 2 };
+        }).sort(function(a,b){ return (b.overall || 0) - (a.overall || 0); });
+        var html = '<table class="lb-table" style="width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;margin-top:4px">';
+        html += '<thead><tr style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">';
+        ['#','Model','n','PA','IA','Overall'].forEach(function(h){
+          html += '<th style="padding:8px;text-align:'+(h==='Model'?'left':'right')+';border-bottom:1px solid #e2e8f0">'+h+'</th>';
+        });
+        html += '</tr></thead><tbody>';
+        merged.forEach(function(m, i){
+          html += '<tr style="border-bottom:1px solid #f1f5f9">';
+          html += '<td style="padding:7px 8px;color:#94a3b8;text-align:right;font-weight:600">'+(i+1)+'</td>';
+          html += '<td style="padding:7px 8px;font-weight:600;color:#0f172a">'+esc(m.model)+'</td>';
+          html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.n+'</td>';
+          html += '<td style="padding:7px 8px;text-align:right">'+m.pa.toFixed(2)+'</td>';
+          html += '<td style="padding:7px 8px;text-align:right">'+m.ia.toFixed(2)+'</td>';
+          html += '<td style="padding:7px 8px;text-align:right;font-weight:600">'+m.overall.toFixed(2)+'</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Human gold PA/IA per model (1-5) · _prefix / _rewrite variants collapsed to base model, weighted by n. Prompt subset differs across models — see caveat above.</div>';
+        host.innerHTML = html;
+      })
+      .catch(function(){ host.innerHTML='<div class="hs-empty">video-gen 榜加载失败</div>'; });
+  }
+
+  // v85g7 (siyuan): Table 1 = judge leaderboard anchor at top of Analysis.
+  // Uses the same parsing pattern as leaderboard.html — fetch leaderboard.md
+  // for Pearson columns, merge K_norm from model_ranking_strict.json.
+  function renderTable1(){
+    var host = document.getElementById("hs-table1");
+    if(!host) return;
+    var md, strict;
+    var mdUrl = "bench/leaderboard.md?v=v85g7";
+    var strictUrl = "bench/model_ranking_strict.json?v=v85g7";
+    Promise.all([
+      fetch(mdUrl).then(function(r){ return r.ok ? r.text() : Promise.reject(); }),
+      fetch(strictUrl).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+    ]).then(function(pair){
+      md = pair[0]; strict = pair[1] || {};
+      var rows = md.split('\n')
+        .filter(function(l){ return l.startsWith('|') && !l.match(/^\|\s*(-|Model|-{2,})/); })
+        .map(function(l){ return l.split('|').map(function(c){ return c.trim(); }).filter(function(c){ return c !== ''; }); })
+        .filter(function(r){ return r.length >= 6 && !r[0].startsWith('---'); });
+      var parsed = rows.map(function(r){
+        var raw = r[0];
+        var covRaw = r[2] || '';
+        var covPct = parseFloat(covRaw.replace('%', '')) || 0;
+        var model = raw.replace(/[\s*‡†]+$/, '').trim();
+        var s = strict[model] || {};
+        return {
+          model: model, n: parseInt(r[1].replace(/,/g,''),10), cov: covPct,
+          pa: parseFloat(r[3]), ia: parseFloat(r[4]),
+          pa_knorm: s.PA && s.PA.kendall_distance_norm,
+          ia_knorm: s.IA && s.IA.kendall_distance_norm,
+          jf1: parseFloat(r[7]), exact: parseFloat(r[8]), plus1: parseFloat(r[9])
+        };
+      }).filter(function(m){ return (m.cov || 0) >= 50; });
+      parsed.sort(function(a,b){ return (b.pa || -9) - (a.pa || -9); });
+      var html = '<table class="lb-table" style="width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums">';
+      html += '<thead><tr style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">';
+      ['#','Model','n','PA·Pearson','IA·Pearson','PA·K_norm↓','IA·K_norm↓','Joint-F1','Exact PA','±1 PA'].forEach(function(h){
+        html += '<th style="padding:8px 8px;text-align:'+(h==='Model'?'left':'right')+';border-bottom:1px solid #e2e8f0">'+h+'</th>';
+      });
+      html += '</tr></thead><tbody>';
+      parsed.forEach(function(m, i){
+        html += '<tr style="border-bottom:1px solid #f1f5f9">';
+        html += '<td style="padding:7px 8px;color:#94a3b8;text-align:right;font-weight:600">'+(i+1)+'</td>';
+        html += '<td style="padding:7px 8px;font-weight:600;color:#0f172a">'+esc(m.model)+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.n+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;font-weight:600">'+m.pa.toFixed(3)+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right">'+m.ia.toFixed(3)+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#db2777">'+(isFinite(m.pa_knorm)?m.pa_knorm.toFixed(3):'—')+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#db2777">'+(isFinite(m.ia_knorm)?m.ia_knorm.toFixed(3):'—')+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.jf1.toFixed(3)+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.exact.toFixed(3)+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.plus1.toFixed(3)+'</td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px">Pearson = per-item agreement · K_norm = normalized Kendall distance among 10 video-gen models (lower = better) · Joint-F1 / Exact / ±1 = classification-style metrics.</div>';
+      host.innerHTML = html;
+    }).catch(function(){
+      host.innerHTML = '<div class="hs-empty">Table 1 加载失败(见 <a href="leaderboard.html">/leaderboard</a>)</div>';
+    });
+  }
+
   function renderCM(payload){
     var host = document.getElementById("hs-cm");
     if(!payload || !Object.keys(payload).length){
@@ -1413,45 +1525,49 @@
     });
   }
   function load(){
+    // v85g7: Table 1 anchor + Video-gen leaderboard appendix
+    renderTable1();
+    renderVideogenAppendix();
+
     if(!API){ showErr("后端地址未配置"); return; }
     jget("score_distribution","&user="+encodeURIComponent(USER)).then(renderDist)
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85g6", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85g7", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85g6", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85g7", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85g6", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85g7", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85g6", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85g7", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v85g6", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v85g7", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v85g6", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v85g7", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v85g6", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85g7", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -1462,8 +1578,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85g6", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85g6", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85g7", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85g7", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -1474,11 +1590,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v85g6", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v85g7", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v85g6", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85g7", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -1487,11 +1603,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85g6", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85g7", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85g6", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85g7", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
