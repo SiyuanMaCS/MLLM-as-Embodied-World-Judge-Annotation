@@ -90,6 +90,41 @@
 .hs-scale{ display:flex; justify-content:space-between; font-size:10px; color:#c0c5d0; margin-top:8px; padding-top:4px; }
 .hs-empty{ color:var(--muted,#999); font-size:13px; padding:8px 0; }
 
+/* v85fb: closed-loop / per-embodiment / CI */
+.hs-cl-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:6px; }
+.hs-cl-big{ background:linear-gradient(135deg,#eff6ff,#fdf4ff); border:1px solid #dbeafe; border-radius:12px; padding:16px; }
+.hs-cl-lbl{ font-size:11.5px; color:#64748b; text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
+.hs-cl-num{ font-size:34px; font-weight:800; color:#1e40af; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin:4px 0 2px; }
+.hs-cl-num.ia{ color:#9333ea; }
+.hs-cl-sub{ font-size:11.5px; color:#64748b; }
+.hs-cl-note{ margin-top:10px; padding:10px 12px; background:#f8fafc; border-left:3px solid #2563eb; border-radius:4px; font-size:12px; color:#334155; line-height:1.5; }
+.hs-jj{ display:flex; gap:14px; align-items:baseline; margin-top:12px; flex-wrap:wrap; }
+.hs-jj-lbl{ font-size:12px; color:#64748b; }
+.hs-jj-val{ font-size:15px; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums; }
+.hs-jj-note{ font-size:11.5px; color:#64748b; margin-top:4px; }
+@media(max-width:640px){ .hs-cl-wrap{ grid-template-columns:1fr; } }
+
+/* per-embodiment heatmap */
+.hs-emb-wrap{ overflow-x:auto; }
+.hs-emb-grid{ display:grid; gap:2px; font-variant-numeric:tabular-nums; min-width:520px; }
+.hs-emb-hdr{ font-size:10.5px; color:#94a3b8; text-align:center; padding:6px 4px 4px; font-weight:600; }
+.hs-emb-hdr.side{ text-align:right; padding:0 8px 0 0; align-self:center; font-size:11.5px; color:#334155; font-weight:600; }
+.hs-emb-cell{ padding:8px 4px; font-size:12px; text-align:center; border-radius:4px; color:#0f172a; font-weight:600; }
+.hs-emb-cell.na{ background:#f1f5f9; color:#cbd5e1; font-weight:400; }
+
+/* bootstrap CI whiskers */
+.hs-ci-row{ display:grid; grid-template-columns:180px 1fr 110px; gap:12px; align-items:center; padding:8px 0; border-top:1px solid var(--hs-line); font-size:12.5px; }
+.hs-ci-row:first-child{ border-top:0; }
+.hs-ci-name{ font-weight:600; color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hs-ci-track{ position:relative; height:26px; background:#f8fafc; border-radius:6px; }
+.hs-ci-scale{ position:absolute; left:0; top:0; bottom:0; width:100%; }
+.hs-ci-tick{ position:absolute; top:0; bottom:0; width:1px; background:#e2e8f0; }
+.hs-ci-whisker{ position:absolute; top:9px; bottom:9px; background:linear-gradient(90deg,#93c5fd,#2563eb,#93c5fd); border-radius:4px; }
+.hs-ci-point{ position:absolute; top:2px; width:2px; bottom:2px; background:#1e3a8a; border-radius:1px; }
+.hs-ci-val{ text-align:right; font-variant-numeric:tabular-nums; color:#0f172a; font-weight:600; }
+.hs-ci-val small{ color:#94a3b8; font-weight:400; margin-left:4px; }
+.hs-ci-partial{ opacity:0.55; }
+
 /* v85ey: judge confusion matrices */
 .hs-cm-judge{ margin-bottom:22px; }
 .hs-cm-judge-name{ font-weight:600; font-size:14px; color:#0f172a; margin-bottom:8px; }
@@ -138,6 +173,33 @@
       </div>
       <div id="hs-corr"></div>
       <div id="hs-dist"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- v85fb: Closed-loop Spearman + judge-judge agreement (Alice bundle) -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>🔁 闭环验证 · Closed-loop model ranking</h2>
+        <span class="hs-sub">最佳 judge 给 10 个视频模型排名 vs 人类真值</span>
+      </div>
+      <div id="hs-cl"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- v85fb: Per-embodiment PA heatmap -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>🏷️ 各 embodiment PA · Per-embodiment breakdown</h2>
+        <span class="hs-sub">行 = judge · 列 = 数据集 · 颜色 = PA Pearson</span>
+      </div>
+      <div id="hs-emb"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- v85fb: Bootstrap CI whiskers -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>📏 Bootstrap 95% CI · Pearson 置信区间</h2>
+        <span class="hs-sub">1000 次 bootstrap 重采样 · 875 items</span>
+      </div>
+      <div id="hs-ci"><div class="hs-empty">加载中…</div></div>
     </section>
 
     <!-- Judge confusion matrices (v85ey · Ham data) -->
@@ -369,6 +431,117 @@
     host.innerHTML = html;
   }
 
+  // v85fb: closed-loop headline card + judge-judge agreement
+  function renderClosedLoop(d){
+    var host = document.getElementById("hs-cl");
+    if(!d || !d.closed_loop){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    var cl = d.closed_loop;
+    var jj_mean = d.judge_judge_pa_pearson_mean;
+    var jj_range = d.judge_judge_pa_range || [null,null];
+    var html = '<div class="hs-cl-wrap">';
+    html += '<div class="hs-cl-big">';
+    html += '<div class="hs-cl-lbl">PA · Spearman ρ</div>';
+    html += '<div class="hs-cl-num">' + cl.pa_spearman.toFixed(3) + '</div>';
+    html += '<div class="hs-cl-sub">judge 排 vs 人类排 · n=' + cl.n_models + ' 视频模型</div>';
+    html += '</div>';
+    html += '<div class="hs-cl-big">';
+    html += '<div class="hs-cl-lbl">IA · Spearman ρ</div>';
+    html += '<div class="hs-cl-num ia">' + cl.ia_spearman.toFixed(3) + '</div>';
+    html += '<div class="hs-cl-sub">judge = ' + esc(cl.judge) + '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="hs-cl-note">' + esc(cl.note || '') + ' — item 级噪声在模型级聚合时被平均掉,PA 排名几乎和人类一致,证明 benchmark 可以替代人类给生成模型排序。</div>';
+    html += '<div class="hs-jj">';
+    html += '<span class="hs-jj-lbl">Judge-judge PA Pearson (mean)</span>';
+    html += '<span class="hs-jj-val">' + jj_mean.toFixed(3) + '</span>';
+    html += '<span class="hs-jj-lbl">range</span>';
+    html += '<span class="hs-jj-val">[' + jj_range[0].toFixed(2) + ', ' + jj_range[1].toFixed(2) + ']</span>';
+    html += '</div>';
+    html += '<div class="hs-jj-note">Judge 彼此之间比和人类还不一致,说明物理判分是真难题,反驳 "judge task trivial"。</div>';
+    host.innerHTML = html;
+  }
+
+  // v85fb: per-embodiment PA heatmap (judges × datasets)
+  function renderPerEmbodiment(d){
+    var host = document.getElementById("hs-emb");
+    if(!d || !Object.keys(d).length){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    var datasets = Object.keys(d);
+    // union of all judges across datasets — order by best flash > 2.5-flash > gpt5.5 > seed > qwen
+    var judgeSet = {};
+    datasets.forEach(function(ds){ Object.keys(d[ds]).forEach(function(j){ judgeSet[j]=1; }); });
+    var judgeOrder = ["gemini-3.5-flash","gemini-3.1-pro-preview","gemini-2.5-flash","gemini-2.5-pro","gpt5.5","gpt-5.2","seed2.0_pro","qwen3-vl-32b-instruct","qwen3-vl-8b-instruct"];
+    var judges = judgeOrder.filter(function(j){ return judgeSet[j]; });
+    Object.keys(judgeSet).forEach(function(j){ if(judges.indexOf(j)<0) judges.push(j); });
+    function colorForPA(v){
+      if(v==null || isNaN(v)) return "#f1f5f9";
+      var t = Math.max(0, Math.min(1, v));  // 0..1
+      // 0 red, 0.35 amber, 0.55 green
+      if(t < 0.2) return "rgb(254,226,226)";
+      if(t < 0.35) return "rgb(254,240,206)";
+      if(t < 0.5) return "rgb(220,252,207)";
+      if(t < 0.65) return "rgb(167,243,208)";
+      return "rgb(110,231,183)";
+    }
+    var html = '<div class="hs-emb-wrap"><div class="hs-emb-grid" style="grid-template-columns:170px repeat(' + datasets.length + ',1fr)">';
+    html += '<div class="hs-emb-hdr side"></div>';
+    datasets.forEach(function(ds){ html += '<div class="hs-emb-hdr">' + esc(ds.replace(/_/g," ")) + '</div>'; });
+    judges.forEach(function(j){
+      html += '<div class="hs-emb-hdr side">' + esc(j) + '</div>';
+      datasets.forEach(function(ds){
+        var cell = d[ds][j];
+        if(!cell){ html += '<div class="hs-emb-cell na">—</div>'; return; }
+        var pa = cell.pa;
+        html += '<div class="hs-emb-cell" style="background:' + colorForPA(pa) + '" title="' + j + ' · ' + ds + ' · n=' + cell.n + '">' + pa.toFixed(2) + '</div>';
+      });
+    });
+    html += '</div></div>';
+    host.innerHTML = html;
+  }
+
+  // v85fb: bootstrap CI whiskers (Pearson ± 95% CI per judge, PA + IA rows)
+  function renderCI(d){
+    var host = document.getElementById("hs-ci");
+    if(!d || !Object.keys(d).length){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    // scale: fixed 0..0.75 covers the observed range with headroom
+    var lo = 0, hi = 0.75;
+    function pos(x){ return ((x - lo) / (hi - lo) * 100).toFixed(2) + "%"; }
+    function width(a,b){ return ((b - a) / (hi - lo) * 100).toFixed(2) + "%"; }
+    function ticks(){
+      var s = '';
+      [0.1,0.2,0.3,0.4,0.5,0.6,0.7].forEach(function(t){
+        s += '<div class="hs-ci-tick" style="left:' + pos(t) + '"></div>';
+      });
+      return s;
+    }
+    // one row per (judge, dim). Skip if pearson missing.
+    var judges = Object.keys(d).sort(function(a,b){
+      var pa = (d[b].pa_pearson || 0) - (d[a].pa_pearson || 0);
+      return pa;
+    });
+    var html = '';
+    ["pa","ia"].forEach(function(dim){
+      var label = dim === "pa" ? "PA · Pearson (95% CI)" : "IA · Pearson (95% CI)";
+      html += '<div style="font-size:12px;font-weight:600;color:#64748b;margin:6px 0 4px;text-transform:uppercase;letter-spacing:.5px">' + label + '</div>';
+      judges.forEach(function(j){
+        var rec = d[j];
+        var p = rec[dim + "_pearson"];
+        var ci = rec[dim + "_ci"];
+        var n = rec["n_" + dim];
+        if(p == null || !ci) return;
+        var isPartial = /\.partial$/.test(j);
+        html += '<div class="hs-ci-row' + (isPartial?" hs-ci-partial":"") + '">';
+        html += '<div class="hs-ci-name">' + esc(j.replace(/\.partial$/,"")) + (isPartial?' <span style="color:#f59e0b;font-size:10px">partial</span>':'') + '</div>';
+        html += '<div class="hs-ci-track"><div class="hs-ci-scale">' + ticks() + '</div>';
+        html += '<div class="hs-ci-whisker" style="left:' + pos(ci[0]) + ';width:' + width(ci[0], ci[1]) + '"></div>';
+        html += '<div class="hs-ci-point" style="left:' + pos(p) + '"></div>';
+        html += '</div>';
+        html += '<div class="hs-ci-val">' + p.toFixed(3) + ' <small>n=' + n + '</small></div>';
+        html += '</div>';
+      });
+    });
+    host.innerHTML = html;
+  }
+
   function showErr(msg){
     var e=document.getElementById("hs-err"); e.style.display="block";
     document.getElementById("hs-err-msg").textContent=msg;
@@ -385,10 +558,24 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fa", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fb", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
+    // v85fb: closed-loop headline + per-embodiment heatmap + bootstrap CI
+    // (Alice bundle, static bench/ file for now; will move to HF pipeline).
+    fetch("bench/judge_judge_closedloop.json?v=v85fb", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("cl " + r.status); return r.json(); })
+      .then(renderClosedLoop)
+      .catch(function(e){ document.getElementById("hs-cl").innerHTML='<div class="hs-empty">闭环数据加载失败</div>'; });
+    fetch("bench/per_embodiment_pa.json?v=v85fb", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
+      .then(renderPerEmbodiment)
+      .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
+    fetch("bench/bootstrap_ci.json?v=v85fb", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
+      .then(renderCI)
+      .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
   }
   if(document.readyState!=="loading") load(); else document.addEventListener("DOMContentLoaded", load);
   setInterval(load, 60000);

@@ -1,0 +1,212 @@
+{
+ "gemini-2.5-flash": {
+  "n_pa": 869,
+  "pa_pearson": 0.356,
+  "pa_ci": [
+   0.295,
+   0.413
+  ],
+  "n_ia": 870,
+  "ia_pearson": 0.371,
+  "ia_ci": [
+   0.308,
+   0.434
+  ]
+ },
+ "gemini-2.5-pro": {
+  "n_pa": 867,
+  "pa_pearson": 0.237,
+  "pa_ci": [
+   0.185,
+   0.288
+  ],
+  "n_ia": 868,
+  "ia_pearson": 0.514,
+  "ia_ci": [
+   0.459,
+   0.564
+  ]
+ },
+ "gemini-3.1-pro-preview.partial": {
+  "n_pa": 757,
+  "pa_pearson": 0.423,
+  "pa_ci": [
+   0.365,
+   0.479
+  ],
+  "n_ia": 761,
+  "ia_pearson": 0.508,
+  "ia_ci": [
+   0.452,
+   0.56
+  ]
+ },
+ "gemini-3.5-flash": {
+  "n_pa": 874,
+  "pa_pearson": 0.53,
+  "pa_ci": [
+   0.479,
+   0.581
+  ],
+  "n_ia": 875,
+  "ia_pearson": 0.429,
+  "ia_ci": [
+   0.376,
+   0.49
+  ]
+ },
+ "gpt-5.2": {
+  "n_pa": 728,
+  "pa_pearson": 0.457,
+  "pa_ci": [
+   0.391,
+   0.514
+  ],
+  "n_ia": 734,
+  "ia_pearson": 0.589,
+  "ia_ci": [
+   0.541,
+   0.637
+  ]
+ },
+ "gpt5.5": {
+  "n_pa": 868,
+  "pa_pearson": 0.418,
+  "pa_ci": [
+   0.363,
+   0.469
+  ],
+  "n_ia": 868,
+  "ia_pearson": 0.611,
+  "ia_ci": [
+   0.565,
+   0.656
+  ]
+ },
+ "qwen-vl-max.partial": {
+  "n_pa": 99,
+  "pa_pearson": 0.483,
+  "pa_ci": [
+   0.359,
+   0.582
+  ],
+  "n_ia": 99,
+  "ia_pearson": 0.059,
+  "ia_ci": [
+   -0.136,
+   0.254
+  ]
+ },
+ "qwen3-vl-32b-instruct": {
+  "n_pa": 874,
+  "pa_pearson": 0.359,
+  "pa_ci": [
+   0.298,
+   0.414
+  ],
+  "n_ia": 874,
+  "ia_pearson": 0.396,
+  "ia_ci": [
+   0.333,
+   0.453
+  ]
+ },
+ "qwen3-vl-32b-thinking.partial": {
+  "n_pa": 81,
+  "pa_pearson": 0.491,
+  "pa_ci": [
+   0.311,
+   0.638
+  ],
+  "n_ia": 82,
+  "ia_pearson": 0.228,
+  "ia_ci": [
+   -0.014,
+   0.44
+  ]
+ },
+ "qwen3-vl-8b-instruct": {
+  "n_pa": 874,
+  "pa_pearson": 0.243,
+  "pa_ci": [
+   0.183,
+   0.307
+  ],
+  "n_ia": 873,
+  "ia_pearson": 0.3,
+  "ia_ci": [
+   0.237,
+   0.364
+  ]
+ },
+ "qwen3-vl-8b-thinking.partial": {
+  "n_pa": 68,
+  "pa_pearson": 0.249,
+  "pa_ci": [
+   0.056,
+   0.429
+  ],
+  "n_ia": 68,
+  "ia_pearson": 0.195,
+  "ia_ci": [
+   -0.065,
+   0.431
+  ]
+ },
+ "qwen3-vl-flash.partial": {
+  "n_pa": 83,
+  "pa_pearson": 0.289,
+  "pa_ci": [
+   0.1,
+   0.459
+  ],
+  "n_ia": 85,
+  "ia_pearson": 0.079,
+  "ia_ci": [
+   -0.12,
+   0.275
+  ]
+ },
+ "qwen3-vl-plus.partial": {
+  "n_pa": 86,
+  "pa_pearson": 0.503,
+  "pa_ci": [
+   0.36,
+   0.625
+  ],
+  "n_ia": 86,
+  "ia_pearson": 0.332,
+  "ia_ci": [
+   0.129,
+   0.522
+  ]
+ },
+ "seed2.0_pro": {
+  "n_pa": 868,
+  "pa_pearson": 0.493,
+  "pa_ci": [
+   0.441,
+   0.542
+  ],
+  "n_ia": 868,
+  "ia_pearson": 0.594,
+  "ia_ci": [
+   0.548,
+   0.637
+  ]
+ },
+ "seed2.1_lite": {
+  "n_pa": 868,
+  "pa_pearson": 0.501,
+  "pa_ci": [
+   0.449,
+   0.544
+  ],
+  "n_ia": 867,
+  "ia_pearson": 0.562,
+  "ia_ci": [
+   0.51,
+   0.612
+  ]
+ }
+}

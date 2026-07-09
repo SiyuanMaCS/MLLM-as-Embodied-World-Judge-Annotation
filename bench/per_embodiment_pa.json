@@ -1,0 +1,178 @@
+{
+ "agibot_world": {
+  "gemini-3.5-flash": {
+   "pa": 0.57,
+   "n": 157
+  },
+  "seed2.0_pro": {
+   "pa": 0.473,
+   "n": 157
+  },
+  "gpt5.5": {
+   "pa": 0.467,
+   "n": 157
+  },
+  "qwen3-vl-32b-instruct": {
+   "pa": 0.322,
+   "n": 157
+  },
+  "gemini-2.5-pro": {
+   "pa": 0.207,
+   "n": 157
+  }
+ },
+ "droid": {
+  "gemini-3.5-flash": {
+   "pa": 0.567,
+   "n": 109
+  },
+  "seed2.0_pro": {
+   "pa": 0.542,
+   "n": 109
+  },
+  "gpt5.5": {
+   "pa": 0.416,
+   "n": 109
+  },
+  "qwen3-vl-32b-instruct": {
+   "pa": 0.384,
+   "n": 108
+  },
+  "gemini-2.5-pro": {
+   "pa": 0.322,
+   "n": 109
+  }
+ },
+ "egodex_human": {
+  "gemini-3.5-flash": {
+   "pa": 0.524,
+   "n": 112
+  },
+  "seed2.0_pro": {
+   "pa": 0.614,
+   "n": 112
+  },
+  "gpt5.5": {
+   "pa": 0.298,
+   "n": 112
+  },
+  "qwen3-vl-32b-instruct": {
+   "pa": 0.282,
+   "n": 112
+  },
+  "gemini-2.5-pro": {
+   "pa": 0.268,
+   "n": 112
+  }
+ },
+ "egoscaler_human": {
+  "gemini-3.5-flash": {
+   "pa": 0.435,
+   "n": 74
+  },
+  "seed2.0_pro": {
+   "pa": 0.349,
+   "n": 74
+  },
+  "gpt5.5": {
+   "pa": 0.29,
+   "n": 74
+  },
+  "qwen3-vl-32b-instruct": {
+   "pa": 0.314,
+   "n": 74
+  },
+  "gemini-2.5-pro": {
+   "pa": 0.219,
+   "n": 74
+  }
+ },
+ "epickitchens_human": {
+  "gemini-3.5-flash": {
+   "pa": 0.522,
+   "n": 53
+  },
+  "seed2.0_pro": {
+   "pa": 0.352,
+   "n": 48
+  },
+  "gpt5.5": {
+   "pa": 0.398,
+   "n": 48
+  },
+  "qwen3-vl-32b-instruct": {
+   "pa": 0.244,
+   "n": 54
+  },
+  "gemini-2.5-pro": {
+   "pa": 0.401,
+   "n": 48
+  }
+ },
+ "gr1_inlab": {
+  "gemini-3.5-flash": {
+   "pa": 0.512,
+   "n": 136
+  },
+  "seed2.0_pro": {
+   "pa": 0.422,
+   "n": 136
+  },
+  "gpt5.5": {
+   "pa": 0.36,
+   "n": 136
+  },
+  "qwen3-vl-32b-instruct": {
+   "pa": 0.414,
+   "n": 136
+  },
+  "gemini-2.5-pro": {
+   "pa": 0.214,
+   "n": 135
+  }
+ },
+ "open_x_embodiment": {
+  "gemini-3.5-flash": {
+   "pa": 0.594,
+   "n": 102
+  },
+  "seed2.0_pro": {
+   "pa": 0.532,
+   "n": 102
+  },
+  "gpt5.5": {
+   "pa": 0.588,
+   "n": 102
+  },
+  "qwen3-vl-32b-instruct": {
+   "pa": 0.478,
+   "n": 102
+  },
+  "gemini-2.5-pro": {
+   "pa": 0.347,
+   "n": 102
+  }
+ },
+ "robotwin": {
+  "gemini-3.5-flash": {
+   "pa": 0.457,
+   "n": 131
+  },
+  "seed2.0_pro": {
+   "pa": 0.459,
+   "n": 130
+  },
+  "gpt5.5": {
+   "pa": 0.464,
+   "n": 130
+  },
+  "qwen3-vl-32b-instruct": {
+   "pa": 0.241,
+   "n": 131
+  },
+  "gemini-2.5-pro": {
+   "pa": 0.021,
+   "n": 130
+  }
+ }
+}

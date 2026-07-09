@@ -1,0 +1,14 @@
+{
+ "judge_judge_pa_pearson_mean": 0.372,
+ "judge_judge_pa_range": [
+  0.13,
+  0.6
+ ],
+ "closed_loop": {
+  "pa_spearman": 0.915,
+  "ia_spearman": 0.479,
+  "n_models": 10,
+  "judge": "gemini-3.5-flash",
+  "note": "per-model ranking vs human gold; item noise averages out"
+ }
+}
