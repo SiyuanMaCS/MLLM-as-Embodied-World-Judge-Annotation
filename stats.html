@@ -192,7 +192,9 @@
       </div>
       <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #2563eb;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
         **定义**:最佳 judge 的**逐生成模型均分**排名 vs 人类均分排名(10 个视频生成模型)。<br>
-        **Insight**:逐条 PA 才 0.53、但**按模型聚合排名 Spearman = 0.915** —— item 级噪声在模型级平均掉,judge 可作**可扩展的人类替代**给视频生成模型打榜(benchmark 核心价值)。IA 排名 0.48 弱一些。另外 **judge–judge PA 均值 0.372 < judge–人类 0.53** —— judge 之间比和人类还不一致,说明物理判分是**真争议**任务、不是被共同偏置糊弄过去的。
+        **Insight**:逐条 PA 才 0.53、但**按模型聚合 Spearman ρ = 0.915**。机理是**每模型 ~87 条聚合、噪声降 √87 ≈ 9×**,信号几乎不变 → 排名可信。这是 HELM / LMSYS 榜也靠的机制。<br>
+        **⚠️ 诚实警告**:n=10 生成模型 → **bootstrap 95% CI = [0.56, 1.00]**,单靠 10 个点 Spearman 自身抖得厉害。已知的一处偏差:flash 高估 kling(judge 均分 4.85 vs 人类 3.85)。**结论稳的说法** = "聚合远比逐条可靠、judge 能当打榜代理",不能只念 0.915 那个数;paper 里必须挂 n=10 · CI 一起报。<br>
+        另外 **judge-judge PA 均值 0.372 < judge-人类 0.53** —— judge 之间比和人类还不一致,说明物理判分是**真争议**任务、不是被共同偏置糊弄过去的。
       </div>
       <div id="hs-cl"><div class="hs-empty">加载中…</div></div>
     </section>
@@ -776,31 +778,31 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fj", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fk", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fb: closed-loop headline + per-embodiment heatmap + bootstrap CI
     // (Alice bundle, static bench/ file for now; will move to HF pipeline).
-    fetch("bench/judge_judge_closedloop.json?v=v85fj", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85fk", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cl " + r.status); return r.json(); })
       .then(renderClosedLoop)
       .catch(function(e){ document.getElementById("hs-cl").innerHTML='<div class="hs-empty">闭环数据加载失败</div>'; });
-    fetch("bench/per_embodiment_pa.json?v=v85fj", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85fk", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fj", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85fk", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85fj: calibration reliability curves.
-    fetch("bench/calibration.json?v=v85fj", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85fk", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(renderCalibration)
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fj", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85fk", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
