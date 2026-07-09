@@ -1,0 +1,116 @@
+{
+ "judge": "gemini-3.5-flash",
+ "note": "score-controlled: gold_std shows no variance confound; patterns hold under spearman/mae/exact",
+ "per_embodiment": {
+  "human": {
+   "physical_adherence": {
+    "n": 239,
+    "gold_std": 1.23,
+    "pearson": 0.488,
+    "spearman": 0.498,
+    "mae": 0.97,
+    "exact": 0.351
+   },
+   "instruction_alignment": {
+    "n": 240,
+    "gold_std": 1.3,
+    "pearson": 0.482,
+    "spearman": 0.483,
+    "mae": 0.97,
+    "exact": 0.338
+   }
+  },
+  "dexterous": {
+   "physical_adherence": {
+    "n": 136,
+    "gold_std": 1.24,
+    "pearson": 0.512,
+    "spearman": 0.526,
+    "mae": 1.04,
+    "exact": 0.294
+   },
+   "instruction_alignment": {
+    "n": 136,
+    "gold_std": 1.45,
+    "pearson": 0.581,
+    "spearman": 0.578,
+    "mae": 0.95,
+    "exact": 0.324
+   }
+  },
+  "gripper": {
+   "physical_adherence": {
+    "n": 499,
+    "gold_std": 1.26,
+    "pearson": 0.549,
+    "spearman": 0.581,
+    "mae": 1.03,
+    "exact": 0.285
+   },
+   "instruction_alignment": {
+    "n": 499,
+    "gold_std": 1.33,
+    "pearson": 0.349,
+    "spearman": 0.356,
+    "mae": 1.05,
+    "exact": 0.313
+   }
+  }
+ },
+ "per_complexity": {
+  "easy": {
+   "physical_adherence": {
+    "n": 228,
+    "gold_std": 1.22,
+    "pearson": 0.513,
+    "spearman": 0.534,
+    "mae": 1.02,
+    "exact": 0.307
+   },
+   "instruction_alignment": {
+    "n": 228,
+    "gold_std": 1.28,
+    "pearson": 0.378,
+    "spearman": 0.37,
+    "mae": 1.11,
+    "exact": 0.259
+   }
+  },
+  "medium": {
+   "physical_adherence": {
+    "n": 179,
+    "gold_std": 1.29,
+    "pearson": 0.542,
+    "spearman": 0.567,
+    "mae": 0.99,
+    "exact": 0.335
+   },
+   "instruction_alignment": {
+    "n": 179,
+    "gold_std": 1.4,
+    "pearson": 0.394,
+    "spearman": 0.404,
+    "mae": 1.03,
+    "exact": 0.33
+   }
+  },
+  "hard": {
+   "physical_adherence": {
+    "n": 190,
+    "gold_std": 1.27,
+    "pearson": 0.445,
+    "spearman": 0.488,
+    "mae": 1.13,
+    "exact": 0.268
+   },
+   "instruction_alignment": {
+    "n": 190,
+    "gold_std": 1.32,
+    "pearson": 0.516,
+    "spearman": 0.511,
+    "mae": 0.85,
+    "exact": 0.389
+   }
+  }
+ }
+}

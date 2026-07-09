@@ -234,7 +234,9 @@
       </div>
       <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #10b981;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
         **定义**:按末端执行器(人手 / 灵巧手 / 夹爪)分组,同时报**生成质量**(人类 gold 均分)和 **judge 准确度**(PA Pearson)。<br>
-        **Insight**:AI 生成**人手视频物理最真**(gold 3.39 vs 机器人 ≈2.95),但 judge 判**夹爪机器人最准**(flash 0.55)—— **生成真实度与判分可靠度在 embodiment 上解耦**。灵巧手同时是**最难生成**(gold 2.93)且判分中等,精细手指动力学是共同瓶颈。
+        **主结论(硬)**:AI 生成**人手视频物理最真**(gold 3.39 vs 机器人 ≈2.95),灵巧手最难生成(gold 2.93)—— 生成质量在 embodiment 上有真实差异。<br>
+        **⚠️ 判分准确度差异不 robust**:Pearson 排序(gripper 0.55 > 灵巧 0.51 > 人手 0.49)和 MAE 排序(人手 0.97 > 灵巧 1.04 ≈ gripper 1.03)**方向不一致** → 多半是噪声。诚实结论 = "**judge accuracy is comparable across embodiments**",不主张"gripper 显著更准"。<br>
+        **排除分数影响**:各组 gold_std 几乎相等(**PA σ 1.23-1.26**),无方差混淆 → 生成质量差异是**真的**,不是分数压缩 artifact。
       </div>
       <div id="hs-emb-quality"><div class="hs-empty" style="font-size:12px">生成质量加载中…</div></div>
       <div id="hs-emb"><div class="hs-empty">judge 准确度加载中…</div></div>
@@ -253,7 +255,8 @@
       <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #ec4899;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
         **定义**:用**指令英文词数**做可复现代理,分三档(简单 ≤14 / 中 15-20 / 难 >20)。同时看生成质量(人类 gold)+ judge PA/IA 准确度。<br>
         **三条发现**:① **指令越复杂 → 生成越差**(gold PA 3.19→2.89, IA 3.56→3.01)—— 复杂任务生成模型扛不住。② **复杂指令 → 判 PA 更难**(flash PA-Pearson 0.51→0.45)—— 动作多、物理错法多。③ **但复杂指令 → 判 IA 反而更容易**(flash IA 0.38→**0.52**)—— 长指令有明确可核验步骤,简单指令近乎二元、反而难区分。<br>
-        **Insight**:复杂度对生成是**单调伤害**,但对 judge 是**分裂**的 —— 难在 PA、易在 IA。和 PA≠IA 主线呼应。
+        **Insight**:复杂度对生成是**单调伤害**,但对 judge 是**分裂**的 —— 难在 PA、易在 IA。和 PA≠IA 主线呼应。<br>
+        **⚠️ 排除分数影响**:各档 gold_std 相当(**1.22-1.40**),无方差混淆。**Pearson · Spearman · MAE · exact 四指标同步印证**(见下方每档展开的多指标条)。complexity·PA 难指令最差(Pearson 0.445 · Spearman 0.488 · MAE 1.13);complexity·IA 难指令最好(0.516 · 0.511 · MAE **0.85**)—— 判分行为差异是**真的**,不是分数分布 artifact。
       </div>
       <div id="hs-icx"><div class="hs-empty">加载中…</div></div>
     </section>
@@ -791,11 +794,16 @@
     if(!d || !d.tiers){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
     var order = ['easy','medium','hard'];
     var lbl = { easy: '简单 ≤14 词', medium: '中 15–20 词', hard: '难 >20 词' };
+    // v85fx: pull the score-controlled Pearson/Spearman/MAE/exact per tier
+    // from window.__scoreControlled (fetched separately). Tier keys in that
+    // file match ours (easy/medium/hard).
+    var sc = (window.__scoreControlled && window.__scoreControlled.per_complexity) || {};
     function normGold(v){ return Math.max(0, Math.min(1, (v-1)/4)); }
     function pearsonBar(v){ return Math.max(0, Math.min(1, v)); }
     var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">';
     order.forEach(function(k){
       var t = d.tiers[k]; if(!t) return;
+      var scTier = sc[k] || {};
       html += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;background:#fcfdff">';
       html += '<div style="font-weight:600;font-size:13.5px;color:#0f172a;margin-bottom:2px">' + lbl[k] + '</div>';
       html += '<div style="font-size:11.5px;color:#94a3b8;margin-bottom:8px">n = ' + t.n + '</div>';
@@ -808,20 +816,34 @@
         html += '<div style="font-variant-numeric:tabular-nums;text-align:right;font-weight:600;color:#0f172a">' + v.toFixed(2) + '</div>';
         html += '</div>';
       });
-      // flash Pearson PA / IA (baseline)
-      html += '<div style="margin:8px 0 4px;font-size:10.5px;color:#94a3b8;text-transform:uppercase;letter-spacing:.4px">flash judge Pearson</div>';
-      [['flash_pa_pearson', 'PA', '#2563eb'], ['flash_ia_pearson', 'IA', '#db2777']].forEach(function(row){
-        var v = t[row[0]];
-        html += '<div style="display:grid;grid-template-columns:70px 1fr 44px;gap:6px;align-items:center;font-size:12px;margin-top:5px">';
-        html += '<div style="color:#64748b">' + row[1] + '</div>';
-        html += '<div style="height:12px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:' + (pearsonBar(v)*100).toFixed(1) + '%;background:' + row[2] + ';border-radius:3px"></div></div>';
-        html += '<div style="font-variant-numeric:tabular-nums;text-align:right;font-weight:600;color:#0f172a">' + v.toFixed(3) + '</div>';
+      // v85fx: multi-metric flash judge stats (Pearson · Spearman · MAE · exact)
+      // to control for score-distribution artifact. gold_std shown so reviewer
+      // can verify variance-matched groups.
+      html += '<div style="margin:8px 0 4px;font-size:10.5px;color:#94a3b8;text-transform:uppercase;letter-spacing:.4px">flash judge — 多指标对比</div>';
+      function metricRow(dim, dimLbl, color){
+        var pearson = t['flash_' + dim + '_pearson'];
+        var scPA = scTier[dim === 'pa' ? 'physical_adherence' : 'instruction_alignment'] || {};
+        html += '<div style="display:grid;grid-template-columns:44px 1fr 44px;gap:6px;align-items:center;font-size:11.5px;margin-top:4px">';
+        html += '<div style="color:#64748b;font-weight:600">' + dimLbl + '</div>';
+        html += '<div style="height:10px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:' + (pearsonBar(pearson)*100).toFixed(1) + '%;background:' + color + ';border-radius:3px"></div></div>';
+        html += '<div style="font-variant-numeric:tabular-nums;text-align:right;font-weight:600;color:#0f172a">' + pearson.toFixed(3) + '</div>';
         html += '</div>';
-      });
+        // Small strip of extra metrics if score_controlled is loaded
+        if(scPA.spearman != null){
+          html += '<div style="font-size:10.5px;color:#64748b;padding-left:50px;margin-top:2px;font-variant-numeric:tabular-nums">';
+          html += 'Spearman <b style="color:#0f172a">' + scPA.spearman.toFixed(3) + '</b>';
+          if(scPA.mae != null)   html += ' · MAE <b style="color:#0f172a">' + scPA.mae.toFixed(2) + '</b>';
+          if(scPA.exact != null) html += ' · exact <b style="color:#0f172a">' + scPA.exact.toFixed(3) + '</b>';
+          if(scPA.gold_std != null) html += ' · <span style="color:#94a3b8">gold σ ' + scPA.gold_std.toFixed(2) + '</span>';
+          html += '</div>';
+        }
+      }
+      metricRow('pa', 'PA', '#2563eb');
+      metricRow('ia', 'IA', '#db2777');
       html += '</div>';
     });
     html += '</div>';
-    html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px">代理: ' + esc(d.proxy || '') + '</div>';
+    html += '<div style="font-size:11px;color:#94a3b8;margin-top:10px">代理: ' + esc(d.proxy || '') + ' · Pearson · Spearman · MAE · exact 四指标并列;各档 gold σ ≈ 1.2-1.4 相当,方差混淆已排除 → 判分行为差异是真的</div>';
     host.innerHTML = html;
   }
 
@@ -1118,10 +1140,20 @@
     }).catch(function(){
       var el=document.getElementById("hs-fcs"); if(el) el.innerHTML='<div class="hs-empty">Fair-common-set 加载失败</div>';
     });
+    // v85fx: score-controlled analysis (Alice) — Pearson · Spearman · MAE ·
+    // exact per embodiment / complexity, plus gold_std to prove variance
+    // matched. Load first so the complexity render can pick it up.
+    fetch("bench/score_controlled.json?v=v85fx", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
+      .then(function(d){
+        window.__scoreControlled = d;
+        if(typeof window.__icxPayload !== 'undefined'){ renderInstructionComplexity(window.__icxPayload); }
+      })
+      .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
     fetch("bench/instruction_complexity.json?v=v85fx", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
-      .then(renderInstructionComplexity)
+      .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
     fetch("bench/bootstrap_ci.json?v=v85fx", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
