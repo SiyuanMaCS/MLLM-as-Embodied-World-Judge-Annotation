@@ -275,19 +275,10 @@
       <div id="hs-ci"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- Calibration (downgraded: compression basically = regression-to-mean per Ham) -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2>🎚️ Calibration · 判分校准</h2>
-        <span class="hs-sub">judge 分档 vs 人类均值 · 反向图 pending Alice</span>
-      </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #8b5cf6;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **⚠️ 降级说明**:原来"judge 打 4/5 都对到人类 ~3.85 = 判分能力压缩、封死 Pearson 上限"的论点,**Ham 用 regression-to-mean baseline 控制后基本 = 回归均值本身**(任何有噪声的预测器都会这样),不是 judge 特有缺陷。因此这张卡**从 headline 降到 appendix**。<br>
-        **仍有的独立信息**:极端塌陷(如 gemini-2.5-pro 把 ~80% 视频打成 1)是**方差塌缩**、超出回归 baseline,属真缺陷 —— 但这已经在混淆矩阵卡里更清楚地展现。<br>
-        **⏳ 反向图**(x = 人类分, y = judge 均值 + 三条线:对角 y=x, 虚线 regression-to-mean baseline, 实线 judge 数据)pending Alice 反向 json + 矩数据。
-      </div>
-      <div id="hs-cal"><div class="hs-empty">加载中…</div></div>
-    </section>
+    <!-- v85g1 (Alice + siyuan): Calibration card removed entirely.
+         Compression basically = regression-to-mean per Ham's control →
+         no independent judge-specific insight. Variance collapse (gemini-2.5-pro
+         flatlining on 1) is captured better in the confusion matrix. -->
 
     <!-- Score distribution — annotator baseline sanity -->
     <section class="hs-card">
@@ -1203,40 +1194,31 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85g0", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85g1", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85g0", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85g1", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85g0", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85g1", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85g0", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85g1", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
-    // v85g0 (siyuan flip): use reverse-axis calibration (x=human gold,
-    // y=judge_mean) with three lines: y=x diagonal, regression-to-mean
-    // baseline (Ham/Alice moment-correct), and the judge curve. Falls back
-    // to legacy judge→human bucketing if the new file is missing.
-    fetch("bench/calibration_by_human.json?v=v85g0", {cache:"no-store"})
-      .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
-      .then(renderCalibrationByHuman)
-      .catch(function(){});
-    fetch("bench/calibration.json?v=v85g0", {cache:"no-store"})
-      .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
-      .then(function(d){ if(!window.__calByHumanRendered) renderCalibration(d); })
-      .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
+    // v85g1: Calibration card removed. No fetch needed. Data
+    // (calibration.json / calibration_by_human.json) stays in bench/
+    // for the paper narrative + potential future re-enable.
     // v85fv (siyuan): judge ensemble card removed from analysis page; leaving
     // the fetch out entirely. renderEnsemble + ensemble json kept in-file
     // for the paper narrative and future re-enable.
@@ -1244,8 +1226,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85g0", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85g0", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85g1", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85g1", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -1255,7 +1237,7 @@
     // v85fx: score-controlled analysis (Alice) — Pearson · Spearman · MAE ·
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
-    fetch("bench/score_controlled.json?v=v85g0", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85g1", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -1263,11 +1245,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85g0", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85g1", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85g0", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85g1", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
