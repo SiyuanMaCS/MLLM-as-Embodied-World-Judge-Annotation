@@ -6,7 +6,7 @@
 <title>Leaderboard — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85fb">
+<link rel="stylesheet" href="style.css?v=v85fc">
 <style>
   .lb-section { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
   .lb-section h2 { margin: 0 0 10px; font-size: 15px; letter-spacing: -0.01em; font-weight: 600; color: #0f172a; }
@@ -89,7 +89,7 @@
     </div>
   </section>
 </main>
-<script src="app.js?v=v85fb"></script>
+<script src="app.js?v=v85fc"></script>
 <script>
   async function loadJudge() {
     try {
@@ -97,7 +97,7 @@
       // for public visitors. Route the primary fetch through the HF mirror
       // instead — HF is public, GHA sync keeps it byte-identical with GitHub.
       const primary = 'https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main/bench/results/leaderboard.md';
-      const fallback = 'bench/leaderboard.md?v=v85fb';
+      const fallback = 'bench/leaderboard.md?v=v85fc';
       let md;
       try { md = await fetch(primary).then(r => { if (!r.ok) throw new Error('primary ' + r.status); return r.text(); }); }
       catch (_) { md = await fetch(fallback).then(r => r.text()); }
@@ -107,13 +107,17 @@
         .filter(r => r.length >= 6 && !r[0].startsWith('---'));
       const parsed = rows.map(r => {
         const raw = r[0];
-        const partial = raw.endsWith('*');
         const covRaw = r[2] || '';
         const covPct = parseFloat(covRaw.replace('%', '')) || 0;
-        return { model: raw.replace(/\s*\*$/, '').trim(), n: parseInt(r[1].replace(/,/g, ''), 10),
+        // v85fc (siyuan: 就给我把符号删了): strip the QA annotation symbols
+        // `*` partial-cov, `‡` biased-subset, `†` variance-collapse from the
+        // model name. parseFloat already ignores these trailing chars for
+        // metric cells so number parsing is unaffected.
+        const model = raw.replace(/[\s*‡†]+$/, '').trim();
+        return { model, n: parseInt(r[1].replace(/,/g, ''), 10),
                  cov: covPct,
                  pa: parseFloat(r[3]), ia: parseFloat(r[4]), jf1: parseFloat(r[5]),
-                 exact: parseFloat(r[6]), plus1: parseFloat(r[7]), partial };
+                 exact: parseFloat(r[6]), plus1: parseFloat(r[7]) };
       });
       // v85ez (siyuan: 只跑了 10% 的 qwen 啥的给我都隐藏 太乱了):
       // drop tiny-coverage rows so the table shows only rows with a
@@ -125,7 +129,7 @@
       tbody.innerHTML = filtered.map((m, i) => `
         <tr>
           <td class="lb-rank">${i + 1}</td>
-          <td class="lb-model">${logoFor(m.model)}${escapeHtml(m.model)}${m.partial ? '<span class="lb-partial-tag">partial</span>' : ''}</td>
+          <td class="lb-model">${logoFor(m.model)}${escapeHtml(m.model)}</td>
           <td class="lb-num">${m.n}</td>
           <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill" style="width:${Math.max(0, m.pa) * 100}%"></span></span>${m.pa.toFixed(3)}</td>
           <td class="lb-num"><span class="lb-bar"><span class="lb-bar-fill" style="width:${Math.max(0, m.ia) * 100}%"></span></span>${m.ia.toFixed(3)}</td>
@@ -146,7 +150,7 @@
       // the HF mirror instead of raw.githubusercontent (which 404s for a
       // private source). Client merge regex is still an idempotent safety net.
       const vgPrimary = 'https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main/bench/videogen_leaderboard.json';
-      const vgFallback = 'bench/videogen_leaderboard.json?v=v85fb';
+      const vgFallback = 'bench/videogen_leaderboard.json?v=v85fc';
       let data;
       try { data = await fetch(vgPrimary).then(r => { if (!r.ok) throw new Error('primary ' + r.status); return r.json(); }); }
       catch (_) { data = await fetch(vgFallback).then(r => r.json()); }
