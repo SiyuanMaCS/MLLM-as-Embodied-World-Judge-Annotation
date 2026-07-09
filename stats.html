@@ -222,21 +222,9 @@
          lives as a K_norm column in the leaderboard table. -->
 
 
-    <!-- v85fm: Judge ensemble — mean of top-k strong judges vs single best -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2>🧑‍⚖️ Judge 集成 · Ensemble = mean of top-k</h2>
-        <span class="hs-sub">单最佳 vs 均值集成 · 边际递减 + 弱成员反噬</span>
-      </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #ec4899;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **定义**:对每条 test item,取 top-k judge 的分数做**逐条均值**,再和人类真值算 Pearson。members_by_step 按 PA / IA 单值排序渐进加入。<br>
-        **Insight**:
-        <b>PA</b>:0.53(flash) → **0.629**(6 家均值),+0.10 ≈ 19% 相对提升。**PA 涨得多正因判官 PA 只有 0.37 相关**(judge-judge 那张图)—— 分歧独立 → 噪声抵消 → 集成赚。
-        <b>IA</b>:0.61(gpt5.5) → **0.659**(k=5 见顶) → k=6 反降到 0.653。第 6 家 flash IA 只有 0.43,**弱成员拖后腿** —— **加 judge 不总是更好**。<br>
-        **一条 story**:*单 MLLM 判物理受限(0.53),独立 judge 集成显著突破(0.629);提升 ∝ 判官分歧度、边际递减、弱成员反噬。*
-      </div>
-      <div id="hs-ens"><div class="hs-empty">加载中…</div></div>
-    </section>
+    <!-- v85fv (siyuan): Judge ensemble card removed from the analysis page.
+         Data + finding still preserved in bench/ensemble_judge.json for the
+         paper narrative. -->
 
     <!-- v85fb: Per-embodiment PA heatmap -->
     <section class="hs-card">
@@ -1088,44 +1076,42 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fu", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fv", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85fu", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85fv", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85fu", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85fv", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fu", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85fv", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85fj: calibration reliability curves.
-    fetch("bench/calibration.json?v=v85fu", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85fv", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(renderCalibration)
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
-    // v85fm: judge ensemble baseline-vs-mean + gains curve.
-    fetch("bench/ensemble_judge.json?v=v85fu", {cache:"no-store"})
-      .then(function(r){ if(!r.ok) throw new Error("ens " + r.status); return r.json(); })
-      .then(renderEnsemble)
-      .catch(function(e){ var el=document.getElementById("hs-ens"); if(el) el.innerHTML='<div class="hs-empty">ensemble 加载失败</div>'; });
+    // v85fv (siyuan): judge ensemble card removed from analysis page; leaving
+    // the fetch out entirely. renderEnsemble + ensemble json kept in-file
+    // for the paper narrative and future re-enable.
     // v85ft: Fair Common Set — pull both the raw 32-task list and the
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85fu", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85fu", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85fv", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85fv", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -1133,11 +1119,11 @@
       var el=document.getElementById("hs-fcs"); if(el) el.innerHTML='<div class="hs-empty">Fair-common-set 加载失败</div>';
     });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85fu", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85fv", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(renderInstructionComplexity)
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fu", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85fv", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
