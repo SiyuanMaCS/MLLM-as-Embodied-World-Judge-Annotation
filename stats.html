@@ -204,90 +204,48 @@
   </nav>
 
   <div class="hs-wrap">
-    <!-- SCORE DISTRIBUTION -->
+    <!-- v85fy (siyuan: 按 insight 重要度排序;越重要越靠上,置信度/分布类的往下扔) -->
+
+    <!-- ═══ TOP-TIER · paper-facing insights ═══ -->
+
+    <!-- v85fy (Alice 连续检验诚实版): PA-complexity is n.s., IA is real -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2>📈 打分分布</h2><span class="hs-sub">Score distribution · 全员 vs 自己</span>
+        <h2>📏 指令复杂度分析 · Instruction complexity</h2>
+        <span class="hs-sub">诚实版 · PA-complexity 效应 n.s. · IA 效应显著</span>
       </div>
-      <div class="hs-legend">
-        <span><i class="hs-sw-all"></i>全员</span>
-        <span><i class="hs-sw-self"></i>自己</span>
-        <span class="hs-sub" style="margin-left:auto">柱高 = 组内占比 %</span>
+      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #ec4899;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
+        **定义**:用**指令英文词数**做可复现代理,分 2 类(**简单 ≤20 词** / **难 >20 词**)作为可视化;判分侧 findings 用**连续词数 vs judge 逐条误差** Pearson r + p-value 主张。<br>
+        **判分侧 findings(诚实报告)**:
+        <b>❌ PA-complexity: r = 0.047, p = 0.25 · n.s.</b> —— **judge 判物理不受任务复杂度影响,能力就是一致地差(卡在 0.53)**。之前 3-tier 观察到的 easy 0.51 / med 0.54 / hard 0.45 非单调 = 噪声。<br>
+        <b>✅ IA-complexity: r = −0.10, p = 0.015 · 显著</b> —— **长指令 judge IA 反而更准**,机理:长指令有可核验步骤,短指令近乎二元。<br>
+        **生成侧 finding(独立)**:难指令生成变差(gold PA 3.20→2.89, IA 3.44→3.01)—— 关于生成模型,不是判分。<br>
+        **⚠️ 排除分数影响**:两类 gold σ 相当(1.22-1.40),无方差混淆。paper 里 IA 那条**主动配 r/p**,PA 那条**主动报 null**,reviewer 找不出"你在 fishing"的漏洞。
       </div>
-      <div id="hs-corr"></div>
-      <div id="hs-dist"><div class="hs-empty">加载中…</div></div>
+      <div id="hs-icx"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- v85fr (siyuan): closed-loop card removed. Model-ranking metric now
-         lives as a K_norm column in the leaderboard table. -->
+    <!-- v85fy: Calibration downgraded to appendix (Ham: compression basically
+         = regression-to-mean, not judge-specific). Card moved below the
+         appendix divider. -->
 
-
-    <!-- v85fv (siyuan): Judge ensemble card removed from the analysis page.
-         Data + finding still preserved in bench/ensemble_judge.json for the
-         paper narrative. -->
-
-    <!-- v85fb: Per-embodiment PA heatmap -->
+    <!-- v85fb: Per-embodiment breakdown -->
     <section class="hs-card">
       <div class="hs-h">
         <h2>🏷️ 各 embodiment 类别 · Per-embodiment breakdown</h2>
-        <span class="hs-sub">两个正交层面:视频真实度 × judge 判分能力</span>
+        <span class="hs-sub">生成质量在 embodiment 上真有差异 · 判分能力无 robust 差异</span>
       </div>
       <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #10b981;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
         **定义**:按末端执行器(人手 / 灵巧手 / 夹爪)分组,同时报**生成质量**(人类 gold 均分)和 **judge 准确度**(PA Pearson)。<br>
         **主结论(硬)**:AI 生成**人手视频物理最真**(gold 3.39 vs 机器人 ≈2.95),灵巧手最难生成(gold 2.93)—— 生成质量在 embodiment 上有真实差异。<br>
-        **⚠️ 判分准确度差异不 robust**:Pearson 排序(gripper 0.55 > 灵巧 0.51 > 人手 0.49)和 MAE 排序(人手 0.97 > 灵巧 1.04 ≈ gripper 1.03)**方向不一致** → 多半是噪声。诚实结论 = "**judge accuracy is comparable across embodiments**",不主张"gripper 显著更准"。<br>
-        **排除分数影响**:各组 gold_std 几乎相等(**PA σ 1.23-1.26**),无方差混淆 → 生成质量差异是**真的**,不是分数压缩 artifact。
+        **⚠️ 判分准确度差异不 robust**:Pearson 排序(gripper 0.55 > 灵巧 0.51 > 人手 0.49)和 MAE 排序(人手 0.97 > 灵巧 1.04 ≈ gripper 1.03)**方向不一致** → 多半是噪声。诚实结论 = "**judge accuracy is comparable across embodiments**"。<br>
+        **排除分数影响**:各组 gold σ 几乎相等(**PA σ 1.23-1.26**),无方差混淆 → 生成质量差异是**真的**,不是分数压缩 artifact。
       </div>
       <div id="hs-emb-quality"><div class="hs-empty" style="font-size:12px">生成质量加载中…</div></div>
       <div id="hs-emb"><div class="hs-empty">judge 准确度加载中…</div></div>
     </section>
 
-    <!-- v85fu (siyuan): Fair Common Set card removed from analysis page —
-         it's an operational planning artifact, not analysis. Data stays
-         in bench/fair_common_set_*.json for internal use. -->
-
-    <!-- v85fs: Instruction complexity tercile analysis -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2>📏 指令复杂度分析 · Instruction complexity</h2>
-        <span class="hs-sub">词数三档 · 生成质量 × judge 判分能力</span>
-      </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #ec4899;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **定义**:用**指令英文词数**做可复现代理,分三档(简单 ≤14 / 中 15-20 / 难 >20)。同时看生成质量(人类 gold)+ judge PA/IA 准确度。<br>
-        **三条发现**:① **指令越复杂 → 生成越差**(gold PA 3.19→2.89, IA 3.56→3.01)—— 复杂任务生成模型扛不住。② **复杂指令 → 判 PA 更难**(flash PA-Pearson 0.51→0.45)—— 动作多、物理错法多。③ **但复杂指令 → 判 IA 反而更容易**(flash IA 0.38→**0.52**)—— 长指令有明确可核验步骤,简单指令近乎二元、反而难区分。<br>
-        **Insight**:复杂度对生成是**单调伤害**,但对 judge 是**分裂**的 —— 难在 PA、易在 IA。和 PA≠IA 主线呼应。<br>
-        **⚠️ 排除分数影响**:各档 gold_std 相当(**1.22-1.40**),无方差混淆。**Pearson · Spearman · MAE · exact 四指标同步印证**(见下方每档展开的多指标条)。complexity·PA 难指令最差(Pearson 0.445 · Spearman 0.488 · MAE 1.13);complexity·IA 难指令最好(0.516 · 0.511 · MAE **0.85**)—— 判分行为差异是**真的**,不是分数分布 artifact。
-      </div>
-      <div id="hs-icx"><div class="hs-empty">加载中…</div></div>
-    </section>
-
-    <!-- v85fb: Bootstrap CI whiskers -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2>📏 Bootstrap 95% CI · Pearson 置信区间</h2>
-        <span class="hs-sub">分数到底稳不稳定?横条越窄 = 越可信</span>
-      </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #64748b;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **定义**:每个 Pearson 是单一 875 样本的点估计;对 875 条**有放回重采样 1000 次**,估计该分数在"换一批视频"下会抖多少 → 95% CI。<br>
-        **Insight**:PA 头部(flash 0.53 / seed2.1 0.50 / seed2.0 0.49)**CI 相互重叠 → 排名统计上不可分**,PA 榜**没有唯一冠军**、只有同梯队;IA 才有真分离(gpt5.5 0.61 甩开 flash)。这也是为什么剔除 <15% 覆盖的 judge —— 它们 CI 宽达 ±0.15,数字是噪声。
-      </div>
-      <div id="hs-ci"><div class="hs-empty">加载中…</div></div>
-    </section>
-
-    <!-- v85fj: Calibration reliability curve (Alice's suggestion) -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2>🎚️ Calibration · 判分校准</h2>
-        <span class="hs-sub">judge 打 X 分,人类实际打多少?</span>
-      </div>
-      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #8b5cf6;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **定义**:每个 judge 分档(1-5)对应人类均值 —— 完美校准落对角线 y=x。<br>
-        **Insight**:judge **单调但压缩** —— flash 打 4 和 5 都对到人类 ≈3.85,**能排序却分不出好/优秀**;无 judge 顶档能对到人类 ≥4.5,即 **MLLM 从不敢确认"物理优秀"** —— 这封死了 Pearson 上限,解释了为何 PA 卡在 0.53。低端塌陷(gemini-2.5-pro 把很多类打成 1)也在这里看得清。
-      </div>
-      <div id="hs-cal"><div class="hs-empty">加载中…</div></div>
-    </section>
-
-    <!-- Judge confusion matrices (v85ey · Ham data) -->
+    <!-- Judge confusion matrices — per-judge failure fingerprint -->
     <section class="hs-card">
       <div class="hs-h">
         <h2>🎯 Judge 5×5 混淆矩阵</h2>
@@ -298,6 +256,53 @@
         **Insight**:judge 的错法是**方向性偏置**,不只是噪声。**qwen32b 系统偏松**(dir_bias +1.31 = 平均比人类高 1.31 分)、**gemini-2.5-pro 把 ~80% 预测塌到"1"**(**方差塌缩** → 其 Pearson 是分布假象非判别力,红标警告)。**Pearson 单看会误诊,得配 confusion 才看得清各家的错法**。
       </div>
       <div id="hs-cm"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- ═══ APPENDIX · 补充分析 · not paper-facing ═══ -->
+    <div style="margin:36px 0 14px;padding:8px 12px;border-top:1px dashed #cbd5e1;color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:.8px">
+      📎 以下为补充分析 · Appendix
+      <span style="text-transform:none;color:#cbd5e1;font-size:11px;letter-spacing:0;margin-left:6px">技术性置信区间 · 标注员分布 · 供 sanity check</span>
+    </div>
+
+    <!-- Bootstrap CI whiskers -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>📏 Bootstrap 95% CI · Pearson 置信区间</h2>
+        <span class="hs-sub">技术性检验 · 分数到底稳不稳</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #64748b;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
+        **定义**:每个 Pearson 是单一 875 样本的点估计;对 875 条**有放回重采样 1000 次**,估计该分数在"换一批视频"下会抖多少 → 95% CI。<br>
+        **Note**:PA 头部(flash 0.53 / seed2.1 0.50 / seed2.0 0.49)CI 相互重叠 → PA 榜没有唯一冠军、只有同梯队;IA 才有真分离(gpt5.5 0.61 甩开 flash)。也是我们剔除 <15% 覆盖 judge 的依据(CI 宽达 ±0.15)。
+      </div>
+      <div id="hs-ci"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- Calibration (downgraded: compression basically = regression-to-mean per Ham) -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>🎚️ Calibration · 判分校准</h2>
+        <span class="hs-sub">judge 分档 vs 人类均值 · 反向图 pending Alice</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #8b5cf6;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
+        **⚠️ 降级说明**:原来"judge 打 4/5 都对到人类 ~3.85 = 判分能力压缩、封死 Pearson 上限"的论点,**Ham 用 regression-to-mean baseline 控制后基本 = 回归均值本身**(任何有噪声的预测器都会这样),不是 judge 特有缺陷。因此这张卡**从 headline 降到 appendix**。<br>
+        **仍有的独立信息**:极端塌陷(如 gemini-2.5-pro 把 ~80% 视频打成 1)是**方差塌缩**、超出回归 baseline,属真缺陷 —— 但这已经在混淆矩阵卡里更清楚地展现。<br>
+        **⏳ 反向图**(x = 人类分, y = judge 均值 + 三条线:对角 y=x, 虚线 regression-to-mean baseline, 实线 judge 数据)pending Alice 反向 json + 矩数据。
+      </div>
+      <div id="hs-cal"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- Score distribution — annotator baseline sanity -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>📈 打分分布</h2><span class="hs-sub">标注员 sanity check · 全员 vs 自己</span>
+      </div>
+      <div class="hs-legend">
+        <span><i class="hs-sw-all"></i>全员</span>
+        <span><i class="hs-sw-self"></i>自己</span>
+        <span class="hs-sub" style="margin-left:auto">柱高 = 组内占比 %</span>
+      </div>
+      <div id="hs-corr"></div>
+      <div id="hs-dist"><div class="hs-empty">加载中…</div></div>
     </section>
 
     <section id="hs-err" class="hs-card" style="display:none;border-color:#f2c0c8;background:#fdf3f5">
@@ -1098,30 +1103,30 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fx", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fy", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85fx", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85fy", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85fx", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85fy", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fx", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85fy", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85fj: calibration reliability curves.
-    fetch("bench/calibration.json?v=v85fx", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85fy", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(renderCalibration)
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -1132,8 +1137,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85fx", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85fx", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85fy", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85fy", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -1143,7 +1148,7 @@
     // v85fx: score-controlled analysis (Alice) — Pearson · Spearman · MAE ·
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
-    fetch("bench/score_controlled.json?v=v85fx", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85fy", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -1151,11 +1156,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85fx", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85fy", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fx", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85fy", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
