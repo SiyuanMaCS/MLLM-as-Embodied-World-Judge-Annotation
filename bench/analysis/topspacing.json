@@ -1,0 +1,68 @@
+{
+ "models": [
+  {
+   "name": "wan26_flash",
+   "gold_pa": 4.041,
+   "n": 73,
+   "bucket": "top4"
+  },
+  {
+   "name": "veo31_lite",
+   "gold_pa": 4.029,
+   "n": 35,
+   "bucket": "top4"
+  },
+  {
+   "name": "happyhorse",
+   "gold_pa": 3.892,
+   "n": 37,
+   "bucket": "top4"
+  },
+  {
+   "name": "kling",
+   "gold_pa": 3.846,
+   "n": 26,
+   "bucket": "top4"
+  },
+  {
+   "name": "cosmos3",
+   "gold_pa": 3.542,
+   "n": 120,
+   "bucket": "bottom6"
+  },
+  {
+   "name": "abot_physworld_f113",
+   "gold_pa": 3.358,
+   "n": 109,
+   "bucket": "bottom6"
+  },
+  {
+   "name": "wow_wan14b_f105",
+   "gold_pa": 2.898,
+   "n": 128,
+   "bucket": "bottom6"
+  },
+  {
+   "name": "gigaworld_gr1_2b_f113",
+   "gold_pa": 2.781,
+   "n": 114,
+   "bucket": "bottom6"
+  },
+  {
+   "name": "wan22_ti2v5b_1280x704_f169",
+   "gold_pa": 2.707,
+   "n": 123,
+   "bucket": "bottom6"
+  },
+  {
+   "name": "cogvideo_i2v_f113",
+   "gold_pa": 1.864,
+   "n": 110,
+   "bucket": "bottom6"
+  }
+ ],
+ "top4_span": 0.195,
+ "bottom6_span": 1.678,
+ "full_span": 2.177,
+ "note": "human gold PA mean per merged base gen-model, 875 in-domain set; top-4 near-tied vs wide lower spread"
+}
