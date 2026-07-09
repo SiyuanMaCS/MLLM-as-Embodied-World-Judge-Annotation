@@ -125,6 +125,15 @@
 .hs-ci-val small{ color:#94a3b8; font-weight:400; margin-left:4px; }
 .hs-ci-partial{ opacity:0.55; }
 
+/* v85fj: calibration reliability curve */
+.hs-cal-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.hs-cal-panel{ }
+.hs-cal-panel-title{ font-size:12px; color:#64748b; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:.4px; }
+.hs-cal-svg{ width:100%; height:auto; display:block; background:linear-gradient(180deg,#fcfdff,#f6f8fc); border:1px solid #eef0f5; border-radius:8px; }
+.hs-cal-legend{ display:flex; flex-wrap:wrap; gap:12px; margin-top:8px; font-size:11.5px; color:#334155; }
+.hs-cal-legend .sw{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+@media(max-width:640px){ .hs-cal-wrap{ grid-template-columns:1fr; } }
+
 /* v85ey: judge confusion matrices */
 .hs-cm-judge{ margin-bottom:22px; }
 .hs-cm-judge-name{ font-weight:600; font-size:14px; color:#0f172a; margin-bottom:8px; }
@@ -213,6 +222,19 @@
         **Insight**:PA 头部(flash 0.53 / seed2.1 0.50 / seed2.0 0.49)**CI 相互重叠 → 排名统计上不可分**,PA 榜**没有唯一冠军**、只有同梯队;IA 才有真分离(gpt5.5 0.61 甩开 flash)。这也是为什么剔除 <15% 覆盖的 judge —— 它们 CI 宽达 ±0.15,数字是噪声。
       </div>
       <div id="hs-ci"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- v85fj: Calibration reliability curve (Alice's suggestion) -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>🎚️ Calibration · 判分校准</h2>
+        <span class="hs-sub">judge 打 X 分,人类实际打多少?</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #8b5cf6;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
+        **定义**:每个 judge 分档(1-5)对应人类均值 —— 完美校准落对角线 y=x。<br>
+        **Insight**:judge **单调但压缩** —— flash 打 4 和 5 都对到人类 ≈3.85,**能排序却分不出好/优秀**;无 judge 顶档能对到人类 ≥4.5,即 **MLLM 从不敢确认"物理优秀"** —— 这封死了 Pearson 上限,解释了为何 PA 卡在 0.53。低端塌陷(gemini-2.5-pro 把很多类打成 1)也在这里看得清。
+      </div>
+      <div id="hs-cal"><div class="hs-empty">加载中…</div></div>
     </section>
 
     <!-- Judge confusion matrices (v85ey · Ham data) -->
@@ -656,6 +678,88 @@
     host.innerHTML = html;
   }
 
+  // v85fj: calibration reliability curves. Payload: {"judge::dim":{"1":{human_mean,n},...,"5":{...}}}
+  function renderCalibration(payload){
+    var host = document.getElementById("hs-cal");
+    if(!host) return;
+    if(!payload || !Object.keys(payload).length){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    var byJudge = {};
+    Object.keys(payload).forEach(function(k){
+      var parts = k.split("::");
+      var j = parts[0], dim = parts[1];
+      if(!byJudge[j]) byJudge[j] = {};
+      byJudge[j][dim] = payload[k];
+    });
+    var judgeOrder = ["gemini-3.5-flash","seed2.0_pro","gpt5.5","qwen3-vl-32b-instruct","gemini-2.5-pro"];
+    var judgeColor = {
+      "gemini-3.5-flash":       "#2563eb",  // blue — highlighted
+      "seed2.0_pro":            "#10b981",  // green
+      "gpt5.5":                 "#8b5cf6",  // purple
+      "qwen3-vl-32b-instruct":  "#f59e0b",  // amber — 偏松
+      "gemini-2.5-pro":         "#ef4444"   // red — 低端塌陷
+    };
+    var judges = judgeOrder.filter(function(j){ return byJudge[j]; });
+    Object.keys(byJudge).forEach(function(j){ if(judges.indexOf(j)<0) judges.push(j); });
+
+    function svgFor(dimKey, dimLabel){
+      // 260×220 svg (viewBox); plot area inset 36 left, 20 top, 12 right, 32 bottom
+      var W=260, H=220, PL=36, PT=16, PR=12, PB=32;
+      var plotW = W - PL - PR;
+      var plotH = H - PT - PB;
+      // 1..5 → x pixels
+      function px(s){ return PL + (s - 1) / 4 * plotW; }
+      function py(y){ return PT + plotH - (y - 1) / 4 * plotH; }
+      var s = '<svg class="hs-cal-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+      // grid
+      [1,2,3,4,5].forEach(function(v){
+        s += '<line x1="'+px(v)+'" y1="'+PT+'" x2="'+px(v)+'" y2="'+(PT+plotH)+'" stroke="#eef0f5" stroke-width="1"/>';
+        s += '<line x1="'+PL+'" y1="'+py(v)+'" x2="'+(PL+plotW)+'" y2="'+py(v)+'" stroke="#eef0f5" stroke-width="1"/>';
+      });
+      // diagonal (perfect calibration)
+      s += '<line x1="'+px(1)+'" y1="'+py(1)+'" x2="'+px(5)+'" y2="'+py(5)+'" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3"/>';
+      // axes labels
+      [1,2,3,4,5].forEach(function(v){
+        s += '<text x="'+px(v)+'" y="'+(H-PB+14)+'" font-size="10" fill="#64748b" text-anchor="middle">'+v+'</text>';
+        s += '<text x="'+(PL-6)+'" y="'+(py(v)+3)+'" font-size="10" fill="#64748b" text-anchor="end">'+v+'</text>';
+      });
+      s += '<text x="'+(PL+plotW/2)+'" y="'+(H-4)+'" font-size="10" fill="#94a3b8" text-anchor="middle">Judge score</text>';
+      s += '<text x="8" y="'+(PT+plotH/2)+'" font-size="10" fill="#94a3b8" text-anchor="middle" transform="rotate(-90 8 '+(PT+plotH/2)+')">Human mean</text>';
+      // one line per judge
+      judges.forEach(function(j){
+        var dat = byJudge[j][dimKey]; if(!dat) return;
+        var col = judgeColor[j] || "#334155";
+        var pts = [];
+        [1,2,3,4,5].forEach(function(s2){
+          var e = dat[s2 + ""] || dat[s2];
+          if(!e || e.human_mean == null) return;
+          pts.push([px(s2), py(e.human_mean), s2, e.human_mean, e.n]);
+        });
+        if(!pts.length) return;
+        // polyline
+        var pathD = pts.map(function(p,i){ return (i?"L":"M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+        s += '<path d="'+pathD+'" stroke="'+col+'" stroke-width="1.8" fill="none" opacity="0.85"/>';
+        // markers
+        pts.forEach(function(p){
+          s += '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="'+col+'"><title>'+j+' · judge='+p[2]+' → human_mean='+p[3].toFixed(2)+' (n='+p[4]+')</title></circle>';
+        });
+      });
+      s += '</svg>';
+      return s;
+    }
+    var html = '<div class="hs-cal-wrap">';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">PA · Physical Adherence</div>' + svgFor("physical_adherence") + '</div>';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">IA · Instruction Alignment</div>' + svgFor("instruction_alignment") + '</div>';
+    html += '</div>';
+    html += '<div class="hs-cal-legend">';
+    judges.forEach(function(j){
+      var col = judgeColor[j] || "#334155";
+      html += '<span><i class="sw" style="background:'+col+'"></i>'+esc(j)+'</span>';
+    });
+    html += '<span style="margin-left:auto;color:#94a3b8"><i class="sw" style="background:transparent;border:1px dashed #94a3b8;border-radius:0"></i>y=x 完美校准</span>';
+    html += '</div>';
+    host.innerHTML = html;
+  }
+
   function showErr(msg){
     var e=document.getElementById("hs-err"); e.style.display="block";
     document.getElementById("hs-err-msg").textContent=msg;
@@ -672,26 +776,31 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fi", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fj", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fb: closed-loop headline + per-embodiment heatmap + bootstrap CI
     // (Alice bundle, static bench/ file for now; will move to HF pipeline).
-    fetch("bench/judge_judge_closedloop.json?v=v85fi", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85fj", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cl " + r.status); return r.json(); })
       .then(renderClosedLoop)
       .catch(function(e){ document.getElementById("hs-cl").innerHTML='<div class="hs-empty">闭环数据加载失败</div>'; });
-    fetch("bench/per_embodiment_pa.json?v=v85fi", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85fj", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fi", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85fj", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fi", {cache:"no-store"})
+    // v85fj: calibration reliability curves.
+    fetch("bench/calibration.json?v=v85fj", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
+      .then(renderCalibration)
+      .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
+    fetch("bench/bootstrap_ci.json?v=v85fj", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
