@@ -122,14 +122,6 @@
       <div id="hs-dist"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- MODEL LEADERBOARD -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2>🏁 Model 均分榜</h2><span class="hs-sub">按整体均分 (PA+IA)/2 降序 · 满分 5</span>
-      </div>
-      <div id="hs-lb"><div class="hs-empty">加载中…</div></div>
-    </section>
-
     <section id="hs-err" class="hs-card" style="display:none;border-color:#f2c0c8;background:#fdf3f5">
       <div class="hs-h"><h2 style="color:#b00020">加载失败</h2></div>
       <p id="hs-err-msg" class="hs-sub"></p>
@@ -290,31 +282,8 @@
     box.innerHTML = html;
   }
 
-  function renderLB(d){
-    var box=document.getElementById("hs-lb");
-    var models=(d&&d.models)||[];
-    if(!models.length){ box.innerHTML='<div class="hs-empty">暂无数据</div>'; return; }
-    var html="";
-    models.forEach(function(m,idx){
-      var ov=m.overall_mean||0;
-      var rk=idx+1, rcls = rk<=3?(" r"+rk):"";
-      var col=scoreColor(ov);
-      html += '<div class="hs-lb-row">';
-      html += '<div class="hs-rank'+rcls+'">'+rk+'</div>';
-      html += '<div class="hs-lb-main"><div class="hs-lb-top">';
-      html += '<span class="hs-lb-name">'+esc(m.model)+'</span><span class="hs-lb-n">n='+m.n_annotations+'</span>';
-      html += '<span class="hs-lb-score" style="color:'+col+'">'+fmt(ov)+'</span></div>';
-      html += '<div class="hs-track"><div class="hs-fill" data-w="'+(ov/5*100)+'" style="background:linear-gradient(90deg,'+col+'cc,'+col+')"></div></div>';
-      html += '<div class="hs-subs"><span>PA <b>'+fmt(m.pa_mean)+'</b></span><span>IA <b>'+fmt(m.ia_mean)+'</b></span></div>';
-      html += '</div></div>';
-    });
-    html += '<div class="hs-scale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>';
-    box.innerHTML = html;
-    // animate fills
-    requestAnimationFrame(function(){
-      box.querySelectorAll(".hs-fill").forEach(function(el){ el.style.width=el.getAttribute("data-w")+"%"; });
-    });
-  }
+  // v85ex: Model 均分榜 removed from stats — /leaderboard.html is the
+  // canonical judge + video-gen ranking surface now.
 
   function showErr(msg){
     var e=document.getElementById("hs-err"); e.style.display="block";
@@ -330,10 +299,6 @@
     if(!API){ showErr("后端地址未配置"); return; }
     jget("score_distribution","&user="+encodeURIComponent(USER)).then(renderDist)
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
-    jget("model_averages","&user="+encodeURIComponent(USER)).then(function(d){
-      if(d && d.error){ document.getElementById("hs-lb").innerHTML='<div class="hs-empty">'+esc(d.error)+'</div>'; return; }
-      renderLB(d);
-    }).catch(function(e){ document.getElementById("hs-lb").innerHTML='<div class="hs-empty">均分榜加载失败</div>'; });
   }
   if(document.readyState!=="loading") load(); else document.addEventListener("DOMContentLoaded", load);
   setInterval(load, 60000);
