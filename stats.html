@@ -704,6 +704,22 @@
   // v85fs: fair common set gap matrix. Payload shape:
   // { all_models:[...], tasks:[...], existing_generated:{task:[models]},
   //   need_generate:{task:[models]}, summary:{cells_total, already_have, need_new_gen} }
+  window.__fcsSources = window.__fcsSources || {};
+  function fcsRerender(){
+    var src = window.__fcsSources;
+    if(!src.pick) src.pick = 'top_20';
+    if(src.pick === 'full' && src.raw) { renderFairCommonSet(src.raw); return; }
+    if(src.optimized && src.optimized.variants && src.optimized.variants[src.pick]) {
+      var v = src.optimized.variants[src.pick];
+      renderFairCommonSet({
+        all_models: src.optimized.all_models,
+        tasks: v.tasks,
+        existing_generated: v.existing_generated,
+        need_generate: v.need_generate,
+        summary: v.summary,
+      });
+    } else if(src.raw) { renderFairCommonSet(src.raw); }
+  }
   function renderFairCommonSet(d){
     var host = document.getElementById("hs-fcs");
     if(!host) return;
@@ -717,12 +733,33 @@
       (d.existing_generated[t] || []).forEach(function(m){ if(perModel[m]) perModel[m].have++; });
       (d.need_generate[t] || []).forEach(function(m){ if(perModel[m]) perModel[m].need++; });
     });
+    // Variant toggle
+    var src = window.__fcsSources || {};
+    var currentPick = src.pick || 'top_20';
+    var html = '';
+    if(src.optimized){
+      html += '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:12px">';
+      html += '<span style="color:#64748b;font-weight:600;margin-right:6px">变体 · Variant:</span>';
+      ['top_10','top_15','top_20','top_25','top_30','full'].forEach(function(p){
+        var v = p === 'full' ? (src.raw ? { summary: { est_api_cost_usd: null, need_new_gen: (src.raw.summary && src.raw.summary.need_new_gen) } } : null) : (src.optimized.variants && src.optimized.variants[p]);
+        if(!v) return;
+        var cost = v.summary && v.summary.est_api_cost_usd;
+        var label = p === 'full' ? '全 32 原版' : p.replace('_',' ');
+        var costLbl = cost != null ? ' · $' + cost : '';
+        var active = p === currentPick;
+        html += '<button data-fcs-pick="' + p + '" style="padding:5px 10px;border-radius:6px;cursor:pointer;border:1px solid ' + (active?'#db2777':'#e2e8f0') + ';background:' + (active?'#fce7f3':'#fff') + ';color:' + (active?'#9d174d':'#334155') + ';font-weight:' + (active?600:500) + ';font-size:11.5px">' + label + costLbl + '</button>';
+      });
+      html += '</div>';
+    }
     // Summary chips
     var s = d.summary || {};
-    var html = '<div class="hs-fcs-summary">';
+    html += '<div class="hs-fcs-summary">';
     html += '<span class="hs-fcs-chip total">Total cells <b>' + (s.cells_total || tasks.length*models.length) + '</b></span>';
     html += '<span class="hs-fcs-chip have">Already generated <b>' + (s.already_have || 0) + '</b></span>';
     html += '<span class="hs-fcs-chip need">Need new generation <b>' + (s.need_new_gen || 0) + '</b></span>';
+    if(s.est_api_cost_usd != null){
+      html += '<span class="hs-fcs-chip need" style="background:#fef2f2;color:#b91c1c">≈ API cost <b>$' + s.est_api_cost_usd.toFixed(2) + '</b></span>';
+    }
     html += '<span class="hs-fcs-chip total" style="background:#f1f5f9;color:#334155">Tasks <b>' + tasks.length + '</b> × Models <b>' + models.length + '</b></span>';
     html += '</div>';
     // Grid: 1 (task label) + N (model cells) columns
@@ -758,6 +795,14 @@
     });
     html += '</div>';
     host.innerHTML = html;
+    // Wire toggle
+    host.querySelectorAll('[data-fcs-pick]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        window.__fcsSources = window.__fcsSources || {};
+        window.__fcsSources.pick = btn.getAttribute('data-fcs-pick');
+        fcsRerender();
+      });
+    });
   }
 
   // v85fs: instruction complexity 3-tier bar comparison.
@@ -1053,49 +1098,56 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fs", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85ft", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85fs", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85ft", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85fs", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85ft", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fs", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85ft", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85fj: calibration reliability curves.
-    fetch("bench/calibration.json?v=v85fs", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85ft", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(renderCalibration)
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
     // v85fm: judge ensemble baseline-vs-mean + gains curve.
-    fetch("bench/ensemble_judge.json?v=v85fs", {cache:"no-store"})
+    fetch("bench/ensemble_judge.json?v=v85ft", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ens " + r.status); return r.json(); })
       .then(renderEnsemble)
       .catch(function(e){ var el=document.getElementById("hs-ens"); if(el) el.innerHTML='<div class="hs-empty">ensemble 加载失败</div>'; });
-    // v85fs: Fair Common Set gap matrix (Alice's fill list).
-    fetch("bench/fair_common_set_filllist.json?v=v85fs", {cache:"no-store"})
-      .then(function(r){ if(!r.ok) throw new Error("fcs " + r.status); return r.json(); })
-      .then(renderFairCommonSet)
-      .catch(function(e){ var el=document.getElementById("hs-fcs"); if(el) el.innerHTML='<div class="hs-empty">Fair-common-set 加载失败</div>'; });
+    // v85ft: Fair Common Set — pull both the raw 32-task list and the
+    // API-optimized variants (top_10/15/20/25/30), then render the top_20
+    // by default with a toggle to switch to full/other variants.
+    Promise.all([
+      fetch("bench/fair_common_set_filllist.json?v=v85ft", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85ft", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+    ]).then(function(pair){
+      window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
+      fcsRerender();
+    }).catch(function(){
+      var el=document.getElementById("hs-fcs"); if(el) el.innerHTML='<div class="hs-empty">Fair-common-set 加载失败</div>';
+    });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85fs", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85ft", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(renderInstructionComplexity)
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fs", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85ft", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });

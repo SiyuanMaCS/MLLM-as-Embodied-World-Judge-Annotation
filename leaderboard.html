@@ -6,7 +6,7 @@
 <title>Leaderboard — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85fs">
+<link rel="stylesheet" href="style.css?v=v85ft">
 <style>
   .lb-section { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
   .lb-section h2 { margin: 0 0 10px; font-size: 15px; letter-spacing: -0.01em; font-weight: 600; color: #0f172a; }
@@ -98,7 +98,7 @@
     </div>
   </section>
 </main>
-<script src="app.js?v=v85fs"></script>
+<script src="app.js?v=v85ft"></script>
 <script>
   async function loadJudge() {
     try {
@@ -106,7 +106,7 @@
       // for public visitors. Route the primary fetch through the HF mirror
       // instead — HF is public, GHA sync keeps it byte-identical with GitHub.
       const primary = 'https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main/bench/results/leaderboard.md';
-      const fallback = 'bench/leaderboard.md?v=v85fs';
+      const fallback = 'bench/leaderboard.md?v=v85ft';
       let md;
       try { md = await fetch(primary).then(r => { if (!r.ok) throw new Error('primary ' + r.status); return r.text(); }); }
       catch (_) { md = await fetch(fallback).then(r => r.text()); }
@@ -115,7 +115,7 @@
       // deriving from Spearman column if the strict file is unreachable.
       let strictMap = {};
       try {
-        const strict = await fetch('bench/model_ranking_strict.json?v=v85fs').then(r => r.json());
+        const strict = await fetch('bench/model_ranking_strict.json?v=v85ft').then(r => r.json());
         for (const [j, dims] of Object.entries(strict)) {
           strictMap[j] = {
             pa_knorm: dims?.PA?.kendall_distance_norm,
@@ -189,7 +189,7 @@
       // the HF mirror instead of raw.githubusercontent (which 404s for a
       // private source). Client merge regex is still an idempotent safety net.
       const vgPrimary = 'https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main/bench/videogen_leaderboard.json';
-      const vgFallback = 'bench/videogen_leaderboard.json?v=v85fs';
+      const vgFallback = 'bench/videogen_leaderboard.json?v=v85ft';
       let data;
       try { data = await fetch(vgPrimary).then(r => { if (!r.ok) throw new Error('primary ' + r.status); return r.json(); }); }
       catch (_) { data = await fetch(vgFallback).then(r => r.json()); }
