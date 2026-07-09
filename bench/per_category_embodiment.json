@@ -35,17 +35,17 @@
  "judge_pa_pearson": {
   "人手 (human hand)": {
    "gemini-3.5-flash": 0.488,
-   "seed2.0_pro": 0.469,
-   "gpt5.5": 0.325,
+   "seed2.0_pro": 0.482,
+   "gpt5.5": 0.321,
    "qwen3-vl-32b-instruct": 0.273,
-   "gemini-2.5-pro": 0.283
+   "gemini-2.5-pro": 0.294
   },
   "灵巧手 (dexterous)": {
    "gemini-3.5-flash": 0.512,
    "seed2.0_pro": 0.422,
    "gpt5.5": 0.36,
    "qwen3-vl-32b-instruct": 0.414,
-   "gemini-2.5-pro": 0.214
+   "gemini-2.5-pro": 0.216
   },
   "gripper (单+双臂)": {
    "gemini-3.5-flash": 0.549,

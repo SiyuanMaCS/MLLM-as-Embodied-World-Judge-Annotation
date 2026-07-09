@@ -50,25 +50,25 @@
   },
   "2": {
    "human_mean": 2.34,
-   "n": 324
+   "n": 325
   },
   "3": {
-   "human_mean": 3.29,
-   "n": 230
+   "human_mean": 3.28,
+   "n": 234
   },
   "4": {
    "human_mean": 3.71,
    "n": 143
   },
   "5": {
-   "human_mean": 3.91,
-   "n": 150
+   "human_mean": 3.92,
+   "n": 152
   }
  },
  "seed2.0_pro::instruction_alignment": {
   "1": {
-   "human_mean": 1.65,
-   "n": 31
+   "human_mean": 1.67,
+   "n": 33
   },
   "2": {
    "human_mean": 2.4,
@@ -76,15 +76,15 @@
   },
   "3": {
    "human_mean": 3.32,
-   "n": 264
+   "n": 267
   },
   "4": {
-   "human_mean": 3.88,
-   "n": 42
+   "human_mean": 3.84,
+   "n": 43
   },
   "5": {
    "human_mean": 4.33,
-   "n": 246
+   "n": 247
   }
  },
  "gpt5.5::physical_adherence": {
@@ -102,11 +102,11 @@
   },
   "4": {
    "human_mean": 3.4,
-   "n": 459
+   "n": 462
   },
   "5": {
-   "human_mean": 3.63,
-   "n": 87
+   "human_mean": 3.64,
+   "n": 91
   }
  },
  "gpt5.5::instruction_alignment": {
@@ -116,19 +116,19 @@
   },
   "2": {
    "human_mean": 2.16,
-   "n": 234
+   "n": 236
   },
   "3": {
    "human_mean": 3.18,
-   "n": 309
+   "n": 313
   },
   "4": {
    "human_mean": 3.78,
    "n": 159
   },
   "5": {
-   "human_mean": 4.57,
-   "n": 164
+   "human_mean": 4.56,
+   "n": 165
   }
  },
  "qwen3-vl-32b-instruct::physical_adherence": {
@@ -178,11 +178,11 @@
  "gemini-2.5-pro::physical_adherence": {
   "1": {
    "human_mean": 2.92,
-   "n": 701
+   "n": 706
   },
   "2": {
    "human_mean": 3.64,
-   "n": 90
+   "n": 92
   },
   "3": {
    "human_mean": 4.14,
@@ -193,30 +193,30 @@
    "n": 3
   },
   "5": {
-   "human_mean": 3.88,
-   "n": 59
+   "human_mean": 3.9,
+   "n": 60
   }
  },
  "gemini-2.5-pro::instruction_alignment": {
   "1": {
    "human_mean": 2.38,
-   "n": 232
+   "n": 236
   },
   "2": {
    "human_mean": 3.04,
-   "n": 256
+   "n": 257
   },
   "3": {
-   "human_mean": 3.57,
-   "n": 161
+   "human_mean": 3.56,
+   "n": 162
   },
   "4": {
    "human_mean": 4.0,
    "n": 56
   },
   "5": {
-   "human_mean": 4.37,
-   "n": 163
+   "human_mean": 4.36,
+   "n": 164
   }
  }
 }
