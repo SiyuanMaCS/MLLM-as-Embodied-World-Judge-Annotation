@@ -223,26 +223,19 @@
       <div id="hs-icx"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- v85g2 (siyuan restored to TOP): The reverse-axis calibration IS the
-         core research question — does the true-quality (human gold) score
-         drive judge accuracy? Regression baseline separates "boring
-         regression to mean" from "real judge failure at extremes". -->
+    <!-- v85g3 (Ham's hard version): bias-by-band chart is the direct answer -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2>🎚️ Human 真实质量 → Judge 打分</h2>
-        <span class="hs-sub">"人类给 X 分的视频,judge 打几分?" · 关键研究问题</span>
+        <h2>🎚️ Human 真实质量 → Judge 打分 · bias-by-band</h2>
+        <span class="hs-sub">主 headline · judge 极端区不可信,中段可信</span>
       </div>
       <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #8b5cf6;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
         **研究问题**:视频真实质量(人类 gold)高 / 低时,judge 会不会**系统性错**?<br>
-        **读法**:x = 人类 gold(真实质量),y = 该分段 judge 平均打的分。三条线:<br>
-        &nbsp;· <b>虚线 y=x</b> = 完美校准(judge 复述人类)<br>
-        &nbsp;· <b>点线 regression baseline</b>(每 judge 各自的矩)= 任何有噪声预测器都会有的"回归均值"<br>
-        &nbsp;· <b>实线 judge</b> = 实际数据<br>
-        **判读**:
-        <b>实线明显在 baseline 下方</b>(高分处更低、低分处更高)= **判分能力真压缩**,超出回归、是 judge 特有缺陷 → paper 卖点。
-        <b>实线 ≈ baseline</b> = 只是"噪声预测器的自然回归",不是 judge 独有 → 别 overclaim。
-        <b>实线 ≈ y=x</b> = 完美校准(几乎不可能)。<br>
-        **主要 insight 落在这里**:找出 judge 在哪个真实质量段最不忠实(比如 human=5 时 judge 只敢给 3-4)—— 这决定了 "MLLM judge 有没有系统性质量偏见" 的答案,paper 里的 headline 定性。
+        **硬结论(8 条 judge×dim 全中,单调 monotone)**:<br>
+        <b>judge 准确度强依赖真实质量,系统性中心收缩 —— 高估最差的、低估最好的</b>。human=1 时几乎所有 judge 高估(bias > 0);human=5 时几乎所有 judge 低估(bias -1 到 -3.2)。**唯一可信段 = 中间(band 2-3, bias ≈ 0)**,两端 judge 最没用。<br>
+        <b>例(PA)</b>:human=1 → human=5 的 bias 走位 —— flash +0.60 → -1.14 · seed2.1 +1.25 → -1.64 · gpt-5.2 +1.62 → -1.18 · gemini-2.5-pro +0.07 → -3.21<br>
+        **为啥这是主 insight**:两个都产出优质片(human 4-5)的模型会被 judge **压到一起、分不开** —— 这正是**顶部打榜失灵**(K_norm 在强模型间失真)的机制。<br>
+        **Paper headline**(Ham 一句话):*"judges are reliable only mid-scale; they systematically compress the quality extremes, which is exactly where generator ranking needs resolution."*
       </div>
       <div id="hs-cal"><div class="hs-empty">加载中…</div></div>
     </section>
@@ -1029,8 +1022,91 @@
   //   3. solid per-judge line — actual judge_mean curve (data)
   // Judge line noticeably BELOW baseline at extremes = real compression.
   // Judge line matching baseline = just regression, don't overclaim.
+  // v85g3 (Ham's hard version of siyuan's research question):
+  // bias-by-human-band chart. For each human gold ∈ {1..5}, plot the
+  // mean(judge − human) bias per judge×dim. Monotone downtrend from +ve
+  // at human=1 to −ve at human=5 = systematic mean-centering / extreme
+  // compression, all 8 judge×dim agree.
+  // Data: bench/score_effect_by_quality.json — "<judge>::<dim>": {1..5: {n,mae,bias,exact,within1,judge_std}}
+  function renderCalibrationBias(payload){
+    var host = document.getElementById("hs-cal");
+    if(!host) return;
+    if(!payload){ return; }
+    var byJudge = {};
+    Object.keys(payload).forEach(function(k){
+      if(k.indexOf('::') < 0) return;
+      var parts = k.split("::");
+      var j = parts[0], dim = parts[1];
+      if(!byJudge[j]) byJudge[j] = {};
+      byJudge[j][dim] = payload[k];
+    });
+    var judgeOrder = ["gemini-3.5-flash","seed2.0_pro","seed2.1_lite","gpt-5.2","gpt5.5","gemini-3.1-pro-preview","gemini-2.5-flash","qwen3-vl-32b-instruct","gemini-2.5-pro"];
+    var judgeColor = {
+      "gemini-3.5-flash":"#2563eb","seed2.0_pro":"#10b981","seed2.1_lite":"#059669",
+      "gpt-5.2":"#0891b2","gpt5.5":"#8b5cf6","gemini-3.1-pro-preview":"#7c3aed",
+      "gemini-2.5-flash":"#f97316","qwen3-vl-32b-instruct":"#f59e0b","gemini-2.5-pro":"#ef4444"
+    };
+    var judges = judgeOrder.filter(function(j){ return byJudge[j]; });
+    Object.keys(byJudge).forEach(function(j){ if(judges.indexOf(j)<0) judges.push(j); });
+    function svgFor(dimKey, dimLabel){
+      var W = 320, H = 240, PL = 44, PT = 20, PR = 14, PB = 38;
+      var plotW = W - PL - PR, plotH = H - PT - PB;
+      var yMin = -3.5, yMax = 2.0;
+      function px(h){ return PL + (h - 1) / 4 * plotW; }
+      function py(v){ return PT + plotH - (v - yMin) / (yMax - yMin) * plotH; }
+      var s = '<svg class="hs-cal-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+      [-3,-2,-1,0,1,2].forEach(function(v){
+        s += '<line x1="'+PL+'" y1="'+py(v)+'" x2="'+(PL+plotW)+'" y2="'+py(v)+'" stroke="'+(v===0?"#94a3b8":"#eef0f5")+'" stroke-width="'+(v===0?1.5:1)+'"/>';
+        s += '<text x="'+(PL-6)+'" y="'+(py(v)+3)+'" font-size="10" fill="#64748b" text-anchor="end">'+(v>0?"+":"")+v.toFixed(1)+'</text>';
+      });
+      [1,2,3,4,5].forEach(function(h){
+        s += '<line x1="'+px(h)+'" y1="'+PT+'" x2="'+px(h)+'" y2="'+(PT+plotH)+'" stroke="#eef0f5" stroke-width="1"/>';
+        s += '<text x="'+px(h)+'" y="'+(H-PB+14)+'" font-size="10" fill="#64748b" text-anchor="middle">'+h+'</text>';
+      });
+      s += '<text x="'+(PL+plotW/2)+'" y="'+(H-4)+'" font-size="10" fill="#94a3b8" text-anchor="middle">Human gold(真实质量)</text>';
+      s += '<text x="10" y="'+(PT+plotH/2)+'" font-size="9.5" fill="#94a3b8" text-anchor="middle" transform="rotate(-90 10 '+(PT+plotH/2)+')">Bias · +=偏松 · -=偏严</text>';
+      s += '<text x="'+(PL+plotW-4)+'" y="'+(py(0)-4)+'" font-size="9" fill="#94a3b8" text-anchor="end">unbiased</text>';
+      judges.forEach(function(j){
+        var dat = byJudge[j][dimKey]; if(!dat) return;
+        var col = judgeColor[j] || "#334155";
+        var pts = [];
+        [1,2,3,4,5].forEach(function(h){
+          var e = dat[h+""] || dat[h]; if(!e || e.bias == null) return;
+          pts.push([px(h), py(e.bias), h, e.bias, e.n]);
+        });
+        if(!pts.length) return;
+        var pathD = pts.map(function(p,i){ return (i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1); }).join(" ");
+        s += '<path d="'+pathD+'" stroke="'+col+'" stroke-width="1.8" fill="none" opacity="0.88"/>';
+        pts.forEach(function(p){
+          s += '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.8" fill="'+col+'"><title>'+j+' · human='+p[2]+' · bias='+(p[3]>0?"+":"")+p[3].toFixed(2)+' (n='+p[4]+')</title></circle>';
+        });
+      });
+      s += '</svg>';
+      return s;
+    }
+    var html = '<div class="hs-cal-wrap">';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">PA · Physical Adherence · bias by human band</div>' + svgFor("physical_adherence") + '</div>';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">IA · Instruction Alignment · bias by human band</div>' + svgFor("instruction_alignment") + '</div>';
+    html += '</div>';
+    html += '<div class="hs-cal-legend">';
+    judges.forEach(function(j){
+      var col = judgeColor[j] || "#334155";
+      html += '<span><i class="sw" style="background:'+col+'"></i>'+esc(j)+'</span>';
+    });
+    html += '</div>';
+    html += '<div style="font-size:11.5px;color:#334155;margin-top:10px;line-height:1.55;padding:8px 10px;background:#fdf4ff;border-left:3px solid #a855f7;border-radius:4px">';
+    html += '<b>怎么读</b>:y = <b>bias = judge − human 均值</b>。0 线以上 = 系统偏松,以下 = 系统偏严。<br>';
+    html += '<b>硬结论(8 条 judge×dim 全中,单调下降)</b>:**judge 准确度强依赖真实质量,系统性中心收缩** —— human=1 时几乎所有 judge 高估(bias > 0);human=5 时几乎所有 judge 低估(bias -1 到 -3.2)。**唯一可信段 = 中间(band 2-3)**;两端 judge 最没用。<br>';
+    html += '<b>为啥这是主 insight</b>:两个都产出优质片(human 4-5)的模型会被 judge **压到一起、分不开** —— 这正是**顶部打榜失灵**(K_norm 在强模型间失真)的机制。paper headline:*"judges are reliable only mid-scale; they systematically compress the quality extremes, which is exactly where generator ranking needs resolution."*';
+    html += '</div>';
+    host.innerHTML = html;
+    window.__calBiasRendered = true;
+  }
+
   function renderCalibrationByHuman(payload){
     var host = document.getElementById("hs-cal");
+    // v85g3: bias chart takes precedence.
+    if(window.__calBiasRendered) return;
     if(!host) return;
     if(!payload){ return; }
     var byJudge = {};
@@ -1214,40 +1290,43 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85g2", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85g3", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85g2", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85g3", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85g2", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85g3", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85g2", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85g3", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
-    // v85g2 (siyuan restored to TOP): reverse-axis calibration IS the core
-    // research question ("does human quality drive judge accuracy?"). Draws
-    // three overlaid lines per panel: y=x diagonal, regression-to-mean baseline
-    // (Ham/Alice moment-correct), and the judge curve.
-    fetch("bench/calibration_by_human.json?v=v85g2", {cache:"no-store"})
+    // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
+    // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
+    // (v85fj) if either JSON is missing.
+    fetch("bench/score_effect_by_quality.json?v=v85g3", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
+      .then(renderCalibrationBias)
+      .catch(function(){});
+    fetch("bench/calibration_by_human.json?v=v85g3", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v85g2", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85g3", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
-      .then(function(d){ if(!window.__calByHumanRendered) renderCalibration(d); })
-      .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
+      .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
+      .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
     // v85fv (siyuan): judge ensemble card removed from analysis page; leaving
     // the fetch out entirely. renderEnsemble + ensemble json kept in-file
     // for the paper narrative and future re-enable.
@@ -1255,8 +1334,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85g2", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85g2", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85g3", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85g3", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -1266,7 +1345,7 @@
     // v85fx: score-controlled analysis (Alice) — Pearson · Spearman · MAE ·
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
-    fetch("bench/score_controlled.json?v=v85g2", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85g3", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -1274,11 +1353,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85g2", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85g3", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85g2", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85g3", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });

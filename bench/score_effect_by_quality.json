@@ -1,0 +1,338 @@
+{
+ "gemini-3.5-flash::physical_adherence": {
+  "1": {
+   "n": 111,
+   "mae": 0.6,
+   "bias": 0.6,
+   "exact": 0.53,
+   "within1": 0.94,
+   "judge_std": 0.84
+  },
+  "2": {
+   "n": 185,
+   "mae": 0.77,
+   "bias": 0.08,
+   "exact": 0.46,
+   "within1": 0.87,
+   "judge_std": 1.2
+  },
+  "3": {
+   "n": 246,
+   "mae": 1.16,
+   "bias": -0.26,
+   "exact": 0.13,
+   "within1": 0.72,
+   "judge_std": 1.29
+  },
+  "4": {
+   "n": 187,
+   "mae": 1.21,
+   "bias": -0.4,
+   "exact": 0.1,
+   "within1": 0.72,
+   "judge_std": 1.32
+  },
+  "5": {
+   "n": 145,
+   "mae": 1.14,
+   "bias": -1.14,
+   "exact": 0.49,
+   "within1": 0.63,
+   "judge_std": 1.31
+  }
+ },
+ "gemini-3.5-flash::instruction_alignment": {
+  "1": {
+   "n": 107,
+   "mae": 1.51,
+   "bias": 1.51,
+   "exact": 0.04,
+   "within1": 0.69,
+   "judge_std": 1.0
+  },
+  "2": {
+   "n": 171,
+   "mae": 0.7,
+   "bias": 0.65,
+   "exact": 0.6,
+   "within1": 0.77,
+   "judge_std": 1.0
+  },
+  "3": {
+   "n": 220,
+   "mae": 0.95,
+   "bias": 0.17,
+   "exact": 0.24,
+   "within1": 0.81,
+   "judge_std": 1.14
+  },
+  "4": {
+   "n": 134,
+   "mae": 0.99,
+   "bias": -0.54,
+   "exact": 0.32,
+   "within1": 0.7,
+   "judge_std": 1.15
+  },
+  "5": {
+   "n": 243,
+   "mae": 1.08,
+   "bias": -1.08,
+   "exact": 0.33,
+   "within1": 0.76,
+   "judge_std": 1.06
+  }
+ },
+ "seed2.1_lite::physical_adherence": {
+  "1": {
+   "n": 111,
+   "mae": 1.25,
+   "bias": 1.25,
+   "exact": 0.03,
+   "within1": 0.73,
+   "judge_std": 0.51
+  },
+  "2": {
+   "n": 185,
+   "mae": 0.5,
+   "bias": 0.47,
+   "exact": 0.55,
+   "within1": 0.95,
+   "judge_std": 0.62
+  },
+  "3": {
+   "n": 246,
+   "mae": 0.44,
+   "bias": -0.25,
+   "exact": 0.57,
+   "within1": 0.99,
+   "judge_std": 0.63
+  },
+  "4": {
+   "n": 187,
+   "mae": 0.89,
+   "bias": -0.79,
+   "exact": 0.25,
+   "within1": 0.87,
+   "judge_std": 0.73
+  },
+  "5": {
+   "n": 146,
+   "mae": 1.64,
+   "bias": -1.64,
+   "exact": 0.08,
+   "within1": 0.37,
+   "judge_std": 0.75
+  }
+ },
+ "seed2.1_lite::instruction_alignment": {
+  "1": {
+   "n": 107,
+   "mae": 1.68,
+   "bias": 1.68,
+   "exact": 0.0,
+   "within1": 0.56,
+   "judge_std": 0.96
+  },
+  "2": {
+   "n": 171,
+   "mae": 1,
+   "bias": 0.99,
+   "exact": 0.36,
+   "within1": 0.8,
+   "judge_std": 1.03
+  },
+  "3": {
+   "n": 220,
+   "mae": 0.78,
+   "bias": 0.42,
+   "exact": 0.48,
+   "within1": 0.74,
+   "judge_std": 1.06
+  },
+  "4": {
+   "n": 134,
+   "mae": 0.9,
+   "bias": -0.05,
+   "exact": 0.13,
+   "within1": 0.97,
+   "judge_std": 0.98
+  },
+  "5": {
+   "n": 243,
+   "mae": 0.47,
+   "bias": -0.47,
+   "exact": 0.75,
+   "within1": 0.82,
+   "judge_std": 0.86
+  }
+ },
+ "gpt-5.2::physical_adherence": {
+  "1": {
+   "n": 111,
+   "mae": 1.62,
+   "bias": 1.62,
+   "exact": 0.03,
+   "within1": 0.51,
+   "judge_std": 0.81
+  },
+  "2": {
+   "n": 185,
+   "mae": 0.98,
+   "bias": 0.94,
+   "exact": 0.35,
+   "within1": 0.69,
+   "judge_std": 0.9
+  },
+  "3": {
+   "n": 246,
+   "mae": 0.68,
+   "bias": 0.31,
+   "exact": 0.37,
+   "within1": 0.96,
+   "judge_std": 0.82
+  },
+  "4": {
+   "n": 187,
+   "mae": 0.5,
+   "bias": -0.39,
+   "exact": 0.56,
+   "within1": 0.95,
+   "judge_std": 0.67
+  },
+  "5": {
+   "n": 146,
+   "mae": 1.18,
+   "bias": -1.18,
+   "exact": 0.12,
+   "within1": 0.76,
+   "judge_std": 0.71
+  }
+ },
+ "gpt-5.2::instruction_alignment": {
+  "1": {
+   "n": 107,
+   "mae": 1.21,
+   "bias": 1.21,
+   "exact": 0.13,
+   "within1": 0.72,
+   "judge_std": 0.79
+  },
+  "2": {
+   "n": 171,
+   "mae": 0.74,
+   "bias": 0.54,
+   "exact": 0.43,
+   "within1": 0.89,
+   "judge_std": 0.97
+  },
+  "3": {
+   "n": 220,
+   "mae": 0.6,
+   "bias": -0.01,
+   "exact": 0.52,
+   "within1": 0.87,
+   "judge_std": 0.93
+  },
+  "4": {
+   "n": 134,
+   "mae": 1.04,
+   "bias": -0.41,
+   "exact": 0.13,
+   "within1": 0.84,
+   "judge_std": 1.09
+  },
+  "5": {
+   "n": 243,
+   "mae": 0.81,
+   "bias": -0.81,
+   "exact": 0.56,
+   "within1": 0.7,
+   "judge_std": 1.05
+  }
+ },
+ "gemini-2.5-pro::physical_adherence": {
+  "1": {
+   "n": 111,
+   "mae": 0.07,
+   "bias": 0.07,
+   "exact": 0.95,
+   "within1": 0.99,
+   "judge_std": 0.42
+  },
+  "2": {
+   "n": 185,
+   "mae": 0.94,
+   "bias": -0.86,
+   "exact": 0.08,
+   "within1": 0.99,
+   "judge_std": 0.51
+  },
+  "3": {
+   "n": 246,
+   "mae": 1.91,
+   "bias": -1.6,
+   "exact": 0.01,
+   "within1": 0.08,
+   "judge_std": 1.09
+  },
+  "4": {
+   "n": 187,
+   "mae": 2.56,
+   "bias": -2.35,
+   "exact": 0.0,
+   "within1": 0.13,
+   "judge_std": 1.25
+  },
+  "5": {
+   "n": 146,
+   "mae": 3.21,
+   "bias": -3.21,
+   "exact": 0.13,
+   "within1": 0.14,
+   "judge_std": 1.36
+  }
+ },
+ "gemini-2.5-pro::instruction_alignment": {
+  "1": {
+   "n": 107,
+   "mae": 0.62,
+   "bias": 0.62,
+   "exact": 0.59,
+   "within1": 0.89,
+   "judge_std": 0.94
+  },
+  "2": {
+   "n": 171,
+   "mae": 0.79,
+   "bias": -0.05,
+   "exact": 0.37,
+   "within1": 0.91,
+   "judge_std": 1.11
+  },
+  "3": {
+   "n": 220,
+   "mae": 1.1,
+   "bias": -0.77,
+   "exact": 0.25,
+   "within1": 0.64,
+   "judge_std": 1.11
+  },
+  "4": {
+   "n": 134,
+   "mae": 1.46,
+   "bias": -1.02,
+   "exact": 0.1,
+   "within1": 0.6,
+   "judge_std": 1.35
+  },
+  "5": {
+   "n": 243,
+   "mae": 1.36,
+   "bias": -1.36,
+   "exact": 0.44,
+   "within1": 0.55,
+   "judge_std": 1.39
+  }
+ }
+}
