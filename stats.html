@@ -179,7 +179,11 @@
     <section class="hs-card">
       <div class="hs-h">
         <h2>🔁 闭环验证 · Closed-loop model ranking</h2>
-        <span class="hs-sub">最佳 judge 给 10 个视频模型排名 vs 人类真值</span>
+        <span class="hs-sub">judge 给生成模型排名 vs 人类给生成模型排名</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #2563eb;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
+        **定义**:最佳 judge 的**逐生成模型均分**排名 vs 人类均分排名(10 个视频生成模型)。<br>
+        **Insight**:逐条 PA 才 0.53、但**按模型聚合排名 Spearman = 0.915** —— item 级噪声在模型级平均掉,judge 可作**可扩展的人类替代**给视频生成模型打榜(benchmark 核心价值)。IA 排名 0.48 弱一些。另外 **judge–judge PA 均值 0.372 < judge–人类 0.53** —— judge 之间比和人类还不一致,说明物理判分是**真争议**任务、不是被共同偏置糊弄过去的。
       </div>
       <div id="hs-cl"><div class="hs-empty">加载中…</div></div>
     </section>
@@ -188,7 +192,11 @@
     <section class="hs-card">
       <div class="hs-h">
         <h2>🏷️ 各 embodiment 类别 · Per-embodiment breakdown</h2>
-        <span class="hs-sub">两个层面 · 上=生成模型分(人类 gold) · 下=judge 准确度(PA Pearson)</span>
+        <span class="hs-sub">两个正交层面:视频真实度 × judge 判分能力</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #10b981;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
+        **定义**:按末端执行器(人手 / 灵巧手 / 夹爪)分组,同时报**生成质量**(人类 gold 均分)和 **judge 准确度**(PA Pearson)。<br>
+        **Insight**:AI 生成**人手视频物理最真**(gold 3.39 vs 机器人 ≈2.95),但 judge 判**夹爪机器人最准**(flash 0.55)—— **生成真实度与判分可靠度在 embodiment 上解耦**。灵巧手同时是**最难生成**(gold 2.93)且判分中等,精细手指动力学是共同瓶颈。
       </div>
       <div id="hs-emb-quality"><div class="hs-empty" style="font-size:12px">生成质量加载中…</div></div>
       <div id="hs-emb"><div class="hs-empty">judge 准确度加载中…</div></div>
@@ -198,7 +206,11 @@
     <section class="hs-card">
       <div class="hs-h">
         <h2>📏 Bootstrap 95% CI · Pearson 置信区间</h2>
-        <span class="hs-sub">1000 次 bootstrap 重采样 · 875 items</span>
+        <span class="hs-sub">分数到底稳不稳定?横条越窄 = 越可信</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #64748b;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
+        **定义**:每个 Pearson 是单一 875 样本的点估计;对 875 条**有放回重采样 1000 次**,估计该分数在"换一批视频"下会抖多少 → 95% CI。<br>
+        **Insight**:PA 头部(flash 0.53 / seed2.1 0.50 / seed2.0 0.49)**CI 相互重叠 → 排名统计上不可分**,PA 榜**没有唯一冠军**、只有同梯队;IA 才有真分离(gpt5.5 0.61 甩开 flash)。这也是为什么剔除 <15% 覆盖的 judge —— 它们 CI 宽达 ±0.15,数字是噪声。
       </div>
       <div id="hs-ci"><div class="hs-empty">加载中…</div></div>
     </section>
@@ -207,7 +219,11 @@
     <section class="hs-card">
       <div class="hs-h">
         <h2>🎯 Judge 5×5 混淆矩阵</h2>
-        <span class="hs-sub">行 = judge 预测 · 列 = 人类 gold · 对角线 = 判对</span>
+        <span class="hs-sub">失误模式:偏松 / 偏严 / 方差塌缩</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #f59e0b;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
+        **定义**:行 = judge 预测,列 = 人类真值;对角线绿框 = 判对,离对角线揭示系统偏置。<br>
+        **Insight**:judge 的错法是**方向性偏置**,不只是噪声。**qwen32b 系统偏松**(dir_bias +1.31 = 平均比人类高 1.31 分)、**gemini-2.5-pro 把 ~80% 预测塌到"1"**(**方差塌缩** → 其 Pearson 是分布假象非判别力,红标警告)。**Pearson 单看会误诊,得配 confusion 才看得清各家的错法**。
       </div>
       <div id="hs-cm"><div class="hs-empty">加载中…</div></div>
     </section>
@@ -596,7 +612,9 @@
   function renderCI(d){
     var host = document.getElementById("hs-ci");
     if(!d || !Object.keys(d).length){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
-    // scale: fixed 0..0.75 covers the observed range with headroom
+    // v85fi (siyuan: 跑了 10% 不到的不要放上来): filter judges with <50% cov,
+    // same rule as leaderboard v85ez. 875 items × 50% = 438 cutoff.
+    var COV_MIN_N = 438;
     var lo = 0, hi = 0.75;
     function pos(x){ return ((x - lo) / (hi - lo) * 100).toFixed(2) + "%"; }
     function width(a,b){ return ((b - a) / (hi - lo) * 100).toFixed(2) + "%"; }
@@ -607,10 +625,13 @@
       });
       return s;
     }
-    // one row per (judge, dim). Skip if pearson missing.
-    var judges = Object.keys(d).sort(function(a,b){
-      var pa = (d[b].pa_pearson || 0) - (d[a].pa_pearson || 0);
-      return pa;
+    // Drop tiny-coverage rows first, then sort by PA desc.
+    var judges = Object.keys(d).filter(function(j){
+      var rec = d[j];
+      var nMax = Math.max(rec.n_pa || 0, rec.n_ia || 0);
+      return nMax >= COV_MIN_N;
+    }).sort(function(a,b){
+      return (d[b].pa_pearson || 0) - (d[a].pa_pearson || 0);
     });
     var html = '';
     ["pa","ia"].forEach(function(dim){
@@ -622,9 +643,8 @@
         var ci = rec[dim + "_ci"];
         var n = rec["n_" + dim];
         if(p == null || !ci) return;
-        var isPartial = /\.partial$/.test(j);
-        html += '<div class="hs-ci-row' + (isPartial?" hs-ci-partial":"") + '">';
-        html += '<div class="hs-ci-name">' + esc(j.replace(/\.partial$/,"")) + (isPartial?' <span style="color:#f59e0b;font-size:10px">partial</span>':'') + '</div>';
+        html += '<div class="hs-ci-row">';
+        html += '<div class="hs-ci-name">' + esc(j.replace(/\.partial$/,"")) + '</div>';
         html += '<div class="hs-ci-track"><div class="hs-ci-scale">' + ticks() + '</div>';
         html += '<div class="hs-ci-whisker" style="left:' + pos(ci[0]) + ';width:' + width(ci[0], ci[1]) + '"></div>';
         html += '<div class="hs-ci-point" style="left:' + pos(p) + '"></div>';
@@ -652,26 +672,26 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fh", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fi", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fb: closed-loop headline + per-embodiment heatmap + bootstrap CI
     // (Alice bundle, static bench/ file for now; will move to HF pipeline).
-    fetch("bench/judge_judge_closedloop.json?v=v85fh", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85fi", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cl " + r.status); return r.json(); })
       .then(renderClosedLoop)
       .catch(function(e){ document.getElementById("hs-cl").innerHTML='<div class="hs-empty">闭环数据加载失败</div>'; });
-    fetch("bench/per_embodiment_pa.json?v=v85fh", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85fi", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fh", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85fi", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fh", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85fi", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
