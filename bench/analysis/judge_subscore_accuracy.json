@@ -1,0 +1,525 @@
+{
+  "_meta": {
+    "n_items": 875,
+    "extractor": "rule-based (negation-aware segment parser); validated vs judge reasoning on agent_match violations",
+    "missing_fallback": "pass=1 (per siyuan: omitted dim = judge assumed no problem)",
+    "reliable_judges_full_reasoning": [
+      "gpt-5.2",
+      "gpt5.5",
+      "gemini-2.5-pro",
+      "seed2.0_pro",
+      "seed2.1_lite"
+    ],
+    "pending_rerun_truncated": [
+      "gemini-3.5-flash",
+      "gemini-2.5-flash",
+      "gemini-3.1-pro-preview",
+      "qwen3-vl-8b-instruct",
+      "qwen3-vl-32b-instruct"
+    ],
+    "note": "Truncated judges (pa_reason/ia_reason ~300ch) have high missing_pct on 3rd sub-dim; numbers preliminary until Ham re-runs them with full reasoning. Primary finding is on the 5 full-reasoning judges.",
+    "gold_binarization": "violation = gold sub-score 0 (strict); pass = {1,2}"
+  },
+  "subaxes": [
+    "agent_consistency",
+    "scene_consistency",
+    "interaction_realism",
+    "agent_match",
+    "object_correct",
+    "goal_completed"
+  ],
+  "judges_full": [
+    "gpt-5.2",
+    "gpt5.5",
+    "gemini-2.5-pro",
+    "seed2.0_pro",
+    "seed2.1_lite"
+  ],
+  "judges_truncated_pending": [
+    "gemini-3.5-flash",
+    "gemini-2.5-flash",
+    "gemini-3.1-pro-preview",
+    "qwen3-vl-8b-instruct",
+    "qwen3-vl-32b-instruct"
+  ],
+  "matrix": {
+    "gemini-3.5-flash": {
+      "agent_consistency": {
+        "accuracy": 0.602,
+        "recall_violation": 0.588,
+        "f1": 0.555,
+        "missing_pct": 0.134,
+        "n": 875
+      },
+      "scene_consistency": {
+        "accuracy": 0.617,
+        "recall_violation": 0.614,
+        "f1": 0.649,
+        "missing_pct": 0.149,
+        "n": 875
+      },
+      "interaction_realism": {
+        "accuracy": 0.425,
+        "recall_violation": 0.189,
+        "f1": 0.298,
+        "missing_pct": 0.569,
+        "n": 875
+      },
+      "agent_match": {
+        "accuracy": 0.779,
+        "recall_violation": 0.153,
+        "f1": 0.255,
+        "missing_pct": 0.395,
+        "n": 875
+      },
+      "object_correct": {
+        "accuracy": 0.632,
+        "recall_violation": 0.055,
+        "f1": 0.101,
+        "missing_pct": 0.513,
+        "n": 875
+      },
+      "goal_completed": {
+        "accuracy": 0.536,
+        "recall_violation": 0.301,
+        "f1": 0.444,
+        "missing_pct": 0.208,
+        "n": 875
+      }
+    },
+    "gemini-2.5-flash": {
+      "agent_consistency": {
+        "accuracy": 0.435,
+        "recall_violation": 0.867,
+        "f1": 0.564,
+        "missing_pct": 0.007,
+        "n": 875
+      },
+      "scene_consistency": {
+        "accuracy": 0.464,
+        "recall_violation": 0.087,
+        "f1": 0.158,
+        "missing_pct": 0.161,
+        "n": 875
+      },
+      "interaction_realism": {
+        "accuracy": 0.354,
+        "recall_violation": 0.0,
+        "f1": 0,
+        "missing_pct": 1.0,
+        "n": 875
+      },
+      "agent_match": {
+        "accuracy": 0.751,
+        "recall_violation": 0.098,
+        "f1": 0.162,
+        "missing_pct": 0.006,
+        "n": 875
+      },
+      "object_correct": {
+        "accuracy": 0.63,
+        "recall_violation": 0.021,
+        "f1": 0.041,
+        "missing_pct": 0.088,
+        "n": 875
+      },
+      "goal_completed": {
+        "accuracy": 0.385,
+        "recall_violation": 0.0,
+        "f1": 0,
+        "missing_pct": 0.808,
+        "n": 875
+      }
+    },
+    "gemini-2.5-pro": {
+      "agent_consistency": {
+        "accuracy": 0.472,
+        "recall_violation": 0.878,
+        "f1": 0.584,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "scene_consistency": {
+        "accuracy": 0.594,
+        "recall_violation": 0.962,
+        "f1": 0.732,
+        "missing_pct": 0.001,
+        "n": 875
+      },
+      "interaction_realism": {
+        "accuracy": 0.632,
+        "recall_violation": 0.913,
+        "f1": 0.762,
+        "missing_pct": 0.001,
+        "n": 875
+      },
+      "agent_match": {
+        "accuracy": 0.769,
+        "recall_violation": 0.563,
+        "f1": 0.545,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "object_correct": {
+        "accuracy": 0.696,
+        "recall_violation": 0.48,
+        "f1": 0.543,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "goal_completed": {
+        "accuracy": 0.703,
+        "recall_violation": 0.809,
+        "f1": 0.77,
+        "missing_pct": 0.0,
+        "n": 875
+      }
+    },
+    "gemini-3.1-pro-preview": {
+      "agent_consistency": {
+        "accuracy": 0.6,
+        "recall_violation": 0.721,
+        "f1": 0.603,
+        "missing_pct": 0.069,
+        "n": 875
+      },
+      "scene_consistency": {
+        "accuracy": 0.634,
+        "recall_violation": 0.796,
+        "f1": 0.715,
+        "missing_pct": 0.026,
+        "n": 875
+      },
+      "interaction_realism": {
+        "accuracy": 0.434,
+        "recall_violation": 0.329,
+        "f1": 0.429,
+        "missing_pct": 0.239,
+        "n": 875
+      },
+      "agent_match": {
+        "accuracy": 0.775,
+        "recall_violation": 0.302,
+        "f1": 0.398,
+        "missing_pct": 0.213,
+        "n": 875
+      },
+      "object_correct": {
+        "accuracy": 0.646,
+        "recall_violation": 0.137,
+        "f1": 0.225,
+        "missing_pct": 0.583,
+        "n": 875
+      },
+      "goal_completed": {
+        "accuracy": 0.539,
+        "recall_violation": 0.353,
+        "f1": 0.485,
+        "missing_pct": 0.163,
+        "n": 875
+      }
+    },
+    "gpt-5.2": {
+      "agent_consistency": {
+        "accuracy": 0.589,
+        "recall_violation": 0.683,
+        "f1": 0.583,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "scene_consistency": {
+        "accuracy": 0.576,
+        "recall_violation": 0.859,
+        "f1": 0.701,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "interaction_realism": {
+        "accuracy": 0.63,
+        "recall_violation": 0.917,
+        "f1": 0.762,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "agent_match": {
+        "accuracy": 0.798,
+        "recall_violation": 0.237,
+        "f1": 0.366,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "object_correct": {
+        "accuracy": 0.701,
+        "recall_violation": 0.347,
+        "f1": 0.465,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "goal_completed": {
+        "accuracy": 0.649,
+        "recall_violation": 0.63,
+        "f1": 0.688,
+        "missing_pct": 0.0,
+        "n": 875
+      }
+    },
+    "gpt5.5": {
+      "agent_consistency": {
+        "accuracy": 0.456,
+        "recall_violation": 0.886,
+        "f1": 0.579,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "scene_consistency": {
+        "accuracy": 0.562,
+        "recall_violation": 0.855,
+        "f1": 0.693,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "interaction_realism": {
+        "accuracy": 0.594,
+        "recall_violation": 0.818,
+        "f1": 0.722,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "agent_match": {
+        "accuracy": 0.765,
+        "recall_violation": 0.302,
+        "f1": 0.387,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "object_correct": {
+        "accuracy": 0.671,
+        "recall_violation": 0.237,
+        "f1": 0.351,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "goal_completed": {
+        "accuracy": 0.625,
+        "recall_violation": 0.569,
+        "f1": 0.651,
+        "missing_pct": 0.0,
+        "n": 875
+      }
+    },
+    "seed2.0_pro": {
+      "agent_consistency": {
+        "accuracy": 0.557,
+        "recall_violation": 0.856,
+        "f1": 0.62,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "scene_consistency": {
+        "accuracy": 0.576,
+        "recall_violation": 0.992,
+        "f1": 0.73,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "interaction_realism": {
+        "accuracy": 0.641,
+        "recall_violation": 0.775,
+        "f1": 0.736,
+        "missing_pct": 0.002,
+        "n": 875
+      },
+      "agent_match": {
+        "accuracy": 0.822,
+        "recall_violation": 0.409,
+        "f1": 0.53,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "object_correct": {
+        "accuracy": 0.711,
+        "recall_violation": 0.362,
+        "f1": 0.485,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "goal_completed": {
+        "accuracy": 0.651,
+        "recall_violation": 0.628,
+        "f1": 0.689,
+        "missing_pct": 0.0,
+        "n": 875
+      }
+    },
+    "seed2.1_lite": {
+      "agent_consistency": {
+        "accuracy": 0.485,
+        "recall_violation": 0.957,
+        "f1": 0.61,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "scene_consistency": {
+        "accuracy": 0.57,
+        "recall_violation": 0.982,
+        "f1": 0.725,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "interaction_realism": {
+        "accuracy": 0.654,
+        "recall_violation": 0.949,
+        "f1": 0.78,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "agent_match": {
+        "accuracy": 0.797,
+        "recall_violation": 0.381,
+        "f1": 0.48,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "object_correct": {
+        "accuracy": 0.681,
+        "recall_violation": 0.328,
+        "f1": 0.436,
+        "missing_pct": 0.0,
+        "n": 875
+      },
+      "goal_completed": {
+        "accuracy": 0.69,
+        "recall_violation": 0.71,
+        "f1": 0.738,
+        "missing_pct": 0.0,
+        "n": 875
+      }
+    },
+    "qwen3-vl-8b-instruct": {
+      "agent_consistency": {
+        "accuracy": 0.485,
+        "recall_violation": 0.461,
+        "f1": 0.43,
+        "missing_pct": 0.001,
+        "n": 875
+      },
+      "scene_consistency": {
+        "accuracy": 0.504,
+        "recall_violation": 0.497,
+        "f1": 0.536,
+        "missing_pct": 0.001,
+        "n": 875
+      },
+      "interaction_realism": {
+        "accuracy": 0.361,
+        "recall_violation": 0.011,
+        "f1": 0.021,
+        "missing_pct": 0.608,
+        "n": 875
+      },
+      "agent_match": {
+        "accuracy": 0.778,
+        "recall_violation": 0.13,
+        "f1": 0.224,
+        "missing_pct": 0.023,
+        "n": 875
+      },
+      "object_correct": {
+        "accuracy": 0.625,
+        "recall_violation": 0.015,
+        "f1": 0.03,
+        "missing_pct": 0.063,
+        "n": 875
+      },
+      "goal_completed": {
+        "accuracy": 0.401,
+        "recall_violation": 0.033,
+        "f1": 0.064,
+        "missing_pct": 0.16,
+        "n": 875
+      }
+    },
+    "qwen3-vl-32b-instruct": {
+      "agent_consistency": {
+        "accuracy": 0.475,
+        "recall_violation": 0.612,
+        "f1": 0.496,
+        "missing_pct": 0.003,
+        "n": 875
+      },
+      "scene_consistency": {
+        "accuracy": 0.423,
+        "recall_violation": 0.002,
+        "f1": 0.004,
+        "missing_pct": 0.306,
+        "n": 875
+      },
+      "interaction_realism": {
+        "accuracy": 0.355,
+        "recall_violation": 0.004,
+        "f1": 0.007,
+        "missing_pct": 0.985,
+        "n": 875
+      },
+      "agent_match": {
+        "accuracy": 0.747,
+        "recall_violation": 0.084,
+        "f1": 0.14,
+        "missing_pct": 0.001,
+        "n": 875
+      },
+      "object_correct": {
+        "accuracy": 0.624,
+        "recall_violation": 0.0,
+        "f1": 0,
+        "missing_pct": 0.219,
+        "n": 875
+      },
+      "goal_completed": {
+        "accuracy": 0.385,
+        "recall_violation": 0.0,
+        "f1": 0,
+        "missing_pct": 0.999,
+        "n": 875
+      }
+    }
+  },
+  "per_subaxis_summary_full5": {
+    "agent_consistency": {
+      "mean_acc_full5": 0.512,
+      "mean_recall_violation_full5": 0.852,
+      "worst_judge": "gpt5.5",
+      "best_judge": "gpt-5.2"
+    },
+    "scene_consistency": {
+      "mean_acc_full5": 0.576,
+      "mean_recall_violation_full5": 0.93,
+      "worst_judge": "gpt5.5",
+      "best_judge": "gemini-2.5-pro"
+    },
+    "interaction_realism": {
+      "mean_acc_full5": 0.63,
+      "mean_recall_violation_full5": 0.874,
+      "worst_judge": "gpt5.5",
+      "best_judge": "seed2.1_lite"
+    },
+    "agent_match": {
+      "mean_acc_full5": 0.79,
+      "mean_recall_violation_full5": 0.378,
+      "worst_judge": "gpt5.5",
+      "best_judge": "seed2.0_pro"
+    },
+    "object_correct": {
+      "mean_acc_full5": 0.692,
+      "mean_recall_violation_full5": 0.351,
+      "worst_judge": "gpt5.5",
+      "best_judge": "seed2.0_pro"
+    },
+    "goal_completed": {
+      "mean_acc_full5": 0.664,
+      "mean_recall_violation_full5": 0.669,
+      "worst_judge": "gpt5.5",
+      "best_judge": "gemini-2.5-pro"
+    }
+  }
+}
