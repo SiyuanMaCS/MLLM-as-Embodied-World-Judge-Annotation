@@ -1,8 +1,17 @@
 {
-  "strategy": "API-minimized: only tasks with ≥1 API model already generated; sorted so we补跑 the cheaper API when possible ($0.20 kling > $0.24 veo); target embodiment balance gripper 25 / human_hand 17 / dex_hand 8 (dex is bounded by only gr1_inlab qualifying with API cov).",
+  "name": "common_set_50",
+  "description": "50-task fair comparison subset, 11 generation models (10 in-domain + vidu OOD). Every task has ≥1 API model already covered so API补跑 is minimized. Prompts identical across all 11 models → per-model gold PA/IA + K_norm computed without prompt-pool confound.",
+  "notes": [
+    "API cost assumes: veo31_lite $0.30, happyhorse $0.30, kling $0.20, wan26_flash $0.15, vidu $0.25 per clip.",
+    "Judge side: flash single (Alice) + optional flash-pairwise on top-4 for crown attempt.",
+    "Sourced from gold_875.jsonl (in-domain) + vidu added as 11th."
+  ],
   "api_price_usd_per_clip": {
-    "veo31_lite": 0.24,
-    "kling": 0.2
+    "veo31_lite": 0.3,
+    "happyhorse": 0.3,
+    "kling": 0.2,
+    "wan26_flash": 0.15,
+    "vidu": 0.25
   },
   "all_models": [
     "abot_physworld_f113",
@@ -14,76 +23,108 @@
     "veo31_lite",
     "wan22_ti2v5b_1280x704_f169",
     "wan26_flash",
-    "wow_wan14b_f105"
+    "wow_wan14b_f105",
+    "vidu"
+  ],
+  "api_models": [
+    "veo31_lite",
+    "happyhorse",
+    "kling",
+    "wan26_flash",
+    "vidu"
+  ],
+  "ham_open_source_models": [
+    "cogvideo_i2v_f113",
+    "wan22_ti2v5b_1280x704_f169"
+  ],
+  "internal_checkpoint_models": [
+    "gigaworld_gr1_2b_f113",
+    "abot_physworld_f113",
+    "wow_wan14b_f105",
+    "cosmos3"
   ],
   "tasks": [
-    "agibot_world::task_0009::episode_0001",
-    "agibot_world::task_0004::episode_0001",
     "robotwin::task_0134::episode_0001",
+    "agibot_world::task_0120::episode_0001",
+    "agibot_world::task_0009::episode_0001",
+    "open_x_embodiment::task_0129::episode_0001",
+    "robotwin::task_0016::episode_0001",
+    "agibot_world::task_0004::episode_0001",
     "agibot_world::task_0023::episode_0001",
     "agibot_world::task_0043::episode_0001",
+    "agibot_world::task_0166::episode_0001",
+    "agibot_world::task_0192::episode_0001",
+    "agibot_world::task_0167::episode_0001",
     "agibot_world::task_0024::episode_0001",
     "agibot_world::task_0058::episode_0001",
+    "droid::task_0017::episode_0001",
     "droid::task_0114::episode_0001",
     "droid::task_0098::episode_0001",
     "open_x_embodiment::task_0041::episode_0001",
-    "open_x_embodiment::task_0129::episode_0001",
-    "agibot_world::task_0005::episode_0001",
-    "agibot_world::task_0026::episode_0001",
-    "agibot_world::task_0033::episode_0001",
-    "agibot_world::task_0150::episode_0001",
-    "droid::task_0059::episode_0001",
-    "open_x_embodiment::task_0066::episode_0001",
-    "robotwin::task_0018::episode_0001",
-    "robotwin::task_0093::episode_0001",
-    "robotwin::task_0179::episode_0001",
-    "open_x_embodiment::task_0115::episode_0001",
-    "robotwin::task_0016::episode_0001",
-    "open_x_embodiment::task_0002::episode_0001",
-    "agibot_world::task_0164::episode_0001",
-    "agibot_world::task_0120::episode_0001",
+    "robotwin::task_0068::episode_0001",
+    "robotwin::task_0060::episode_0001",
+    "robotwin::task_0119::episode_0001",
+    "egodex_human::task_0073::episode_0001",
+    "egoscaler_human::task_0041::episode_0001",
+    "egoscaler_human::task_0094::episode_0001",
+    "egoscaler_human::task_0066::episode_0001",
     "egodex_human::task_0060::episode_0001",
     "egodex_human::task_0080::episode_0001",
     "egoscaler_human::task_0032::episode_0001",
     "epickitchens_human::task_0007::episode_0001",
+    "egodex_human::task_0083::episode_0001",
+    "egodex_human::task_0106::episode_0001",
+    "egodex_human::task_0137::episode_0001",
     "egodex_human::task_0104::episode_0001",
     "egodex_human::task_0139::episode_0001",
     "egodex_human::task_0031::episode_0001",
+    "egoscaler_human::task_0009::episode_0001",
     "epickitchens_human::task_0037::episode_0001",
-    "epickitchens_human::task_0046::episode_0001",
-    "egodex_human::task_0073::episode_0001",
-    "egoscaler_human::task_0041::episode_0001",
-    "egodex_human::task_0044::episode_0001",
-    "epickitchens_human::task_0052::episode_0001",
-    "egodex_human::task_0011::episode_0001",
-    "egodex_human::task_0062::episode_0001",
-    "egoscaler_human::task_0049::episode_0001",
-    "egoscaler_human::task_0073::episode_0001",
+    "gr1_inlab::task_0129::episode_0001",
+    "gr1_inlab::task_0020::episode_0001",
+    "gr1_inlab::task_0010::episode_0001",
+    "gr1_inlab::task_0130::episode_0001",
     "gr1_inlab::task_0048::episode_0001",
     "gr1_inlab::task_0127::episode_0001",
-    "gr1_inlab::task_0129::episode_0001",
     "gr1_inlab::task_0152::episode_0001",
-    "gr1_inlab::task_0020::episode_0001",
     "gr1_inlab::task_0100::episode_0001",
     "gr1_inlab::task_0067::episode_0001",
-    "gr1_inlab::task_0112::episode_0001"
+    "gr1_inlab::task_0112::episode_0001",
+    "gr1_inlab::task_0076::episode_0001",
+    "gr1_inlab::task_0050::episode_0001",
+    "gr1_inlab::task_0135::episode_0001",
+    "gr1_inlab::task_0069::episode_0001"
   ],
   "existing_generated": {
+    "robotwin::task_0134::episode_0001": [
+      "happyhorse",
+      "veo31_lite",
+      "wan22_ti2v5b_1280x704_f169"
+    ],
+    "agibot_world::task_0120::episode_0001": [
+      "happyhorse",
+      "kling"
+    ],
     "agibot_world::task_0009::episode_0001": [
       "cosmos3",
       "veo31_lite",
       "wan26_flash",
       "wow_wan14b_f105"
     ],
+    "open_x_embodiment::task_0129::episode_0001": [
+      "veo31_lite",
+      "wan26_flash"
+    ],
+    "robotwin::task_0016::episode_0001": [
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash"
+    ],
     "agibot_world::task_0004::episode_0001": [
       "cogvideo_i2v_f113",
       "gigaworld_gr1_2b_f113",
       "veo31_lite"
-    ],
-    "robotwin::task_0134::episode_0001": [
-      "happyhorse",
-      "veo31_lite",
-      "wan22_ti2v5b_1280x704_f169"
     ],
     "agibot_world::task_0023::episode_0001": [
       "abot_physworld_f113",
@@ -93,6 +134,18 @@
       "cogvideo_i2v_f113",
       "veo31_lite"
     ],
+    "agibot_world::task_0166::episode_0001": [
+      "gigaworld_gr1_2b_f113",
+      "happyhorse"
+    ],
+    "agibot_world::task_0192::episode_0001": [
+      "happyhorse",
+      "wan22_ti2v5b_1280x704_f169"
+    ],
+    "agibot_world::task_0167::episode_0001": [
+      "happyhorse",
+      "wow_wan14b_f105"
+    ],
     "agibot_world::task_0024::episode_0001": [
       "veo31_lite",
       "wan22_ti2v5b_1280x704_f169"
@@ -100,6 +153,10 @@
     "agibot_world::task_0058::episode_0001": [
       "veo31_lite",
       "wan22_ti2v5b_1280x704_f169"
+    ],
+    "droid::task_0017::episode_0001": [
+      "abot_physworld_f113",
+      "happyhorse"
     ],
     "droid::task_0114::episode_0001": [
       "gigaworld_gr1_2b_f113",
@@ -113,61 +170,37 @@
       "gigaworld_gr1_2b_f113",
       "veo31_lite"
     ],
-    "open_x_embodiment::task_0129::episode_0001": [
-      "veo31_lite",
-      "wan26_flash"
-    ],
-    "agibot_world::task_0005::episode_0001": [
-      "veo31_lite"
-    ],
-    "agibot_world::task_0026::episode_0001": [
-      "veo31_lite"
-    ],
-    "agibot_world::task_0033::episode_0001": [
-      "veo31_lite"
-    ],
-    "agibot_world::task_0150::episode_0001": [
-      "veo31_lite"
-    ],
-    "droid::task_0059::episode_0001": [
-      "veo31_lite"
-    ],
-    "open_x_embodiment::task_0066::episode_0001": [
-      "veo31_lite"
-    ],
-    "robotwin::task_0018::episode_0001": [
-      "veo31_lite"
-    ],
-    "robotwin::task_0093::episode_0001": [
-      "veo31_lite"
-    ],
-    "robotwin::task_0179::episode_0001": [
-      "veo31_lite"
-    ],
-    "open_x_embodiment::task_0115::episode_0001": [
+    "robotwin::task_0068::episode_0001": [
       "abot_physworld_f113",
-      "cogvideo_i2v_f113",
+      "happyhorse"
+    ],
+    "robotwin::task_0060::episode_0001": [
       "cosmos3",
-      "kling"
+      "happyhorse"
     ],
-    "robotwin::task_0016::episode_0001": [
-      "gigaworld_gr1_2b_f113",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash"
-    ],
-    "open_x_embodiment::task_0002::episode_0001": [
-      "cogvideo_i2v_f113",
-      "kling",
+    "robotwin::task_0119::episode_0001": [
+      "happyhorse",
       "wan22_ti2v5b_1280x704_f169"
     ],
-    "agibot_world::task_0164::episode_0001": [
-      "cosmos3",
-      "kling"
-    ],
-    "agibot_world::task_0120::episode_0001": [
+    "egodex_human::task_0073::episode_0001": [
+      "abot_physworld_f113",
       "happyhorse",
       "kling"
+    ],
+    "egoscaler_human::task_0041::episode_0001": [
+      "cosmos3",
+      "happyhorse",
+      "kling"
+    ],
+    "egoscaler_human::task_0094::episode_0001": [
+      "abot_physworld_f113",
+      "happyhorse",
+      "wan22_ti2v5b_1280x704_f169"
+    ],
+    "egoscaler_human::task_0066::episode_0001": [
+      "cosmos3",
+      "happyhorse",
+      "wow_wan14b_f105"
     ],
     "egodex_human::task_0060::episode_0001": [
       "veo31_lite",
@@ -185,6 +218,15 @@
       "gigaworld_gr1_2b_f113",
       "veo31_lite"
     ],
+    "egodex_human::task_0083::episode_0001": [
+      "happyhorse"
+    ],
+    "egodex_human::task_0106::episode_0001": [
+      "happyhorse"
+    ],
+    "egodex_human::task_0137::episode_0001": [
+      "happyhorse"
+    ],
     "egodex_human::task_0104::episode_0001": [
       "veo31_lite"
     ],
@@ -194,41 +236,29 @@
     "egodex_human::task_0031::episode_0001": [
       "veo31_lite"
     ],
+    "egoscaler_human::task_0009::episode_0001": [
+      "happyhorse"
+    ],
     "epickitchens_human::task_0037::episode_0001": [
       "veo31_lite"
     ],
-    "epickitchens_human::task_0046::episode_0001": [
-      "veo31_lite"
+    "gr1_inlab::task_0129::episode_0001": [
+      "veo31_lite",
+      "wan26_flash"
     ],
-    "egodex_human::task_0073::episode_0001": [
+    "gr1_inlab::task_0020::episode_0001": [
+      "veo31_lite",
+      "wan26_flash"
+    ],
+    "gr1_inlab::task_0010::episode_0001": [
       "abot_physworld_f113",
       "happyhorse",
-      "kling"
+      "wow_wan14b_f105"
     ],
-    "egoscaler_human::task_0041::episode_0001": [
-      "cosmos3",
-      "happyhorse",
-      "kling"
-    ],
-    "egodex_human::task_0044::episode_0001": [
-      "kling",
-      "wan22_ti2v5b_1280x704_f169"
-    ],
-    "epickitchens_human::task_0052::episode_0001": [
+    "gr1_inlab::task_0130::episode_0001": [
+      "cogvideo_i2v_f113",
       "gigaworld_gr1_2b_f113",
-      "kling"
-    ],
-    "egodex_human::task_0011::episode_0001": [
-      "kling"
-    ],
-    "egodex_human::task_0062::episode_0001": [
-      "kling"
-    ],
-    "egoscaler_human::task_0049::episode_0001": [
-      "kling"
-    ],
-    "egoscaler_human::task_0073::episode_0001": [
-      "kling"
+      "happyhorse"
     ],
     "gr1_inlab::task_0048::episode_0001": [
       "gigaworld_gr1_2b_f113",
@@ -238,17 +268,9 @@
       "gigaworld_gr1_2b_f113",
       "veo31_lite"
     ],
-    "gr1_inlab::task_0129::episode_0001": [
-      "veo31_lite",
-      "wan26_flash"
-    ],
     "gr1_inlab::task_0152::episode_0001": [
       "veo31_lite",
       "wow_wan14b_f105"
-    ],
-    "gr1_inlab::task_0020::episode_0001": [
-      "veo31_lite",
-      "wan26_flash"
     ],
     "gr1_inlab::task_0100::episode_0001": [
       "veo31_lite"
@@ -260,32 +282,83 @@
     ],
     "gr1_inlab::task_0112::episode_0001": [
       "kling"
+    ],
+    "gr1_inlab::task_0076::episode_0001": [
+      "abot_physworld_f113",
+      "gigaworld_gr1_2b_f113",
+      "wan26_flash"
+    ],
+    "gr1_inlab::task_0050::episode_0001": [
+      "cogvideo_i2v_f113",
+      "wan26_flash"
+    ],
+    "gr1_inlab::task_0135::episode_0001": [
+      "cogvideo_i2v_f113",
+      "wan26_flash"
+    ],
+    "gr1_inlab::task_0069::episode_0001": [
+      "cosmos3",
+      "wan26_flash"
     ]
   },
   "need_generate": {
-    "agibot_world::task_0009::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169"
-    ],
-    "agibot_world::task_0004::episode_0001": [
-      "abot_physworld_f113",
-      "cosmos3",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
     "robotwin::task_0134::episode_0001": [
       "abot_physworld_f113",
       "cogvideo_i2v_f113",
       "cosmos3",
       "gigaworld_gr1_2b_f113",
       "kling",
+      "vidu",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "agibot_world::task_0120::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "agibot_world::task_0009::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "gigaworld_gr1_2b_f113",
+      "happyhorse",
+      "kling",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169"
+    ],
+    "open_x_embodiment::task_0129::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "happyhorse",
+      "kling",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wow_wan14b_f105"
+    ],
+    "robotwin::task_0016::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "happyhorse",
+      "veo31_lite",
+      "vidu",
+      "wow_wan14b_f105"
+    ],
+    "agibot_world::task_0004::episode_0001": [
+      "abot_physworld_f113",
+      "cosmos3",
+      "happyhorse",
+      "kling",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
     ],
@@ -295,6 +368,7 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
@@ -305,9 +379,43 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
+    ],
+    "agibot_world::task_0166::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "agibot_world::task_0192::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "agibot_world::task_0167::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash"
     ],
     "agibot_world::task_0024::episode_0001": [
       "abot_physworld_f113",
@@ -316,6 +424,7 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan26_flash",
       "wow_wan14b_f105"
     ],
@@ -326,6 +435,18 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "droid::task_0017::episode_0001": [
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
     ],
@@ -335,6 +456,7 @@
       "cosmos3",
       "happyhorse",
       "kling",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
@@ -346,6 +468,7 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan26_flash",
       "wow_wan14b_f105"
     ],
@@ -355,163 +478,83 @@
       "cosmos3",
       "happyhorse",
       "kling",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
     ],
-    "open_x_embodiment::task_0129::episode_0001": [
-      "abot_physworld_f113",
+    "robotwin::task_0068::episode_0001": [
       "cogvideo_i2v_f113",
       "cosmos3",
       "gigaworld_gr1_2b_f113",
-      "happyhorse",
       "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wow_wan14b_f105"
-    ],
-    "agibot_world::task_0005::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "agibot_world::task_0026::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "agibot_world::task_0033::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "agibot_world::task_0150::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "droid::task_0059::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "open_x_embodiment::task_0066::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "robotwin::task_0018::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "robotwin::task_0093::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "robotwin::task_0179::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "open_x_embodiment::task_0115::episode_0001": [
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
       "veo31_lite",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
     ],
-    "robotwin::task_0016::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "happyhorse",
-      "veo31_lite",
-      "wow_wan14b_f105"
-    ],
-    "open_x_embodiment::task_0002::episode_0001": [
-      "abot_physworld_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "veo31_lite",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "agibot_world::task_0164::episode_0001": [
+    "robotwin::task_0060::episode_0001": [
       "abot_physworld_f113",
       "cogvideo_i2v_f113",
       "gigaworld_gr1_2b_f113",
-      "happyhorse",
+      "kling",
       "veo31_lite",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
     ],
-    "agibot_world::task_0120::episode_0001": [
+    "robotwin::task_0119::episode_0001": [
       "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "egodex_human::task_0073::episode_0001": [
       "cogvideo_i2v_f113",
       "cosmos3",
       "gigaworld_gr1_2b_f113",
       "veo31_lite",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
+    ],
+    "egoscaler_human::task_0041::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "gigaworld_gr1_2b_f113",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "egoscaler_human::task_0094::episode_0001": [
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "egoscaler_human::task_0066::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash"
     ],
     "egodex_human::task_0060::episode_0001": [
       "abot_physworld_f113",
@@ -520,6 +563,7 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan26_flash",
       "wow_wan14b_f105"
     ],
@@ -530,6 +574,7 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan26_flash",
       "wow_wan14b_f105"
     ],
@@ -539,6 +584,7 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
@@ -549,6 +595,43 @@
       "cosmos3",
       "happyhorse",
       "kling",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "egodex_human::task_0083::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "egodex_human::task_0106::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "egodex_human::task_0137::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "veo31_lite",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
@@ -560,6 +643,7 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
@@ -571,6 +655,7 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
@@ -582,6 +667,19 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "egoscaler_human::task_0009::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "veo31_lite",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
@@ -593,119 +691,7 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "epickitchens_human::task_0046::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "egodex_human::task_0073::episode_0001": [
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "veo31_lite",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "egoscaler_human::task_0041::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "gigaworld_gr1_2b_f113",
-      "veo31_lite",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "egodex_human::task_0044::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "veo31_lite",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "epickitchens_human::task_0052::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "happyhorse",
-      "veo31_lite",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "egodex_human::task_0011::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "veo31_lite",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "egodex_human::task_0062::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "veo31_lite",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "egoscaler_human::task_0049::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "veo31_lite",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "egoscaler_human::task_0073::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "veo31_lite",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "gr1_inlab::task_0048::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wan26_flash",
-      "wow_wan14b_f105"
-    ],
-    "gr1_inlab::task_0127::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "happyhorse",
-      "kling",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
@@ -717,7 +703,61 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
+      "wow_wan14b_f105"
+    ],
+    "gr1_inlab::task_0020::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "happyhorse",
+      "kling",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wow_wan14b_f105"
+    ],
+    "gr1_inlab::task_0010::episode_0001": [
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash"
+    ],
+    "gr1_inlab::task_0130::episode_0001": [
+      "abot_physworld_f113",
+      "cosmos3",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "gr1_inlab::task_0048::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "happyhorse",
+      "kling",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "gr1_inlab::task_0127::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "happyhorse",
+      "kling",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wan26_flash",
       "wow_wan14b_f105"
     ],
     "gr1_inlab::task_0152::episode_0001": [
@@ -727,18 +767,9 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash"
-    ],
-    "gr1_inlab::task_0020::episode_0001": [
-      "abot_physworld_f113",
-      "cogvideo_i2v_f113",
-      "cosmos3",
-      "gigaworld_gr1_2b_f113",
-      "happyhorse",
-      "kling",
-      "wan22_ti2v5b_1280x704_f169",
-      "wow_wan14b_f105"
     ],
     "gr1_inlab::task_0100::episode_0001": [
       "abot_physworld_f113",
@@ -747,6 +778,7 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "kling",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
@@ -756,6 +788,7 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "veo31_lite",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
       "wow_wan14b_f105"
@@ -767,46 +800,92 @@
       "gigaworld_gr1_2b_f113",
       "happyhorse",
       "veo31_lite",
+      "vidu",
       "wan22_ti2v5b_1280x704_f169",
       "wan26_flash",
+      "wow_wan14b_f105"
+    ],
+    "gr1_inlab::task_0076::episode_0001": [
+      "cogvideo_i2v_f113",
+      "cosmos3",
+      "happyhorse",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wow_wan14b_f105"
+    ],
+    "gr1_inlab::task_0050::episode_0001": [
+      "abot_physworld_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "happyhorse",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wow_wan14b_f105"
+    ],
+    "gr1_inlab::task_0135::episode_0001": [
+      "abot_physworld_f113",
+      "cosmos3",
+      "gigaworld_gr1_2b_f113",
+      "happyhorse",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
+      "wow_wan14b_f105"
+    ],
+    "gr1_inlab::task_0069::episode_0001": [
+      "abot_physworld_f113",
+      "cogvideo_i2v_f113",
+      "gigaworld_gr1_2b_f113",
+      "happyhorse",
+      "kling",
+      "veo31_lite",
+      "vidu",
+      "wan22_ti2v5b_1280x704_f169",
       "wow_wan14b_f105"
     ]
   },
   "per_model_need": {
-    "wow_wan14b_f105": 48,
-    "abot_physworld_f113": 46,
-    "cosmos3": 46,
-    "happyhorse": 46,
-    "wan26_flash": 45,
-    "cogvideo_i2v_f113": 44,
-    "gigaworld_gr1_2b_f113": 42,
-    "wan22_ti2v5b_1280x704_f169": 41,
-    "kling": 35,
-    "veo31_lite": 15
+    "vidu": 50,
+    "cosmos3": 45,
+    "wow_wan14b_f105": 45,
+    "kling": 44,
+    "cogvideo_i2v_f113": 43,
+    "abot_physworld_f113": 42,
+    "wan26_flash": 41,
+    "gigaworld_gr1_2b_f113": 40,
+    "wan22_ti2v5b_1280x704_f169": 40,
+    "happyhorse": 31,
+    "veo31_lite": 25
   },
   "per_model_have": {
-    "abot_physworld_f113": 4,
-    "cogvideo_i2v_f113": 6,
-    "cosmos3": 4,
-    "gigaworld_gr1_2b_f113": 8,
-    "happyhorse": 4,
-    "kling": 15,
-    "veo31_lite": 35,
-    "wan22_ti2v5b_1280x704_f169": 9,
-    "wan26_flash": 5,
-    "wow_wan14b_f105": 2
+    "abot_physworld_f113": 8,
+    "cogvideo_i2v_f113": 7,
+    "cosmos3": 5,
+    "gigaworld_gr1_2b_f113": 10,
+    "happyhorse": 19,
+    "kling": 6,
+    "veo31_lite": 25,
+    "wan22_ti2v5b_1280x704_f169": 10,
+    "wan26_flash": 9,
+    "wow_wan14b_f105": 5,
+    "vidu": 0
   },
   "summary": {
     "n_tasks": 50,
-    "cells_total": 500,
-    "already_have": 92,
-    "need_new_gen": 408,
-    "api_new_gen": 50,
-    "est_api_cost_usd": 10.6,
+    "cells_total": 550,
+    "already_have": 104,
+    "need_new_gen": 446,
+    "api_new_gen": 191,
+    "est_api_cost_usd": 44.25,
     "embodiment_dist": {
-      "gripper": 25,
-      "human_hand": 17,
-      "dex_hand": 8
+      "gripper": 20,
+      "human_hand": 16,
+      "dex_hand": 14
     }
   }
 }
