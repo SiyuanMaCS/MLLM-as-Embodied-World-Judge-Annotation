@@ -6,7 +6,7 @@
 <title>Leaderboard — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85er">
+<link rel="stylesheet" href="style.css?v=v85es">
 <style>
   .lb-section { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
   .lb-section h2 { margin: 0 0 10px; font-size: 15px; letter-spacing: -0.01em; font-weight: 600; color: #0f172a; }
@@ -88,14 +88,14 @@
     </div>
   </section>
 </main>
-<script src="app.js?v=v85er"></script>
+<script src="app.js?v=v85es"></script>
 <script>
   async function loadJudge() {
     try {
       // v85er: primary = mllm_judge raw (single source of truth after HF sync);
       // fallback = annotation-repo copy (may lag).
       const primary = 'https://raw.githubusercontent.com/SiyuanMaCS/MLLM-as-Embodied-World-Judge/main/bench/results/leaderboard.md';
-      const fallback = 'bench/leaderboard.md?v=v85er';
+      const fallback = 'bench/leaderboard.md?v=v85es';
       let md;
       try { md = await fetch(primary).then(r => { if (!r.ok) throw new Error('primary ' + r.status); return r.text(); }); }
       catch (_) { md = await fetch(fallback).then(r => r.text()); }
@@ -132,7 +132,7 @@
   }
   async function loadVideogen() {
     try {
-      const data = await fetch('bench/videogen_leaderboard.json?v=v85er').then(r => r.json());
+      const data = await fetch('bench/videogen_leaderboard.json?v=v85es').then(r => r.json());
       const sorted = data.slice().sort((a, b) => (b.overall || 0) - (a.overall || 0));
       const tbody = document.getElementById('vg-tbody');
       tbody.innerHTML = sorted.map((m, i) => `

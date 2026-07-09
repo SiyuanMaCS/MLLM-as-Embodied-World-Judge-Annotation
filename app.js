@@ -222,7 +222,7 @@ const LANG = {
     "alignment_metrics.retake": "retake",
     "alignment_metrics.not_ready": "Few completed · updates as more finish",
     "align.per_item_title": "👥 Per-item · click to see everyone's scores",
-    "alignment_metrics.model_low_conf": "ⓘ Model rows: n=10 · low confidence (Pearson CI ±0.5). See /leaderboard for authoritative rankings.",
+    "alignment_metrics.model_low_conf": "ⓘ Diagonal-striped bar = edits pending — 0.7 gate still reads the snapshot.",
     "home.card.leaderboard.title": "Leaderboard",
     "home.card.leaderboard.sub": "Judge + video-gen rankings",
     "page.leaderboard": "🏆 Leaderboard",
@@ -637,7 +637,7 @@ const LANG = {
     "alignment_metrics.retake": "需重考",
     "alignment_metrics.not_ready": "完成人数较少 · 更多人完成后自动计算",
     "align.per_item_title": "👥 每条查看所有人的分数",
-    "alignment_metrics.model_low_conf": "ⓘ 模型行仅本 10 条 · 低可信(Pearson 波动 ±0.5) · 权威排名见 /leaderboard",
+    "alignment_metrics.model_low_conf": "ⓘ 灰色斜纹条 = 修改后的分数(尚未生效) · 门槛仍按 snapshot 判定",
     "home.card.leaderboard.title": "🏆 排行榜",
     "home.card.leaderboard.sub": "Judge + 视频生成排名",
     "page.leaderboard": "🏆 排行榜",
@@ -2194,10 +2194,11 @@ function renderAlignmentMetricsBlock(m) {
   if (lowConf) extras.push("小样本仅参考");
   if (models.length === 0) extras.push(tr("alignment_metrics.no_model_short"));
   const caption = `${nItems}题 · ${nAnn}人 · <span class="muted">Pearson vs 共识 (0–1)</span>${extras.length ? " · " + extras.join(" · ") : ""}`;
-  // v85ek: when model rows are present with n <= 20 (fair-comparison mode), warn
-  // that per-model Pearson on a small campaign is noisy (±0.5 CI) and point to
-  // the authoritative leaderboard for real rankings.
-  const modelNote = (models.length > 0 && (models[0].n ?? 999) <= 20)
+  // v85es: caption now explains the ghost bar (from v85eq) instead of the n=10
+  // model-row warning. Fires when at least one annotator has pending edits
+  // (live_differs=true) so the striped overlay isn't unexplained.
+  const anyLiveDiffers = m.annotators.some(a => a.live_differs === true);
+  const modelNote = anyLiveDiffers
     ? `<p class="am-model-note muted small">${tr("alignment_metrics.model_low_conf")}</p>`
     : "";
   return `
