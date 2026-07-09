@@ -218,24 +218,26 @@
         **一句话结论**(整体连续检验,n=597):**complexity has no significant effect on PA judging (r = 0.047, p = 0.25); significantly improves IA judging (r = −0.10, p = 0.015)**。<br>
         翻成人话 —— **judge 判物理一致地弱,不随复杂度变;判指令随复杂度反而好**。PA null 反倒是 judge 局限的更硬证据:能力卡在 0.53,连"哪些任务更难"都区分不出。IA 那条机理清晰(长指令有可核验步骤,短指令近乎二元)。<br>
         **⚠️ 别把 IA 画成漂亮单调 bin 线**:每 5 词 bin 里 31-35 词那档 Pearson 掉到 0.10(n=16 太小)。整体 r 才可信,bin 是噪声。paper 里就报 r/p,底下 2-tier bar 只当可视化插图。<br>
+        **✅ 排除"是不是生成质量差异导致 judge 差异"的 reviewer 混淆问题**(Alice partial correlation):控制 gold PA/IA 后 —— IA raw −0.099 → **partial −0.098 几乎不变**,IA 效应扛过控制,**是复杂度本身(长指令有可核验步骤),不是因为视频质量差**。PA 控制前 +0.047 · 控制后 +0.068,前后都 n.s.,本来就没效应无需担心混淆。paper 挂"controlled for generation quality via partial correlation"。<br>
         **生成侧 finding(独立留)**:难指令生成变差(gold PA 3.20→2.89, IA 3.44→3.01)—— 关于**生成模型**扛不住,不是关于**判分**。
       </div>
       <div id="hs-icx"><div class="hs-empty">加载中…</div></div>
     </section>
 
-    <!-- v85g3 (Ham's hard version): bias-by-band chart is the direct answer -->
+    <!-- v85g4 (Alice reviewer-proof reframe): compression IS regression to
+         mean; frame the *consequence* (top-of-ranking resolution loss). -->
     <section class="hs-card">
       <div class="hs-h">
         <h2>🎚️ Human 真实质量 → Judge 打分 · bias-by-band</h2>
-        <span class="hs-sub">主 headline · judge 极端区不可信,中段可信</span>
+        <span class="hs-sub">主 headline · 回归导致质量量程压缩 → 顶部打榜失分辨率</span>
       </div>
       <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #8b5cf6;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **研究问题**:视频真实质量(人类 gold)高 / 低时,judge 会不会**系统性错**?<br>
-        **硬结论(8 条 judge×dim 全中,单调 monotone)**:<br>
-        <b>judge 准确度强依赖真实质量,系统性中心收缩 —— 高估最差的、低估最好的</b>。human=1 时几乎所有 judge 高估(bias > 0);human=5 时几乎所有 judge 低估(bias -1 到 -3.2)。**唯一可信段 = 中间(band 2-3, bias ≈ 0)**,两端 judge 最没用。<br>
-        <b>例(PA)</b>:human=1 → human=5 的 bias 走位 —— flash +0.60 → -1.14 · seed2.1 +1.25 → -1.64 · gpt-5.2 +1.62 → -1.18 · gemini-2.5-pro +0.07 → -3.21<br>
-        **为啥这是主 insight**:两个都产出优质片(human 4-5)的模型会被 judge **压到一起、分不开** —— 这正是**顶部打榜失灵**(K_norm 在强模型间失真)的机制。<br>
-        **Paper headline**(Ham 一句话):*"judges are reliable only mid-scale; they systematically compress the quality extremes, which is exactly where generator ranking needs resolution."*
+        **研究问题**:视频真实质量(人类 gold)高 / 低时,judge 会不会**系统性偏**?<br>
+        **观察(8 条 judge×dim 全中,单调 monotone)**:human=1 时几乎所有 judge 高估(bias > 0);human=5 时几乎所有 judge 低估(bias -1 到 -3.2)。<br>
+        <b>例(PA)</b>:human=1 → human=5 —— flash +0.60 → -1.14 · seed2.1 +1.25 → -1.64 · gpt-5.2 +1.62 → -1.18 · gemini-2.5-pro +0.07 → -3.21<br>
+        **⚠️ 诚实统计**(Alice reviewer-proof):这种"高估最差、低估最好"就是 <b>regression to mean 的定义</b> —— 任何 r<1 预测器都长这样。Alice 实测各 judge 观察 bias 落在自己 regression baseline **±0.15 内**,**没有超出回归的额外 judge 特有缺陷**。**不能声称"judge 特有质量盲"**,那会被审稿人"that's just regression to the mean"秒杀。<br>
+        **正确 framing = 回归的后果(reviewer-proof)**:因为 judge 分数向均值回归,**质量量程被压缩** —— judge 分辨中等质量 OK,但**把两端(尤其顶部 human 4 vs 5)挤到一起,分不开最强的几个生成器**。<br>
+        **主 insight**:**这是顶部打榜失分辨率(K_norm 在强模型间失真)的机制** —— 讲的是回归的**打榜后果**,不是 judge 特有缺陷。paper headline:*"Judge scores regress toward the mean, compressing the quality range so top-ranked generators become indistinguishable — this is the mechanism behind top-of-leaderboard resolution loss."*
       </div>
       <div id="hs-cal"><div class="hs-empty">加载中…</div></div>
     </section>
@@ -250,6 +252,7 @@
         **定义**:按末端执行器(人手 / 灵巧手 / 夹爪)分组,同时报**生成质量**(人类 gold 均分)和 **judge 准确度**(PA Pearson)。<br>
         **主结论(硬)**:AI 生成**人手视频物理最真**(gold 3.39 vs 机器人 ≈2.95),灵巧手最难生成(gold 2.93)—— 生成质量在 embodiment 上有真实差异。<br>
         **⚠️ 判分准确度差异不 robust**:Pearson 排序(gripper 0.55 > 灵巧 0.51 > 人手 0.49)和 MAE 排序(人手 0.97 > 灵巧 1.04 ≈ gripper 1.03)**方向不一致** → 多半是噪声。诚实结论 = "**judge accuracy is comparable across embodiments**"。<br>
+        **答"是否生成质量差异导致 judge 差异"reviewer 问**:判分准确度**本身就无 robust 差异,所以无混淆可担心** —— embodiment 之间真差的只是**生成质量**(人手最真),那是关于**生成**不是关于**判分**。<br>
         **排除分数影响**:各组 gold σ 几乎相等(**PA σ 1.23-1.26**),无方差混淆 → 生成质量差异是**真的**,不是分数压缩 artifact。
       </div>
       <div id="hs-emb-quality"><div class="hs-empty" style="font-size:12px">生成质量加载中…</div></div>
@@ -1290,40 +1293,40 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85g3", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85g4", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85g3", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85g4", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85g3", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85g4", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85g3", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85g4", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v85g3", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v85g4", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v85g3", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v85g4", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v85g3", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85g4", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -1334,8 +1337,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85g3", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85g3", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85g4", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85g4", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -1345,7 +1348,7 @@
     // v85fx: score-controlled analysis (Alice) — Pearson · Spearman · MAE ·
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
-    fetch("bench/score_controlled.json?v=v85g3", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85g4", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -1353,11 +1356,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85g3", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85g4", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85g3", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85g4", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });

@@ -1,0 +1,16 @@
+{
+ "question": "Is the judge-accuracy difference across groups caused by generation-quality differences?",
+ "method": "partial correlation of (instruction word-count, flash judge |error|) controlling for gold score",
+ "PA": {
+  "raw_corr": 0.047,
+  "partial_controlling_gold": 0.068,
+  "corr_wordcount_gold": -0.106,
+  "verdict": "no effect either way (n.s.)"
+ },
+ "IA": {
+  "raw_corr": -0.099,
+  "partial_controlling_gold": -0.098,
+  "corr_wordcount_gold": -0.183,
+  "verdict": "effect SURVIVES control (partial ~= raw) \u2192 NOT a quality confound; complexity itself drives it"
+ }
+}
