@@ -1,0 +1,222 @@
+{
+ "gemini-3.5-flash::physical_adherence": {
+  "1": {
+   "human_mean": 1.94,
+   "n": 156
+  },
+  "2": {
+   "human_mean": 2.79,
+   "n": 337
+  },
+  "3": {
+   "human_mean": 3.61,
+   "n": 102
+  },
+  "4": {
+   "human_mean": 3.84,
+   "n": 62
+  },
+  "5": {
+   "human_mean": 3.89,
+   "n": 217
+  }
+ },
+ "gemini-3.5-flash::instruction_alignment": {
+  "1": {
+   "human_mean": 3.25,
+   "n": 20
+  },
+  "2": {
+   "human_mean": 2.51,
+   "n": 315
+  },
+  "3": {
+   "human_mean": 3.08,
+   "n": 142
+  },
+  "4": {
+   "human_mean": 3.94,
+   "n": 229
+  },
+  "5": {
+   "human_mean": 3.92,
+   "n": 169
+  }
+ },
+ "seed2.0_pro::physical_adherence": {
+  "1": {
+   "human_mean": 2.1,
+   "n": 21
+  },
+  "2": {
+   "human_mean": 2.34,
+   "n": 324
+  },
+  "3": {
+   "human_mean": 3.29,
+   "n": 230
+  },
+  "4": {
+   "human_mean": 3.71,
+   "n": 143
+  },
+  "5": {
+   "human_mean": 3.91,
+   "n": 150
+  }
+ },
+ "seed2.0_pro::instruction_alignment": {
+  "1": {
+   "human_mean": 1.65,
+   "n": 31
+  },
+  "2": {
+   "human_mean": 2.4,
+   "n": 285
+  },
+  "3": {
+   "human_mean": 3.32,
+   "n": 264
+  },
+  "4": {
+   "human_mean": 3.88,
+   "n": 42
+  },
+  "5": {
+   "human_mean": 4.33,
+   "n": 246
+  }
+ },
+ "gpt5.5::physical_adherence": {
+  "1": {
+   "human_mean": 1.4,
+   "n": 5
+  },
+  "2": {
+   "human_mean": 2.03,
+   "n": 150
+  },
+  "3": {
+   "human_mean": 2.9,
+   "n": 167
+  },
+  "4": {
+   "human_mean": 3.4,
+   "n": 459
+  },
+  "5": {
+   "human_mean": 3.63,
+   "n": 87
+  }
+ },
+ "gpt5.5::instruction_alignment": {
+  "1": {
+   "human_mean": 1.5,
+   "n": 2
+  },
+  "2": {
+   "human_mean": 2.16,
+   "n": 234
+  },
+  "3": {
+   "human_mean": 3.18,
+   "n": 309
+  },
+  "4": {
+   "human_mean": 3.78,
+   "n": 159
+  },
+  "5": {
+   "human_mean": 4.57,
+   "n": 164
+  }
+ },
+ "qwen3-vl-32b-instruct::physical_adherence": {
+  "1": {
+   "human_mean": 1.83,
+   "n": 24
+  },
+  "2": {
+   "human_mean": 2.22,
+   "n": 79
+  },
+  "3": {
+   "human_mean": 2.3,
+   "n": 47
+  },
+  "4": {
+   "human_mean": 2.74,
+   "n": 106
+  },
+  "5": {
+   "human_mean": 3.36,
+   "n": 618
+  }
+ },
+ "qwen3-vl-32b-instruct::instruction_alignment": {
+  "1": {
+   "human_mean": 3.55,
+   "n": 20
+  },
+  "2": {
+   "human_mean": 2.41,
+   "n": 158
+  },
+  "3": {
+   "human_mean": 2.8,
+   "n": 242
+  },
+  "4": {
+   "human_mean": 3.55,
+   "n": 38
+  },
+  "5": {
+   "human_mean": 3.83,
+   "n": 416
+  }
+ },
+ "gemini-2.5-pro::physical_adherence": {
+  "1": {
+   "human_mean": 2.92,
+   "n": 701
+  },
+  "2": {
+   "human_mean": 3.64,
+   "n": 90
+  },
+  "3": {
+   "human_mean": 4.14,
+   "n": 14
+  },
+  "4": {
+   "human_mean": 3.67,
+   "n": 3
+  },
+  "5": {
+   "human_mean": 3.88,
+   "n": 59
+  }
+ },
+ "gemini-2.5-pro::instruction_alignment": {
+  "1": {
+   "human_mean": 2.38,
+   "n": 232
+  },
+  "2": {
+   "human_mean": 3.04,
+   "n": 256
+  },
+  "3": {
+   "human_mean": 3.57,
+   "n": 161
+  },
+  "4": {
+   "human_mean": 4.0,
+   "n": 56
+  },
+  "5": {
+   "human_mean": 4.37,
+   "n": 163
+  }
+ }
+}

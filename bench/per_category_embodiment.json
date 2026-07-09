@@ -1,0 +1,58 @@
+{
+ "mapping": {
+  "人手 (human hand)": [
+   "egodex_human",
+   "egoscaler_human",
+   "epickitchens_human"
+  ],
+  "灵巧手 (dexterous)": [
+   "gr1_inlab"
+  ],
+  "gripper (单+双臂)": [
+   "agibot_world",
+   "robotwin",
+   "droid",
+   "open_x_embodiment"
+  ]
+ },
+ "video_quality": {
+  "人手 (human hand)": {
+   "n": 240,
+   "gold_pa": 3.39,
+   "gold_ia": 3.68
+  },
+  "灵巧手 (dexterous)": {
+   "n": 136,
+   "gold_pa": 2.93,
+   "gold_ia": 2.93
+  },
+  "gripper (单+双臂)": {
+   "n": 499,
+   "gold_pa": 2.98,
+   "gold_ia": 3.16
+  }
+ },
+ "judge_pa_pearson": {
+  "人手 (human hand)": {
+   "gemini-3.5-flash": 0.488,
+   "seed2.0_pro": 0.469,
+   "gpt5.5": 0.325,
+   "qwen3-vl-32b-instruct": 0.273,
+   "gemini-2.5-pro": 0.283
+  },
+  "灵巧手 (dexterous)": {
+   "gemini-3.5-flash": 0.512,
+   "seed2.0_pro": 0.422,
+   "gpt5.5": 0.36,
+   "qwen3-vl-32b-instruct": 0.414,
+   "gemini-2.5-pro": 0.214
+  },
+  "gripper (单+双臂)": {
+   "gemini-3.5-flash": 0.549,
+   "seed2.0_pro": 0.499,
+   "gpt5.5": 0.461,
+   "qwen3-vl-32b-instruct": 0.347,
+   "gemini-2.5-pro": 0.225
+  }
+ }
+}

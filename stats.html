@@ -187,10 +187,11 @@
     <!-- v85fb: Per-embodiment PA heatmap -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2>🏷️ 各 embodiment PA · Per-embodiment breakdown</h2>
-        <span class="hs-sub">行 = judge · 列 = embodiment 类别 · 颜色 = PA Pearson</span>
+        <h2>🏷️ 各 embodiment 类别 · Per-embodiment breakdown</h2>
+        <span class="hs-sub">两个层面 · 上=生成模型分(人类 gold) · 下=judge 准确度(PA Pearson)</span>
       </div>
-      <div id="hs-emb"><div class="hs-empty">加载中…</div></div>
+      <div id="hs-emb-quality"><div class="hs-empty" style="font-size:12px">生成质量加载中…</div></div>
+      <div id="hs-emb"><div class="hs-empty">judge 准确度加载中…</div></div>
     </section>
 
     <!-- v85fb: Bootstrap CI whiskers -->
@@ -471,12 +472,14 @@
     dex_hand:   "🖐️ 灵巧手",
     gripper:    "🦾 Gripper"
   };
+  // v85fg (Alice 校正 2026-07-09): agibot_world = 双臂平行夹爪 → Gripper
+  // (公认 gripper 机器人;放灵巧手审稿人会挑);灵巧手只有 gr1_inlab。
   var EMB_DATASET_TO_CATEGORY = {
     egodex_human:       "human_hand",
     egoscaler_human:    "human_hand",
     epickitchens_human: "human_hand",
     gr1_inlab:          "dex_hand",
-    agibot_world:       "dex_hand",
+    agibot_world:       "gripper",
     droid:              "gripper",
     open_x_embodiment:  "gripper",
     robotwin:           "gripper"
@@ -490,6 +493,60 @@
     if(t < 0.65) return "rgb(167,243,208)";
     return "rgb(110,231,183)";
   }
+  // v85fg: model-score strip — gold PA/IA per category (video-gen quality).
+  // Data: bench/per_category_embodiment.json (Alice's canonical mapping).
+  function renderModelQualityStrip(d){
+    var host = document.getElementById("hs-emb-quality");
+    if(!host) return;
+    var vq = d && d.video_quality;
+    if(!vq){ host.innerHTML = ''; return; }
+    // Use Alice's category keys (with parenthetical labels) to iterate — keep same
+    // order as the judge heatmap.
+    var CAT_KEY = {
+      human_hand: "人手 (human hand)",
+      dex_hand:   "灵巧手 (dexterous)",
+      gripper:    "gripper (单+双臂)"
+    };
+    function colorForGold(v){
+      // gold 1-5 scale — 3=neutral, 5=green, 1=red
+      if(v==null || isNaN(v)) return "#f1f5f9";
+      var t = Math.max(0, Math.min(1, (v - 1) / 4));
+      if(t < 0.35) return "rgb(254,226,226)";
+      if(t < 0.5)  return "rgb(254,240,206)";
+      if(t < 0.65) return "rgb(220,252,207)";
+      if(t < 0.8)  return "rgb(167,243,208)";
+      return "rgb(110,231,183)";
+    }
+    var html = '<div style="font-size:11.5px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin:2px 0 6px">① 生成模型分 · 人类 gold 均分(1-5 越高越像真物理)</div>';
+    html += '<div class="hs-emb-wrap"><div class="hs-emb-grid" style="grid-template-columns:170px repeat(' + EMB_CATEGORY_ORDER.length + ',1fr)">';
+    html += '<div class="hs-emb-hdr side"></div>';
+    EMB_CATEGORY_ORDER.forEach(function(cat){ html += '<div class="hs-emb-hdr">' + EMB_CATEGORY_LABEL[cat] + '</div>'; });
+    // Row 1: gold PA
+    html += '<div class="hs-emb-hdr side">Gold PA</div>';
+    EMB_CATEGORY_ORDER.forEach(function(cat){
+      var v = vq[CAT_KEY[cat]];
+      if(!v){ html += '<div class="hs-emb-cell na">—</div>'; return; }
+      html += '<div class="hs-emb-cell" style="background:' + colorForGold(v.gold_pa) + '" title="n=' + v.n + '">' + v.gold_pa.toFixed(2) + '</div>';
+    });
+    // Row 2: gold IA
+    html += '<div class="hs-emb-hdr side">Gold IA</div>';
+    EMB_CATEGORY_ORDER.forEach(function(cat){
+      var v = vq[CAT_KEY[cat]];
+      if(!v){ html += '<div class="hs-emb-cell na">—</div>'; return; }
+      html += '<div class="hs-emb-cell" style="background:' + colorForGold(v.gold_ia) + '" title="n=' + v.n + '">' + v.gold_ia.toFixed(2) + '</div>';
+    });
+    // Row 3: n (unshaded)
+    html += '<div class="hs-emb-hdr side" style="color:#94a3b8">n items</div>';
+    EMB_CATEGORY_ORDER.forEach(function(cat){
+      var v = vq[CAT_KEY[cat]];
+      if(!v){ html += '<div class="hs-emb-cell na">—</div>'; return; }
+      html += '<div class="hs-emb-cell" style="background:#f8fafc;color:#64748b;font-weight:500">' + v.n + '</div>';
+    });
+    html += '</div></div>';
+    html += '<div style="font-size:11.5px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin:16px 0 6px">② Judge 准确度 · vs 人类真值 PA Pearson</div>';
+    host.innerHTML = html;
+  }
+
   function renderPerEmbodiment(d){
     var host = document.getElementById("hs-emb");
     if(!d || !Object.keys(d).length){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
@@ -595,21 +652,26 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85ff", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fg", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fb: closed-loop headline + per-embodiment heatmap + bootstrap CI
     // (Alice bundle, static bench/ file for now; will move to HF pipeline).
-    fetch("bench/judge_judge_closedloop.json?v=v85ff", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85fg", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cl " + r.status); return r.json(); })
       .then(renderClosedLoop)
       .catch(function(e){ document.getElementById("hs-cl").innerHTML='<div class="hs-empty">闭环数据加载失败</div>'; });
-    fetch("bench/per_embodiment_pa.json?v=v85ff", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85fg", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85ff", {cache:"no-store"})
+    // v85fg: model-quality strip — gold PA/IA per embodiment category.
+    fetch("bench/per_category_embodiment.json?v=v85fg", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
+      .then(renderModelQualityStrip)
+      .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
+    fetch("bench/bootstrap_ci.json?v=v85fg", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
