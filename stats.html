@@ -221,7 +221,7 @@
         <span class="hs-sub">anchor for §§ 1–3</span>
       </div>
       <div style="font-size:12.5px;color:#64748b;padding:2px 4px 8px;line-height:1.55">
-        Referenced from § 1 (PA-Pearson · flash 0.530 cap, and IA-Pearson · gpt5.5 0.610 — instruction-complexity effects on both axes) and § 2 (PA·K_norm = top-of-leaderboard resolution loss). 10 judges shown; &lt; 15%-coverage judges hidden per bootstrap-CI cutoff (see App. B).
+        Referenced from § 1 (PA-Pearson · flash 0.530 cap, and IA-Pearson · gpt5.5 0.610 — instruction-complexity effects on both axes) and § 2 (τ_ap = AP-weighted Kendall on the 10-generator ranking, top-heavy; see § 2b for the ranking-vs-calibration orthogonality on PA). 10 judges shown; &lt; 15%-coverage judges hidden per bootstrap-CI cutoff (see App. B). Complementary per-model calibration RMSE in Appendix G.
       </div>
       <div id="hs-table1"><div class="hs-empty">加载中…</div></div>
     </section>
@@ -253,6 +253,19 @@
       <div id="hs-cal" style="margin-top:6px"><div class="hs-empty">loading…</div></div>
       <div id="hs-judgedist" style="margin-top:14px"><div class="hs-empty">loading…</div></div>
       <div id="hs-topspacing" style="margin-top:14px"><div class="hs-empty">loading…</div></div>
+    </section>
+
+    <!-- ═══ § 2b  Ranking-vs-calibration orthogonality on PA ═══ -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 2b</span>Per-item calibration and model-level ranking decouple on PA</h2>
+        <span class="hs-sub">PA orthogonal (ρ = −0.14) · IA aligned (ρ = 0.86)</span>
+      </div>
+      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
+        No standard rank-agreement metric on the current PA test set correlates meaningfully with per-item PA-Pearson (all |Spearman| &lt; 0.4 across the thirteen metrics we tested, including flat Kendall τ, τ_ap, top-<em>k</em> inversion rates for <em>k</em> = 2 – 8, top-<em>k</em> recall, and Spearman ρ over the 10-generator ranking). Two distinct capabilities are being measured. Per-item Pearson asks <em>are the judge's scores calibrated to individual clips?</em>; τ_ap asks <em>does the judge preserve the top of the model-mean ranking?</em>. On PA these are empirically orthogonal because the human-gold PA spread is wide (1.86 – 4.04): even an anchor-collapsing judge — gemini-2.5-pro assigns "1" to 81 % of clips (per-item Pearson 0.24) — preserves the coarse model ranking (τ_ap 0.93) because its per-model means, though compressed, remain monotone. On IA the same metrics correlate at ρ ≈ 0.86 because the IA gold distribution is tighter, so ranking failure and calibration failure travel together.<br><br>
+        Practical consequence: on PA, "good ranker" and "good per-item judge" are separately reportable properties. Table 1's τ_ap column answers the leaderboard-reproducibility question; the PA-Pearson column answers the item-level fidelity question. A complementary per-model calibration distance (Appendix G) recovers alignment with per-item Pearson at r = 0.84 because it is not rank-based.
+      </div>
+      <div id="hs-decoupling" style="margin-top:6px"><div class="hs-empty">loading…</div></div>
     </section>
 
     <!-- ═══ § 3  Per-embodiment (analysis + main viz + quality-vs-error confound) ═══ -->
@@ -328,7 +341,19 @@
         <b>Caveat.</b> The current video-generation ranking is <em>not</em> prompt-controlled — each model was scored on a different subset of prompts drawn from the 875-item pool. In the meantime the ranking below serves as a reference exhibit only; do not read fine differences as model quality.<br><br>
         Because the top four generators are statistically tied in human gold PA (a 0.195 band on the 875-item set), the prompt-controlled common-set-50 evaluation is designed to <em>resolve whether the top models are separable at all</em> rather than to crown a winner: at n = 50 the paired bootstrap Δ CIs are expected to include zero for the top-four pairs, giving an honest "top-tier statistically tied" verdict. Cleanly separating the top would require a larger fair set or a more sensitive metric.
       </div>
-      <div id="hs-vg-appendix"><div class="hs-empty">加载中…</div></div>
+      <div id="hs-vg-appendix"><div class="hs-empty">loading…</div></div>
+    </section>
+
+    <!-- G. Model-level RMSE (calibration distance complementing τ_ap) -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">G</span>Per-model calibration RMSE · complementary to τ_ap</h2>
+        <span class="hs-sub">non-rank distance metric · aligns with per-item Pearson</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
+        A non-rank complement to the τ_ap column in Table 1. For each judge we compute the mean judge score per generator and the mean human score per generator (10 base models, prefix / rewrite variants merged), then report the RMSE between the two 10-vectors. Because the metric preserves score magnitudes, anchoring judges — whose per-model means are compressed toward a single extreme — are penalized: gemini-2.5-pro's PA-RMSE is 1.81 and qwen-3-vl-8b's is 1.43, while seed2.0_pro sits at 0.19. This recovers alignment with per-item PA-Pearson (r = 0.84) that no purely rank-based metric achieves on this dataset. Reported alongside τ_ap so readers can see the ranking-versus-calibration axes side by side; system-level RMSE / MAE are standard model-level judge meta-evaluation metrics (see Chiang &amp; Lee 2023; Zheng et al. 2023).
+      </div>
+      <div id="hs-mrmse"><div class="hs-empty">loading…</div></div>
     </section>
 
     <!-- D. Score distributions -->
@@ -515,7 +540,7 @@
   function renderVideogenAppendix(){
     var host = document.getElementById("hs-vg-appendix");
     if(!host) return;
-    fetch("bench/videogen_leaderboard.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/videogen_leaderboard.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(data){
         // Collapse _prefix / _rewrite variants into base model, weighted by n
@@ -563,7 +588,7 @@
   function renderJudgeDist(){
     var host = document.getElementById("hs-judgedist");
     if(!host) return;
-    fetch("bench/analysis/judge_distributions.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/analysis/judge_distributions.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.human_gold){ host.innerHTML=""; return; }
@@ -649,13 +674,138 @@
       .catch(function(){ host.innerHTML=""; });
   }
 
+  // v85ga: § 2b Pearson × τ_ap decoupling scatter (PA + IA side-by-side).
+  // Pulls Pearson from bench/analysis/bootstrap_ci.json and τ_ap from
+  // bench/model_ranking_strict.json. Each dot = one of the 10 judges, labeled.
+  function renderDecoupling(){
+    var host = document.getElementById("hs-decoupling");
+    if(!host) return;
+    Promise.all([
+      fetch("bench/analysis/bootstrap_ci.json?v=v85ga", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch("bench/model_ranking_strict.json?v=v85ga", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+    ]).then(function(pair){
+      var ci = (pair[0] && pair[0].judges) || {};
+      var strict = pair[1] || {};
+      var judges = Object.keys(ci);
+      if(!judges.length){ host.innerHTML = ""; return; }
+      function panelSvg(dim, dimLabel, rho){
+        var pearsonKey = dim === "PA" ? "pa_pearson" : "ia_pearson";
+        var strictDim = dim;
+        var pts = judges.map(function(j){
+          var p = (ci[j] && ci[j][pearsonKey] && ci[j][pearsonKey].est);
+          var t = strict[j] && strict[j][strictDim] && strict[j][strictDim].tau_ap;
+          return (p != null && t != null) ? { j: j, p: p, t: t } : null;
+        }).filter(Boolean);
+        if(!pts.length) return "";
+        var W = 400, H = 320, PL = 46, PR = 12, PT = 22, PB = 44;
+        var plotW = W - PL - PR, plotH = H - PT - PB;
+        var xMin = 0.1, xMax = 0.7;
+        var yMin = 0.2, yMax = 1.0;
+        function px(v){ return PL + (v - xMin) / (xMax - xMin) * plotW; }
+        function py(v){ return PT + plotH - (v - yMin) / (yMax - yMin) * plotH; }
+        var s = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;background:linear-gradient(180deg,#fcfdff,#f6f8fc);border:1px solid #eef0f5;border-radius:8px">';
+        // gridlines + tick labels
+        [0.1,0.2,0.3,0.4,0.5,0.6,0.7].forEach(function(v){
+          if(v < xMin || v > xMax) return;
+          s += '<line x1="'+px(v)+'" y1="'+PT+'" x2="'+px(v)+'" y2="'+(PT+plotH)+'" stroke="#eef0f5" stroke-width="1"/>';
+          s += '<text x="'+px(v)+'" y="'+(PT+plotH+14)+'" font-size="10" fill="#94a3b8" text-anchor="middle">'+v.toFixed(1)+'</text>';
+        });
+        [0.2,0.4,0.6,0.8,1.0].forEach(function(v){
+          s += '<line x1="'+PL+'" y1="'+py(v)+'" x2="'+(PL+plotW)+'" y2="'+py(v)+'" stroke="#eef0f5" stroke-width="1"/>';
+          s += '<text x="'+(PL-4)+'" y="'+(py(v)+3)+'" font-size="10" fill="#94a3b8" text-anchor="end">'+v.toFixed(1)+'</text>';
+        });
+        // axis titles
+        s += '<text x="'+(PL+plotW/2)+'" y="'+(H-12)+'" font-size="11" fill="#334155" text-anchor="middle" font-weight="600">'+dimLabel+' · Pearson (per-item)</text>';
+        s += '<text x="14" y="'+(PT+plotH/2)+'" font-size="11" fill="#334155" text-anchor="middle" font-weight="600" transform="rotate(-90 14 '+(PT+plotH/2)+')">'+dimLabel+' · τ_ap (model rank)</text>';
+        // dots + labels
+        var judgeColor = {
+          "gemini-3.5-flash":       "#2563eb",
+          "gemini-2.5-flash":       "#60a5fa",
+          "gemini-2.5-pro":         "#7c3aed",
+          "gemini-3.1-pro-preview": "#8b5cf6",
+          "gpt-5.2":                "#10b981",
+          "gpt5.5":                 "#059669",
+          "seed2.0_pro":            "#f59e0b",
+          "seed2.1_lite":           "#f97316",
+          "qwen3-vl-32b-instruct":  "#ef4444",
+          "qwen3-vl-8b-instruct":   "#dc2626"
+        };
+        pts.forEach(function(pt){
+          var col = judgeColor[pt.j] || "#334155";
+          s += '<circle cx="'+px(pt.p).toFixed(1)+'" cy="'+py(pt.t).toFixed(1)+'" r="5.5" fill="'+col+'" stroke="#0f172a" stroke-width="0.8" opacity="0.88"/>';
+          var label = pt.j.replace(/gemini-/, "g-").replace(/qwen3-vl-/,"qwen-").replace(/-instruct$/,"").replace(/-preview$/,"").replace(/seed/,"s");
+          var lx = px(pt.p) + 8;
+          var lyy = py(pt.t) + 3;
+          s += '<text x="'+lx.toFixed(1)+'" y="'+lyy.toFixed(1)+'" font-size="9.5" fill="#334155" font-weight="500">'+label+'</text>';
+        });
+        // rho annotation
+        s += '<rect x="'+(PL+8)+'" y="'+(PT+8)+'" width="120" height="18" fill="rgba(255,255,255,0.86)" rx="3"/>';
+        s += '<text x="'+(PL+14)+'" y="'+(PT+21)+'" font-size="11" fill="#334155" font-weight="600">Spearman ρ = '+rho+'</text>';
+        s += '</svg>';
+        return s;
+      }
+      var html = '<div class="hs-h" style="border:0;padding:0 0 4px"><h3 style="font-size:13px;color:#334155;margin:0">Pearson × τ_ap — 10 judges</h3></div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
+      html += '<div>' + panelSvg("PA", "PA", "−0.14") + '</div>';
+      html += '<div>' + panelSvg("IA", "IA", "+0.86") + '</div>';
+      html += '</div>';
+      html += '<div style="font-size:11.5px;color:#64748b;padding:6px 4px 0;line-height:1.55">On PA (left), Pearson (x) and τ_ap (y) are near-independent: gemini-2.5-pro (worst Pearson) sits above gemini-3.5-flash (best Pearson) on the τ_ap axis. On IA (right), the same axes align — good per-item calibration and good ranking travel together. τ_ap is the "cheap ranking" capacity; Pearson is the per-item fidelity.</div>';
+      host.innerHTML = html;
+    }).catch(function(){ host.innerHTML = ""; });
+  }
+
+  // v85ga: Appendix G · model-level RMSE (calibration distance metric).
+  // Pulls precomputed per-judge PA/IA RMSE from bench/analysis/model_level_rmse.json.
+  function renderMRMSE(){
+    var host = document.getElementById("hs-mrmse");
+    if(!host) return;
+    fetch("bench/analysis/model_level_rmse.json?v=v85ga", {cache:"no-store"})
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(d){
+        var byJ = (d && d.judges) || {};
+        var judges = Object.keys(byJ);
+        if(!judges.length){ host.innerHTML = ""; return; }
+        judges.sort(function(a,b){ return (byJ[a].pa.rmse) - (byJ[b].pa.rmse); });
+        var maxRmse = 0;
+        judges.forEach(function(j){ maxRmse = Math.max(maxRmse, byJ[j].pa.rmse, byJ[j].ia.rmse); });
+        if(!maxRmse) maxRmse = 2.0;
+        function bar(v, col){
+          var pct = Math.max(0, Math.min(100, (v / maxRmse) * 100));
+          return '<div style="display:flex;align-items:center;gap:8px">'
+               + '<div style="width:120px;height:12px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:'+pct.toFixed(1)+'%;background:'+col+';border-radius:3px"></div></div>'
+               + '<span style="font-variant-numeric:tabular-nums;font-weight:600;color:#0f172a;min-width:44px;text-align:right">'+v.toFixed(3)+'</span>'
+               + '</div>';
+        }
+        var html = '<table style="width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums">';
+        html += '<thead><tr style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">';
+        ['#','Judge','PA · M-RMSE ↓','IA · M-RMSE ↓','n gen models'].forEach(function(h){
+          html += '<th style="padding:8px 8px;text-align:'+(h==='Judge'?'left':'left')+';border-bottom:1px solid #e2e8f0">'+h+'</th>';
+        });
+        html += '</tr></thead><tbody>';
+        judges.forEach(function(j, i){
+          var r = byJ[j];
+          html += '<tr style="border-bottom:1px solid #f1f5f9">';
+          html += '<td style="padding:7px 8px;color:#94a3b8;font-weight:600">'+(i+1)+'</td>';
+          html += '<td style="padding:7px 8px;font-weight:600;color:#0f172a">'+esc(j)+'</td>';
+          html += '<td style="padding:7px 8px">'+bar(r.pa.rmse, '#2563eb')+'</td>';
+          html += '<td style="padding:7px 8px">'+bar(r.ia.rmse, '#db2777')+'</td>';
+          html += '<td style="padding:7px 8px;color:#64748b">'+r.pa.n_models+'</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px">RMSE(judge_model_mean, human_model_mean) over ' + (byJ[judges[0]].pa.n_models) + ' merged base gen models. Anchor-collapsing judges (gemini-2.5-pro, qwen-3-vl-8b) score worst because their per-model means are compressed toward a single extreme — the ranking metrics in Table 1 miss this on PA (see § 2b). Correlation of PA-RMSE with per-item PA-Pearson: r = 0.84.</div>';
+        host.innerHTML = html;
+      })
+      .catch(function(){ host.innerHTML = ""; });
+  }
+
   // v85g7b (Alice/Ham §2 supplement): 1D gold-PA stripplot with top-4 vs
   // full-span brackets. Makes "compressed top" visible at a glance below the
   // regression prose. Data: bench/analysis/topspacing.json (Alice).
   function renderTopSpacing(){
     var host = document.getElementById("hs-topspacing");
     if(!host) return;
-    fetch("bench/analysis/topspacing.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/analysis/topspacing.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.models){ host.innerHTML=""; return; }
@@ -716,9 +866,9 @@
     var host = document.getElementById("hs-table1");
     if(!host) return;
     var md, strict, ciAll;
-    var mdUrl = "bench/leaderboard.md?v=v85g9";
-    var strictUrl = "bench/model_ranking_strict.json?v=v85g9";
-    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85g9";
+    var mdUrl = "bench/leaderboard.md?v=v85ga";
+    var strictUrl = "bench/model_ranking_strict.json?v=v85ga";
+    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85ga";
     // Global scale for the mini error-bar strip: fixed range so error bars are
     // visually comparable across the table (widened enough to fit both the
     // strong-judge PA CIs and weak-judge CIs).
@@ -760,8 +910,8 @@
         return {
           model: model, n: parseInt(r[1].replace(/,/g,''),10), cov: covPct,
           pa: parseFloat(r[3]), ia: parseFloat(r[4]),
-          pa_knorm: s.PA && s.PA.kendall_distance_norm,
-          ia_knorm: s.IA && s.IA.kendall_distance_norm,
+          pa_tauap: s.PA && s.PA.tau_ap,
+          ia_tauap: s.IA && s.IA.tau_ap,
           pa_ci: ci.pa_pearson || null, ia_ci: ci.ia_pearson || null,
           jf1: parseFloat(r[7]), exact: parseFloat(r[8]), plus1: parseFloat(r[9])
         };
@@ -769,7 +919,7 @@
       parsed.sort(function(a,b){ return (b.pa || -9) - (a.pa || -9); });
       var html = '<table class="lb-table" style="width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums">';
       html += '<thead><tr style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">';
-      ['#','Model','n','PA·Pearson (95% CI)','IA·Pearson (95% CI)','PA·K_norm↓','IA·K_norm↓','Joint-F1','Exact PA','±1 PA'].forEach(function(h){
+      ['#','Model','n','PA·Pearson (95% CI)','IA·Pearson (95% CI)','PA·τ_ap↑','IA·τ_ap↑','Joint-F1','Exact PA','±1 PA'].forEach(function(h){
         html += '<th style="padding:8px 8px;text-align:'+(h==='Model'?'left':'right')+';border-bottom:1px solid #e2e8f0">'+h+'</th>';
       });
       html += '</tr></thead><tbody>';
@@ -782,15 +932,15 @@
         var iaStrip = m.ia_ci ? stripSvg(m.ia_ci.est, m.ia_ci.lo, m.ia_ci.hi, '#db2777') : '';
         html += '<td style="padding:7px 8px;text-align:right;font-weight:600;white-space:nowrap"><span style="display:inline-block;min-width:44px;text-align:right">'+m.pa.toFixed(3)+'</span>'+paStrip+'</td>';
         html += '<td style="padding:7px 8px;text-align:right;white-space:nowrap"><span style="display:inline-block;min-width:44px;text-align:right">'+m.ia.toFixed(3)+'</span>'+iaStrip+'</td>';
-        html += '<td style="padding:7px 8px;text-align:right;color:#db2777">'+(isFinite(m.pa_knorm)?m.pa_knorm.toFixed(3):'—')+'</td>';
-        html += '<td style="padding:7px 8px;text-align:right;color:#db2777">'+(isFinite(m.ia_knorm)?m.ia_knorm.toFixed(3):'—')+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#7c3aed">'+(isFinite(m.pa_tauap)?m.pa_tauap.toFixed(3):'—')+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#7c3aed">'+(isFinite(m.ia_tauap)?m.ia_tauap.toFixed(3):'—')+'</td>';
         html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.jf1.toFixed(3)+'</td>';
         html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.exact.toFixed(3)+'</td>';
         html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.plus1.toFixed(3)+'</td>';
         html += '</tr>';
       });
       html += '</tbody></table>';
-      html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px">Pearson = per-item agreement (est + 95% CI whisker, cluster-bootstrap by item, B = 10 000) · K_norm = normalized Kendall distance among the 10 video-gen models (lower = better) · Joint-F1 / Exact / ±1 = classification-style metrics. Overlapping CIs among top rows = no statistically separable winner at the top; see § 2 and Appendix B.</div>';
+      html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px">Pearson = per-item agreement (est + 95% CI whisker, cluster-bootstrap by item, B = 10 000). <span style="color:#7c3aed">τ_ap</span> = AP-weighted Kendall on the 10-generator ranking, top-heavy (higher = better; no arbitrary k). On PA, Pearson and τ_ap are empirically orthogonal (Spearman ρ = −0.14) — anchoring judges preserve the model-level order without per-item calibration; on IA they align (ρ = 0.86). See § 2b for the PA-vs-IA decoupling story and Appendix G for a complementary per-model RMSE calibration metric. Joint-F1 / Exact / ±1 = classification-style metrics.</div>';
       host.innerHTML = html;
     }).catch(function(){
       host.innerHTML = '<div class="hs-empty">Table 1 failed to load.</div>';
@@ -1718,46 +1868,48 @@
     renderVideogenAppendix();
     renderTopSpacing();
     renderJudgeDist();
+    renderDecoupling();
+    renderMRMSE();
 
     if(!API){ showErr("backend URL not configured"); return; }
     jget("score_distribution","&user="+encodeURIComponent(USER)).then(renderDist)
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -1768,8 +1920,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85g9", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85g9", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85ga", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85ga", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -1780,11 +1932,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -1793,11 +1945,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/analysis/bootstrap_ci.json?v=v85g9", {cache:"no-store"})
+    fetch("bench/analysis/bootstrap_ci.json?v=v85ga", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
