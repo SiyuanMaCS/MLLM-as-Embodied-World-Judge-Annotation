@@ -1,0 +1,570 @@
+{
+  "_meta": {
+    "cluster_unit": "item_id (video tuple)",
+    "B": 10000,
+    "ci_method": "2.5%/97.5% percentile",
+    "note": "recall_violation = fraction of gold_bin==0 items where judge_verdict==0. Missing verdicts (truncated reasoning) treated as pass=1 per siyuan-ma spec; missing_pct reports the fraction so truncated judges' cells naturally show wide CI + high missing \u2192 visual 'low_conf' signal."
+  },
+  "judges": {
+    "gemini-2.5-flash": {
+      "agent_consistency": {
+        "recall_violation": 0.8672,
+        "recall_ci": [
+          0.832,
+          0.9006
+        ],
+        "missing_pct": 0.0069,
+        "n_violation_items": 369
+      },
+      "scene_consistency": {
+        "recall_violation": 0.0871,
+        "recall_ci": [
+          0.0635,
+          0.1124
+        ],
+        "missing_pct": 0.1611,
+        "n_violation_items": 505
+      },
+      "interaction_realism": {
+        "recall_violation": 0.0,
+        "recall_ci": [
+          0.0,
+          0.0
+        ],
+        "missing_pct": 1.0,
+        "n_violation_items": 565
+      },
+      "agent_match": {
+        "recall_violation": 0.0977,
+        "recall_ci": [
+          0.0605,
+          0.1394
+        ],
+        "missing_pct": 0.0057,
+        "n_violation_items": 215
+      },
+      "object_correct": {
+        "recall_violation": 0.0213,
+        "recall_ci": [
+          0.0063,
+          0.0382
+        ],
+        "missing_pct": 0.088,
+        "n_violation_items": 329
+      },
+      "goal_completed": {
+        "recall_violation": 0.0,
+        "recall_ci": [
+          0.0,
+          0.0
+        ],
+        "missing_pct": 0.808,
+        "n_violation_items": 538
+      }
+    },
+    "gemini-2.5-pro": {
+      "agent_consistency": {
+        "recall_violation": 0.878,
+        "recall_ci": [
+          0.8424,
+          0.9104
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 369
+      },
+      "scene_consistency": {
+        "recall_violation": 0.9624,
+        "recall_ci": [
+          0.9454,
+          0.9778
+        ],
+        "missing_pct": 0.0011,
+        "n_violation_items": 505
+      },
+      "interaction_realism": {
+        "recall_violation": 0.9133,
+        "recall_ci": [
+          0.8897,
+          0.9353
+        ],
+        "missing_pct": 0.0011,
+        "n_violation_items": 565
+      },
+      "agent_match": {
+        "recall_violation": 0.5628,
+        "recall_ci": [
+          0.4957,
+          0.6286
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 215
+      },
+      "object_correct": {
+        "recall_violation": 0.4802,
+        "recall_ci": [
+          0.4264,
+          0.5337
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 329
+      },
+      "goal_completed": {
+        "recall_violation": 0.8086,
+        "recall_ci": [
+          0.7744,
+          0.8406
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 538
+      }
+    },
+    "gemini-3.1-pro-preview": {
+      "agent_consistency": {
+        "recall_violation": 0.7209,
+        "recall_ci": [
+          0.6755,
+          0.7652
+        ],
+        "missing_pct": 0.0686,
+        "n_violation_items": 369
+      },
+      "scene_consistency": {
+        "recall_violation": 0.796,
+        "recall_ci": [
+          0.7604,
+          0.8301
+        ],
+        "missing_pct": 0.0263,
+        "n_violation_items": 505
+      },
+      "interaction_realism": {
+        "recall_violation": 0.3292,
+        "recall_ci": [
+          0.2906,
+          0.3682
+        ],
+        "missing_pct": 0.2389,
+        "n_violation_items": 565
+      },
+      "agent_match": {
+        "recall_violation": 0.3023,
+        "recall_ci": [
+          0.2415,
+          0.3645
+        ],
+        "missing_pct": 0.2126,
+        "n_violation_items": 215
+      },
+      "object_correct": {
+        "recall_violation": 0.1368,
+        "recall_ci": [
+          0.1009,
+          0.175
+        ],
+        "missing_pct": 0.5829,
+        "n_violation_items": 329
+      },
+      "goal_completed": {
+        "recall_violation": 0.3532,
+        "recall_ci": [
+          0.3137,
+          0.3933
+        ],
+        "missing_pct": 0.1634,
+        "n_violation_items": 538
+      }
+    },
+    "gemini-3.5-flash": {
+      "agent_consistency": {
+        "recall_violation": 0.5881,
+        "recall_ci": [
+          0.5378,
+          0.6378
+        ],
+        "missing_pct": 0.1337,
+        "n_violation_items": 369
+      },
+      "scene_consistency": {
+        "recall_violation": 0.6139,
+        "recall_ci": [
+          0.5709,
+          0.6563
+        ],
+        "missing_pct": 0.1486,
+        "n_violation_items": 505
+      },
+      "interaction_realism": {
+        "recall_violation": 0.1894,
+        "recall_ci": [
+          0.1576,
+          0.2222
+        ],
+        "missing_pct": 0.5691,
+        "n_violation_items": 565
+      },
+      "agent_match": {
+        "recall_violation": 0.1535,
+        "recall_ci": [
+          0.106,
+          0.2021
+        ],
+        "missing_pct": 0.3954,
+        "n_violation_items": 215
+      },
+      "object_correct": {
+        "recall_violation": 0.0547,
+        "recall_ci": [
+          0.0311,
+          0.0806
+        ],
+        "missing_pct": 0.5131,
+        "n_violation_items": 329
+      },
+      "goal_completed": {
+        "recall_violation": 0.3011,
+        "recall_ci": [
+          0.2617,
+          0.3396
+        ],
+        "missing_pct": 0.208,
+        "n_violation_items": 538
+      }
+    },
+    "gpt-5.2": {
+      "agent_consistency": {
+        "recall_violation": 0.6829,
+        "recall_ci": [
+          0.6348,
+          0.7294
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 369
+      },
+      "scene_consistency": {
+        "recall_violation": 0.8594,
+        "recall_ci": [
+          0.8285,
+          0.8885
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 505
+      },
+      "interaction_realism": {
+        "recall_violation": 0.9168,
+        "recall_ci": [
+          0.8929,
+          0.9387
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 565
+      },
+      "agent_match": {
+        "recall_violation": 0.2372,
+        "recall_ci": [
+          0.1818,
+          0.2949
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 215
+      },
+      "object_correct": {
+        "recall_violation": 0.3465,
+        "recall_ci": [
+          0.2946,
+          0.3981
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 329
+      },
+      "goal_completed": {
+        "recall_violation": 0.6301,
+        "recall_ci": [
+          0.5891,
+          0.6711
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 538
+      }
+    },
+    "gpt5.5": {
+      "agent_consistency": {
+        "recall_violation": 0.8862,
+        "recall_ci": [
+          0.8519,
+          0.9178
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 369
+      },
+      "scene_consistency": {
+        "recall_violation": 0.8554,
+        "recall_ci": [
+          0.8232,
+          0.8858
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 505
+      },
+      "interaction_realism": {
+        "recall_violation": 0.8177,
+        "recall_ci": [
+          0.7849,
+          0.8489
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 565
+      },
+      "agent_match": {
+        "recall_violation": 0.3023,
+        "recall_ci": [
+          0.2409,
+          0.366
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 215
+      },
+      "object_correct": {
+        "recall_violation": 0.2371,
+        "recall_ci": [
+          0.1913,
+          0.2841
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 329
+      },
+      "goal_completed": {
+        "recall_violation": 0.5688,
+        "recall_ci": [
+          0.5272,
+          0.6118
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 538
+      }
+    },
+    "qwen3-vl-32b-instruct": {
+      "agent_consistency": {
+        "recall_violation": 0.6125,
+        "recall_ci": [
+          0.5622,
+          0.663
+        ],
+        "missing_pct": 0.0034,
+        "n_violation_items": 369
+      },
+      "scene_consistency": {
+        "recall_violation": 0.002,
+        "recall_ci": [
+          0.0,
+          0.0062
+        ],
+        "missing_pct": 0.3063,
+        "n_violation_items": 505
+      },
+      "interaction_realism": {
+        "recall_violation": 0.0035,
+        "recall_ci": [
+          0.0,
+          0.009
+        ],
+        "missing_pct": 0.9851,
+        "n_violation_items": 565
+      },
+      "agent_match": {
+        "recall_violation": 0.0837,
+        "recall_ci": [
+          0.0485,
+          0.1225
+        ],
+        "missing_pct": 0.0011,
+        "n_violation_items": 215
+      },
+      "object_correct": {
+        "recall_violation": 0.0,
+        "recall_ci": [
+          0.0,
+          0.0
+        ],
+        "missing_pct": 0.2194,
+        "n_violation_items": 329
+      },
+      "goal_completed": {
+        "recall_violation": 0.0,
+        "recall_ci": [
+          0.0,
+          0.0
+        ],
+        "missing_pct": 0.9989,
+        "n_violation_items": 538
+      }
+    },
+    "qwen3-vl-8b-instruct": {
+      "agent_consistency": {
+        "recall_violation": 0.4607,
+        "recall_ci": [
+          0.4105,
+          0.5106
+        ],
+        "missing_pct": 0.0011,
+        "n_violation_items": 369
+      },
+      "scene_consistency": {
+        "recall_violation": 0.497,
+        "recall_ci": [
+          0.4529,
+          0.5418
+        ],
+        "missing_pct": 0.0011,
+        "n_violation_items": 505
+      },
+      "interaction_realism": {
+        "recall_violation": 0.0106,
+        "recall_ci": [
+          0.0034,
+          0.0197
+        ],
+        "missing_pct": 0.608,
+        "n_violation_items": 565
+      },
+      "agent_match": {
+        "recall_violation": 0.1302,
+        "recall_ci": [
+          0.0876,
+          0.1778
+        ],
+        "missing_pct": 0.0229,
+        "n_violation_items": 215
+      },
+      "object_correct": {
+        "recall_violation": 0.0152,
+        "recall_ci": [
+          0.0031,
+          0.0297
+        ],
+        "missing_pct": 0.0629,
+        "n_violation_items": 329
+      },
+      "goal_completed": {
+        "recall_violation": 0.0335,
+        "recall_ci": [
+          0.0191,
+          0.0495
+        ],
+        "missing_pct": 0.16,
+        "n_violation_items": 538
+      }
+    },
+    "seed2.0_pro": {
+      "agent_consistency": {
+        "recall_violation": 0.8564,
+        "recall_ci": [
+          0.8191,
+          0.8914
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 369
+      },
+      "scene_consistency": {
+        "recall_violation": 0.9921,
+        "recall_ci": [
+          0.9836,
+          0.9981
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 505
+      },
+      "interaction_realism": {
+        "recall_violation": 0.7752,
+        "recall_ci": [
+          0.7407,
+          0.8087
+        ],
+        "missing_pct": 0.0023,
+        "n_violation_items": 565
+      },
+      "agent_match": {
+        "recall_violation": 0.4093,
+        "recall_ci": [
+          0.3442,
+          0.4771
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 215
+      },
+      "object_correct": {
+        "recall_violation": 0.3617,
+        "recall_ci": [
+          0.3086,
+          0.4141
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 329
+      },
+      "goal_completed": {
+        "recall_violation": 0.6283,
+        "recall_ci": [
+          0.587,
+          0.6679
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 538
+      }
+    },
+    "seed2.1_lite": {
+      "agent_consistency": {
+        "recall_violation": 0.9566,
+        "recall_ci": [
+          0.935,
+          0.976
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 369
+      },
+      "scene_consistency": {
+        "recall_violation": 0.9822,
+        "recall_ci": [
+          0.9698,
+          0.9922
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 505
+      },
+      "interaction_realism": {
+        "recall_violation": 0.9487,
+        "recall_ci": [
+          0.9296,
+          0.9663
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 565
+      },
+      "agent_match": {
+        "recall_violation": 0.3814,
+        "recall_ci": [
+          0.3179,
+          0.4465
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 215
+      },
+      "object_correct": {
+        "recall_violation": 0.3283,
+        "recall_ci": [
+          0.2791,
+          0.3783
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 329
+      },
+      "goal_completed": {
+        "recall_violation": 0.71,
+        "recall_ci": [
+          0.6708,
+          0.7481
+        ],
+        "missing_pct": 0.0,
+        "n_violation_items": 538
+      }
+    }
+  }
+}
