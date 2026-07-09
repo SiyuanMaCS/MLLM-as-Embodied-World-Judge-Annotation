@@ -6,7 +6,7 @@
 <title>Leaderboard — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85g4">
+<link rel="stylesheet" href="style.css?v=v85g5">
 <style>
   .lb-section { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
   .lb-section h2 { margin: 0 0 10px; font-size: 15px; letter-spacing: -0.01em; font-weight: 600; color: #0f172a; }
@@ -98,7 +98,7 @@
     </div>
   </section>
 </main>
-<script src="app.js?v=v85g4"></script>
+<script src="app.js?v=v85g5"></script>
 <script>
   async function loadJudge() {
     try {
@@ -109,7 +109,7 @@
       // as last-resort fallback. Ham/CI syncs leaderboard.md into annotate
       // repo on each refresh, so this stays anonymous-reachable.
       const primary = 'https://raw.githubusercontent.com/SiyuanMaCS/MLLM-as-Embodied-World-Judge-Annotation/main/bench/leaderboard.md';
-      const fallback = 'bench/leaderboard.md?v=v85g4';
+      const fallback = 'bench/leaderboard.md?v=v85g5';
       let md;
       try { md = await fetch(primary).then(r => { if (!r.ok) throw new Error('primary ' + r.status); return r.text(); }); }
       catch (_) { md = await fetch(fallback).then(r => r.text()); }
@@ -118,7 +118,7 @@
       // deriving from Spearman column if the strict file is unreachable.
       let strictMap = {};
       try {
-        const strict = await fetch('bench/model_ranking_strict.json?v=v85g4').then(r => r.json());
+        const strict = await fetch('bench/model_ranking_strict.json?v=v85g5').then(r => r.json());
         for (const [j, dims] of Object.entries(strict)) {
           strictMap[j] = {
             pa_knorm: dims?.PA?.kendall_distance_norm,
@@ -192,7 +192,7 @@
       // the HF mirror instead of raw.githubusercontent (which 404s for a
       // private source). Client merge regex is still an idempotent safety net.
       const vgPrimary = 'https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main/bench/videogen_leaderboard.json';
-      const vgFallback = 'bench/videogen_leaderboard.json?v=v85g4';
+      const vgFallback = 'bench/videogen_leaderboard.json?v=v85g5';
       let data;
       try { data = await fetch(vgPrimary).then(r => { if (!r.ok) throw new Error('primary ' + r.status); return r.json(); }); }
       catch (_) { data = await fetch(vgFallback).then(r => r.json()); }
