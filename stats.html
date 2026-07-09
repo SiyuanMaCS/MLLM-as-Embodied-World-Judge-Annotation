@@ -125,6 +125,24 @@
 .hs-ci-val small{ color:#94a3b8; font-weight:400; margin-left:4px; }
 .hs-ci-partial{ opacity:0.55; }
 
+/* v85fm: judge ensemble card */
+.hs-ens-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.hs-ens-cmp{ display:grid; grid-template-columns:auto 1fr auto; gap:10px 12px; align-items:center; font-size:12.5px; }
+.hs-ens-cmp .lbl{ color:#334155; font-weight:600; }
+.hs-ens-cmp .bar-outer{ position:relative; height:22px; background:#f1f5f9; border-radius:5px; overflow:hidden; }
+.hs-ens-cmp .bar-fill{ position:absolute; left:0; top:0; bottom:0; border-radius:5px; }
+.hs-ens-cmp .bar-fill.base{ background:linear-gradient(90deg,#93c5fd,#3b82f6); }
+.hs-ens-cmp .bar-fill.ens{ background:linear-gradient(90deg,#f9a8d4,#db2777); }
+.hs-ens-cmp .val{ font-variant-numeric:tabular-nums; font-weight:700; color:#0f172a; min-width:52px; text-align:right; }
+.hs-ens-cmp .val small{ color:#94a3b8; font-weight:400; margin-left:3px; }
+.hs-ens-panel-title{ font-size:12px; color:#64748b; font-weight:600; margin-bottom:8px; text-transform:uppercase; letter-spacing:.4px; }
+.hs-ens-curve{ background:linear-gradient(180deg,#fcfdff,#f6f8fc); border:1px solid #eef0f5; border-radius:8px; padding:8px; }
+.hs-ens-legend{ display:flex; gap:12px; margin-top:8px; font-size:11.5px; color:#334155; }
+.hs-ens-legend .sw{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+.hs-ens-members{ margin-top:12px; font-size:11px; color:#64748b; line-height:1.5; }
+.hs-ens-members b{ color:#334155; }
+@media(max-width:640px){ .hs-ens-wrap{ grid-template-columns:1fr; } }
+
 /* v85fj: calibration reliability curve */
 .hs-cal-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .hs-cal-panel{ }
@@ -197,6 +215,22 @@
         另外 **judge-judge PA 均值 0.372 < judge-人类 0.53** —— judge 之间比和人类还不一致,说明物理判分是**真争议**任务、不是被共同偏置糊弄过去的。
       </div>
       <div id="hs-cl"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- v85fm: Judge ensemble — mean of top-k strong judges vs single best -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>🧑‍⚖️ Judge 集成 · Ensemble = mean of top-k</h2>
+        <span class="hs-sub">单最佳 vs 均值集成 · 边际递减 + 弱成员反噬</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #ec4899;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
+        **定义**:对每条 test item,取 top-k judge 的分数做**逐条均值**,再和人类真值算 Pearson。members_by_step 按 PA / IA 单值排序渐进加入。<br>
+        **Insight**:
+        <b>PA</b>:0.53(flash) → **0.629**(6 家均值),+0.10 ≈ 19% 相对提升。**PA 涨得多正因判官 PA 只有 0.37 相关**(judge-judge 那张图)—— 分歧独立 → 噪声抵消 → 集成赚。
+        <b>IA</b>:0.61(gpt5.5) → **0.659**(k=5 见顶) → k=6 反降到 0.653。第 6 家 flash IA 只有 0.43,**弱成员拖后腿** —— **加 judge 不总是更好**。<br>
+        **一条 story**:*单 MLLM 判物理受限(0.53),独立 judge 集成显著突破(0.629);提升 ∝ 判官分歧度、边际递减、弱成员反噬。*
+      </div>
+      <div id="hs-ens"><div class="hs-empty">加载中…</div></div>
     </section>
 
     <!-- v85fb: Per-embodiment PA heatmap -->
@@ -680,6 +714,96 @@
     host.innerHTML = html;
   }
 
+  // v85fm: judge ensemble baseline-vs-mean comparison + gains curve.
+  // Payload shape (per dim): {single_best, single_best_model, curve_mean:[k=1..6],
+  //                            mean_6, trimmed, median, members_by_step:[[...],...]}
+  function renderEnsemble(d){
+    var host = document.getElementById("hs-ens");
+    if(!host) return;
+    if(!d || !d.pa || !d.ia){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    function bar(pct){ return Math.max(0, Math.min(100, pct*100)).toFixed(1) + '%'; }
+    function panel(dim, dimLbl){
+      var v = d[dim];
+      var best = v.single_best, bestM = v.single_best_model;
+      var mean = v.mean_6, trim = v.trimmed, med = v.median;
+      var lift = mean - best;
+      var s = '<div>';
+      s += '<div class="hs-ens-panel-title">'+dimLbl+' · Pearson vs 人类真值</div>';
+      s += '<div class="hs-ens-cmp">';
+      s += '<div class="lbl">单最佳<br><small style="color:#94a3b8;font-weight:400">'+esc(bestM)+'</small></div>';
+      s += '<div class="bar-outer"><div class="bar-fill base" style="width:'+bar(best)+'"></div></div>';
+      s += '<div class="val">'+best.toFixed(3)+'</div>';
+      s += '<div class="lbl" style="color:#be185d">6 家均值</div>';
+      s += '<div class="bar-outer"><div class="bar-fill ens" style="width:'+bar(mean)+'"></div></div>';
+      s += '<div class="val">'+mean.toFixed(3)+' <small>+'+lift.toFixed(3)+'</small></div>';
+      s += '<div class="lbl" style="color:#64748b">去最高最低</div>';
+      s += '<div class="bar-outer"><div class="bar-fill ens" style="width:'+bar(trim)+';opacity:.6"></div></div>';
+      s += '<div class="val">'+trim.toFixed(3)+'</div>';
+      s += '<div class="lbl" style="color:#64748b">中位数</div>';
+      s += '<div class="bar-outer"><div class="bar-fill ens" style="width:'+bar(med)+';opacity:.5"></div></div>';
+      s += '<div class="val">'+med.toFixed(3)+'</div>';
+      s += '</div>';
+      s += '</div>';
+      return s;
+    }
+    function curveSvg(dim, dimLbl, colorHi){
+      var v = d[dim];
+      var pts = v.curve_mean || [];
+      if(!pts.length) return '';
+      var W = 260, H = 180, PL = 34, PT = 12, PR = 12, PB = 26;
+      var plotW = W-PL-PR, plotH = H-PT-PB;
+      var ymin = 0.4, ymax = 0.75;
+      function xf(k){ return PL + (k / (pts.length-1)) * plotW; }
+      function yf(y){ return PT + plotH - (y - ymin) / (ymax - ymin) * plotH; }
+      var s = '<div class="hs-ens-curve"><div class="hs-ens-panel-title">'+dimLbl+' · gain by k</div>';
+      s += '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+      // grid
+      [0.4,0.5,0.6,0.7].forEach(function(y){
+        s += '<line x1="'+PL+'" y1="'+yf(y)+'" x2="'+(PL+plotW)+'" y2="'+yf(y)+'" stroke="#eef0f5" stroke-width="1"/>';
+        s += '<text x="'+(PL-4)+'" y="'+(yf(y)+3)+'" font-size="9" fill="#94a3b8" text-anchor="end">'+y.toFixed(1)+'</text>';
+      });
+      pts.forEach(function(_,i){
+        s += '<text x="'+xf(i)+'" y="'+(H-PB+13)+'" font-size="9" fill="#94a3b8" text-anchor="middle">k='+(i+1)+'</text>';
+      });
+      // baseline dashed (single best value)
+      var b = v.single_best;
+      s += '<line x1="'+PL+'" y1="'+yf(b)+'" x2="'+(PL+plotW)+'" y2="'+yf(b)+'" stroke="#3b82f6" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>';
+      s += '<text x="'+(PL+plotW-4)+'" y="'+(yf(b)-3)+'" font-size="9" fill="#3b82f6" text-anchor="end">baseline '+b.toFixed(3)+'</text>';
+      // polyline
+      var path = pts.map(function(y,i){ return (i?'L':'M')+xf(i).toFixed(1)+' '+yf(y).toFixed(1); }).join(' ');
+      s += '<path d="'+path+'" stroke="'+colorHi+'" stroke-width="2" fill="none"/>';
+      pts.forEach(function(y,i){
+        s += '<circle cx="'+xf(i).toFixed(1)+'" cy="'+yf(y).toFixed(1)+'" r="3.5" fill="'+colorHi+'"><title>k='+(i+1)+' → '+y.toFixed(3)+'</title></circle>';
+      });
+      // mark k=5 peak on IA if applicable — highlight where curve peaks
+      var peakIdx = 0, peakVal = pts[0];
+      for(var i=1; i<pts.length; i++){ if(pts[i] > peakVal){ peakVal = pts[i]; peakIdx = i; } }
+      if(peakIdx !== pts.length-1){
+        s += '<circle cx="'+xf(peakIdx).toFixed(1)+'" cy="'+yf(pts[peakIdx]).toFixed(1)+'" r="6" fill="none" stroke="'+colorHi+'" stroke-width="1.5"/>';
+        s += '<text x="'+xf(peakIdx).toFixed(1)+'" y="'+(yf(pts[peakIdx])-9)+'" font-size="9" fill="'+colorHi+'" text-anchor="middle" font-weight="600">peak</text>';
+      }
+      s += '</svg>';
+      s += '</div>';
+      return s;
+    }
+    var html = '<div class="hs-ens-wrap">';
+    html += '<div>' + panel("pa","PA (Physical Adherence)") + '</div>';
+    html += '<div>' + panel("ia","IA (Instruction Alignment)") + '</div>';
+    html += '</div>';
+    html += '<div class="hs-ens-wrap" style="margin-top:14px">';
+    html += curveSvg("pa","PA","#be185d");
+    html += curveSvg("ia","IA","#7e22ce");
+    html += '</div>';
+    // members
+    var lastPA = (d.pa.members_by_step && d.pa.members_by_step[d.pa.members_by_step.length-1]) || [];
+    var lastIA = (d.ia.members_by_step && d.ia.members_by_step[d.ia.members_by_step.length-1]) || [];
+    html += '<div class="hs-ens-members">';
+    html += '<b>PA 集成成员</b>(按 PA 加入顺序): ' + lastPA.map(esc).join(' → ') + '<br>';
+    html += '<b>IA 集成成员</b>(按 IA 加入顺序): ' + lastIA.map(esc).join(' → ');
+    html += '</div>';
+    host.innerHTML = html;
+  }
+
   // v85fj: calibration reliability curves. Payload: {"judge::dim":{"1":{human_mean,n},...,"5":{...}}}
   function renderCalibration(payload){
     var host = document.getElementById("hs-cal");
@@ -778,31 +902,36 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fl", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fm", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fb: closed-loop headline + per-embodiment heatmap + bootstrap CI
     // (Alice bundle, static bench/ file for now; will move to HF pipeline).
-    fetch("bench/judge_judge_closedloop.json?v=v85fl", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85fm", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cl " + r.status); return r.json(); })
       .then(renderClosedLoop)
       .catch(function(e){ document.getElementById("hs-cl").innerHTML='<div class="hs-empty">闭环数据加载失败</div>'; });
-    fetch("bench/per_embodiment_pa.json?v=v85fl", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85fm", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fl", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85fm", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85fj: calibration reliability curves.
-    fetch("bench/calibration.json?v=v85fl", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85fm", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(renderCalibration)
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fl", {cache:"no-store"})
+    // v85fm: judge ensemble baseline-vs-mean + gains curve.
+    fetch("bench/ensemble_judge.json?v=v85fm", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("ens " + r.status); return r.json(); })
+      .then(renderEnsemble)
+      .catch(function(e){ var el=document.getElementById("hs-ens"); if(el) el.innerHTML='<div class="hs-empty">ensemble 加载失败</div>'; });
+    fetch("bench/bootstrap_ci.json?v=v85fm", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });

@@ -1,0 +1,109 @@
+{
+ "pa": {
+  "single_best": 0.53,
+  "curve_by_k": [
+   0.53,
+   0.588,
+   0.604,
+   0.613,
+   0.619,
+   0.629
+  ],
+  "members_by_step": [
+   [
+    "gemini-3.5-flash"
+   ],
+   [
+    "gemini-3.5-flash",
+    "seed2.1_lite"
+   ],
+   [
+    "gemini-3.5-flash",
+    "seed2.1_lite",
+    "seed2.0_pro"
+   ],
+   [
+    "gemini-3.5-flash",
+    "seed2.1_lite",
+    "seed2.0_pro",
+    "gpt-5.2"
+   ],
+   [
+    "gemini-3.5-flash",
+    "seed2.1_lite",
+    "seed2.0_pro",
+    "gpt-5.2",
+    "gpt5.5"
+   ],
+   [
+    "gemini-3.5-flash",
+    "seed2.1_lite",
+    "seed2.0_pro",
+    "gpt-5.2",
+    "gpt5.5",
+    "gemini-3.1-pro-preview"
+   ]
+  ],
+  "mean_6": 0.629,
+  "trimmed_6": 0.622,
+  "median_6": 0.609
+ },
+ "ia": {
+  "single_best": 0.61,
+  "curve_by_k": [
+   0.61,
+   0.633,
+   0.643,
+   0.645,
+   0.659,
+   0.653
+  ],
+  "members_by_step": [
+   [
+    "gpt5.5"
+   ],
+   [
+    "gpt5.5",
+    "seed2.0_pro"
+   ],
+   [
+    "gpt5.5",
+    "seed2.0_pro",
+    "gpt-5.2"
+   ],
+   [
+    "gpt5.5",
+    "seed2.0_pro",
+    "gpt-5.2",
+    "seed2.1_lite"
+   ],
+   [
+    "gpt5.5",
+    "seed2.0_pro",
+    "gpt-5.2",
+    "seed2.1_lite",
+    "gemini-3.1-pro-preview"
+   ],
+   [
+    "gpt5.5",
+    "seed2.0_pro",
+    "gpt-5.2",
+    "seed2.1_lite",
+    "gemini-3.1-pro-preview",
+    "gemini-3.5-flash"
+   ]
+  ],
+  "mean_6": 0.653,
+  "trimmed_6": 0.645,
+  "median_6": 0.639
+ },
+ "members": [
+  "gemini-3.5-flash",
+  "seed2.1_lite",
+  "seed2.0_pro",
+  "gpt5.5",
+  "gpt-5.2",
+  "gemini-3.1-pro-preview"
+ ],
+ "n": 875
+}
