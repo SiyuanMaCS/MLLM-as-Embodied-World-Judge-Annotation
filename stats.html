@@ -125,6 +125,22 @@
 .hs-ci-val small{ color:#94a3b8; font-weight:400; margin-left:4px; }
 .hs-ci-partial{ opacity:0.55; }
 
+/* v85fs: fair common set gap matrix */
+.hs-fcs-summary{ display:flex; gap:14px; margin:6px 0 12px; font-size:12.5px; flex-wrap:wrap; }
+.hs-fcs-chip{ padding:5px 10px; border-radius:6px; font-variant-numeric:tabular-nums; }
+.hs-fcs-chip.have{ background:#d1fae5; color:#065f46; }
+.hs-fcs-chip.need{ background:#fef3c7; color:#92400e; }
+.hs-fcs-chip.total{ background:#e0e7ff; color:#3730a3; }
+.hs-fcs-wrap{ overflow-x:auto; }
+.hs-fcs-grid{ display:grid; gap:2px; font-variant-numeric:tabular-nums; min-width:640px; }
+.hs-fcs-hdr{ font-size:10px; color:#94a3b8; padding:6px 3px; text-align:center; writing-mode:vertical-rl; transform:rotate(180deg); }
+.hs-fcs-hdr .n{ color:#334155; font-weight:600; font-size:10.5px; }
+.hs-fcs-side{ font-size:10.5px; color:#334155; padding:2px 6px 2px 0; text-align:right; align-self:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; }
+.hs-fcs-cell{ aspect-ratio:1/1; border-radius:3px; min-height:14px; }
+.hs-fcs-cell.have{ background:#10b981; }
+.hs-fcs-cell.need{ background:#fde68a; border:1px dashed #f59e0b; }
+.hs-fcs-cell.have:hover, .hs-fcs-cell.need:hover{ outline:2px solid #64748b; }
+
 /* v85fm: judge ensemble card */
 .hs-ens-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
 .hs-ens-cmp{ display:grid; grid-template-columns:auto 1fr auto; gap:10px 12px; align-items:center; font-size:12.5px; }
@@ -234,6 +250,34 @@
       </div>
       <div id="hs-emb-quality"><div class="hs-empty" style="font-size:12px">生成质量加载中…</div></div>
       <div id="hs-emb"><div class="hs-empty">judge 准确度加载中…</div></div>
+    </section>
+
+    <!-- v85fs: Fair Common Set gap matrix (Alice's fill list) -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>🎯 公平公共集补跑清单 · Fair Common Set (n=32)</h2>
+        <span class="hs-sub">同一批 prompt 全部 10 个模型都跑 → 排名无 prompt 池混淆</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #f59e0b;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
+        **问题**:875 test set 里 0 个 tasks 被全 10 模型都跑过 → 现在的模型排名混淆了 prompt 池差异,审稿人会问"你怎么保证 flash 排 kling 是同题目"。<br>
+        **方案**:选 32 个 ≥3-模型覆盖的种子任务 → 320 格子 · 已有 103 · **补 217 个新生成** → 得到一个所有模型都跑过同一批 prompt 的"公平公共集"。<br>
+        **执行**:绿格 = 已有生成 · 琥珀格 = 需补生成。列头 hover 看每模型总补量。paper 里报"controlled fair-comparison subset (n=32)"防守 reviewer。
+      </div>
+      <div id="hs-fcs"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- v85fs: Instruction complexity tercile analysis -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2>📏 指令复杂度分析 · Instruction complexity</h2>
+        <span class="hs-sub">词数三档 · 生成质量 × judge 判分能力</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #ec4899;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
+        **定义**:用**指令英文词数**做可复现代理,分三档(简单 ≤14 / 中 15-20 / 难 >20)。同时看生成质量(人类 gold)+ judge PA/IA 准确度。<br>
+        **三条发现**:① **指令越复杂 → 生成越差**(gold PA 3.19→2.89, IA 3.56→3.01)—— 复杂任务生成模型扛不住。② **复杂指令 → 判 PA 更难**(flash PA-Pearson 0.51→0.45)—— 动作多、物理错法多。③ **但复杂指令 → 判 IA 反而更容易**(flash IA 0.38→**0.52**)—— 长指令有明确可核验步骤,简单指令近乎二元、反而难区分。<br>
+        **Insight**:复杂度对生成是**单调伤害**,但对 judge 是**分裂**的 —— 难在 PA、易在 IA。和 PA≠IA 主线呼应。
+      </div>
+      <div id="hs-icx"><div class="hs-empty">加载中…</div></div>
     </section>
 
     <!-- v85fb: Bootstrap CI whiskers -->
@@ -657,6 +701,107 @@
     host.innerHTML = html;
   }
 
+  // v85fs: fair common set gap matrix. Payload shape:
+  // { all_models:[...], tasks:[...], existing_generated:{task:[models]},
+  //   need_generate:{task:[models]}, summary:{cells_total, already_have, need_new_gen} }
+  function renderFairCommonSet(d){
+    var host = document.getElementById("hs-fcs");
+    if(!host) return;
+    if(!d || !d.tasks || !d.all_models){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    var models = d.all_models;
+    var tasks = d.tasks;
+    // Per-model counts
+    var perModel = {};
+    models.forEach(function(m){ perModel[m] = { have: 0, need: 0 }; });
+    tasks.forEach(function(t){
+      (d.existing_generated[t] || []).forEach(function(m){ if(perModel[m]) perModel[m].have++; });
+      (d.need_generate[t] || []).forEach(function(m){ if(perModel[m]) perModel[m].need++; });
+    });
+    // Summary chips
+    var s = d.summary || {};
+    var html = '<div class="hs-fcs-summary">';
+    html += '<span class="hs-fcs-chip total">Total cells <b>' + (s.cells_total || tasks.length*models.length) + '</b></span>';
+    html += '<span class="hs-fcs-chip have">Already generated <b>' + (s.already_have || 0) + '</b></span>';
+    html += '<span class="hs-fcs-chip need">Need new generation <b>' + (s.need_new_gen || 0) + '</b></span>';
+    html += '<span class="hs-fcs-chip total" style="background:#f1f5f9;color:#334155">Tasks <b>' + tasks.length + '</b> × Models <b>' + models.length + '</b></span>';
+    html += '</div>';
+    // Grid: 1 (task label) + N (model cells) columns
+    html += '<div class="hs-fcs-wrap"><div class="hs-fcs-grid" style="grid-template-columns:210px repeat(' + models.length + ',1fr)">';
+    // Header row
+    html += '<div class="hs-fcs-side" style="text-align:left;color:#94a3b8;font-size:10.5px;text-transform:uppercase">Task</div>';
+    models.forEach(function(m){
+      var p = perModel[m];
+      var tooltip = m + '  ·  have ' + p.have + '  ·  need ' + p.need;
+      html += '<div class="hs-fcs-hdr" title="' + esc(tooltip) + '"><span class="n">' + p.need + '</span><br>' + esc(m.replace(/_/g,' ')) + '</div>';
+    });
+    // Rows: one per task
+    tasks.forEach(function(t){
+      var have = new Set(d.existing_generated[t] || []);
+      var need = new Set(d.need_generate[t] || []);
+      html += '<div class="hs-fcs-side" title="' + esc(t) + '">' + esc(t) + '</div>';
+      models.forEach(function(m){
+        var cls = have.has(m) ? 'have' : (need.has(m) ? 'need' : '');
+        var title = t + ' × ' + m + ' · ' + (have.has(m) ? '已有' : (need.has(m) ? '待补' : '—'));
+        html += '<div class="hs-fcs-cell ' + cls + '" title="' + esc(title) + '"></div>';
+      });
+    });
+    html += '</div></div>';
+    // Foot per-model breakdown
+    html += '<div style="font-size:11.5px;color:#64748b;margin-top:10px;line-height:1.6">';
+    html += '<b>每模型补跑量</b>: ';
+    var apiModels = ['veo31_lite','kling','sora','gpt-5.2','runway','minimax'];
+    var rows = models.slice().sort(function(a,b){ return perModel[b].need - perModel[a].need; });
+    rows.forEach(function(m, i){
+      var p = perModel[m];
+      var isApi = apiModels.some(function(k){ return m.indexOf(k) >= 0; });
+      html += (i?' · ':'') + '<span style="' + (isApi?'color:#b91c1c;font-weight:600':'') + '">' + esc(m) + ' <b>' + p.need + '</b></span>';
+    });
+    html += '</div>';
+    host.innerHTML = html;
+  }
+
+  // v85fs: instruction complexity 3-tier bar comparison.
+  // Payload: { proxy, terciles:{easy,medium,hard}, tiers:{easy:{n,gold_pa,gold_ia,flash_pa_pearson,flash_ia_pearson},...} }
+  function renderInstructionComplexity(d){
+    var host = document.getElementById("hs-icx");
+    if(!host) return;
+    if(!d || !d.tiers){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    var order = ['easy','medium','hard'];
+    var lbl = { easy: '简单 ≤14 词', medium: '中 15–20 词', hard: '难 >20 词' };
+    function normGold(v){ return Math.max(0, Math.min(1, (v-1)/4)); }
+    function pearsonBar(v){ return Math.max(0, Math.min(1, v)); }
+    var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">';
+    order.forEach(function(k){
+      var t = d.tiers[k]; if(!t) return;
+      html += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;background:#fcfdff">';
+      html += '<div style="font-weight:600;font-size:13.5px;color:#0f172a;margin-bottom:2px">' + lbl[k] + '</div>';
+      html += '<div style="font-size:11.5px;color:#94a3b8;margin-bottom:8px">n = ' + t.n + '</div>';
+      // Gold PA / IA
+      [['gold_pa', 'Gold PA', '#10b981'], ['gold_ia', 'Gold IA', '#a855f7']].forEach(function(row){
+        var v = t[row[0]];
+        html += '<div style="display:grid;grid-template-columns:70px 1fr 44px;gap:6px;align-items:center;font-size:12px;margin-top:5px">';
+        html += '<div style="color:#64748b">' + row[1] + '</div>';
+        html += '<div style="height:12px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:' + (normGold(v)*100).toFixed(1) + '%;background:' + row[2] + ';border-radius:3px"></div></div>';
+        html += '<div style="font-variant-numeric:tabular-nums;text-align:right;font-weight:600;color:#0f172a">' + v.toFixed(2) + '</div>';
+        html += '</div>';
+      });
+      // flash Pearson PA / IA (baseline)
+      html += '<div style="margin:8px 0 4px;font-size:10.5px;color:#94a3b8;text-transform:uppercase;letter-spacing:.4px">flash judge Pearson</div>';
+      [['flash_pa_pearson', 'PA', '#2563eb'], ['flash_ia_pearson', 'IA', '#db2777']].forEach(function(row){
+        var v = t[row[0]];
+        html += '<div style="display:grid;grid-template-columns:70px 1fr 44px;gap:6px;align-items:center;font-size:12px;margin-top:5px">';
+        html += '<div style="color:#64748b">' + row[1] + '</div>';
+        html += '<div style="height:12px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:' + (pearsonBar(v)*100).toFixed(1) + '%;background:' + row[2] + ';border-radius:3px"></div></div>';
+        html += '<div style="font-variant-numeric:tabular-nums;text-align:right;font-weight:600;color:#0f172a">' + v.toFixed(3) + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px">代理: ' + esc(d.proxy || '') + '</div>';
+    host.innerHTML = html;
+  }
+
   // v85fb: bootstrap CI whiskers (Pearson ± 95% CI per judge, PA + IA rows)
   function renderCI(d){
     var host = document.getElementById("hs-ci");
@@ -908,39 +1053,49 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fr", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85fr", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85fs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85fr", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85fs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fr", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85fs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85fj: calibration reliability curves.
-    fetch("bench/calibration.json?v=v85fr", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85fs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(renderCalibration)
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
     // v85fm: judge ensemble baseline-vs-mean + gains curve.
-    fetch("bench/ensemble_judge.json?v=v85fr", {cache:"no-store"})
+    fetch("bench/ensemble_judge.json?v=v85fs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ens " + r.status); return r.json(); })
       .then(renderEnsemble)
       .catch(function(e){ var el=document.getElementById("hs-ens"); if(el) el.innerHTML='<div class="hs-empty">ensemble 加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fr", {cache:"no-store"})
+    // v85fs: Fair Common Set gap matrix (Alice's fill list).
+    fetch("bench/fair_common_set_filllist.json?v=v85fs", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("fcs " + r.status); return r.json(); })
+      .then(renderFairCommonSet)
+      .catch(function(e){ var el=document.getElementById("hs-fcs"); if(el) el.innerHTML='<div class="hs-empty">Fair-common-set 加载失败</div>'; });
+    // v85fs: Instruction complexity 3-tier analysis.
+    fetch("bench/instruction_complexity.json?v=v85fs", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
+      .then(renderInstructionComplexity)
+      .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
+    fetch("bench/bootstrap_ci.json?v=v85fs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });

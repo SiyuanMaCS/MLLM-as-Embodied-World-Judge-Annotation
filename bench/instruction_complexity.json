@@ -1,0 +1,31 @@
+{
+ "proxy": "instruction English word-count (reproducible)",
+ "terciles": {
+  "easy": "<=14 words",
+  "medium": "15-20",
+  "hard": ">20"
+ },
+ "tiers": {
+  "easy": {
+   "n": 228,
+   "gold_pa": 3.19,
+   "gold_ia": 3.56,
+   "flash_pa_pearson": 0.513,
+   "flash_ia_pearson": 0.378
+  },
+  "medium": {
+   "n": 179,
+   "gold_pa": 3.22,
+   "gold_ia": 3.34,
+   "flash_pa_pearson": 0.542,
+   "flash_ia_pearson": 0.394
+  },
+  "hard": {
+   "n": 190,
+   "gold_pa": 2.89,
+   "gold_ia": 3.01,
+   "flash_pa_pearson": 0.445,
+   "flash_ia_pearson": 0.516
+  }
+ }
+}
