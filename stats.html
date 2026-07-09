@@ -215,12 +215,10 @@
         <span class="hs-sub">诚实版 · PA-complexity 效应 n.s. · IA 效应显著</span>
       </div>
       <div style="font-size:12.5px;color:#334155;background:#f8fafc;border-left:3px solid #ec4899;padding:10px 12px;border-radius:4px;margin:8px 0 10px;line-height:1.55">
-        **定义**:用**指令英文词数**做可复现代理,分 2 类(**简单 ≤20 词** / **难 >20 词**)作为可视化;判分侧 findings 用**连续词数 vs judge 逐条误差** Pearson r + p-value 主张。<br>
-        **判分侧 findings(诚实报告)**:
-        <b>❌ PA-complexity: r = 0.047, p = 0.25 · n.s.</b> —— **judge 判物理不受任务复杂度影响,能力就是一致地差(卡在 0.53)**。之前 3-tier 观察到的 easy 0.51 / med 0.54 / hard 0.45 非单调 = 噪声。<br>
-        <b>✅ IA-complexity: r = −0.10, p = 0.015 · 显著</b> —— **长指令 judge IA 反而更准**,机理:长指令有可核验步骤,短指令近乎二元。<br>
-        **生成侧 finding(独立)**:难指令生成变差(gold PA 3.20→2.89, IA 3.44→3.01)—— 关于生成模型,不是判分。<br>
-        **⚠️ 排除分数影响**:两类 gold σ 相当(1.22-1.40),无方差混淆。paper 里 IA 那条**主动配 r/p**,PA 那条**主动报 null**,reviewer 找不出"你在 fishing"的漏洞。
+        **一句话结论**(整体连续检验,n=597):**complexity has no significant effect on PA judging (r = 0.047, p = 0.25); significantly improves IA judging (r = −0.10, p = 0.015)**。<br>
+        翻成人话 —— **judge 判物理一致地弱,不随复杂度变;判指令随复杂度反而好**。PA null 反倒是 judge 局限的更硬证据:能力卡在 0.53,连"哪些任务更难"都区分不出。IA 那条机理清晰(长指令有可核验步骤,短指令近乎二元)。<br>
+        **⚠️ 别把 IA 画成漂亮单调 bin 线**:每 5 词 bin 里 31-35 词那档 Pearson 掉到 0.10(n=16 太小)。整体 r 才可信,bin 是噪声。paper 里就报 r/p,底下 2-tier bar 只当可视化插图。<br>
+        **生成侧 finding(独立留)**:难指令生成变差(gold PA 3.20→2.89, IA 3.44→3.01)—— 关于**生成模型**扛不住,不是关于**判分**。
       </div>
       <div id="hs-icx"><div class="hs-empty">加载中…</div></div>
     </section>
@@ -1103,30 +1101,30 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fy", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85fy", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85fz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85fy", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85fz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fy", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85fz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85fj: calibration reliability curves.
-    fetch("bench/calibration.json?v=v85fy", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85fz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(renderCalibration)
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -1137,8 +1135,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85fy", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85fy", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85fz", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85fz", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -1148,7 +1146,7 @@
     // v85fx: score-controlled analysis (Alice) — Pearson · Spearman · MAE ·
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
-    fetch("bench/score_controlled.json?v=v85fy", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85fz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -1156,11 +1154,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85fy", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85fz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fy", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85fz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });

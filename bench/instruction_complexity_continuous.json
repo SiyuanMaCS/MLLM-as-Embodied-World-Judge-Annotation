@@ -1,0 +1,82 @@
+{
+ "proxy": "instruction English word count",
+ "note": "continuous backbone; PA judge-complexity NOT significant, IA significant",
+ "PA": {
+  "continuous_wordcount_vs_error": {
+   "pearson_r": 0.047,
+   "p_value": 0.2542,
+   "significant": false
+  },
+  "per_5word_bin": {
+   "6-10": {
+    "n": 66,
+    "pearson": 0.589,
+    "mae": 0.89
+   },
+   "11-15": {
+    "n": 187,
+    "pearson": 0.476,
+    "mae": 1.06
+   },
+   "16-20": {
+    "n": 144,
+    "pearson": 0.558,
+    "mae": 0.99
+   },
+   "21-25": {
+    "n": 95,
+    "pearson": 0.343,
+    "mae": 1.17
+   },
+   "26-30": {
+    "n": 77,
+    "pearson": 0.504,
+    "mae": 1.14
+   },
+   "31-35": {
+    "n": 16,
+    "pearson": 0.648,
+    "mae": 0.81
+   }
+  }
+ },
+ "IA": {
+  "continuous_wordcount_vs_error": {
+   "pearson_r": -0.099,
+   "p_value": 0.0154,
+   "significant": true
+  },
+  "per_5word_bin": {
+   "6-10": {
+    "n": 66,
+    "pearson": 0.279,
+    "mae": 1.21
+   },
+   "11-15": {
+    "n": 187,
+    "pearson": 0.421,
+    "mae": 1.04
+   },
+   "16-20": {
+    "n": 144,
+    "pearson": 0.389,
+    "mae": 1.06
+   },
+   "21-25": {
+    "n": 95,
+    "pearson": 0.593,
+    "mae": 0.77
+   },
+   "26-30": {
+    "n": 77,
+    "pearson": 0.509,
+    "mae": 0.87
+   },
+   "31-35": {
+    "n": 16,
+    "pearson": 0.104,
+    "mae": 1.25
+   }
+  }
+ }
+}
