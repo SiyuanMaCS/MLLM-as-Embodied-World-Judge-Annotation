@@ -1004,6 +1004,108 @@
   }
 
   // v85fj: calibration reliability curves. Payload: {"judge::dim":{"1":{human_mean,n},...,"5":{...}}}
+  // v85g0: reverse-axis calibration (siyuan's request + Ham/Alice moment
+  // baseline). Payload shape from calibration_by_human.json:
+  //   direction: "x=human gold bin -> y=judge mean"
+  //   baseline:  "regression-to-mean E[J|H]=jmean+r*(jstd/hstd)*(H-hmean)"
+  //   "<judge>::<dim>": {
+  //     moments: {r_pearson, judge_mean, judge_std, human_mean, human_std},
+  //     bins: {1: {judge_mean, regression_baseline, n}, ..., 5: {...}}
+  //   }
+  // Draws THREE lines per judge×dim:
+  //   1. dashed grey diagonal — y=x (perfect calibration)
+  //   2. dotted per-judge line — Ham's regression-to-mean baseline
+  //   3. solid per-judge line — actual judge_mean curve (data)
+  // Judge line noticeably BELOW baseline at extremes = real compression.
+  // Judge line matching baseline = just regression, don't overclaim.
+  function renderCalibrationByHuman(payload){
+    var host = document.getElementById("hs-cal");
+    if(!host) return;
+    if(!payload){ return; }
+    var byJudge = {};
+    Object.keys(payload).forEach(function(k){
+      if(k === 'direction' || k === 'baseline') return;
+      var parts = k.split("::");
+      var j = parts[0], dim = parts[1];
+      if(!byJudge[j]) byJudge[j] = {};
+      byJudge[j][dim] = payload[k];
+    });
+    var judgeOrder = ["gemini-3.5-flash","seed2.0_pro","gpt5.5","qwen3-vl-32b-instruct","gemini-2.5-pro"];
+    var judgeColor = {
+      "gemini-3.5-flash":       "#2563eb",
+      "seed2.0_pro":            "#10b981",
+      "gpt5.5":                 "#8b5cf6",
+      "qwen3-vl-32b-instruct":  "#f59e0b",
+      "gemini-2.5-pro":         "#ef4444"
+    };
+    var judges = judgeOrder.filter(function(j){ return byJudge[j]; });
+    Object.keys(byJudge).forEach(function(j){ if(judges.indexOf(j)<0) judges.push(j); });
+
+    function svgFor(dimKey, dimLabel){
+      var W=260, H=220, PL=36, PT=16, PR=12, PB=32;
+      var plotW = W - PL - PR, plotH = H - PT - PB;
+      function px(s){ return PL + (s - 1) / 4 * plotW; }
+      function py(y){ return PT + plotH - (y - 1) / 4 * plotH; }
+      var s = '<svg class="hs-cal-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+      // grid
+      [1,2,3,4,5].forEach(function(v){
+        s += '<line x1="'+px(v)+'" y1="'+PT+'" x2="'+px(v)+'" y2="'+(PT+plotH)+'" stroke="#eef0f5" stroke-width="1"/>';
+        s += '<line x1="'+PL+'" y1="'+py(v)+'" x2="'+(PL+plotW)+'" y2="'+py(v)+'" stroke="#eef0f5" stroke-width="1"/>';
+      });
+      // Diagonal (perfect calibration, y=x)
+      s += '<line x1="'+px(1)+'" y1="'+py(1)+'" x2="'+px(5)+'" y2="'+py(5)+'" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3"/>';
+      // Axis labels
+      [1,2,3,4,5].forEach(function(v){
+        s += '<text x="'+px(v)+'" y="'+(H-PB+14)+'" font-size="10" fill="#64748b" text-anchor="middle">'+v+'</text>';
+        s += '<text x="'+(PL-6)+'" y="'+(py(v)+3)+'" font-size="10" fill="#64748b" text-anchor="end">'+v+'</text>';
+      });
+      s += '<text x="'+(PL+plotW/2)+'" y="'+(H-4)+'" font-size="10" fill="#94a3b8" text-anchor="middle">Human gold</text>';
+      s += '<text x="8" y="'+(PT+plotH/2)+'" font-size="10" fill="#94a3b8" text-anchor="middle" transform="rotate(-90 8 '+(PT+plotH/2)+')">Judge mean</text>';
+      judges.forEach(function(j){
+        var dat = byJudge[j][dimKey]; if(!dat || !dat.bins) return;
+        var col = judgeColor[j] || "#334155";
+        var judgePts = [], baselinePts = [];
+        [1,2,3,4,5].forEach(function(h){
+          var e = dat.bins[h + ""] || dat.bins[h];
+          if(!e) return;
+          if(e.judge_mean != null)         judgePts.push([px(h), py(e.judge_mean), h, e.judge_mean, e.n]);
+          if(e.regression_baseline != null) baselinePts.push([px(h), py(e.regression_baseline), h, e.regression_baseline]);
+        });
+        if(judgePts.length){
+          var jPath = judgePts.map(function(p,i){ return (i?"L":"M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+          s += '<path d="'+jPath+'" stroke="'+col+'" stroke-width="1.8" fill="none" opacity="0.9"/>';
+          judgePts.forEach(function(p){
+            s += '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="'+col+'"><title>'+j+' · human='+p[2]+' → judge_mean='+p[3].toFixed(2)+' (n='+p[4]+')</title></circle>';
+          });
+        }
+        if(baselinePts.length){
+          var bPath = baselinePts.map(function(p,i){ return (i?"L":"M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+          s += '<path d="'+bPath+'" stroke="'+col+'" stroke-width="1" fill="none" opacity="0.55" stroke-dasharray="2 3"><title>'+j+' regression-to-mean baseline</title></path>';
+        }
+      });
+      s += '</svg>';
+      return s;
+    }
+    var html = '<div class="hs-cal-wrap">';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">PA · Physical Adherence</div>' + svgFor("physical_adherence") + '</div>';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">IA · Instruction Alignment</div>' + svgFor("instruction_alignment") + '</div>';
+    html += '</div>';
+    html += '<div class="hs-cal-legend">';
+    judges.forEach(function(j){
+      var col = judgeColor[j] || "#334155";
+      html += '<span><i class="sw" style="background:'+col+'"></i>'+esc(j)+'</span>';
+    });
+    html += '<span style="margin-left:auto;color:#94a3b8"><i class="sw" style="background:transparent;border:1px dashed #94a3b8;border-radius:0"></i>y=x 完美校准</span>';
+    html += '<span style="color:#94a3b8"><i class="sw" style="background:transparent;border:1px dotted #94a3b8;border-radius:0"></i>回归均值 baseline(每 judge 各自的矩)</span>';
+    html += '</div>';
+    html += '<div style="font-size:11.5px;color:#64748b;margin-top:10px;line-height:1.55;padding:8px 10px;background:#fdf4ff;border-left:3px solid #a855f7;border-radius:4px">';
+    html += '**读法**:x = 人类实际打分 · y = 该分段视频 judge 的平均给分。';
+    html += '**判读**:<b>实线 judge 明显在虚线(regression baseline)下方</b>(高分处更低,低分处更高) = 真压缩,超出回归 → 判分能力上限;<b>实线 ≈ 虚线</b> = 只是 regression to mean,不是 judge 特有缺陷,别 overclaim。';
+    html += '</div>';
+    host.innerHTML = html;
+    window.__calByHumanRendered = true;
+  }
+
   function renderCalibration(payload){
     var host = document.getElementById("hs-cal");
     if(!host) return;
@@ -1101,32 +1203,39 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fz", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85g0", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85fz", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85g0", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85fz", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85g0", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fz", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85g0", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
-    // v85fj: calibration reliability curves.
-    fetch("bench/calibration.json?v=v85fz", {cache:"no-store"})
+    // v85g0 (siyuan flip): use reverse-axis calibration (x=human gold,
+    // y=judge_mean) with three lines: y=x diagonal, regression-to-mean
+    // baseline (Ham/Alice moment-correct), and the judge curve. Falls back
+    // to legacy judge→human bucketing if the new file is missing.
+    fetch("bench/calibration_by_human.json?v=v85g0", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
+      .then(renderCalibrationByHuman)
+      .catch(function(){});
+    fetch("bench/calibration.json?v=v85g0", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
-      .then(renderCalibration)
+      .then(function(d){ if(!window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
     // v85fv (siyuan): judge ensemble card removed from analysis page; leaving
     // the fetch out entirely. renderEnsemble + ensemble json kept in-file
@@ -1135,8 +1244,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85fz", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85fz", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85g0", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85g0", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -1146,7 +1255,7 @@
     // v85fx: score-controlled analysis (Alice) — Pearson · Spearman · MAE ·
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
-    fetch("bench/score_controlled.json?v=v85fz", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85g0", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -1154,11 +1263,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85fz", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85g0", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fz", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85g0", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
