@@ -1,0 +1,251 @@
+{
+  "_meta": {
+    "cluster_unit": "video tuple (item_id)",
+    "B": 10000,
+    "ci_method": "2.5%/97.5% percentile",
+    "owner": "Isabella (canonical, replaces Alice's earlier bootstrap_ci.json)",
+    "n_gold_items": 875
+  },
+  "judges": {
+    "gemini-2.5-flash": {
+      "pa_pearson": {
+        "est": 0.3561,
+        "lo": 0.2962,
+        "hi": 0.414
+      },
+      "ia_pearson": {
+        "est": 0.3703,
+        "lo": 0.3076,
+        "hi": 0.4326
+      },
+      "pa_knorm": {
+        "est": 0.1429,
+        "lo": 0.1064,
+        "hi": 0.2316
+      },
+      "ia_knorm": {
+        "est": 0.2579,
+        "lo": 0.2222,
+        "hi": 0.3245
+      },
+      "n_pa": 869,
+      "n_ia": 869
+    },
+    "gemini-2.5-pro": {
+      "pa_pearson": {
+        "est": 0.2419,
+        "lo": 0.1895,
+        "hi": 0.294
+      },
+      "ia_pearson": {
+        "est": 0.5127,
+        "lo": 0.4606,
+        "hi": 0.5626
+      },
+      "pa_knorm": {
+        "est": 0.1376,
+        "lo": 0.1129,
+        "hi": 0.266
+      },
+      "ia_knorm": {
+        "est": 0.0842,
+        "lo": 0.0579,
+        "hi": 0.1421
+      },
+      "n_pa": 875,
+      "n_ia": 875
+    },
+    "gemini-3.1-pro-preview": {
+      "pa_pearson": {
+        "est": 0.4037,
+        "lo": 0.3513,
+        "hi": 0.4545
+      },
+      "ia_pearson": {
+        "est": 0.5197,
+        "lo": 0.4697,
+        "hi": 0.5688
+      },
+      "pa_knorm": {
+        "est": 0.1702,
+        "lo": 0.1111,
+        "hi": 0.2299
+      },
+      "ia_knorm": {
+        "est": 0.2474,
+        "lo": 0.1968,
+        "hi": 0.291
+      },
+      "n_pa": 875,
+      "n_ia": 875
+    },
+    "gemini-3.5-flash": {
+      "pa_pearson": {
+        "est": 0.53,
+        "lo": 0.4811,
+        "hi": 0.5784
+      },
+      "ia_pearson": {
+        "est": 0.4277,
+        "lo": 0.3691,
+        "hi": 0.4854
+      },
+      "pa_knorm": {
+        "est": 0.1283,
+        "lo": 0.0794,
+        "hi": 0.1862
+      },
+      "ia_knorm": {
+        "est": 0.254,
+        "lo": 0.2158,
+        "hi": 0.3032
+      },
+      "n_pa": 874,
+      "n_ia": 874
+    },
+    "gpt-5.2": {
+      "pa_pearson": {
+        "est": 0.4382,
+        "lo": 0.382,
+        "hi": 0.4917
+      },
+      "ia_pearson": {
+        "est": 0.5829,
+        "lo": 0.5347,
+        "hi": 0.6287
+      },
+      "pa_knorm": {
+        "est": 0.127,
+        "lo": 0.1011,
+        "hi": 0.2139
+      },
+      "ia_knorm": {
+        "est": 0.0684,
+        "lo": 0.0529,
+        "hi": 0.1368
+      },
+      "n_pa": 875,
+      "n_ia": 875
+    },
+    "gpt5.5": {
+      "pa_pearson": {
+        "est": 0.417,
+        "lo": 0.3608,
+        "hi": 0.4708
+      },
+      "ia_pearson": {
+        "est": 0.6097,
+        "lo": 0.5649,
+        "hi": 0.6528
+      },
+      "pa_knorm": {
+        "est": 0.1693,
+        "lo": 0.1368,
+        "hi": 0.2789
+      },
+      "ia_knorm": {
+        "est": 0.0842,
+        "lo": 0.0582,
+        "hi": 0.1474
+      },
+      "n_pa": 875,
+      "n_ia": 875
+    },
+    "qwen3-vl-32b-instruct": {
+      "pa_pearson": {
+        "est": 0.3586,
+        "lo": 0.2998,
+        "hi": 0.413
+      },
+      "ia_pearson": {
+        "est": 0.3956,
+        "lo": 0.3345,
+        "hi": 0.4568
+      },
+      "pa_knorm": {
+        "est": 0.0806,
+        "lo": 0.086,
+        "hi": 0.2222
+      },
+      "ia_knorm": {
+        "est": 0.3053,
+        "lo": 0.2526,
+        "hi": 0.3492
+      },
+      "n_pa": 874,
+      "n_ia": 874
+    },
+    "qwen3-vl-8b-instruct": {
+      "pa_pearson": {
+        "est": 0.2443,
+        "lo": 0.184,
+        "hi": 0.3047
+      },
+      "ia_pearson": {
+        "est": 0.2998,
+        "lo": 0.2332,
+        "hi": 0.3641
+      },
+      "pa_knorm": {
+        "est": 0.2011,
+        "lo": 0.1429,
+        "hi": 0.2941
+      },
+      "ia_knorm": {
+        "est": 0.3368,
+        "lo": 0.2857,
+        "hi": 0.3968
+      },
+      "n_pa": 873,
+      "n_ia": 873
+    },
+    "seed2.0_pro": {
+      "pa_pearson": {
+        "est": 0.4965,
+        "lo": 0.4442,
+        "hi": 0.5455
+      },
+      "ia_pearson": {
+        "est": 0.5925,
+        "lo": 0.5445,
+        "hi": 0.6385
+      },
+      "pa_knorm": {
+        "est": 0.1064,
+        "lo": 0.0794,
+        "hi": 0.1818
+      },
+      "ia_knorm": {
+        "est": 0.0789,
+        "lo": 0.0529,
+        "hi": 0.1429
+      },
+      "n_pa": 875,
+      "n_ia": 875
+    },
+    "seed2.1_lite": {
+      "pa_pearson": {
+        "est": 0.4989,
+        "lo": 0.4516,
+        "hi": 0.5435
+      },
+      "ia_pearson": {
+        "est": 0.5596,
+        "lo": 0.5072,
+        "hi": 0.6084
+      },
+      "pa_knorm": {
+        "est": 0.1005,
+        "lo": 0.0691,
+        "hi": 0.164
+      },
+      "ia_knorm": {
+        "est": 0.0947,
+        "lo": 0.0691,
+        "hi": 0.1587
+      },
+      "n_pa": 875,
+      "n_ia": 875
+    }
+  }
+}
