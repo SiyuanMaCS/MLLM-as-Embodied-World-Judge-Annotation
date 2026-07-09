@@ -714,9 +714,10 @@
     host.innerHTML = html;
   }
 
-  // v85fm: judge ensemble baseline-vs-mean comparison + gains curve.
-  // Payload shape (per dim): {single_best, single_best_model, curve_mean:[k=1..6],
-  //                            mean_6, trimmed, median, members_by_step:[[...],...]}
+  // v85fn: judge ensemble baseline-vs-mean comparison + gains curve.
+  // Payload shape (Alice's file): per dim {single_best, curve_by_k:[k=1..6],
+  //   mean_6, trimmed_6, median_6, members_by_step:[[...],...]} + top-level
+  //   {members:[...], n}. single_best_model is derived from members_by_step[0][0].
   function renderEnsemble(d){
     var host = document.getElementById("hs-ens");
     if(!host) return;
@@ -724,8 +725,9 @@
     function bar(pct){ return Math.max(0, Math.min(100, pct*100)).toFixed(1) + '%'; }
     function panel(dim, dimLbl){
       var v = d[dim];
-      var best = v.single_best, bestM = v.single_best_model;
-      var mean = v.mean_6, trim = v.trimmed, med = v.median;
+      var best = v.single_best;
+      var bestM = (v.members_by_step && v.members_by_step[0] && v.members_by_step[0][0]) || "";
+      var mean = v.mean_6, trim = v.trimmed_6, med = v.median_6;
       var lift = mean - best;
       var s = '<div>';
       s += '<div class="hs-ens-panel-title">'+dimLbl+' · Pearson vs 人类真值</div>';
@@ -748,7 +750,7 @@
     }
     function curveSvg(dim, dimLbl, colorHi){
       var v = d[dim];
-      var pts = v.curve_mean || [];
+      var pts = v.curve_by_k || [];
       if(!pts.length) return '';
       var W = 260, H = 180, PL = 34, PT = 12, PR = 12, PB = 26;
       var plotW = W-PL-PR, plotH = H-PT-PB;
@@ -902,36 +904,36 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85fm", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85fn", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fb: closed-loop headline + per-embodiment heatmap + bootstrap CI
     // (Alice bundle, static bench/ file for now; will move to HF pipeline).
-    fetch("bench/judge_judge_closedloop.json?v=v85fm", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85fn", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cl " + r.status); return r.json(); })
       .then(renderClosedLoop)
       .catch(function(e){ document.getElementById("hs-cl").innerHTML='<div class="hs-empty">闭环数据加载失败</div>'; });
-    fetch("bench/per_embodiment_pa.json?v=v85fm", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85fn", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85fm", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85fn", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85fj: calibration reliability curves.
-    fetch("bench/calibration.json?v=v85fm", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85fn", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(renderCalibration)
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
     // v85fm: judge ensemble baseline-vs-mean + gains curve.
-    fetch("bench/ensemble_judge.json?v=v85fm", {cache:"no-store"})
+    fetch("bench/ensemble_judge.json?v=v85fn", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ens " + r.status); return r.json(); })
       .then(renderEnsemble)
       .catch(function(e){ var el=document.getElementById("hs-ens"); if(el) el.innerHTML='<div class="hs-empty">ensemble 加载失败</div>'; });
-    fetch("bench/bootstrap_ci.json?v=v85fm", {cache:"no-store"})
+    fetch("bench/bootstrap_ci.json?v=v85fn", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
