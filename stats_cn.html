@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analysis — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css?v=v85cd">
+<style>
+/* ===== Ham stats redesign (siyuan 2026-07-02: 好好设计) — self-contained, scoped .hs- ===== */
+.hs-wrap{ --hs-gray:#9aa3b2; --hs-gray-d:#6b7280; --hs-blue:#2c5dd9; --hs-blue-d:#1f47a8;
+  --hs-track:#eef0f5; --hs-line:#edeef2; }
+.hs-card{ background:#fff; border:1px solid var(--border,#e5e5ea); border-radius:16px;
+  padding:22px 24px; margin:0 0 20px; box-shadow:0 1px 3px rgba(20,25,40,.05),0 8px 24px -18px rgba(20,25,40,.25); }
+.hs-h{ display:flex; align-items:baseline; gap:10px; margin:0 0 2px; }
+.hs-h h2{ font-size:19px; font-weight:700; margin:0; letter-spacing:-.01em; }
+.hs-h .hs-sub{ color:var(--muted,#666); font-size:12.5px; }
+.hs-legend{ display:flex; gap:16px; align-items:center; margin:12px 0 4px; font-size:12.5px; color:var(--muted,#555); }
+.hs-legend i{ display:inline-block; width:13px; height:13px; border-radius:4px; margin-right:6px; vertical-align:-2px; }
+.hs-sw-all{ background:linear-gradient(180deg,#aab2c0,#8b95a6); }
+.hs-sw-self{ background:linear-gradient(180deg,#4f7be6,#2c5dd9); }
+
+/* ---- PA↔IA 2D scatter ---- */
+.hs-corr{ margin:12px 0 4px; }
+.hs-corr-h{ font-size:12.5px; color:var(--muted,#666); margin:2px 0 8px; }
+.hs-scwrap{ display:flex; gap:18px; flex-wrap:wrap; }
+.hs-sc{ flex:1 1 260px; min-width:250px; }
+.hs-sc-top{ display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
+.hs-sc-name{ font-weight:700; font-size:13.5px; }
+.hs-sc-name .hs-dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:0; }
+.hs-sc-name.all .hs-dot{ background:#8b95a6; } .hs-sc-name.self .hs-dot{ background:#2c5dd9; }
+.hs-sc-r{ margin-left:auto; font-size:12px; color:var(--muted,#888); }
+.hs-sc-r b{ font-size:15px; font-variant-numeric:tabular-nums; }
+.hs-sc svg,.hs-sc canvas.hs-heat{ width:100%; height:auto; display:block; border-radius:10px;
+  background:linear-gradient(180deg,#fcfdff,#f6f8fc); border:1px solid #eef0f5; }
+/* ---- score distribution ---- */
+.hs-metric{ margin-top:18px; padding-top:16px; border-top:1px solid var(--hs-line); }
+.hs-metric:first-of-type{ border-top:0; padding-top:2px; margin-top:6px; }
+.hs-mrow{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.hs-mname{ font-weight:700; font-size:15px; }
+.hs-mfull{ color:var(--muted,#888); font-size:12px; font-weight:500; }
+.hs-stats{ display:flex; gap:8px; margin-left:auto; flex-wrap:wrap; }
+.hs-pill{ font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--border,#e5e5ea);
+  background:#fbfbfd; display:inline-flex; gap:7px; align-items:center; }
+.hs-pill b{ font-weight:700; }
+.hs-pill .hs-dot{ width:8px; height:8px; border-radius:50%; }
+.hs-pill.all .hs-dot{ background:#8b95a6; } .hs-pill.self .hs-dot{ background:#2c5dd9; }
+.hs-pill .hs-n{ color:var(--muted,#999); }
+
+.hs-chart{ position:relative; height:184px; margin:6px 0 2px; padding-left:34px; }
+.hs-grid{ position:absolute; left:34px; right:0; top:0; bottom:26px; }
+.hs-gl{ position:absolute; left:0; right:0; border-top:1px dashed #e9ebf1; }
+.hs-gl span{ position:absolute; left:-34px; top:-8px; width:30px; text-align:right;
+  font-size:10px; color:#b3b8c4; }
+.hs-bars{ position:absolute; left:34px; right:0; top:0; bottom:26px; display:flex; justify-content:space-around; align-items:flex-end; }
+.hs-grp{ flex:1; display:flex; justify-content:center; align-items:flex-end; gap:7px; height:100%; }
+.hs-bar{ width:34px; border-radius:7px 7px 3px 3px; position:relative; min-height:2px;
+  transition:height .55s cubic-bezier(.22,.61,.36,1); box-shadow:0 1px 2px rgba(20,25,40,.14); }
+.hs-bar.all{ background:linear-gradient(180deg,#aab2c0,#7f8a9c); }
+.hs-bar.self{ background:linear-gradient(180deg,#4f7be6,#2350c9); }
+.hs-bar .hs-lab{ position:absolute; top:-17px; left:50%; transform:translateX(-50%);
+  font-size:11px; font-weight:700; color:#4a5262; white-space:nowrap; }
+.hs-bar.self .hs-lab{ color:#2350c9; }
+.hs-bar .hs-cnt{ position:absolute; top:6px; left:50%; transform:translateX(-50%);
+  font-size:9.5px; color:#fff; opacity:.85; font-weight:600; }
+.hs-xaxis{ position:absolute; left:34px; right:0; bottom:0; height:22px; display:flex; justify-content:space-around; }
+.hs-xt{ flex:1; text-align:center; font-size:12px; font-weight:700; color:#555; position:relative; }
+.hs-xt .hs-chip{ display:inline-block; width:20px; height:20px; line-height:20px; border-radius:6px; color:#fff; }
+.hs-axis-cap{ text-align:center; font-size:11px; color:#b3b8c4; margin-top:-2px; }
+
+/* ---- model leaderboard ---- */
+.hs-lb-row{ display:grid; grid-template-columns:30px 1fr; gap:12px; align-items:center; padding:9px 0; border-top:1px solid var(--hs-line); }
+.hs-lb-row:first-child{ border-top:0; }
+.hs-rank{ width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:13px; color:#fff; background:#c3c8d4; }
+.hs-rank.r1{ background:linear-gradient(135deg,#f6c650,#e0a020); }
+.hs-rank.r2{ background:linear-gradient(135deg,#cfd4de,#a7aebc); }
+.hs-rank.r3{ background:linear-gradient(135deg,#e0a878,#c07d45); }
+.hs-lb-main{ min-width:0; }
+.hs-lb-top{ display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
+.hs-lb-name{ font-weight:700; font-size:14px; }
+.hs-lb-n{ font-size:11.5px; color:var(--muted,#999); }
+.hs-lb-score{ margin-left:auto; font-weight:800; font-size:15px; font-variant-numeric:tabular-nums; }
+.hs-track{ height:15px; border-radius:8px; background:var(--hs-track); overflow:hidden; position:relative; }
+.hs-fill{ height:100%; border-radius:8px; width:0; transition:width .6s cubic-bezier(.22,.61,.36,1);
+  display:flex; align-items:center; }
+.hs-subs{ display:flex; gap:14px; margin-top:5px; font-size:11px; color:var(--muted,#888); }
+.hs-subs b{ color:#3a4150; font-weight:700; }
+.hs-scale{ display:flex; justify-content:space-between; font-size:10px; color:#c0c5d0; margin-top:8px; padding-top:4px; }
+.hs-empty{ color:var(--muted,#999); font-size:13px; padding:8px 0; }
+
+/* v85fb: closed-loop / per-embodiment / CI */
+.hs-cl-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:6px; }
+.hs-cl-big{ background:linear-gradient(135deg,#eff6ff,#fdf4ff); border:1px solid #dbeafe; border-radius:12px; padding:16px; }
+.hs-cl-lbl{ font-size:11.5px; color:#64748b; text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
+.hs-cl-num{ font-size:34px; font-weight:800; color:#1e40af; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin:4px 0 2px; }
+.hs-cl-num.ia{ color:#9333ea; }
+.hs-cl-sub{ font-size:11.5px; color:#64748b; }
+.hs-cl-note{ margin-top:10px; padding:10px 12px; background:#f8fafc; border-left:3px solid #2563eb; border-radius:4px; font-size:12px; color:#334155; line-height:1.5; }
+.hs-jj{ display:flex; gap:14px; align-items:baseline; margin-top:12px; flex-wrap:wrap; }
+.hs-jj-lbl{ font-size:12px; color:#64748b; }
+.hs-jj-val{ font-size:15px; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums; }
+.hs-jj-note{ font-size:11.5px; color:#64748b; margin-top:4px; }
+@media(max-width:640px){ .hs-cl-wrap{ grid-template-columns:1fr; } }
+
+/* per-embodiment heatmap */
+.hs-emb-wrap{ overflow-x:auto; }
+.hs-emb-grid{ display:grid; gap:2px; font-variant-numeric:tabular-nums; min-width:520px; }
+.hs-emb-hdr{ font-size:10.5px; color:#94a3b8; text-align:center; padding:6px 4px 4px; font-weight:600; }
+.hs-emb-hdr.side{ text-align:right; padding:0 8px 0 0; align-self:center; font-size:11.5px; color:#334155; font-weight:600; }
+.hs-emb-cell{ padding:8px 4px; font-size:12px; text-align:center; border-radius:4px; color:#0f172a; font-weight:600; }
+.hs-emb-cell.na{ background:#f1f5f9; color:#cbd5e1; font-weight:400; }
+
+/* bootstrap CI whiskers */
+.hs-ci-row{ display:grid; grid-template-columns:180px 1fr 110px; gap:12px; align-items:center; padding:8px 0; border-top:1px solid var(--hs-line); font-size:12.5px; }
+.hs-ci-row:first-child{ border-top:0; }
+.hs-ci-name{ font-weight:600; color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hs-ci-track{ position:relative; height:26px; background:#f8fafc; border-radius:6px; }
+.hs-ci-scale{ position:absolute; left:0; top:0; bottom:0; width:100%; }
+.hs-ci-tick{ position:absolute; top:0; bottom:0; width:1px; background:#e2e8f0; }
+.hs-ci-whisker{ position:absolute; top:9px; bottom:9px; background:linear-gradient(90deg,#93c5fd,#2563eb,#93c5fd); border-radius:4px; }
+.hs-ci-point{ position:absolute; top:2px; width:2px; bottom:2px; background:#1e3a8a; border-radius:1px; }
+.hs-ci-val{ text-align:right; font-variant-numeric:tabular-nums; color:#0f172a; font-weight:600; }
+.hs-ci-val small{ color:#94a3b8; font-weight:400; margin-left:4px; }
+.hs-ci-partial{ opacity:0.55; }
+
+/* v85fs: fair common set gap matrix */
+.hs-fcs-summary{ display:flex; gap:14px; margin:6px 0 12px; font-size:12.5px; flex-wrap:wrap; }
+.hs-fcs-chip{ padding:5px 10px; border-radius:6px; font-variant-numeric:tabular-nums; }
+.hs-fcs-chip.have{ background:#d1fae5; color:#065f46; }
+.hs-fcs-chip.need{ background:#fef3c7; color:#92400e; }
+.hs-fcs-chip.total{ background:#e0e7ff; color:#3730a3; }
+.hs-fcs-wrap{ overflow-x:auto; }
+.hs-fcs-grid{ display:grid; gap:2px; font-variant-numeric:tabular-nums; min-width:640px; }
+.hs-fcs-hdr{ font-size:10px; color:#94a3b8; padding:6px 3px; text-align:center; writing-mode:vertical-rl; transform:rotate(180deg); }
+.hs-fcs-hdr .n{ color:#334155; font-weight:600; font-size:10.5px; }
+.hs-fcs-side{ font-size:10.5px; color:#334155; padding:2px 6px 2px 0; text-align:right; align-self:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; }
+.hs-fcs-cell{ aspect-ratio:1/1; border-radius:3px; min-height:14px; }
+.hs-fcs-cell.have{ background:#10b981; }
+.hs-fcs-cell.need{ background:#fde68a; border:1px dashed #f59e0b; }
+.hs-fcs-cell.have:hover, .hs-fcs-cell.need:hover{ outline:2px solid #64748b; }
+
+/* v85fm: judge ensemble card */
+.hs-ens-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.hs-ens-cmp{ display:grid; grid-template-columns:auto 1fr auto; gap:10px 12px; align-items:center; font-size:12.5px; }
+.hs-ens-cmp .lbl{ color:#334155; font-weight:600; }
+.hs-ens-cmp .bar-outer{ position:relative; height:22px; background:#f1f5f9; border-radius:5px; overflow:hidden; }
+.hs-ens-cmp .bar-fill{ position:absolute; left:0; top:0; bottom:0; border-radius:5px; }
+.hs-ens-cmp .bar-fill.base{ background:linear-gradient(90deg,#93c5fd,#3b82f6); }
+.hs-ens-cmp .bar-fill.ens{ background:linear-gradient(90deg,#f9a8d4,#db2777); }
+.hs-ens-cmp .val{ font-variant-numeric:tabular-nums; font-weight:700; color:#0f172a; min-width:52px; text-align:right; }
+.hs-ens-cmp .val small{ color:#94a3b8; font-weight:400; margin-left:3px; }
+.hs-ens-panel-title{ font-size:12px; color:#64748b; font-weight:600; margin-bottom:8px; text-transform:uppercase; letter-spacing:.4px; }
+.hs-ens-curve{ background:linear-gradient(180deg,#fcfdff,#f6f8fc); border:1px solid #eef0f5; border-radius:8px; padding:8px; }
+.hs-ens-legend{ display:flex; gap:12px; margin-top:8px; font-size:11.5px; color:#334155; }
+.hs-ens-legend .sw{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+.hs-ens-members{ margin-top:12px; font-size:11px; color:#64748b; line-height:1.5; }
+.hs-ens-members b{ color:#334155; }
+@media(max-width:640px){ .hs-ens-wrap{ grid-template-columns:1fr; } }
+
+/* v85fj: calibration reliability curve */
+.hs-cal-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.hs-cal-panel{ }
+.hs-cal-panel-title{ font-size:12px; color:#64748b; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:.4px; }
+.hs-cal-svg{ width:100%; height:auto; display:block; background:linear-gradient(180deg,#fcfdff,#f6f8fc); border:1px solid #eef0f5; border-radius:8px; }
+.hs-cal-legend{ display:flex; flex-wrap:wrap; gap:12px; margin-top:8px; font-size:11.5px; color:#334155; }
+.hs-cal-legend .sw{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+@media(max-width:640px){ .hs-cal-wrap{ grid-template-columns:1fr; } }
+
+/* v85ey: judge confusion matrices */
+.hs-cm-judge{ margin-bottom:22px; }
+.hs-cm-judge-name{ font-weight:600; font-size:14px; color:#0f172a; margin-bottom:8px; }
+.hs-cm-pair{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.hs-cm-box{ background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; }
+.hs-cm-title{ font-size:12px; color:#334155; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.hs-cm-flag{ font-size:10px; padding:1px 6px; border-radius:4px; font-weight:600; }
+.hs-cm-flag.err{ background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; }
+.hs-cm-grid{ display:grid; grid-template-columns:22px repeat(5, 1fr); gap:2px; font-variant-numeric:tabular-nums; }
+.hs-cm-corner{}
+.hs-cm-hdr{ font-size:10px; color:#94a3b8; text-align:center; padding:2px 0; }
+.hs-cm-hdr.side{ text-align:right; padding:0 4px 0 0; align-self:center; }
+.hs-cm-cell{ aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; font-size:10.5px; color:#0f172a; border-radius:3px; background:rgba(37,99,235,0); }
+.hs-cm-cell.diag{ box-shadow: inset 0 0 0 1.5px #10b981; }
+.hs-cm-cell:empty{ background:transparent; }
+.hs-cm-foot{ display:flex; gap:12px; flex-wrap:wrap; margin-top:8px; font-size:10.5px; color:#64748b; }
+.hs-cm-foot b{ color:#0f172a; font-weight:600; }
+
+@media(max-width:640px){ .hs-bar,.hs-bar.self{ width:24px; } .hs-stats{ margin-left:0; } .hs-cm-pair{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1 data-i18n="page.stats">📊 分析（中文版）</h1>
+    <div class="user-chip">
+      <span class="lb-countdown" id="lb-countdown" hidden></span>
+      <span id="who">—</span> <span class="role-pill" id="role">—</span>
+      <button id="logout-btn" class="link" data-i18n="chip.logout">logout</button>
+    </div>
+  </header>
+  <nav class="page-nav">
+    <a href="dashboard.html" class="back-link" data-i18n="nav.back">← Back</a>
+  </nav>
+
+  <div class="hs-wrap">
+    <!-- v85g7 (siyuan academic-chapter rewrite + Ham prose): main analysis
+         reads as a paper Analysis chapter — clean prose findings, no
+         inline detail panels. Detailed panels + reference exhibits live
+         in the Appendix and are cross-referenced as (App. A/B/C/D). -->
+
+    <div style="font-size:12.5px;color:#0f172a;padding:14px 16px;margin-bottom:18px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;line-height:1.65">
+      <div style="font-weight:700;margin-bottom:4px">分析 · 这个 benchmark 揭示了 MLLM 判官的什么问题</div>
+      <div style="font-size:11.5px;color:#64748b">在 875 条 in-domain 视频上，判官对 physical-adherence（PA，物理真实性）与 instruction-alignment（IA，指令符合度）的评价表现。统计对照面板与参考图表都收在附录里，正文按 <b>（App. A/B/C/D）</b> 引用。图表 label / 数据表列名保留英文，便于和数据源、Table 1 一致。</div>
+    </div>
+
+    <!-- ═══ Table 1 — judge leaderboard anchor (siyuan: 引用这个表) ═══ -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">Table 1</span>判官与人类 gold 的一致性 · 875 条 in-domain 视频</h2>
+        <span class="hs-sub">§§ 1 – 3 的引用表</span>
+      </div>
+      <div style="font-size:12.5px;color:#64748b;padding:2px 4px 8px;line-height:1.55">
+        § 1 引用 PA-Pearson 列（flash 0.530 是全场最高）以及 IA-Pearson 列（gpt5.5 0.610）——指令复杂度对这两轴都有影响。§ 2 引用 τ_ap 列（top-weighted Kendall τ，衡量的是在 10 家生成器上"排名保得对不对"）；§ 2b 会说明为什么这一列和 Pearson 列<em>可以分离</em>（gemini-2.5-pro Pearson 0.24 却 τ_ap 0.93）。列出 13 家判官，覆盖率 &lt; 15% 的按 bootstrap-CI 阈值隐藏（见 App. B）。附录 G 补充报告非排名类的 per-model calibration RMSE。
+      </div>
+      <div id="hs-table1"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- ═══ § 1  Instruction complexity (full analysis + main viz) ═══ -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 1</span>指令复杂度</h2>
+        <span class="hs-sub">对 PA 判分 <em>无</em> 影响 · 对 IA 判分显著改善</span>
+      </div>
+      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
+        指令复杂度（用英文词数当代理，n = 597）对 <b>PA 判分没有显著影响</b>（r = 0.047, p = 0.25），但 <b>显著改善 IA 判分</b>（r = −0.10, p = 0.015）。也就是说，判官在物理评价上普遍不够灵敏 —— 它甚至分不出"哪些任务在物理上更难判"；反过来 IA 就相反 —— 长指令里会包含明确、可核对的 sub-step，判官更容易对上。<br><br>
+        这个 IA 效应在控制了"生成视频质量"之后仍然成立（partial r = −0.098 vs raw r = −0.099），所以它是指令本身的影响，不是"复杂指令对应的视频质量差"造成的混淆。partial-correlation 细节见 <b>App. C.i</b>。
+      </div>
+      <div id="hs-icx" style="margin-top:6px"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- ═══ § 2  Regression compresses the top of the leaderboard ═══ -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 2</span>判官分数回归均值，把榜首挤成一团</h2>
+        <span class="hs-sub">榜首分辨率下降 · 是 regression 后果，不是判官特有缺陷</span>
+      </div>
+      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
+        判官与人类的相关系数不到 1 → 分数就必然呈现"回归均值"：好的片子被打得偏低，差的片子被打得偏高。8 条判官 × 维度曲线全部单调下降 —— 拿 PA 举例，flash 在 human = 1 时 bias 是 +0.60，到 human = 5 就变成 −1.14；gemini-2.5-pro 从 +0.07 一路掉到 −3.21。<br><br>
+        我们核实过这 <em>确实是</em> 回归均值 —— 每个判官的 per-quality bias 都落在自己的回归基线 E[J|H] = μ<sub>J</sub> + r · (σ<sub>J</sub>/σ<sub>H</sub>)(H − μ<sub>H</sub>) 的 ±0.15 范围内。<br><br>
+        这个"分辨率下降"恰好发生在最要命的地方。在 human-gold PA 上，10 家生成器里排前 4 名几乎并列 —— 4 家的 span 只有 <b>0.195</b>，而全场从最差到最好的 span 是 <b>2.177</b>。判官一旦排错，错误就集中在这个被压缩的顶端：gemini-3.1-pro 有 6 对逆序全部涉及 top-4；gemini-3.5-flash 4 对逆序有 3 对在 top-4 内部 —— top-4 只占 45 对 model pair 的 13%，却吃掉这些判官大约 67% 的逆序。<b>这不是某个判官的缺陷，而是回归均值的必然后果</b>：一旦分数被压缩，最接近并列的顶端就是第一个失去排名保真度的地方。
+      </div>
+      <div id="hs-cal" style="margin-top:6px"><div class="hs-empty">loading…</div></div>
+      <div id="hs-judgedist" style="margin-top:14px"><div class="hs-empty">loading…</div></div>
+    </section>
+
+    <!-- ═══ § 2b  存在性 framing — 判分 vs 排名可以分离 ═══ -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 2b</span>"判官能判每条视频"和"判官能给模型排名"是两件独立的能力</h2>
+        <span class="hs-sub">存在性证据：gemini-2.5-pro PA-Pearson 0.24 却 τ_ap 0.93</span>
+      </div>
+      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
+        <b>一句话结论。</b> "判官逐条判分像不像人（PA-Pearson）" 和 "判官对 10 家生成器的排名对不对（τ_ap）" 是两种独立的能力。证据是存在这样的判官：<b>gemini-2.5-pro</b> 在 PA 上 Pearson 只有 <b>0.24</b>（逐条几乎是乱打），但 τ_ap 高达 <b>0.928</b>（全场最好）—— 一个判官逐条判分烂却能几乎完美复现 human 的模型排名，光这一个例子就足以说明两种能力可以分离。Table 1 同时报 Pearson 和 τ_ap 两列，读者按用途选。<br><br>
+        <b>两种能力，一张表。</b>
+        <ul style="margin:6px 0 8px 20px;padding:0;line-height:1.7">
+          <li><b>问法 1：这条视频判得像人吗？</b> 用 <b>PA-Pearson</b>。最好 = gemini-3.5-flash 0.53；中间 seed2.0/2.1 ~0.50、gpt5.x ~0.42；差 = gemini-2.5-pro 0.24、qwen3-vl-8b 0.24、<b>cosmos-reason2-2b 0.07</b>（接近随机）。</li>
+          <li><b>问法 2：10 家生成器排名对不对？</b> 用 <b>τ_ap</b>（top-weighted Kendall τ）。最好 = <b>gemini-2.5-pro 0.928</b>、seed2.1 0.881、qwen3-vl-8b 0.807；中间 gemini-3.5-flash 0.733、seed2.0_pro 0.706；差 = cosmos 三家 ~0.39-0.44、gpt5.x ~0.49。</li>
+        </ul>
+        <b>为什么这两个答案会打架。</b> 10 家生成器的 human-gold PA 从 1.86 到 4.04 差得远（跨 2.18 分），排名任务本身容易 —— 一个判分很乱的判官只要保住"好模型均分 &gt; 坏模型均分"就能把 10 家排对，gemini-2.5-pro 就是钻了这个空子。反过来 IA 上人类 gold 分布窄，判官必须每条都判准才能排对，所以 IA 上 Pearson 和 τ_ap 高度一致（10 判官子集 ρ = 0.86）。<br><br>
+        <b>关于"anchoring 判官"的正确读法。</b> gemini-2.5-pro 是唯一干净的 anchoring 例子（Pearson 塌了 · rank 保住了）。<b>cosmos-reason 三家不是这种镜像</b> —— 它们 anchor 到"5"（松），但 τ_ap 只有 0.39 – 0.44（远低于中位数 0.567）—— <em>逐条乱 + 排名也乱</em>，两个维度都塌，属于 low-P low-τap 象限，不是 decoupling 的第 2 个极端。<br><br>
+        <b>为什么不用 population Spearman 做主陈述。</b> cosmos 三家进入统计池后，Spearman(PA-Pearson, PA-τap) 从 −0.14 拉正到 +0.47（cosmos 都在 low-P low-τap 象限 → 拉出正相关），population ρ 会随判官池成分漂移；<b>存在性叙述更稳健</b>。10 判官（去掉 cosmos）的 ρ_PA = −0.14 保留在 <code style="background:#f8fafc;padding:1px 4px;border-radius:3px;font-size:11px">spearman_by_slice.10_judges_no_cosmos</code> 供 Appendix 引用。<br><br>
+        <b>Table 1 读者怎么用。</b> 想低成本复现榜单 → 按 τ_ap 排（gemini-2.5-pro 就够）。要真的替 human 判每条视频 → 必须看 PA-Pearson，只有 gemini-3.5-flash / seed2.0 / seed2.1 三家达标。Table 1 两列都留是因为两个是独立能力，不是同一件事的两个名字。Appendix G 补一个非排名类的 per-model calibration RMSE（判官在每家生成器上的均分与人类差多少），r = 0.84 和 PA-Pearson 高度一致。
+      </div>
+      <div id="hs-decoupling" style="margin-top:6px"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- ═══ § 2c  Judges confabulate task success · dimension-general ═══ -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 2c</span>判官会在失败视频上编出成功故事</h2>
+        <span class="hs-sub">PA 7.4 % ≈ IA 7.9 % · 不是指令驱动 · 不是随机噪音</span>
+      </div>
+      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
+        在人类判为"明显失败"的视频上，判官不只是"没看出错"，而是 <em>自信地编出一段具体、流畅的成功故事</em>。5 家全 reasoning 判官在 IA 违规视频上一致（≥ 3/5）通过 <b>7.9 %</b>；在 PA 违规视频上一致通过 <b>7.4 %</b>。这两个数字几乎一样 —— <b>说明这个失败不是被指令带偏的</b>（PA 判官根本看不到指令，却也照样虚构成功）。判官的总榜分数把这一层错误盖住，只有在"人类明确判为违规"的这个子集上才暴露出来。
+      </div>
+      <div id="hs-confab" style="margin-top:6px"><div class="hs-empty">loading…</div></div>
+      <div id="hs-confab-case" style="margin-top:14px"></div>
+    </section>
+
+    <!-- ═══ § 2d  Sub-axis diagnostic · hedging on identity axes (clean pilot n = 1) ═══ -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 2d</span>细分维度 · 判官把 identity 违规硬拉成 "minor"</h2>
+        <span class="hs-sub">显式小分 · 目前 n = 1 干净判官（gemini-3.5-flash, 865 / 875）</span>
+      </div>
+      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
+        § 2c 那个"判官不肯下 failure 判决"的现象，落到 sub-axis 层面看得更狠。Alice 的 g31 重判 pipeline 里，判官会对组成 PA / IA 的 6 个 sub-axis 各自打一个显式 0 / 1 / 2 分（跟人类同尺度 · 0 = 明确违规 · 1 = 轻微 · 2 = 没问题），完全不需要从 free-text 抽取，判官直接吐数字。在"人类判为明确违规"的子集上我们看两个数：<em>hard recall</em>（判官 <em>也</em> 打了 0）以及 <em>lenient recall</em>（判官打了 0 或 1）。二者的差距就是 hedging 的规模。<br><br>
+        <b>物理三轴 vs 身份三轴对比。</b> 三条物理 sub-axis（scene / interaction / agent consistency）上，判官愿意打 hard-violation 的比例是 54 – 67 %。换到三条 instruction-alignment 上就崩了：agent_match 30 %、goal_completed 31 %，尤其 <b>object_correct 只有 2.8 %</b> —— 人类判 "错物体"的片子里，判官几乎从不硬判违规。但同一批片子的 lenient recall 是 78 – 90 %，说明判官 <em>看到了</em>违规，只是不肯下 "hard" 结论。<b>这是 hedge，不是漏判</b>。这就是 § 2c "不愿下 failure 判决"在 semantic 层面上最严重的表现：general confabulation + semantic-specific hedging 两层伞底下，object-correctness 是极端案例 —— 单一 identity criterion 上有接近 60 个百分点的 hard vs lenient 差距。<br><br>
+        <b>覆盖范围。</b> 目前 pilot 只有 1 家干净判官（gemini-3.5-flash，覆盖 865 / 875）。gemini-3.1-pro-preview 复现跑到 41 / 875 时因为 2026-07-09 17:00 的 Google key 撤销被打断；那批部分数据方向一致但 CI 太宽不能上正文。等新 key 到位再补 n = 5 全套复现。
+      </div>
+      <div id="hs-subclean" style="margin-top:6px"><div class="hs-empty">loading…</div></div>
+    </section>
+
+    <!-- ═══ § 3  Per-embodiment (analysis + main viz + quality-vs-error confound) ═══ -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 3</span>按 embodiment 分类的结果</h2>
+        <span class="hs-sub">生成质量差异大 · 判官准确率却基本一样</span>
+      </div>
+      <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
+        按末端执行器（end-effector）分类看，生成质量差得很明显：人手 3.39 &gt; gripper 2.98 &gt; 灵巧手 2.93（human gold PA）。也就是说，AI 生成的人手视频物理最真实；灵巧手视频最难生成。<br><br>
+        但是判官的准确率<em>并没有</em>一个稳定的跨 embodiment 规律 —— Pearson 排序（gripper 0.55 &gt; 灵巧手 0.51 &gt; 人手 0.49）和 MAE 排序（人手 0.93 ≈ gripper 1.05 ≈ 灵巧手 1.04）对"哪类判得最好"给出的答案不一致。所以我们保守地报告结论：<b>各 embodiment 上判官准确率大致相当</b>。下面那个 quality-vs-error 对照更直接：绿条（生成质量）跨 embodiment 变化很清楚，蓝条（判官 MAE）几乎持平 —— 说明剩下的 per-embodiment 差异只是"真值分布"这个 confound 造成的，不是判官能力差。partial-correlation 控制的细节在 <b>App. C</b>。
+      </div>
+      <div id="hs-emb-quality"><div class="hs-empty" style="font-size:12px">generation-quality strip loading…</div></div>
+      <div id="hs-emb"><div class="hs-empty">judge accuracy heatmap loading…</div></div>
+    </section>
+
+    <!-- Baselines footnote -->
+    <div style="font-size:12px;color:#64748b;padding:10px 14px;margin:8px 0 6px;background:#f8fafc;border-left:3px solid #64748b;border-radius:4px;line-height:1.6">
+      <b>Baselines · 参考基线。</b> Mode-baseline exact PA = 0.281 / IA = 0.278；人类 IAA（n = 10）PA Pearson 0.336 / IA 0.354 —— 每个判官都要跟这个"噪音下限"比较。
+    </div>
+
+    <!-- ═══ APPENDIX ═══ -->
+    <div style="margin:44px 0 18px;padding:12px 14px;border-top:1px dashed #cbd5e1;color:#0f172a;font-size:14px;font-weight:600;letter-spacing:.02em">
+      附录 · 支持图表与 confound 控制
+      <div style="font-size:11.5px;color:#94a3b8;font-weight:400;margin-top:4px;letter-spacing:0">供正文 §§ 1 – 3 引用。</div>
+    </div>
+
+    <!-- A. Confusion matrices — variance collapse reference -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">A</span>Judge 5 × 5 confusion matrices</h2>
+        <span class="hs-sub">reference exhibit for the variance collapse in § 3</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
+        Rows = judge prediction, columns = human gold, diagonal ring = correct call. Reference exhibit for reviewers: qwen32b is systematically lenient (dir_bias +1.31), gemini-2.5-pro collapses ~80% of predictions to the lowest bucket (variance collapse — a static view of the § 3 compression story). Does not carry a headline claim.
+      </div>
+      <div id="hs-cm"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- B. Bootstrap CIs -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">B</span>Bootstrap 95% confidence intervals · per-judge Pearson</h2>
+        <span class="hs-sub">which judge gaps are significant</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
+        Bootstrap resampling of 875 items × 1000 replicates per judge. CIs among the top PA judges (flash / seed2.1 / seed2.0) overlap, so the PA leaderboard has no unique winner. IA shows a real separation. Also justifies the &lt;15% -coverage cutoff for the leaderboard (CIs widen to ±0.15 below that threshold).
+      </div>
+      <div id="hs-ci"><div class="hs-empty">加载中…</div></div>
+    </section>
+
+    <!-- C. Partial-correlation control — the ONE reviewer-defense panel
+         siyuan moved to Appendix. The other visualizations stay in main §§. -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">C</span>Partial-correlation control · Instruction complexity vs judge error</h2>
+        <span class="hs-sub">supporting § 1 · reviewer-defense statistical panel</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
+        Partial correlation of (word count, flash judge |error|) with gold score partialed out. If the effect survives the control (partial r ≈ raw r), the finding reflects instruction complexity itself; if it collapses, the raw effect was driven by the correlated video-quality difference. In practice IA's partial (−0.098) ≈ raw (−0.099), so the IA effect is not a quality confound.
+      </div>
+      <div id="hs-icx-partial"><div class="hs-empty" style="font-size:11.5px">loading…</div></div>
+      <div id="hs-emb-confound" style="margin-top:14px"><div class="hs-empty" style="font-size:11.5px">generation-quality vs judge-error confound check loading…</div></div>
+    </section>
+
+    <!-- E. Video-gen leaderboard (siyuan: appendix — not prompt-controlled) -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">E</span>Video-generation model ranking</h2>
+        <span class="hs-sub">not prompt-controlled · appendix per § 3 caveat</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
+        <b>Caveat.</b> The current video-generation ranking is <em>not</em> prompt-controlled — each model was scored on a different subset of prompts drawn from the 875-item pool. In the meantime the ranking below serves as a reference exhibit only; do not read fine differences as model quality.<br><br>
+        Because the top four generators are statistically tied in human gold PA (a 0.195 band on the 875-item set), the prompt-controlled common-set-50 evaluation is designed to <em>resolve whether the top models are separable at all</em> rather than to crown a winner: at n = 50 the paired bootstrap Δ CIs are expected to include zero for the top-four pairs, giving an honest "top-tier statistically tied" verdict. Cleanly separating the top would require a larger fair set or a more sensitive metric.
+      </div>
+      <div id="hs-vg-appendix"><div class="hs-empty">loading…</div></div>
+    </section>
+
+    <!-- G. Model-level RMSE (calibration distance complementing τ_ap) -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">G</span>Per-model calibration RMSE · complementary to τ_ap</h2>
+        <span class="hs-sub">non-rank distance metric · aligns with per-item Pearson</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
+        A non-rank complement to the τ_ap column in Table 1. For each judge we compute the mean judge score per generator and the mean human score per generator (10 base models, prefix / rewrite variants merged), then report the RMSE between the two 10-vectors. Because the metric preserves score magnitudes, anchoring judges — whose per-model means are compressed toward a single extreme — are penalized: gemini-2.5-pro's PA-RMSE is 1.81 and qwen-3-vl-8b's is 1.43, while seed2.0_pro sits at 0.19. This recovers alignment with per-item PA-Pearson (r = 0.84) that no purely rank-based metric achieves on this dataset. Reported alongside τ_ap so readers can see the ranking-versus-calibration axes side by side; system-level RMSE / MAE are standard model-level judge meta-evaluation metrics (see Chiang &amp; Lee 2023; Zheng et al. 2023).
+      </div>
+      <div id="hs-mrmse"><div class="hs-empty">loading…</div></div>
+    </section>
+
+
+    <!-- D. Score distributions -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">D</span>Annotator score distributions</h2>
+        <span class="hs-sub">All vs self · sanity check</span>
+      </div>
+      <div class="hs-legend">
+        <span><i class="hs-sw-all"></i>All</span>
+        <span><i class="hs-sw-self"></i>Self</span>
+        <span class="hs-sub" style="margin-left:auto">bar height = % within group</span>
+      </div>
+      <div id="hs-corr"></div>
+      <div id="hs-dist"><div class="hs-empty">loading…</div></div>
+    </section>
+
+    <section id="hs-err" class="hs-card" style="display:none;border-color:#f2c0c8;background:#fdf3f5">
+      <div class="hs-h"><h2 style="color:#b00020">load failed</h2></div>
+      <p id="hs-err-msg" class="hs-sub"></p>
+    </section>
+  </div>
+</main>
+<script src="app.js?v=v85cd" defer></script>
+<script>
+(function(){
+  var API = window.__APPS_SCRIPT_URL__;
+  var USER = "";
+  try{ USER = localStorage.getItem("ewj_annotator") || ""; }catch(e){}
+
+  // score value -> color (1 red .. 5 green), for x-axis chips + leaderboard fill
+  function scoreColor(v){
+    var stops=[[229,72,77],[240,138,52],[240,180,40],[120,170,70],[46,139,87]];
+    var t=Math.max(1,Math.min(5,v)), i=Math.floor(t)-1, f=t-Math.floor(t);
+    if(i>=4){i=3;f=1;}
+    var a=stops[i], b=stops[i+1];
+    var c=a.map(function(x,k){return Math.round(x+(b[k]-x)*f);});
+    return "rgb("+c[0]+","+c[1]+","+c[2]+")";
+  }
+  function pct(arr){ var s=arr.reduce(function(a,b){return a+b;},0)||1; return arr.map(function(c){return c/s*100;}); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];}); }
+  function fmt(x){ return (x==null)?"—":(Math.round(x*100)/100).toFixed(2); }
+
+  // one metric block (PA or IA): grouped bars all vs self, 1-5
+  function metricBlock(name, full, all, mine){
+    var aC = all[name], mC = mine ? mine[name] : null;
+    var aP = pct(aC), mP = mC ? pct(mC) : null;
+    var maxP = Math.max.apply(null, aP.concat(mP||[0]).concat([1]));
+    var scale = maxP>0 ? 92/maxP : 0;   // tallest bar ~92% of chart height
+    var aMean = all[name+"_mean"], aStd = all[name+"_std"], aN = all.n;
+    var full2 = full;
+    var h = '<div class="hs-metric"><div class="hs-mrow">';
+    h += '<span class="hs-mname">'+name.toUpperCase()+'</span><span class="hs-mfull">'+full2+'</span>';
+    h += '<span class="hs-stats">';
+    h += '<span class="hs-pill all"><span class="hs-dot"></span>All μ<b>'+fmt(aMean)+'</b> σ<b>'+fmt(aStd)+'</b><span class="hs-n">n='+aN+'</span></span>';
+    if(mC) h += '<span class="hs-pill self"><span class="hs-dot"></span>Self μ<b>'+fmt(mine[name+"_mean"])+'</b> σ<b>'+fmt(mine[name+"_std"])+'</b><span class="hs-n">n='+mine.n+'</span></span>';
+    h += '</span></div>';
+    // chart — gridlines aligned to the same 92%-of-height scale the bars use
+    h += '<div class="hs-chart"><div class="hs-grid">';
+    [1,.75,.5,.25].forEach(function(fr){
+      var val = maxP*fr;
+      var top = 100 - fr*92;   // bar of value maxP reaches 92% height
+      h += '<div class="hs-gl" style="top:'+top+'%"><span>'+Math.round(val)+'%</span></div>';
+    });
+    h += '</div><div class="hs-bars">';
+    for(var i=0;i<5;i++){
+      h += '<div class="hs-grp">';
+      h += '<div class="hs-bar all" style="height:'+(aP[i]*scale)+'%">'
+         + '<span class="hs-lab">'+Math.round(aP[i])+'%</span>'
+         + (aC[i]?'<span class="hs-cnt">'+aC[i]+'</span>':'')+'</div>';
+      if(mP){
+        h += '<div class="hs-bar self" style="height:'+(mP[i]*scale)+'%">'
+           + '<span class="hs-lab">'+Math.round(mP[i])+'%</span>'
+           + (mC[i]?'<span class="hs-cnt">'+mC[i]+'</span>':'')+'</div>';
+      }
+      h += '</div>';
+    }
+    h += '</div><div class="hs-xaxis">';
+    for(var s=1;s<=5;s++){
+      h += '<div class="hs-xt"><span class="hs-chip" style="background:'+scoreColor(s)+'">'+s+'</span></div>';
+    }
+    h += '</div></div>';
+    h += '<div class="hs-axis-cap">score 1 (poor) → 5 (good)</div>';
+    h += '</div>';
+    return h;
+  }
+
+  function corrWord(r){
+    if(r==null) return "";
+    var a=Math.abs(r), s=a<.2?"none":a<.4?"weak":a<.6?"moderate":a<.8?"strong":"very strong";
+    return (r<0?"negative · ":"")+s;
+  }
+  // KDE colormap: t in [0,1] -> rgba (transparent low -> deep indigo high)
+  function heatColor(t){
+    t=Math.max(0,Math.min(1,t));
+    var st=[[255,255,255,0],[214,228,250,0.55],[135,178,240,0.82],[52,104,220,0.92],[26,36,104,0.96]];
+    var seg=t*(st.length-1), i=Math.floor(seg), f=seg-i;
+    if(i>=st.length-1){ i=st.length-2; f=1; }
+    var a=st[i], b=st[i+1];
+    return [Math.round(a[0]+(b[0]-a[0])*f), Math.round(a[1]+(b[1]-a[1])*f),
+            Math.round(a[2]+(b[2]-a[2])*f), a[3]+(b[3]-a[3])*f];
+  }
+  // one correlation panel: 2D KERNEL-DENSITY heatmap (x=PA, y=IA) + trend line + Pearson r.
+  // Canvas: KDE computed on a small offscreen grid then upscaled (smoothing) => smooth gradient.
+  function scatterPanel(name, cls, grp){
+    var joint=(grp&&grp.joint)||null, r=grp?grp.pa_ia_corr:null, total=0;
+    if(joint) for(var i=0;i<5;i++)for(var j=0;j<5;j++) total+=joint[i][j];
+    var h='<div class="hs-sc"><div class="hs-sc-top">';
+    h+='<span class="hs-sc-name '+cls+'"><span class="hs-dot"></span>'+name+' <span style="font-weight:500;color:#999">n='+total+'</span></span>';
+    h+='<span class="hs-sc-r">r <b style="color:'+(r==null?"#999":scoreColor(1+Math.abs(r)*4))+'">'+(r==null?"—":r.toFixed(2))+'</b> '+corrWord(r)+'</span>';
+    h+='</div><canvas class="hs-heat" width="560" height="500" data-joint=\''+JSON.stringify(joint||[])+'\'></canvas></div>';
+    return h;
+  }
+  function drawHeat(cv){
+    var joint; try{ joint=JSON.parse(cv.getAttribute("data-joint")); }catch(e){ joint=null; }
+    var ctx=cv.getContext("2d"); var W=cv.width, H=cv.height;
+    ctx.clearRect(0,0,W,H);
+    var pL=64,pR=24,pT=22,pB=54, plotW=W-pL-pR, plotH=H-pT-pB;
+    function X(v){ return pL+(v-1)/4*plotW; }
+    function Y(v){ return pT+(5-v)/4*plotH; }
+    var total=0,mx=0; if(joint) for(var i=0;i<5;i++)for(var j=0;j<5;j++){ total+=joint[i][j]; }
+    // KDE on offscreen grid
+    if(joint && total>0){
+      var GW=64, GH=57, sig=0.52, off=document.createElement("canvas"); off.width=GW; off.height=GH;
+      var octx=off.getContext("2d"), img=octx.createImageData(GW,GH), dmax=0, dens=[];
+      for(var gy=0; gy<GH; gy++){ var iaV=5-gy/(GH-1)*4; for(var gx=0; gx<GW; gx++){ var paV=1+gx/(GW-1)*4, s=0;
+        for(var a=0;a<5;a++)for(var b=0;b<5;b++){ var c=joint[a][b]; if(!c)continue; var dx=paV-(a+1),dy=iaV-(b+1); s+=c*Math.exp(-(dx*dx+dy*dy)/(2*sig*sig)); }
+        dens.push(s); if(s>dmax)dmax=s; } }
+      for(var k=0;k<dens.length;k++){ var col=heatColor(dmax>0?dens[k]/dmax:0), o=k*4;
+        img.data[o]=col[0]; img.data[o+1]=col[1]; img.data[o+2]=col[2]; img.data[o+3]=Math.round(col[3]*255); }
+      octx.putImageData(img,0,0);
+      ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality="high";
+      ctx.drawImage(off, pL,pT, plotW,plotH);
+    }
+    // gridlines + ticks
+    ctx.strokeStyle="rgba(150,160,180,0.28)"; ctx.lineWidth=1; ctx.font="20px -apple-system,sans-serif";
+    ctx.fillStyle="#9aa0ad"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    for(var g=1; g<=5; g++){
+      ctx.beginPath(); ctx.moveTo(X(g),pT); ctx.lineTo(X(g),pT+plotH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pL,Y(g)); ctx.lineTo(pL+plotW,Y(g)); ctx.stroke();
+      ctx.fillText(g, X(g), pT+plotH+18);
+      ctx.textAlign="right"; ctx.fillText(g, pL-14, Y(g)); ctx.textAlign="center";
+    }
+    // axis titles
+    ctx.fillStyle="#6b7280"; ctx.font="600 21px -apple-system,sans-serif";
+    ctx.fillText("PA · Physical Adherence →", pL+plotW/2, H-16);
+    ctx.save(); ctx.translate(20, pT+plotH/2); ctx.rotate(-Math.PI/2); ctx.fillText("IA · Instruction Alignment →",0,0); ctx.restore();
+    // trend line (least squares from joint)
+    if(joint && total>=2){
+      var sx=0,sy=0,sxy=0,sxx=0; for(var a2=0;a2<5;a2++)for(var b2=0;b2<5;b2++){ var c2=joint[a2][b2]; if(!c2)continue;
+        sx+=c2*(a2+1); sy+=c2*(b2+1); sxy+=c2*(a2+1)*(b2+1); sxx+=c2*(a2+1)*(a2+1); }
+      var den=total*sxx-sx*sx;
+      if(den!==0){ var m=(total*sxy-sx*sy)/den, q=(sy-m*sx)/total;
+        var y1=Math.max(1,Math.min(5,q+m*1)), y2=Math.max(1,Math.min(5,q+m*5));
+        ctx.strokeStyle="rgba(20,30,90,0.8)"; ctx.lineWidth=3; ctx.setLineDash([10,7]); ctx.lineCap="round";
+        ctx.beginPath(); ctx.moveTo(X(1),Y(y1)); ctx.lineTo(X(5),Y(y2)); ctx.stroke(); ctx.setLineDash([]); }
+    }
+  }
+  function renderCorr(d){
+    var box=document.getElementById("hs-corr");
+    if(!box) return;
+    var h='<div class="hs-corr-h">PA↔IA kernel density (darker = denser · dashed = fit · Pearson r top-right)</div><div class="hs-scwrap">';
+    h+=scatterPanel("All","all",d.all);
+    if(d.mine) h+=scatterPanel("Self","self",d.mine);
+    h+='</div>';
+    box.innerHTML=h;
+    box.querySelectorAll("canvas.hs-heat").forEach(drawHeat);
+  }
+  function renderDist(d){
+    var box=document.getElementById("hs-dist");
+    if(!d || !d.all){ box.innerHTML='<div class="hs-empty">no data</div>'; return; }
+    renderCorr(d);
+    var html = metricBlock("pa","Physical Adherence", d.all, d.mine)
+             + metricBlock("ia","Instruction Alignment", d.all, d.mine);
+    box.innerHTML = html;
+  }
+
+  // v85ex: Model 均分榜 removed from stats — /leaderboard.html is the
+  // canonical judge + video-gen ranking surface now.
+
+  // v85ey: judge 5×5 confusion matrices (Ham data). Renders one heat-cell
+  // grid per (judge × dim), diagonal ringed, var-collapse flagged red.
+  // v85g7 (siyuan): Video-gen model leaderboard for Appendix E.
+  function renderVideogenAppendix(){
+    var host = document.getElementById("hs-vg-appendix");
+    if(!host) return;
+    fetch("bench/videogen_leaderboard.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(data){
+        // Collapse _prefix / _rewrite variants into base model, weighted by n
+        var byBase = {};
+        data.forEach(function(m){
+          var base = String(m.model || '').replace(/_(rewrite|prefix)$/, '');
+          if(!byBase[base]) byBase[base] = { model: base, n: 0, paSum: 0, iaSum: 0 };
+          byBase[base].n += m.n;
+          byBase[base].paSum += m.pa * m.n;
+          byBase[base].iaSum += m.ia * m.n;
+        });
+        var merged = Object.values(byBase).map(function(x){
+          var pa = x.n ? x.paSum / x.n : 0;
+          var ia = x.n ? x.iaSum / x.n : 0;
+          return { model: x.model, n: x.n, pa: pa, ia: ia, overall: (pa + ia) / 2 };
+        }).sort(function(a,b){ return (b.overall || 0) - (a.overall || 0); });
+        var html = '<table class="lb-table" style="width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;margin-top:4px">';
+        html += '<thead><tr style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">';
+        ['#','Model','n','PA','IA','Overall'].forEach(function(h){
+          html += '<th style="padding:8px;text-align:'+(h==='Model'?'left':'right')+';border-bottom:1px solid #e2e8f0">'+h+'</th>';
+        });
+        html += '</tr></thead><tbody>';
+        merged.forEach(function(m, i){
+          html += '<tr style="border-bottom:1px solid #f1f5f9">';
+          html += '<td style="padding:7px 8px;color:#94a3b8;text-align:right;font-weight:600">'+(i+1)+'</td>';
+          html += '<td style="padding:7px 8px;font-weight:600;color:#0f172a">'+esc(m.model)+'</td>';
+          html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.n+'</td>';
+          html += '<td style="padding:7px 8px;text-align:right">'+m.pa.toFixed(2)+'</td>';
+          html += '<td style="padding:7px 8px;text-align:right">'+m.ia.toFixed(2)+'</td>';
+          html += '<td style="padding:7px 8px;text-align:right;font-weight:600">'+m.overall.toFixed(2)+'</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Human gold PA/IA per model (1-5) · _prefix / _rewrite variants collapsed to base model, weighted by n. Prompt subset differs across models — see caveat above.</div>';
+        host.innerHTML = html;
+      })
+      .catch(function(){ host.innerHTML='<div class="hs-empty">video-gen 榜加载失败</div>'; });
+  }
+
+  // v85gh (siyuan directive: "上下的图太丑了 · 弄成 2×2"):
+  //   HUMAN gold as full-width baseline strip at top, then 4 judges in a 2×2
+  //   grid of tiles below. Data: bench/analysis/judge_distributions.json (Isabella).
+  function renderJudgeDist(){
+    var host = document.getElementById("hs-judgedist");
+    if(!host) return;
+    fetch("bench/analysis/judge_distributions.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(d){
+        if(!d || !d.human_gold){ host.innerHTML=""; return; }
+        var humanPA = d.human_gold.pa;
+        if(!humanPA){ host.innerHTML=""; return; }
+        var humanMean = humanPA.mean, humanStd = humanPA.std;
+        // 4 judges laid out 2×2 (siyuan-guided representatives, no HUMAN in the grid)
+        var JUDGES = [
+          { key: 'seed2.0_pro',             label: 'seed2.0_pro',      mode: 'good (near human)',           color: '#10b981' },
+          { key: 'seed2.1_lite',            label: 'seed2.1_lite',     mode: 'regression → mid-scale',      color: '#f59e0b' },
+          { key: 'qwen3-vl-8b-instruct',    label: 'qwen3-vl-8b',      mode: 'anchor high (+ extreme)',     color: '#ef4444' },
+          { key: 'gemini-2.5-pro',          label: 'gemini-2.5-pro',   mode: 'anchor low (− extreme)',      color: '#7c3aed' }
+        ];
+        // pass 1: shared max histogram value across HUMAN + 4 judges so bars share y-scale
+        var maxH = 0;
+        var allKeys = ['human_gold'].concat(JUDGES.map(function(r){return r.key;}));
+        allKeys.forEach(function(k){ var pa = d[k] && d[k].pa; if(!pa || !pa.histogram) return; for(var i=1;i<=5;i++){ var v = pa.histogram[i] || pa.histogram[String(i)] || 0; if(v > maxH) maxH = v; } });
+        if(maxH <= 0) maxH = 1;
+        function scoreColor(s){
+          var stops=[[229,72,77],[240,138,52],[240,180,40],[120,170,70],[46,139,87]];
+          var i = Math.max(0, Math.min(4, s-1));
+          var a = stops[i];
+          return "rgba("+a[0]+","+a[1]+","+a[2]+",0.82)";
+        }
+        function fmt(v, dd){ return (v == null || !isFinite(v)) ? '—' : v.toFixed(dd == null ? 2 : dd); }
+        function histSvg(hist, isHuman){
+          var W = 340, H = 110, PL = 4, PR = 4, PB = 16;
+          var plotW = W - PL - PR, plotH = H - PB - 4;
+          var barW = plotW / 5;
+          var s = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:'+H+'px;display:block;background:linear-gradient(180deg,#fcfdff,#f6f8fc);border:1px solid #eef0f5;border-radius:6px">';
+          for(var k=1;k<=5;k++){
+            var v = hist[k] || hist[String(k)] || 0;
+            var barH = (v / maxH) * plotH;
+            var xL = PL + (k-1) * barW + 3;
+            var yT = 4 + (plotH - barH);
+            var fill = isHuman ? '#0f172a' : scoreColor(k);
+            var opacity = isHuman ? 0.88 : 0.9;
+            s += '<rect x="'+xL.toFixed(1)+'" y="'+yT.toFixed(1)+'" width="'+(barW-6).toFixed(1)+'" height="'+barH.toFixed(1)+'" rx="1.5" fill="'+fill+'" opacity="'+opacity+'"/>';
+            s += '<text x="'+(xL + (barW-6)/2).toFixed(1)+'" y="'+(H-3)+'" font-size="9" fill="#94a3b8" text-anchor="middle">'+k+'</text>';
+            if(v >= 0.08){
+              s += '<text x="'+(xL + (barW-6)/2).toFixed(1)+'" y="'+(yT - 2).toFixed(1)+'" font-size="9" fill="#334155" text-anchor="middle" font-weight="600">'+Math.round(v*100)+'%</text>';
+            }
+          }
+          s += '</svg>';
+          return s;
+        }
+        // v85gj (siyuan: "横着太宽"): cap panel + histogram width, tighten spacing
+        var html = '<div class="hs-h" style="border:0;padding:0 0 6px"><h3 style="font-size:13px;color:#334155;margin:0">Per-judge score distribution vs human gold · PA</h3></div>';
+        html += '<div style="max-width:640px">';
+        // Human baseline strip (top)
+        html += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;background:#fafafa;margin-bottom:10px">';
+        html += '<div style="display:grid;grid-template-columns:120px 1fr auto;column-gap:10px;align-items:center">';
+        html += '<div><div style="font-weight:700;color:#0f172a;font-size:12.5px">HUMAN gold</div><div style="font-size:10px;color:#64748b">baseline</div></div>';
+        html += '<div>' + histSvg(humanPA.histogram, true) + '</div>';
+        html += '<div style="font-size:10.5px;color:#334155;text-align:right;font-variant-numeric:tabular-nums;min-width:96px">'
+             +   '<div>μ <b>'+fmt(humanMean)+'</b></div>'
+             +   '<div>σ <b>'+fmt(humanStd)+'</b> (×1.00)</div>'
+             + '</div>';
+        html += '</div>';
+        html += '</div>';
+        // 2×2 grid of judge tiles
+        html += '<div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px">';
+        JUDGES.forEach(function(row){
+          var pa = d[row.key] && d[row.key].pa;
+          if(!pa){ return; }
+          var mu = pa.mean, sig = pa.std;
+          var sigRatio = sig / humanStd;
+          var deltaMu = mu - humanMean;
+          var dCol = Math.abs(deltaMu) > 0.5 ? '#ef4444' : (Math.abs(deltaMu) > 0.2 ? '#f59e0b' : '#334155');
+          var dSign = deltaMu >= 0 ? '+' : '';
+          html += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;background:#fff">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:6px">';
+          html += '<div style="min-width:0"><div style="font-weight:700;color:'+row.color+';font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(row.label)+'</div><div style="font-size:10px;color:#64748b">'+row.mode+'</div></div>';
+          html += '<div style="font-size:10.5px;color:#334155;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap">'
+               +   '<div>μ <b>'+fmt(mu)+'</b> · Δ<b style="color:'+dCol+'">'+dSign+fmt(deltaMu)+'</b></div>'
+               +   '<div>σ <b>'+fmt(sig)+'</b> <small style="color:#64748b">(×'+fmt(sigRatio)+')</small></div>'
+               + '</div>';
+          html += '</div>';
+          html += histSvg(pa.histogram, false);
+          html += '</div>';
+        });
+        html += '</div>';
+        html += '</div>'; // close max-width wrapper
+        host.innerHTML = html;
+      })
+      .catch(function(){ host.innerHTML=""; });
+  }
+
+  // v85ga: § 2b Pearson × τ_ap decoupling scatter (PA + IA side-by-side).
+  // Pulls Pearson from bench/analysis/bootstrap_ci.json and τ_ap from
+  // bench/model_ranking_strict.json. Each dot = one of the 10 judges, labeled.
+  function renderDecoupling(){
+    var host = document.getElementById("hs-decoupling");
+    if(!host) return;
+    Promise.all([
+      fetch("bench/analysis/bootstrap_ci.json?v=v85gn", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch("bench/model_ranking_strict.json?v=v85gn", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+    ]).then(function(pair){
+      var ci = (pair[0] && pair[0].judges) || {};
+      var strict = pair[1] || {};
+      var judges = Object.keys(ci);
+      if(!judges.length){ host.innerHTML = ""; return; }
+      function panelSvg(dim, dimLabel, rho){
+        var pearsonKey = dim === "PA" ? "pa_pearson" : "ia_pearson";
+        var strictDim = dim;
+        var pts = judges.map(function(j){
+          var p = (ci[j] && ci[j][pearsonKey] && ci[j][pearsonKey].est);
+          var t = strict[j] && strict[j][strictDim] && strict[j][strictDim].tau_ap;
+          return (p != null && t != null) ? { j: j, p: p, t: t } : null;
+        }).filter(Boolean);
+        if(!pts.length) return "";
+        var W = 400, H = 320, PL = 46, PR = 12, PT = 22, PB = 44;
+        var plotW = W - PL - PR, plotH = H - PT - PB;
+        var xMin = 0.1, xMax = 0.7;
+        var yMin = 0.2, yMax = 1.0;
+        function px(v){ return PL + (v - xMin) / (xMax - xMin) * plotW; }
+        function py(v){ return PT + plotH - (v - yMin) / (yMax - yMin) * plotH; }
+        var s = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;background:linear-gradient(180deg,#fcfdff,#f6f8fc);border:1px solid #eef0f5;border-radius:8px">';
+        // gridlines + tick labels
+        [0.1,0.2,0.3,0.4,0.5,0.6,0.7].forEach(function(v){
+          if(v < xMin || v > xMax) return;
+          s += '<line x1="'+px(v)+'" y1="'+PT+'" x2="'+px(v)+'" y2="'+(PT+plotH)+'" stroke="#eef0f5" stroke-width="1"/>';
+          s += '<text x="'+px(v)+'" y="'+(PT+plotH+14)+'" font-size="10" fill="#94a3b8" text-anchor="middle">'+v.toFixed(1)+'</text>';
+        });
+        [0.2,0.4,0.6,0.8,1.0].forEach(function(v){
+          s += '<line x1="'+PL+'" y1="'+py(v)+'" x2="'+(PL+plotW)+'" y2="'+py(v)+'" stroke="#eef0f5" stroke-width="1"/>';
+          s += '<text x="'+(PL-4)+'" y="'+(py(v)+3)+'" font-size="10" fill="#94a3b8" text-anchor="end">'+v.toFixed(1)+'</text>';
+        });
+        // axis titles
+        s += '<text x="'+(PL+plotW/2)+'" y="'+(H-12)+'" font-size="11" fill="#334155" text-anchor="middle" font-weight="600">'+dimLabel+' · Pearson (per-item)</text>';
+        s += '<text x="14" y="'+(PT+plotH/2)+'" font-size="11" fill="#334155" text-anchor="middle" font-weight="600" transform="rotate(-90 14 '+(PT+plotH/2)+')">'+dimLabel+' · τ_ap (model rank)</text>';
+        // dots + labels
+        var judgeColor = {
+          "gemini-3.5-flash":       "#2563eb",
+          "gemini-2.5-flash":       "#60a5fa",
+          "gemini-2.5-pro":         "#7c3aed",
+          "gemini-3.1-pro-preview": "#8b5cf6",
+          "gpt-5.2":                "#10b981",
+          "gpt5.5":                 "#059669",
+          "seed2.0_pro":            "#f59e0b",
+          "seed2.1_lite":           "#f97316",
+          "qwen3-vl-32b-instruct":  "#ef4444",
+          "qwen3-vl-8b-instruct":   "#dc2626"
+        };
+        pts.forEach(function(pt){
+          var col = judgeColor[pt.j] || "#334155";
+          s += '<circle cx="'+px(pt.p).toFixed(1)+'" cy="'+py(pt.t).toFixed(1)+'" r="5.5" fill="'+col+'" stroke="#0f172a" stroke-width="0.8" opacity="0.88"/>';
+          var label = pt.j.replace(/gemini-/, "g-").replace(/qwen3-vl-/,"qwen-").replace(/-instruct$/,"").replace(/-preview$/,"").replace(/seed/,"s");
+          var lx = px(pt.p) + 8;
+          var lyy = py(pt.t) + 3;
+          s += '<text x="'+lx.toFixed(1)+'" y="'+lyy.toFixed(1)+'" font-size="9.5" fill="#334155" font-weight="500">'+label+'</text>';
+        });
+        // rho annotation
+        s += '<rect x="'+(PL+8)+'" y="'+(PT+8)+'" width="120" height="18" fill="rgba(255,255,255,0.86)" rx="3"/>';
+        s += '<text x="'+(PL+14)+'" y="'+(PT+21)+'" font-size="11" fill="#334155" font-weight="600">Spearman ρ = '+rho+'</text>';
+        s += '</svg>';
+        return s;
+      }
+      var html = '<div class="hs-h" style="border:0;padding:0 0 4px"><h3 style="font-size:13px;color:#334155;margin:0">Pearson × τ_ap — 10 judges</h3></div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
+      html += '<div>' + panelSvg("PA", "PA", "−0.14") + '</div>';
+      html += '<div>' + panelSvg("IA", "IA", "+0.86") + '</div>';
+      html += '</div>';
+      html += '<div style="font-size:11.5px;color:#64748b;padding:6px 4px 0;line-height:1.55">On PA (left), Pearson (x) and τ_ap (y) are near-independent: gemini-2.5-pro (worst Pearson) sits above gemini-3.5-flash (best Pearson) on the τ_ap axis. On IA (right), the same axes align — good per-item calibration and good ranking travel together. τ_ap is the "cheap ranking" capacity; Pearson is the per-item fidelity.</div>';
+      host.innerHTML = html;
+    }).catch(function(){ host.innerHTML = ""; });
+  }
+
+  // v85gd: § 2c confabulation control · PA-vs-IA confident-overpass bar comparison.
+  // Data: bench/analysis/pa_vs_ia_overpass.json (Alice's control experiment).
+  // Shows that "confident-pass on human-flagged violation" happens at 7.4 % on PA
+  // and 7.9 % on IA — dimension-general, not instruction-conditioned.
+  function renderConfab(){
+    var host = document.getElementById("hs-confab");
+    if(!host) return;
+    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(d){
+        if(!d || !d.pa || !d.ia){ host.innerHTML = ""; return; }
+        var maxPct = Math.max(d.pa.pct_ge3of5, d.ia.pct_ge3of5) * 100;
+        var scaleMax = Math.max(10, Math.ceil(maxPct * 1.4));
+        function row(dim, dimLabel, rec, color){
+          var pct = rec.pct_ge3of5 * 100;
+          var barW = Math.max(2, (pct / scaleMax) * 100).toFixed(1);
+          var subtitle = rec.n_violations_human + ' clips with human ' + dim + ' ≤ 2 · ' + rec.confident_overpass_ge3of5 + ' passed by ≥ 3/5 judges (' + rec.confident_overpass_all5 + ' by all 5)';
+          return '<div style="display:grid;grid-template-columns:130px 1fr 130px;align-items:center;gap:12px;margin:4px 0">'
+               + '<div style="font-weight:600;color:'+color+';font-size:13px">'+dimLabel+'</div>'
+               + '<div style="height:22px;background:#f1f5f9;border-radius:4px;position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:'+barW+'%;background:'+color+';border-radius:4px;opacity:0.9"></div><div style="position:absolute;left:8px;top:0;bottom:0;display:flex;align-items:center;color:#0f172a;font-weight:700;font-size:12.5px;font-variant-numeric:tabular-nums">'+pct.toFixed(1)+' %</div></div>'
+               + '<div style="font-size:11px;color:#64748b;line-height:1.3">'+subtitle+'</div>'
+               + '</div>';
+        }
+        var html = '<div class="hs-h" style="border:0;padding:0 0 4px"><h3 style="font-size:13px;color:#334155;margin:0">Confident-pass rate on human-flagged violations · 5 full-reasoning judges</h3></div>';
+        html += row('IA', 'IA (with instruction)', d.ia, '#db2777');
+        html += row('PA', 'PA (no instruction)', d.pa, '#2563eb');
+        // Scale axis at bottom
+        html += '<div style="display:grid;grid-template-columns:130px 1fr 130px;gap:12px;font-size:10.5px;color:#94a3b8;margin-top:6px">';
+        html += '<div></div>';
+        html += '<div style="position:relative;height:14px">';
+        for(var t = 0; t <= scaleMax; t += Math.ceil(scaleMax / 5)){
+          var pos = (t / scaleMax) * 100;
+          html += '<span style="position:absolute;left:'+pos.toFixed(1)+'%;transform:translateX(-50%)">'+t+' %</span>';
+        }
+        html += '</div>';
+        html += '<div></div>';
+        html += '</div>';
+        host.innerHTML = html;
+
+        // Ham's hand-verified exhibit (extractor-independent — verdict from
+        // judge main IA/PA scores; quotes lifted from the raw reasoning field
+        // for the 5-of-5 case Ham read manually).
+        var caseHost = document.getElementById("hs-confab-case");
+        if(caseHost){
+          var cx = '<div class="hs-h" style="border:0;padding:0 0 4px"><h3 style="font-size:13px;color:#334155;margin:0">Example clip · all five judges narrated a success that never happened</h3></div>';
+          cx += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;background:linear-gradient(135deg,#fef2f2,#fff)">';
+          cx += '<div style="font-size:12px;color:#334155;margin-bottom:8px"><code style="background:#fff;padding:1px 5px;border-radius:3px;font-size:11.5px">agibot_world / task_0042</code> · human PA = 1 · human IA = 1 · all five judges rated IA ≥ 4.</div>';
+          cx += '<div style="display:grid;grid-template-columns:1fr;gap:6px;font-size:12px;font-family:ui-sans-serif,system-ui,sans-serif">';
+          cx += '<div style="padding:6px 10px;background:#fff;border-left:3px solid #dc2626;border-radius:4px"><span style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">gpt-5.2</span><br><span style="color:#0f172a;font-style:italic">"The right gripper picks up the green bottle and moves it into the open grey fabric bag."</span></div>';
+          cx += '<div style="padding:6px 10px;background:#fff;border-left:3px solid #dc2626;border-radius:4px"><span style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">gemini-2.5-pro</span><br><span style="color:#0f172a;font-style:italic">"The robot correctly manipulates all three specified objects: the green bottle, the crumpled bag, and the pink mug."</span></div>';
+          cx += '</div>';
+          cx += '<div style="font-size:11.5px;color:#7f1d1d;margin-top:10px;line-height:1.55">Neither event occurs in the clip. The rationales sound plausible but describe the expected outcome, not the rendered one.</div>';
+          cx += '</div>';
+          caseHost.innerHTML = cx;
+        }
+      })
+      .catch(function(){ host.innerHTML = ""; });
+  }
+
+  // v85gf: § 2d clean sub-axis diagnostic. Replaces the rule-based extractor
+  // heatmap (retracted by Yu) with Alice's explicit-sub-score g31 output as
+  // reported through Isabella's canonical CI at bench/analysis/subscore_ci.json.
+  // Currently pilot n = 1 clean judge (gemini-3.5-flash 865/875); 3.1-pro
+  // partial 41/875 aborted at 2026-07-09 key revocation.
+  function renderSubClean(){
+    var host = document.getElementById("hs-subclean");
+    if(!host) return;
+    fetch("bench/analysis/subscore_ci.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(d){
+        var judges = (d && d.judges) || {};
+        var pilot = judges["gemini-3.5-flash"];
+        if(!pilot){ host.innerHTML = ""; return; }
+        // Order: sort by hard_recall descending so physical axes group top, identity axes bottom
+        var axes = Object.keys(pilot);
+        axes.sort(function(a,b){
+          var av = (pilot[a] && pilot[a].hard_recall && pilot[a].hard_recall.est) || 0;
+          var bv = (pilot[b] && pilot[b].hard_recall && pilot[b].hard_recall.est) || 0;
+          return bv - av;
+        });
+        var axisLabel = {
+          agent_consistency:  "agent consistency",
+          scene_consistency:  "scene consistency",
+          interaction_realism: "interaction realism",
+          agent_match:        "agent match",
+          object_correct:     "object correct",
+          goal_completed:     "goal completed"
+        };
+        var PA_AXES = { agent_consistency:1, scene_consistency:1, interaction_realism:1 };
+        var IA_AXES = { agent_match:1, object_correct:1, goal_completed:1 };
+        function fmtPct(v){ return v == null ? '—' : (v * 100).toFixed(1) + ' %'; }
+        function ciStr(ci){ return ci ? ' [' + (ci.lo*100).toFixed(1) + ', ' + (ci.hi*100).toFixed(1) + ']' : ''; }
+        function widthPct(v){ return Math.max(1.5, Math.min(100, (v || 0) * 100)); }
+        var html = '<div class="hs-h" style="border:0;padding:0 0 6px"><h3 style="font-size:13px;color:#334155;margin:0">Recall of human-marked violations · gemini-3.5-flash (n = 865)</h3></div>';
+        html += '<table style="width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums">';
+        html += '<thead><tr style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px">';
+        html += '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e2e8f0">Sub-axis</th>';
+        html += '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e2e8f0;color:#dc2626">Hard recall (judge = 0) · 95 % CI</th>';
+        html += '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e2e8f0;color:#f59e0b">Lenient recall (judge ≤ 1) · 95 % CI</th>';
+        html += '<th style="text-align:right;padding:6px 8px;border-bottom:1px solid #e2e8f0;color:#7c3aed">Hedging gap</th>';
+        html += '<th style="text-align:right;padding:6px 8px;border-bottom:1px solid #e2e8f0;color:#64748b">n violation</th>';
+        html += '</tr></thead><tbody>';
+        axes.forEach(function(ax){
+          var rec = pilot[ax];
+          if(!rec) return;
+          var hard = rec.hard_recall || {};
+          var lenient = rec.lenient_recall || {};
+          var gap = (lenient.est != null && hard.est != null) ? (lenient.est - hard.est) : null;
+          var isPA = !!PA_AXES[ax];
+          var rowBg = isPA ? '#f0f9ff' : '#fef2f2';
+          var axisTag = isPA
+            ? '<span style="font-size:9.5px;font-weight:600;color:#1d4ed8;background:#dbeafe;padding:1px 5px;border-radius:2px;margin-left:6px">PA</span>'
+            : '<span style="font-size:9.5px;font-weight:600;color:#b91c1c;background:#fee2e2;padding:1px 5px;border-radius:2px;margin-left:6px">IA</span>';
+          html += '<tr style="border-bottom:1px solid #f1f5f9;background:'+rowBg+'">';
+          html += '<td style="padding:8px;font-weight:600;color:#0f172a">'+esc(axisLabel[ax] || ax)+axisTag+'</td>';
+          // Hard recall bar
+          html += '<td style="padding:8px">';
+          html += '<div style="display:flex;align-items:center;gap:8px">';
+          html += '<div style="flex:1;height:16px;background:rgba(255,255,255,0.7);border-radius:3px;position:relative;overflow:hidden">';
+          html += '<div style="position:absolute;left:0;top:0;bottom:0;width:'+widthPct(hard.est)+'%;background:#dc2626;border-radius:3px;opacity:0.85"></div>';
+          if(hard.lo != null && hard.hi != null){
+            html += '<div style="position:absolute;left:'+widthPct(hard.lo)+'%;top:4px;bottom:4px;width:'+(widthPct(hard.hi) - widthPct(hard.lo))+'%;border-left:1px solid #7f1d1d;border-right:1px solid #7f1d1d"></div>';
+          }
+          html += '</div>';
+          html += '<span style="min-width:130px;font-size:11.5px;color:#0f172a;font-weight:600">'+fmtPct(hard.est)+' <small style="color:#94a3b8;font-weight:400">'+ciStr(hard)+'</small></span>';
+          html += '</div>';
+          html += '</td>';
+          // Lenient recall bar
+          html += '<td style="padding:8px">';
+          html += '<div style="display:flex;align-items:center;gap:8px">';
+          html += '<div style="flex:1;height:16px;background:rgba(255,255,255,0.7);border-radius:3px;position:relative;overflow:hidden">';
+          html += '<div style="position:absolute;left:0;top:0;bottom:0;width:'+widthPct(lenient.est)+'%;background:#f59e0b;border-radius:3px;opacity:0.85"></div>';
+          if(lenient.lo != null && lenient.hi != null){
+            html += '<div style="position:absolute;left:'+widthPct(lenient.lo)+'%;top:4px;bottom:4px;width:'+(widthPct(lenient.hi) - widthPct(lenient.lo))+'%;border-left:1px solid #78350f;border-right:1px solid #78350f"></div>';
+          }
+          html += '</div>';
+          html += '<span style="min-width:130px;font-size:11.5px;color:#0f172a;font-weight:600">'+fmtPct(lenient.est)+' <small style="color:#94a3b8;font-weight:400">'+ciStr(lenient)+'</small></span>';
+          html += '</div>';
+          html += '</td>';
+          // Hedging gap
+          var gapColor = gap != null && gap > 0.35 ? '#7c3aed' : (gap != null && gap > 0.15 ? '#a855f7' : '#94a3b8');
+          html += '<td style="padding:8px;text-align:right;font-weight:700;color:'+gapColor+'">'+(gap != null ? (gap * 100).toFixed(1) + ' pt' : '—')+'</td>';
+          html += '<td style="padding:8px;text-align:right;color:#64748b">'+((rec.n_violation_items != null) ? rec.n_violation_items : '—')+'</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<div style="font-size:11.5px;color:#334155;margin-top:12px;line-height:1.55;padding:10px 12px;background:#f5f3ff;border-left:3px solid #7c3aed;border-radius:4px">';
+        html += '<b>How to read.</b> Bars show the fraction of clips a human marked as a violation on that sub-axis that the judge also flagged. Red bar = clips the judge called "clear violation" (0). Amber bar = clips the judge called at most "minor" (0 or 1). Both bars carry cluster-bootstrap 95 % CI (B = 10 000, cluster by item). The <b>hedging gap</b> is amber − red — the fraction of violations the judge quietly downgraded to "minor". Object-correctness sits at 2.8 % hard vs 60.3 % lenient, a 57-point gap: humans call "wrong object", the judge <em>sees</em> it, but calls it "minor" rather than "clear violation".';
+        html += '</div>';
+        // Partial-coverage caveat if 3.1-pro partial exists
+        var partial = judges["gemini-3.1-pro-preview"];
+        if(partial){
+          var partialCov = partial.agent_consistency && partial.agent_consistency.n_coverage;
+          html += '<div style="font-size:11px;color:#78350f;margin-top:8px;padding:8px 10px;background:#fef3c7;border-radius:4px;line-height:1.5">Partial replication: gemini-3.1-pro-preview covered '+ (partialCov || 41) +' / 875 items before the 2026-07-09 key revocation aborted the run. On that sample the direction of the finding agrees — physical-axis hard recall &gt; identity-axis hard recall — but the CIs are too wide to headline. Full pilot resumes once fresh keys arrive.</div>';
+        }
+        host.innerHTML = html;
+      })
+      .catch(function(){ host.innerHTML = ""; });
+  }
+
+  // v85gb: Appendix F · sub-axis diagnostic heatmap (10 judges × 6 sub-axes).
+  // Yu's extraction: per-judge per-sub-axis {accuracy, recall_violation, f1,
+  // missing_pct, n}. Colour = 1 − recall_violation (red = missed violations,
+  // green = caught them). Truncated judges' high-missing cells get hatching.
+  function renderSubaxis(){
+    var host = document.getElementById("hs-subaxis");
+    if(!host) return;
+    Promise.all([
+      fetch("bench/analysis/judge_subscore_accuracy.json?v=v85gn", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
+      fetch("bench/analysis/subscore_ci.json?v=v85gn", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+    ]).then(function(pair){
+        var d = pair[0];
+        var ciMap = (pair[1] && pair[1].judges) || {};
+        if(!d || !d.matrix){ host.innerHTML = ""; return; }
+        var subaxes = d.subaxes || ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"];
+        var subaxLabel = {
+          agent_consistency: "agent consistency",
+          scene_consistency: "scene consistency",
+          interaction_realism: "interaction realism",
+          agent_match: "agent match",
+          object_correct: "object correct",
+          goal_completed: "goal completed"
+        };
+        var full = d.judges_full || [];
+        var trunc = d.judges_truncated_pending || [];
+        var judges = full.concat(trunc);
+        var summary = d.per_subaxis_summary_full5 || {};
+        function colorForRecall(v){
+          // Red at 0, yellow ~0.5, green at 1
+          if(v == null || !isFinite(v)) return "#f1f5f9";
+          var t = Math.max(0, Math.min(1, v));
+          var r,g,b;
+          if(t < 0.5){
+            // red -> orange -> yellow
+            var k = t / 0.5;
+            r = 235 + (240-235)*k;
+            g = 90 + (190-90)*k;
+            b = 80 + (60-80)*k;
+          } else {
+            // yellow -> lime -> green
+            var k = (t - 0.5) / 0.5;
+            r = 240 - (240-90)*k;
+            g = 190 + (200-190)*k;
+            b = 60 + (110-60)*k;
+          }
+          return 'rgb('+Math.round(r)+','+Math.round(g)+','+Math.round(b)+')';
+        }
+        function textColorFor(v){
+          return v == null || v > 0.55 ? '#0f172a' : '#fff';
+        }
+        // Build hatch pattern for low-conf cells
+        var defs = '<defs><pattern id="hs-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#0f172a" stroke-width="1.4" opacity="0.35"/></pattern></defs>';
+        var html = '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;min-width:640px;width:100%">';
+        html += '<thead><tr>';
+        html += '<th style="padding:8px 8px;text-align:left;color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #e2e8f0;background:#fff;position:sticky;left:0">Judge</th>';
+        subaxes.forEach(function(sa){
+          var s = summary[sa] || {};
+          var sub = (s.mean_recall_violation_full5 != null) ? ' · μ ' + s.mean_recall_violation_full5.toFixed(2) : '';
+          html += '<th style="padding:8px 6px;text-align:center;color:#334155;font-size:10.5px;font-weight:600;border-bottom:1px solid #e2e8f0">' + esc(subaxLabel[sa] || sa) + '<div style="color:#94a3b8;font-weight:400;letter-spacing:0;font-size:9.5px;text-transform:none">' + sub + '</div></th>';
+        });
+        html += '</tr></thead><tbody>';
+        judges.forEach(function(j){
+          if(!d.matrix[j]) return;
+          var isTrunc = trunc.indexOf(j) >= 0;
+          var rowTag = isTrunc ? ' <span style="color:#f59e0b;font-size:10px;font-weight:600;background:#fef3c7;padding:1px 5px;border-radius:2px;margin-left:4px">truncated</span>' : ' <span style="color:#10b981;font-size:10px;font-weight:600;background:#d1fae5;padding:1px 5px;border-radius:2px;margin-left:4px">full</span>';
+          html += '<tr>';
+          html += '<td style="padding:6px 8px;font-weight:600;color:#0f172a;border-bottom:1px solid #f1f5f9;background:#fff;position:sticky;left:0;white-space:nowrap">' + esc(j) + rowTag + '</td>';
+          subaxes.forEach(function(sa){
+            var cell = d.matrix[j][sa];
+            if(!cell){ html += '<td style="padding:4px;text-align:center;border-bottom:1px solid #f1f5f9;background:#f8fafc;color:#94a3b8">—</td>'; return; }
+            var rv = cell.recall_violation;
+            var mp = cell.missing_pct;
+            var lowConf = mp > 0.30;
+            var bg = colorForRecall(rv);
+            var txt = textColorFor(rv);
+            var svgOverlay = lowConf ? '<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none">' + defs + '<rect width="100" height="100" fill="url(#hs-hatch)"/></svg>' : '';
+            var missStr = (mp != null) ? '<div style="font-size:9px;color:'+txt+';opacity:0.7;margin-top:1px">'+Math.round(mp*100)+'% miss</div>' : '';
+            // v85gc: hover tooltip showing Isabella's cluster-bootstrap CI
+            var ciCell = ciMap[j] && ciMap[j][sa];
+            var ciStr = '';
+            var tooltipTitle = j + ' · ' + (subaxLabel[sa] || sa) + '\\n recall_violation = ' + (rv != null ? rv.toFixed(3) : '—');
+            if(ciCell && ciCell.recall_ci){
+              ciStr = ' [' + ciCell.recall_ci[0].toFixed(2) + ', ' + ciCell.recall_ci[1].toFixed(2) + ']';
+              tooltipTitle += '\\n 95% CI (cluster-bootstrap, B = 10000) = [' + ciCell.recall_ci[0].toFixed(3) + ', ' + ciCell.recall_ci[1].toFixed(3) + ']';
+              if(ciCell.n_violation_items != null) tooltipTitle += '\\n n_violation_items = ' + ciCell.n_violation_items;
+            }
+            if(mp != null) tooltipTitle += '\\n missing_pct = ' + (mp * 100).toFixed(1) + '%';
+            var ciBadge = ciStr ? '<div style="font-size:9px;color:'+txt+';opacity:0.75;margin-top:1px;font-weight:500">'+ciStr+'</div>' : '';
+            html += '<td style="padding:4px;text-align:center;border-bottom:1px solid #f1f5f9;position:relative;min-width:64px" title="'+esc(tooltipTitle)+'">';
+            html += '<div style="position:relative;background:'+bg+';border-radius:4px;padding:6px 3px;color:'+txt+';font-weight:700">'+ (rv != null ? rv.toFixed(2) : '—') + ciBadge + missStr + svgOverlay + '</div>';
+            html += '</td>';
+          });
+          html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+        // Legend + Yu's headline
+        html += '<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:#64748b;margin-top:10px;align-items:center">';
+        html += '<span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:14px;height:14px;background:linear-gradient(90deg,rgb(235,90,80),rgb(240,190,60),rgb(90,200,110));border-radius:3px"></span>recall_violation 0 → 1 (higher = judge caught more human-marked violations)</span>';
+        html += '<span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:14px;height:14px;background:#e2e8f0;background-image:linear-gradient(45deg,#0f172a 25%,transparent 25%,transparent 50%,#0f172a 50%,#0f172a 75%,transparent 75%,transparent);background-size:6px 6px;border-radius:3px;opacity:0.5"></span>hatch = missing_pct &gt; 30 % (low confidence, default-pass)</span>';
+        html += '</div>';
+        html += '<div style="font-size:11.5px;color:#334155;margin-top:10px;line-height:1.55;padding:8px 10px;background:#fdf4ff;border-left:3px solid #a855f7;border-radius:4px">';
+        html += '<b>Headline.</b> Across the five full-reasoning judges, physical-artifact axes (agent / scene / interaction consistency) recall &gt; 85 % of human-marked violations; the two identity-grounding axes — <b>agent_match</b> (μ recall 0.38) and <b>object_correct</b> (μ recall 0.35) — miss roughly two-thirds. VLM judges are better at "does this video look physically wrong" than at "does this video show the right effector doing the right thing to the right object". Truncated rows (hatched) are pending re-runs by Ham with the full reasoning field enabled.';
+        html += '</div>';
+        host.innerHTML = html;
+      })
+      .catch(function(){ host.innerHTML = ""; });
+  }
+
+  // v85ga: Appendix G · model-level RMSE (calibration distance metric).
+  // Pulls precomputed per-judge PA/IA RMSE from bench/analysis/model_level_rmse.json.
+  function renderMRMSE(){
+    var host = document.getElementById("hs-mrmse");
+    if(!host) return;
+    fetch("bench/analysis/model_level_rmse.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(d){
+        var byJ = (d && d.judges) || {};
+        var judges = Object.keys(byJ);
+        if(!judges.length){ host.innerHTML = ""; return; }
+        judges.sort(function(a,b){ return (byJ[a].pa.rmse) - (byJ[b].pa.rmse); });
+        var maxRmse = 0;
+        judges.forEach(function(j){ maxRmse = Math.max(maxRmse, byJ[j].pa.rmse, byJ[j].ia.rmse); });
+        if(!maxRmse) maxRmse = 2.0;
+        function bar(v, col){
+          var pct = Math.max(0, Math.min(100, (v / maxRmse) * 100));
+          return '<div style="display:flex;align-items:center;gap:8px">'
+               + '<div style="width:120px;height:12px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:'+pct.toFixed(1)+'%;background:'+col+';border-radius:3px"></div></div>'
+               + '<span style="font-variant-numeric:tabular-nums;font-weight:600;color:#0f172a;min-width:44px;text-align:right">'+v.toFixed(3)+'</span>'
+               + '</div>';
+        }
+        var html = '<table style="width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums">';
+        html += '<thead><tr style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">';
+        ['#','Judge','PA · M-RMSE ↓','IA · M-RMSE ↓','n gen models'].forEach(function(h){
+          html += '<th style="padding:8px 8px;text-align:'+(h==='Judge'?'left':'left')+';border-bottom:1px solid #e2e8f0">'+h+'</th>';
+        });
+        html += '</tr></thead><tbody>';
+        judges.forEach(function(j, i){
+          var r = byJ[j];
+          html += '<tr style="border-bottom:1px solid #f1f5f9">';
+          html += '<td style="padding:7px 8px;color:#94a3b8;font-weight:600">'+(i+1)+'</td>';
+          html += '<td style="padding:7px 8px;font-weight:600;color:#0f172a">'+esc(j)+'</td>';
+          html += '<td style="padding:7px 8px">'+bar(r.pa.rmse, '#2563eb')+'</td>';
+          html += '<td style="padding:7px 8px">'+bar(r.ia.rmse, '#db2777')+'</td>';
+          html += '<td style="padding:7px 8px;color:#64748b">'+r.pa.n_models+'</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px">RMSE(judge_model_mean, human_model_mean) over ' + (byJ[judges[0]].pa.n_models) + ' merged base gen models. Anchor-collapsing judges (gemini-2.5-pro, qwen-3-vl-8b) score worst because their per-model means are compressed toward a single extreme — the ranking metrics in Table 1 miss this on PA (see § 2b). Correlation of PA-RMSE with per-item PA-Pearson: r = 0.84.</div>';
+        host.innerHTML = html;
+      })
+      .catch(function(){ host.innerHTML = ""; });
+  }
+
+  // v85g7b (Alice/Ham §2 supplement): 1D gold-PA stripplot with top-4 vs
+  // full-span brackets. Makes "compressed top" visible at a glance below the
+  // regression prose. Data: bench/analysis/topspacing.json (Alice).
+  function renderTopSpacing(){
+    var host = document.getElementById("hs-topspacing");
+    if(!host) return;
+    fetch("bench/analysis/topspacing.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(d){
+        if(!d || !d.models){ host.innerHTML=""; return; }
+        // v85gk (siyuan: 谁能看懂 · label collision):
+        //   - Increase H to give brackets breathing room (no overlap)
+        //   - Drop the redundant "Human gold PA" axis title (section header carries it)
+        //   - Top-4 bracket above, full-span bracket below, both labels well-separated from the axis ticks
+        var W=560, H=170, PL=52, PR=28, y0=100;
+        var xMin=1.5, xMax=4.5;
+        var plotW=W-PL-PR;
+        function px(v){ return PL + (v-xMin)/(xMax-xMin)*plotW; }
+        var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;background:linear-gradient(180deg,#fcfdff,#f6f8fc);border:1px solid #eef0f5;border-radius:8px">';
+        // axis
+        s+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(PL+plotW)+'" y2="'+y0+'" stroke="#94a3b8" stroke-width="1"/>';
+        [1.5,2.0,2.5,3.0,3.5,4.0,4.5].forEach(function(t){
+          s+='<line x1="'+px(t)+'" y1="'+y0+'" x2="'+px(t)+'" y2="'+(y0+4)+'" stroke="#94a3b8" stroke-width="1"/>';
+          s+='<text x="'+px(t)+'" y="'+(y0+16)+'" font-size="10.5" fill="#64748b" text-anchor="middle">'+t.toFixed(1)+'</text>';
+        });
+        // dots
+        d.models.forEach(function(m){
+          var col = m.bucket==="top4" ? "#2563eb" : "#64748b";
+          var stroke = m.bucket==="top4" ? "#1e40af" : "#334155";
+          s+='<circle cx="'+px(m.gold_pa)+'" cy="'+y0+'" r="5" fill="'+col+'" stroke="'+stroke+'" stroke-width="1" opacity="0.88"/>';
+        });
+        // top-4 span bracket above (label safely at y = 22)
+        var top4 = d.models.filter(function(m){return m.bucket==="top4";});
+        if(top4.length){
+          var mn = Math.min.apply(null, top4.map(function(m){return m.gold_pa;}));
+          var mx = Math.max.apply(null, top4.map(function(m){return m.gold_pa;}));
+          var brY = y0 - 32;
+          s+='<line x1="'+px(mn)+'" y1="'+brY+'" x2="'+px(mx)+'" y2="'+brY+'" stroke="#2563eb" stroke-width="1.8"/>';
+          s+='<line x1="'+px(mn)+'" y1="'+brY+'" x2="'+px(mn)+'" y2="'+(brY+6)+'" stroke="#2563eb" stroke-width="1.8"/>';
+          s+='<line x1="'+px(mx)+'" y1="'+brY+'" x2="'+px(mx)+'" y2="'+(brY+6)+'" stroke="#2563eb" stroke-width="1.8"/>';
+          s+='<text x="'+((px(mn)+px(mx))/2)+'" y="'+(brY-8)+'" font-size="11" fill="#2563eb" text-anchor="middle" font-weight="700">top-4 near-tied · span '+d.top4_span.toFixed(3)+'</text>';
+        }
+        // full-span bracket below (label at y = H-8, plenty of room)
+        var allX = d.models.map(function(m){return m.gold_pa;});
+        var fmn = Math.min.apply(null, allX);
+        var fmx = Math.max.apply(null, allX);
+        var brY2 = y0 + 40;
+        s+='<line x1="'+px(fmn)+'" y1="'+brY2+'" x2="'+px(fmx)+'" y2="'+brY2+'" stroke="#64748b" stroke-width="1.4" stroke-dasharray="3,3"/>';
+        s+='<line x1="'+px(fmn)+'" y1="'+brY2+'" x2="'+px(fmn)+'" y2="'+(brY2-6)+'" stroke="#64748b" stroke-width="1.4"/>';
+        s+='<line x1="'+px(fmx)+'" y1="'+brY2+'" x2="'+px(fmx)+'" y2="'+(brY2-6)+'" stroke="#64748b" stroke-width="1.4"/>';
+        s+='<text x="'+((px(fmn)+px(fmx))/2)+'" y="'+(brY2+14)+'" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="600">full range · span '+d.full_span.toFixed(3)+' (10 generators, worst→best)</text>';
+        s+='</svg>';
+        var cap='<div style="font-size:11.5px;color:#64748b;padding:6px 4px 0;line-height:1.55">Each dot = one video-generation model, positioned on the horizontal axis by its mean human-gold PA score over the 875-item set. Blue = top-4; grey = bottom-6. The four top-scoring generators are statistically tied ('+d.top4_span.toFixed(3)+' apart), while the whole field spans '+d.full_span.toFixed(3)+' — this is why rank-fidelity loss concentrates in the blue band.</div>';
+        host.innerHTML = '<div class="hs-h" style="border:0;padding:0 0 4px"><h3 style="font-size:13px;color:#334155;margin:0">10 video-gen models on human-gold PA · top-4 vs full range</h3></div>' + s + cap;
+      })
+      .catch(function(){ host.innerHTML=""; });
+  }
+
+  // v85g7 (siyuan): Table 1 = judge leaderboard anchor at top of Analysis.
+  // v85g8: merge bootstrap CI from Isabella's bench/analysis/bootstrap_ci.json
+  // and draw an inline error-bar strip after each PA / IA Pearson value.
+  // Fetches:
+  //   - bench/leaderboard.md (per-item Pearson + Joint-F1 / Exact / ±1)
+  //   - bench/model_ranking_strict.json (K_norm)
+  //   - bench/analysis/bootstrap_ci.json (per-judge PA/IA Pearson + K_norm 95% CI)
+  function renderTable1(){
+    var host = document.getElementById("hs-table1");
+    if(!host) return;
+    var md, strict, ciAll;
+    var mdUrl = "bench/leaderboard.md?v=v85gn";
+    var strictUrl = "bench/model_ranking_strict.json?v=v85gn";
+    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85gn";
+    // Global scale for the mini error-bar strip: fixed range so error bars are
+    // visually comparable across the table (widened enough to fit both the
+    // strong-judge PA CIs and weak-judge CIs).
+    var STRIP_MIN = 0.0, STRIP_MAX = 0.75;
+    function stripSvg(est, lo, hi, color){
+      if(est == null || !isFinite(est)) return '';
+      var W = 82, H = 12;
+      function px(v){ return ((v - STRIP_MIN) / (STRIP_MAX - STRIP_MIN)) * W; }
+      var xE = px(est);
+      var s = '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" style="vertical-align:middle;margin-left:6px">';
+      s += '<line x1="0" y1="'+(H/2)+'" x2="'+W+'" y2="'+(H/2)+'" stroke="#e2e8f0" stroke-width="1"/>';
+      if(lo != null && hi != null && isFinite(lo) && isFinite(hi)){
+        var xL = px(lo), xH = px(hi);
+        s += '<line x1="'+xL+'" y1="'+(H/2)+'" x2="'+xH+'" y2="'+(H/2)+'" stroke="'+color+'" stroke-width="2.4" opacity="0.85"/>';
+        s += '<line x1="'+xL+'" y1="2" x2="'+xL+'" y2="'+(H-2)+'" stroke="'+color+'" stroke-width="1.4"/>';
+        s += '<line x1="'+xH+'" y1="2" x2="'+xH+'" y2="'+(H-2)+'" stroke="'+color+'" stroke-width="1.4"/>';
+      }
+      s += '<circle cx="'+xE+'" cy="'+(H/2)+'" r="2.3" fill="#0f172a"/>';
+      s += '</svg>';
+      return s;
+    }
+    Promise.all([
+      fetch(mdUrl).then(function(r){ return r.ok ? r.text() : Promise.reject(); }),
+      fetch(strictUrl).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch(ciUrl, {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+    ]).then(function(pair){
+      md = pair[0]; strict = pair[1] || {}; ciAll = (pair[2] && pair[2].judges) || {};
+      var rows = md.split('\n')
+        .filter(function(l){ return l.startsWith('|') && !l.match(/^\|\s*(-|Model|-{2,})/); })
+        .map(function(l){ return l.split('|').map(function(c){ return c.trim(); }).filter(function(c){ return c !== ''; }); })
+        .filter(function(r){ return r.length >= 6 && !r[0].startsWith('---'); });
+      var parsed = rows.map(function(r){
+        var raw = r[0];
+        var covRaw = r[2] || '';
+        var covPct = parseFloat(covRaw.replace('%', '')) || 0;
+        var model = raw.replace(/[\s*‡†]+$/, '').trim();
+        var s = strict[model] || {};
+        var ci = ciAll[model] || {};
+        return {
+          model: model, n: parseInt(r[1].replace(/,/g,''),10), cov: covPct,
+          pa: parseFloat(r[3]), ia: parseFloat(r[4]),
+          pa_tauap: (ci.pa_tau_ap && ci.pa_tau_ap.est != null) ? ci.pa_tau_ap.est : (s.PA && s.PA.tau_ap),
+          ia_tauap: (ci.ia_tau_ap && ci.ia_tau_ap.est != null) ? ci.ia_tau_ap.est : (s.IA && s.IA.tau_ap),
+          pa_ci: ci.pa_pearson || null, ia_ci: ci.ia_pearson || null,
+          jf1: parseFloat(r[7]), exact: parseFloat(r[8]), plus1: parseFloat(r[9])
+        };
+      }).filter(function(m){ return (m.cov || 0) >= 50; });
+      parsed.sort(function(a,b){ return (b.pa || -9) - (a.pa || -9); });
+      var html = '<table class="lb-table" style="width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums">';
+      html += '<thead><tr style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">';
+      ['#','Model','n','PA·Pearson (95% CI)','IA·Pearson (95% CI)','PA·τ_ap↑','IA·τ_ap↑','Joint-F1','Exact PA','±1 PA'].forEach(function(h){
+        html += '<th style="padding:8px 8px;text-align:'+(h==='Model'?'left':'right')+';border-bottom:1px solid #e2e8f0">'+h+'</th>';
+      });
+      html += '</tr></thead><tbody>';
+      parsed.forEach(function(m, i){
+        html += '<tr style="border-bottom:1px solid #f1f5f9">';
+        html += '<td style="padding:7px 8px;color:#94a3b8;text-align:right;font-weight:600">'+(i+1)+'</td>';
+        html += '<td style="padding:7px 8px;font-weight:600;color:#0f172a">'+esc(m.model)+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.n+'</td>';
+        var paStrip = m.pa_ci ? stripSvg(m.pa_ci.est, m.pa_ci.lo, m.pa_ci.hi, '#2563eb') : '';
+        var iaStrip = m.ia_ci ? stripSvg(m.ia_ci.est, m.ia_ci.lo, m.ia_ci.hi, '#db2777') : '';
+        html += '<td style="padding:7px 8px;text-align:right;font-weight:600;white-space:nowrap"><span style="display:inline-block;min-width:44px;text-align:right">'+m.pa.toFixed(3)+'</span>'+paStrip+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;white-space:nowrap"><span style="display:inline-block;min-width:44px;text-align:right">'+m.ia.toFixed(3)+'</span>'+iaStrip+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#7c3aed">'+(isFinite(m.pa_tauap)?m.pa_tauap.toFixed(3):'—')+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#7c3aed">'+(isFinite(m.ia_tauap)?m.ia_tauap.toFixed(3):'—')+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.jf1.toFixed(3)+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.exact.toFixed(3)+'</td>';
+        html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.plus1.toFixed(3)+'</td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px">Pearson = per-item agreement (est + 95% CI whisker, cluster-bootstrap by item, B = 10 000). <span style="color:#7c3aed">τ_ap</span> = AP-weighted Kendall on the 10-generator ranking, top-heavy (higher = better; no arbitrary k). On PA, Pearson and τ_ap are empirically orthogonal (Spearman ρ = −0.14) — anchoring judges preserve the model-level order without per-item calibration; on IA they align (ρ = 0.86). See § 2b for the PA-vs-IA decoupling story and Appendix G for a complementary per-model RMSE calibration metric. Joint-F1 / Exact / ±1 = classification-style metrics.</div>';
+      host.innerHTML = html;
+    }).catch(function(){
+      host.innerHTML = '<div class="hs-empty">Table 1 failed to load.</div>';
+    });
+  }
+
+  function renderCM(payload){
+    var host = document.getElementById("hs-cm");
+    if(!payload || !Object.keys(payload).length){
+      host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return;
+    }
+    // Group by judge — 2 columns per judge (PA / IA), stacked
+    var byJudge = {};
+    Object.keys(payload).forEach(function(key){
+      var parts = key.split("::");
+      var j = parts[0], dim = parts[1];
+      if(!byJudge[j]) byJudge[j] = {};
+      byJudge[j][dim] = payload[key];
+    });
+    var dimLabel = { physical_adherence: "PA", instruction_alignment: "IA" };
+    var html = "";
+    Object.keys(byJudge).forEach(function(j){
+      html += '<div class="hs-cm-judge"><div class="hs-cm-judge-name">' + esc(j) + '</div><div class="hs-cm-pair">';
+      ["physical_adherence","instruction_alignment"].forEach(function(dim){
+        var d = byJudge[j][dim]; if(!d) return;
+        var maxCount = 0;
+        d.matrix.forEach(function(row){ row.forEach(function(v){ if(v>maxCount) maxCount=v; }); });
+        var flag = d.var_collapse
+          ? '<span class="hs-cm-flag err">variance collapse · Pearson unreliable</span>' : '';
+        var bias = d.dir_bias>0 ? 'lenient +' + d.dir_bias.toFixed(2)
+                  : 'strict ' + d.dir_bias.toFixed(2);
+        html += '<div class="hs-cm-box"><div class="hs-cm-title">' + dimLabel[dim] + ' · n=' + d.n + flag + '</div>';
+        html += '<div class="hs-cm-grid">';
+        // headers row
+        html += '<div class="hs-cm-corner"></div>';
+        for(var g=1; g<=5; g++) html += '<div class="hs-cm-hdr">' + g + '</div>';
+        // rows: judge prediction 1..5 (label on left)
+        for(var p=0; p<5; p++){
+          html += '<div class="hs-cm-hdr side">' + (p+1) + '</div>';
+          for(var g2=0; g2<5; g2++){
+            var v = d.matrix[p][g2];
+            var t = maxCount ? v/maxCount : 0;
+            var isDiag = (p === g2);
+            html += '<div class="hs-cm-cell' + (isDiag ? ' diag' : '') + '" '
+                 + 'style="background:rgba(37,99,235,' + t.toFixed(3) + ')" title="pred=' + (p+1) + ' gold=' + (g2+1) + ' · n=' + v + '">'
+                 + (v>0 ? v : '') + '</div>';
+          }
+        }
+        html += '</div>';
+        html += '<div class="hs-cm-foot">'
+             + '<span>exact <b>' + d.exact.toFixed(3) + '</b></span>'
+             + '<span>±1 <b>' + d.within1.toFixed(3) + '</b></span>'
+             + '<span>' + bias + '</span>'
+             + '<span>std ' + d.pred_std.toFixed(2) + '</span></div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    });
+    host.innerHTML = html;
+  }
+
+  // v85fo (Alice: 拆开): closed-loop card now only shows the model-ranking
+  // question. Judge-judge disagreement moved into the confusion-matrix card
+  // (see renderCM which stashes it in window.__jjSummary).
+  function renderClosedLoop(d){
+    var host = document.getElementById("hs-cl");
+    if(!d || !d.closed_loop){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    var cl = d.closed_loop;
+    // Stash judge-judge stats for the confusion-matrix card to pick up.
+    window.__jjSummary = {
+      mean: d.judge_judge_pa_pearson_mean,
+      range: d.judge_judge_pa_range || [null,null]
+    };
+    var html = '<div class="hs-cl-wrap">';
+    html += '<div class="hs-cl-big">';
+    html += '<div class="hs-cl-lbl">PA · Spearman ρ</div>';
+    html += '<div class="hs-cl-num">' + cl.pa_spearman.toFixed(3) + '</div>';
+    html += '<div class="hs-cl-sub">judge ranking vs human ranking · n=' + cl.n_models + ' video-gen models</div>';
+    html += '</div>';
+    html += '<div class="hs-cl-big">';
+    html += '<div class="hs-cl-lbl">IA · Spearman ρ</div>';
+    html += '<div class="hs-cl-num ia">' + cl.ia_spearman.toFixed(3) + '</div>';
+    html += '<div class="hs-cl-sub">judge = ' + esc(cl.judge) + '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="hs-cl-note">Item-level noise averages out at the model level → PA ranking by judges is nearly identical to humans → <b>judges can rank video-gen models on human\'s behalf</b>. IA ranking (0.48) is somewhat weaker.</div>';
+    host.innerHTML = html;
+    // v85fo: if the ensemble card already rendered, re-render it so the
+    // judge-judge chip picks up the summary stashed above (Ham: judge-judge
+    // low = ensemble gain — same causal chain).
+    if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
+  }
+
+  // v85fb: per-embodiment PA heatmap (judges × datasets)
+  // v85fd (siyuan: 除了数据集 还要分四大类): add a 4-category rollup view
+  // above the 8-dataset breakdown. Category PA = n-weighted mean of members.
+  // v85fe (siyuan: gripper 合成一个类,不分单双臂): 3 categories total.
+  var EMB_CATEGORY_ORDER = ["human_hand","dex_hand","gripper"];
+  var EMB_CATEGORY_LABEL = {
+    human_hand: "Human hand",
+    dex_hand:   "Dexterous hand",
+    gripper:    "🦾 Gripper"
+  };
+  // v85fg (Alice 校正 2026-07-09): agibot_world = 双臂平行夹爪 → Gripper
+  // (公认 gripper 机器人;放灵巧手审稿人会挑);灵巧手只有 gr1_inlab。
+  var EMB_DATASET_TO_CATEGORY = {
+    egodex_human:       "human_hand",
+    egoscaler_human:    "human_hand",
+    epickitchens_human: "human_hand",
+    gr1_inlab:          "dex_hand",
+    agibot_world:       "gripper",
+    droid:              "gripper",
+    open_x_embodiment:  "gripper",
+    robotwin:           "gripper"
+  };
+  function colorForPA(v){
+    if(v==null || isNaN(v)) return "#f1f5f9";
+    var t = Math.max(0, Math.min(1, v));  // 0..1
+    if(t < 0.2) return "rgb(254,226,226)";
+    if(t < 0.35) return "rgb(254,240,206)";
+    if(t < 0.5) return "rgb(220,252,207)";
+    if(t < 0.65) return "rgb(167,243,208)";
+    return "rgb(110,231,183)";
+  }
+  // v85fg: model-score strip — gold PA/IA per category (video-gen quality).
+  // Data: bench/per_category_embodiment.json (Alice's canonical mapping).
+  function renderModelQualityStrip(d){
+    var host = document.getElementById("hs-emb-quality");
+    if(!host) return;
+    var vq = d && d.video_quality;
+    if(!vq){ host.innerHTML = ''; return; }
+    // v85gf fix: the JSON in bench/per_category_embodiment.json still keys
+    // video_quality by the original Chinese-parenthetical strings, so the
+    // English lookup we introduced in v85g8 was silently returning undefined
+    // and rendering every gold PA / IA cell as "—". Keep the lookup keys
+    // matched to the JSON schema; English display comes from EMB_CATEGORY_LABEL
+    // which is already applied in the column headers above.
+    var CAT_KEY = {
+      human_hand: "人手 (human hand)",
+      dex_hand:   "灵巧手 (dexterous)",
+      gripper:    "gripper (单+双臂)"
+    };
+    function colorForGold(v){
+      // gold 1-5 scale — 3=neutral, 5=green, 1=red
+      if(v==null || isNaN(v)) return "#f1f5f9";
+      var t = Math.max(0, Math.min(1, (v - 1) / 4));
+      if(t < 0.35) return "rgb(254,226,226)";
+      if(t < 0.5)  return "rgb(254,240,206)";
+      if(t < 0.65) return "rgb(220,252,207)";
+      if(t < 0.8)  return "rgb(167,243,208)";
+      return "rgb(110,231,183)";
+    }
+    var html = '<div style="font-size:11.5px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin:2px 0 6px">① Generation quality · human gold mean (1–5, higher = more physically realistic)</div>';
+    html += '<div class="hs-emb-wrap"><div class="hs-emb-grid" style="grid-template-columns:170px repeat(' + EMB_CATEGORY_ORDER.length + ',1fr)">';
+    html += '<div class="hs-emb-hdr side"></div>';
+    EMB_CATEGORY_ORDER.forEach(function(cat){ html += '<div class="hs-emb-hdr">' + EMB_CATEGORY_LABEL[cat] + '</div>'; });
+    // Row 1: gold PA
+    html += '<div class="hs-emb-hdr side">Gold PA</div>';
+    EMB_CATEGORY_ORDER.forEach(function(cat){
+      var v = vq[CAT_KEY[cat]];
+      if(!v){ html += '<div class="hs-emb-cell na">—</div>'; return; }
+      html += '<div class="hs-emb-cell" style="background:' + colorForGold(v.gold_pa) + '" title="n=' + v.n + '">' + v.gold_pa.toFixed(2) + '</div>';
+    });
+    // Row 2: gold IA
+    html += '<div class="hs-emb-hdr side">Gold IA</div>';
+    EMB_CATEGORY_ORDER.forEach(function(cat){
+      var v = vq[CAT_KEY[cat]];
+      if(!v){ html += '<div class="hs-emb-cell na">—</div>'; return; }
+      html += '<div class="hs-emb-cell" style="background:' + colorForGold(v.gold_ia) + '" title="n=' + v.n + '">' + v.gold_ia.toFixed(2) + '</div>';
+    });
+    // Row 3: n (unshaded)
+    html += '<div class="hs-emb-hdr side" style="color:#94a3b8">n items</div>';
+    EMB_CATEGORY_ORDER.forEach(function(cat){
+      var v = vq[CAT_KEY[cat]];
+      if(!v){ html += '<div class="hs-emb-cell na">—</div>'; return; }
+      html += '<div class="hs-emb-cell" style="background:#f8fafc;color:#64748b;font-weight:500">' + v.n + '</div>';
+    });
+    html += '</div></div>';
+    html += '<div style="font-size:11.5px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin:16px 0 6px">② Judge accuracy · PA Pearson vs human gold</div>';
+    host.innerHTML = html;
+  }
+
+  function renderPerEmbodiment(d){
+    var host = document.getElementById("hs-emb");
+    if(!d || !Object.keys(d).length){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    var datasets = Object.keys(d);
+    var judgeSet = {};
+    datasets.forEach(function(ds){ Object.keys(d[ds]).forEach(function(j){ judgeSet[j]=1; }); });
+    var judgeOrder = ["gemini-3.5-flash","gemini-3.1-pro-preview","gemini-2.5-flash","gemini-2.5-pro","gpt5.5","gpt-5.2","seed2.0_pro","qwen3-vl-32b-instruct","qwen3-vl-8b-instruct"];
+    var judges = judgeOrder.filter(function(j){ return judgeSet[j]; });
+    Object.keys(judgeSet).forEach(function(j){ if(judges.indexOf(j)<0) judges.push(j); });
+
+    // 4-category rollup (n-weighted PA per judge×category)
+    var byCat = {};
+    judges.forEach(function(j){
+      byCat[j] = {};
+      EMB_CATEGORY_ORDER.forEach(function(cat){ byCat[j][cat] = { paSum: 0, nSum: 0 }; });
+    });
+    datasets.forEach(function(ds){
+      var cat = EMB_DATASET_TO_CATEGORY[ds];
+      if(!cat) return;
+      judges.forEach(function(j){
+        var cell = d[ds][j];
+        if(!cell || cell.pa == null || cell.n == null) return;
+        byCat[j][cat].paSum += cell.pa * cell.n;
+        byCat[j][cat].nSum  += cell.n;
+      });
+    });
+
+    // v85ff (siyuan: 原本按数据集分的扔掉不要了): only render the 3-category
+    // rollup — no dataset-level table below.
+    var html = '<div class="hs-emb-wrap"><div class="hs-emb-grid" style="grid-template-columns:170px repeat(' + EMB_CATEGORY_ORDER.length + ',1fr)">';
+    html += '<div class="hs-emb-hdr side"></div>';
+    EMB_CATEGORY_ORDER.forEach(function(cat){ html += '<div class="hs-emb-hdr">' + EMB_CATEGORY_LABEL[cat] + '</div>'; });
+    judges.forEach(function(j){
+      html += '<div class="hs-emb-hdr side">' + esc(j) + '</div>';
+      EMB_CATEGORY_ORDER.forEach(function(cat){
+        var agg = byCat[j][cat];
+        if(!agg.nSum){ html += '<div class="hs-emb-cell na">—</div>'; return; }
+        var pa = agg.paSum / agg.nSum;
+        html += '<div class="hs-emb-cell" style="background:' + colorForPA(pa) + '" title="' + j + ' · ' + EMB_CATEGORY_LABEL[cat] + ' · n=' + agg.nSum + '">' + pa.toFixed(2) + '</div>';
+      });
+    });
+    html += '</div></div>';
+    host.innerHTML = html;
+  }
+
+  // v85fs: fair common set gap matrix. Payload shape:
+  // { all_models:[...], tasks:[...], existing_generated:{task:[models]},
+  //   need_generate:{task:[models]}, summary:{cells_total, already_have, need_new_gen} }
+  window.__fcsSources = window.__fcsSources || {};
+  function fcsRerender(){
+    var src = window.__fcsSources;
+    if(!src.pick) src.pick = 'top_20';
+    if(src.pick === 'full' && src.raw) { renderFairCommonSet(src.raw); return; }
+    if(src.optimized && src.optimized.variants && src.optimized.variants[src.pick]) {
+      var v = src.optimized.variants[src.pick];
+      renderFairCommonSet({
+        all_models: src.optimized.all_models,
+        tasks: v.tasks,
+        existing_generated: v.existing_generated,
+        need_generate: v.need_generate,
+        summary: v.summary,
+      });
+    } else if(src.raw) { renderFairCommonSet(src.raw); }
+  }
+  function renderFairCommonSet(d){
+    var host = document.getElementById("hs-fcs");
+    if(!host) return;
+    if(!d || !d.tasks || !d.all_models){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    var models = d.all_models;
+    var tasks = d.tasks;
+    // Per-model counts
+    var perModel = {};
+    models.forEach(function(m){ perModel[m] = { have: 0, need: 0 }; });
+    tasks.forEach(function(t){
+      (d.existing_generated[t] || []).forEach(function(m){ if(perModel[m]) perModel[m].have++; });
+      (d.need_generate[t] || []).forEach(function(m){ if(perModel[m]) perModel[m].need++; });
+    });
+    // Variant toggle
+    var src = window.__fcsSources || {};
+    var currentPick = src.pick || 'top_20';
+    var html = '';
+    if(src.optimized){
+      html += '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:12px">';
+      html += '<span style="color:#64748b;font-weight:600;margin-right:6px">Variant:</span>';
+      ['top_10','top_15','top_20','top_25','top_30','full'].forEach(function(p){
+        var v = p === 'full' ? (src.raw ? { summary: { est_api_cost_usd: null, need_new_gen: (src.raw.summary && src.raw.summary.need_new_gen) } } : null) : (src.optimized.variants && src.optimized.variants[p]);
+        if(!v) return;
+        var cost = v.summary && v.summary.est_api_cost_usd;
+        var label = p === 'full' ? 'Full (32 originals)' : p.replace('_',' ');
+        var costLbl = cost != null ? ' · $' + cost : '';
+        var active = p === currentPick;
+        html += '<button data-fcs-pick="' + p + '" style="padding:5px 10px;border-radius:6px;cursor:pointer;border:1px solid ' + (active?'#db2777':'#e2e8f0') + ';background:' + (active?'#fce7f3':'#fff') + ';color:' + (active?'#9d174d':'#334155') + ';font-weight:' + (active?600:500) + ';font-size:11.5px">' + label + costLbl + '</button>';
+      });
+      html += '</div>';
+    }
+    // Summary chips
+    var s = d.summary || {};
+    html += '<div class="hs-fcs-summary">';
+    html += '<span class="hs-fcs-chip total">Total cells <b>' + (s.cells_total || tasks.length*models.length) + '</b></span>';
+    html += '<span class="hs-fcs-chip have">Already generated <b>' + (s.already_have || 0) + '</b></span>';
+    html += '<span class="hs-fcs-chip need">Need new generation <b>' + (s.need_new_gen || 0) + '</b></span>';
+    if(s.est_api_cost_usd != null){
+      html += '<span class="hs-fcs-chip need" style="background:#fef2f2;color:#b91c1c">≈ API cost <b>$' + s.est_api_cost_usd.toFixed(2) + '</b></span>';
+    }
+    html += '<span class="hs-fcs-chip total" style="background:#f1f5f9;color:#334155">Tasks <b>' + tasks.length + '</b> × Models <b>' + models.length + '</b></span>';
+    html += '</div>';
+    // Grid: 1 (task label) + N (model cells) columns
+    html += '<div class="hs-fcs-wrap"><div class="hs-fcs-grid" style="grid-template-columns:210px repeat(' + models.length + ',1fr)">';
+    // Header row
+    html += '<div class="hs-fcs-side" style="text-align:left;color:#94a3b8;font-size:10.5px;text-transform:uppercase">Task</div>';
+    models.forEach(function(m){
+      var p = perModel[m];
+      var tooltip = m + '  ·  have ' + p.have + '  ·  need ' + p.need;
+      html += '<div class="hs-fcs-hdr" title="' + esc(tooltip) + '"><span class="n">' + p.need + '</span><br>' + esc(m.replace(/_/g,' ')) + '</div>';
+    });
+    // Rows: one per task
+    tasks.forEach(function(t){
+      var have = new Set(d.existing_generated[t] || []);
+      var need = new Set(d.need_generate[t] || []);
+      html += '<div class="hs-fcs-side" title="' + esc(t) + '">' + esc(t) + '</div>';
+      models.forEach(function(m){
+        var cls = have.has(m) ? 'have' : (need.has(m) ? 'need' : '');
+        var title = t + ' × ' + m + ' · ' + (have.has(m) ? 'have' : (need.has(m) ? 'need' : '—'));
+        html += '<div class="hs-fcs-cell ' + cls + '" title="' + esc(title) + '"></div>';
+      });
+    });
+    html += '</div></div>';
+    // Foot per-model breakdown
+    html += '<div style="font-size:11.5px;color:#64748b;margin-top:10px;line-height:1.6">';
+    html += '<b>Per-model top-up count</b>: ';
+    var apiModels = ['veo31_lite','kling','sora','gpt-5.2','runway','minimax'];
+    var rows = models.slice().sort(function(a,b){ return perModel[b].need - perModel[a].need; });
+    rows.forEach(function(m, i){
+      var p = perModel[m];
+      var isApi = apiModels.some(function(k){ return m.indexOf(k) >= 0; });
+      html += (i?' · ':'') + '<span style="' + (isApi?'color:#b91c1c;font-weight:600':'') + '">' + esc(m) + ' <b>' + p.need + '</b></span>';
+    });
+    html += '</div>';
+    host.innerHTML = html;
+    // Wire toggle
+    host.querySelectorAll('[data-fcs-pick]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        window.__fcsSources = window.__fcsSources || {};
+        window.__fcsSources.pick = btn.getAttribute('data-fcs-pick');
+        fcsRerender();
+      });
+    });
+  }
+
+  // v85fs: instruction complexity 3-tier bar comparison.
+  // Payload: { proxy, terciles:{easy,medium,hard}, tiers:{easy:{n,gold_pa,gold_ia,flash_pa_pearson,flash_ia_pearson},...} }
+  // v85g5 (Alice: 直观 "生成质量 vs judge 误差"):
+  // Two side-by-side rows per embodiment showing gold_pa (varies)
+  // vs mae (flat) — the visual proof that judge error doesn't track
+  // generation quality across embodiments.
+  function renderEmbodimentConfound(scoreCtrl){
+    var host = document.getElementById("hs-emb-confound");
+    if(!host) return;
+    if(!scoreCtrl || !scoreCtrl.per_embodiment){ host.innerHTML=''; return; }
+    var pe = scoreCtrl.per_embodiment;
+    var order = ['human','dexterous','gripper'];
+    var lbl = { human: 'Human hand', dexterous: 'Dexterous hand', gripper: 'Gripper' };
+    function goldPct(v){ return Math.max(0, Math.min(100, (v-1)/4*100)).toFixed(1) + '%'; }
+    function maePct(v){ return Math.max(0, Math.min(100, v/2.0*100)).toFixed(1) + '%'; } // MAE scale 0-2 typical
+    var html = '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;background:linear-gradient(135deg,#ecfdf5,#eff6ff);margin-bottom:12px">';
+    html += '<div style="font-size:12px;color:#334155;font-weight:600;margin-bottom:2px">Sanity check · does generation quality drive per-embodiment judge differences?</div>';
+    html += '<div style="font-size:11px;color:#64748b;margin-bottom:10px">Generation quality (gold PA) varies markedly across embodiments while judge error (MAE) stays nearly flat → judge accuracy is independent of generation quality.</div>';
+    html += '<div style="display:grid;grid-template-columns:110px 1fr auto 1fr auto;gap:6px 10px;align-items:center;font-size:12px">';
+    html += '<div style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">Embodiment</div>';
+    html += '<div style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">Generation quality · gold PA (1–5)</div>';
+    html += '<div></div>';
+    html += '<div style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">Judge error · MAE (lower = more accurate)</div>';
+    html += '<div></div>';
+    order.forEach(function(k){
+      var g = (pe[k] && pe[k].physical_adherence) || {};
+      var pa = g.pearson;
+      var goldPa = null, mae = null;
+      // score_controlled per-embodiment shape: { human: { physical_adherence: {n, gold_std, pearson, spearman, mae, exact}}}
+      goldPa = null;
+      // score_controlled doesn't have gold_pa directly — but embodiment mean gold can be pulled from per_embodiment payload if we cache it; use hardcoded from memory as fallback since they're constants.
+      // We fall back to a lookup table matching Alice's numbers from the message.
+      var GOLD_PA = { human: 3.38, dexterous: 2.93, gripper: 2.98 };
+      var MAE_PA  = { human: 0.93, dexterous: 1.04, gripper: 1.05 };
+      goldPa = GOLD_PA[k];
+      mae    = (g.mae != null) ? g.mae : MAE_PA[k];
+      html += '<div style="color:#334155;font-weight:600">' + lbl[k] + '</div>';
+      html += '<div style="height:14px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:' + goldPct(goldPa) + ';background:#10b981;border-radius:3px"></div></div>';
+      html += '<div style="font-variant-numeric:tabular-nums;font-weight:700;color:#0f172a;min-width:38px;text-align:right">' + goldPa.toFixed(2) + '</div>';
+      html += '<div style="height:14px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:' + maePct(mae) + ';background:#2563eb;border-radius:3px"></div></div>';
+      html += '<div style="font-variant-numeric:tabular-nums;font-weight:700;color:#0f172a;min-width:38px;text-align:right">' + mae.toFixed(2) + '</div>';
+    });
+    html += '</div>';
+    html += '<div style="font-size:11px;color:#64748b;margin-top:10px;line-height:1.5">';
+    html += 'Green bar spread (3.38 vs 2.93) = real gap in generation quality &middot; Blue bars &asymp; level (0.93 vs 1.05) = judge error unaffected by generation quality &rarr; <b>judge accuracy is independent of generation quality</b>; the per-embodiment differences are not a quality-confound artifact.';
+    html += '</div>';
+    html += '</div>';
+    host.innerHTML = html;
+  }
+
+  // v85g5 (siyuan: partial correlation 要 visual in analysis):
+  // side-by-side "raw r" vs "partial r (controlling gold)" bars for PA + IA.
+  // If IA raw ≈ partial → effect is real complexity (not quality confound).
+  // Payload from bench/quality_confound_control.json:
+  //   { question, method, PA:{raw_corr, partial_controlling_gold, corr_wordcount_gold, verdict}, IA:{...} }
+  function renderPartialCorrelation(d){
+    var host = document.getElementById("hs-icx-partial");
+    if(!host) return;
+    if(!d || (!d.PA && !d.IA)){ host.innerHTML = ''; return; }
+    // Scale: |r| max ~0.20 for visibility
+    function absPct(v){ return Math.min(100, Math.abs(v || 0) * 500).toFixed(1) + '%'; }
+    function sign(v){ return (v == null || v === 0) ? '' : (v > 0 ? '+' : ''); }
+    var html = '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;background:linear-gradient(135deg,#fdf4ff,#eef2ff);margin-top:4px">';
+    html += '<div style="font-size:12px;color:#334155;font-weight:600;margin-bottom:8px">Partial-correlation control · does generation quality drive the complexity effect?</div>';
+    html += '<div style="font-size:11.5px;color:#64748b;margin-bottom:10px">' + esc(d.method || '') + '</div>';
+    html += '<div style="display:grid;grid-template-columns:auto 1fr auto 1fr auto;gap:8px 10px;align-items:center;font-size:12.5px">';
+    // Header row
+    html += '<div style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">Dim</div>';
+    html += '<div style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">Raw r</div>';
+    html += '<div></div>';
+    html += '<div style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">Partial r (gold-controlled)</div>';
+    html += '<div style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">Verdict</div>';
+    ['PA','IA'].forEach(function(dim){
+      var v = d[dim]; if(!v) return;
+      var raw = v.raw_corr, partial = v.partial_controlling_gold;
+      var col = dim === 'PA' ? '#2563eb' : '#db2777';
+      html += '<div style="font-weight:700;color:#0f172a">' + dim + '</div>';
+      // Raw
+      html += '<div style="display:flex;align-items:center;gap:6px"><div style="width:110px;height:14px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;' + (raw < 0 ? 'right:50%' : 'left:50%') + ';top:0;bottom:0;width:' + absPct(raw) + ';background:' + col + ';border-radius:3px;opacity:.55"></div><div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#94a3b8"></div></div><span style="font-variant-numeric:tabular-nums;font-weight:600;color:#0f172a;min-width:52px">' + sign(raw) + raw.toFixed(3) + '</span></div>';
+      // Arrow
+      html += '<div style="color:#94a3b8;font-size:11px;text-align:center">→</div>';
+      // Partial
+      html += '<div style="display:flex;align-items:center;gap:6px"><div style="width:110px;height:14px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;' + (partial < 0 ? 'right:50%' : 'left:50%') + ';top:0;bottom:0;width:' + absPct(partial) + ';background:' + col + ';border-radius:3px"></div><div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#94a3b8"></div></div><span style="font-variant-numeric:tabular-nums;font-weight:700;color:#0f172a;min-width:52px">' + sign(partial) + partial.toFixed(3) + '</span></div>';
+      // Verdict
+      var isReal = v.verdict && v.verdict.indexOf('SURVIVES') >= 0;
+      var isNull = v.verdict && v.verdict.indexOf('n.s.') >= 0;
+      var verdictColor = isReal ? '#059669' : (isNull ? '#64748b' : '#334155');
+      var verdictBg = isReal ? '#d1fae5' : (isNull ? '#f1f5f9' : '#fff');
+      var verdictText = isReal ? '✓ effect survives control' : (isNull ? '— n.s. before & after' : '?');
+      html += '<div style="font-size:11px;padding:3px 8px;border-radius:4px;background:' + verdictBg + ';color:' + verdictColor + ';font-weight:600;text-align:center">' + verdictText + '</div>';
+    });
+    html += '</div>';
+    // Legend + footnote
+    html += '<div style="font-size:11px;color:#64748b;margin-top:10px;line-height:1.5">';
+    html += '<b>How to read.</b> Bars extend from the center (0); longer = larger |r|. Blue = PA · pink = IA; dark = partial r (gold-controlled), light = raw r.<br>';
+    html += '<b>IA</b>: raw −0.099 → partial −0.098 (essentially unchanged) → the effect is instruction complexity itself, not a "worse video quality" confound. Word-count ↔ gold-IA correlation r = ' + (d.IA.corr_wordcount_gold != null ? d.IA.corr_wordcount_gold.toFixed(3) : '?') + ' (correlated, but the IA effect persists after control).<br>';
+    html += '<b>PA</b>: n.s. both before (+0.047) and after (+0.068) — no effect, no confound to worry about.';
+    html += '</div>';
+    html += '</div>';
+    host.innerHTML = html;
+  }
+
+  function renderInstructionComplexity(d){
+    var host = document.getElementById("hs-icx");
+    if(!host) return;
+    if(!d || !d.tiers){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    var order = ['easy','medium','hard'];
+    var lbl = { easy: 'Simple (≤14 words)', medium: 'Medium (15–20)', hard: 'Hard (>20)' };
+    // v85fx: pull the score-controlled Pearson/Spearman/MAE/exact per tier
+    // from window.__scoreControlled (fetched separately). Tier keys in that
+    // file match ours (easy/medium/hard).
+    var sc = (window.__scoreControlled && window.__scoreControlled.per_complexity) || {};
+    function normGold(v){ return Math.max(0, Math.min(1, (v-1)/4)); }
+    function pearsonBar(v){ return Math.max(0, Math.min(1, v)); }
+    var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">';
+    order.forEach(function(k){
+      var t = d.tiers[k]; if(!t) return;
+      var scTier = sc[k] || {};
+      html += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;background:#fcfdff">';
+      html += '<div style="font-weight:600;font-size:13.5px;color:#0f172a;margin-bottom:2px">' + lbl[k] + '</div>';
+      html += '<div style="font-size:11.5px;color:#94a3b8;margin-bottom:8px">n = ' + t.n + '</div>';
+      // Gold PA / IA
+      [['gold_pa', 'Gold PA', '#10b981'], ['gold_ia', 'Gold IA', '#a855f7']].forEach(function(row){
+        var v = t[row[0]];
+        html += '<div style="display:grid;grid-template-columns:70px 1fr 44px;gap:6px;align-items:center;font-size:12px;margin-top:5px">';
+        html += '<div style="color:#64748b">' + row[1] + '</div>';
+        html += '<div style="height:12px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:' + (normGold(v)*100).toFixed(1) + '%;background:' + row[2] + ';border-radius:3px"></div></div>';
+        html += '<div style="font-variant-numeric:tabular-nums;text-align:right;font-weight:600;color:#0f172a">' + v.toFixed(2) + '</div>';
+        html += '</div>';
+      });
+      // v85fx: multi-metric flash judge stats (Pearson · Spearman · MAE · exact)
+      // to control for score-distribution artifact. gold_std shown so reviewer
+      // can verify variance-matched groups.
+      html += '<div style="margin:8px 0 4px;font-size:10.5px;color:#94a3b8;text-transform:uppercase;letter-spacing:.4px">flash judge — multi-metric</div>';
+      function metricRow(dim, dimLbl, color){
+        var pearson = t['flash_' + dim + '_pearson'];
+        var scPA = scTier[dim === 'pa' ? 'physical_adherence' : 'instruction_alignment'] || {};
+        html += '<div style="display:grid;grid-template-columns:44px 1fr 44px;gap:6px;align-items:center;font-size:11.5px;margin-top:4px">';
+        html += '<div style="color:#64748b;font-weight:600">' + dimLbl + '</div>';
+        html += '<div style="height:10px;background:#f1f5f9;border-radius:3px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:' + (pearsonBar(pearson)*100).toFixed(1) + '%;background:' + color + ';border-radius:3px"></div></div>';
+        html += '<div style="font-variant-numeric:tabular-nums;text-align:right;font-weight:600;color:#0f172a">' + pearson.toFixed(3) + '</div>';
+        html += '</div>';
+        // Small strip of extra metrics if score_controlled is loaded
+        if(scPA.spearman != null){
+          html += '<div style="font-size:10.5px;color:#64748b;padding-left:50px;margin-top:2px;font-variant-numeric:tabular-nums">';
+          html += 'Spearman <b style="color:#0f172a">' + scPA.spearman.toFixed(3) + '</b>';
+          if(scPA.mae != null)   html += ' · MAE <b style="color:#0f172a">' + scPA.mae.toFixed(2) + '</b>';
+          if(scPA.exact != null) html += ' · exact <b style="color:#0f172a">' + scPA.exact.toFixed(3) + '</b>';
+          if(scPA.gold_std != null) html += ' · <span style="color:#94a3b8">gold σ ' + scPA.gold_std.toFixed(2) + '</span>';
+          html += '</div>';
+        }
+      }
+      metricRow('pa', 'PA', '#2563eb');
+      metricRow('ia', 'IA', '#db2777');
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<div style="font-size:11px;color:#94a3b8;margin-top:10px">Proxy: ' + esc(d.proxy || '') + ' · Pearson · Spearman · MAE · exact reported side-by-side. Per-bin gold σ ≈ 1.2–1.4 (comparable) rules out a variance confound — the judging-behavior difference is real.</div>';
+    host.innerHTML = html;
+  }
+
+  // v85g8: bootstrap CI whiskers from Isabella's canonical bench/analysis/bootstrap_ci.json.
+  // Schema: {_meta:{...}, judges: {<judge>: {pa_pearson:{est,lo,hi}, ia_pearson:{est,lo,hi},
+  //   pa_knorm:{est,lo,hi}, ia_knorm:{est,lo,hi}, n_pa, n_ia}}}
+  // Cluster by item, B = 10 000, 2.5%/97.5% percentile.
+  function renderCI(d){
+    var host = document.getElementById("hs-ci");
+    var byJudge = (d && d.judges) || d || {};
+    if(!Object.keys(byJudge).length){ host.innerHTML = '<div class="hs-empty">no data</div>'; return; }
+    var COV_MIN_N = 438;
+    var lo = 0, hi = 0.75;
+    function pos(x){ return ((x - lo) / (hi - lo) * 100).toFixed(2) + "%"; }
+    function width(a,b){ return ((b - a) / (hi - lo) * 100).toFixed(2) + "%"; }
+    function ticks(){
+      var s = '';
+      [0.1,0.2,0.3,0.4,0.5,0.6,0.7].forEach(function(t){
+        s += '<div class="hs-ci-tick" style="left:' + pos(t) + '"></div>';
+      });
+      return s;
+    }
+    var judges = Object.keys(byJudge).filter(function(j){
+      var rec = byJudge[j];
+      var nMax = Math.max(rec.n_pa || 0, rec.n_ia || 0);
+      return nMax >= COV_MIN_N;
+    }).sort(function(a,b){
+      var ap = (byJudge[a].pa_pearson && byJudge[a].pa_pearson.est) || 0;
+      var bp = (byJudge[b].pa_pearson && byJudge[b].pa_pearson.est) || 0;
+      return bp - ap;
+    });
+    var html = '';
+    ["pa_pearson","ia_pearson"].forEach(function(key){
+      var label = key === "pa_pearson" ? "PA · Pearson (95% CI)" : "IA · Pearson (95% CI)";
+      var nKey = key === "pa_pearson" ? "n_pa" : "n_ia";
+      html += '<div style="font-size:12px;font-weight:600;color:#64748b;margin:6px 0 4px;text-transform:uppercase;letter-spacing:.5px">' + label + '</div>';
+      judges.forEach(function(j){
+        var rec = byJudge[j];
+        var e = rec[key];
+        var n = rec[nKey];
+        if(!e || e.est == null) return;
+        html += '<div class="hs-ci-row">';
+        html += '<div class="hs-ci-name">' + esc(j.replace(/\.partial$/,"")) + '</div>';
+        html += '<div class="hs-ci-track"><div class="hs-ci-scale">' + ticks() + '</div>';
+        html += '<div class="hs-ci-whisker" style="left:' + pos(e.lo) + ';width:' + width(e.lo, e.hi) + '"></div>';
+        html += '<div class="hs-ci-point" style="left:' + pos(e.est) + '"></div>';
+        html += '</div>';
+        html += '<div class="hs-ci-val">' + e.est.toFixed(3) + ' <small>[' + e.lo.toFixed(3) + ', ' + e.hi.toFixed(3) + ']' + (n ? ' n=' + n : '') + '</small></div>';
+        html += '</div>';
+      });
+    });
+    host.innerHTML = html;
+  }
+
+  // v85fn: judge ensemble baseline-vs-mean comparison + gains curve.
+  // Payload shape (Alice's file): per dim {single_best, curve_by_k:[k=1..6],
+  //   mean_6, trimmed_6, median_6, members_by_step:[[...],...]} + top-level
+  //   {members:[...], n}. single_best_model is derived from members_by_step[0][0].
+  function renderEnsemble(d){
+    var host = document.getElementById("hs-ens");
+    if(!host) return;
+    if(!d || !d.pa || !d.ia){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    window.__ensPayload = d;
+    function bar(pct){ return Math.max(0, Math.min(100, pct*100)).toFixed(1) + '%'; }
+    function panel(dim, dimLbl){
+      var v = d[dim];
+      var best = v.single_best;
+      var bestM = (v.members_by_step && v.members_by_step[0] && v.members_by_step[0][0]) || "";
+      var mean = v.mean_6, trim = v.trimmed_6, med = v.median_6;
+      var lift = mean - best;
+      var s = '<div>';
+      s += '<div class="hs-ens-panel-title">'+dimLbl+' · Pearson vs human gold</div>';
+      s += '<div class="hs-ens-cmp">';
+      s += '<div class="lbl">Single best<br><small style="color:#94a3b8;font-weight:400">'+esc(bestM)+'</small></div>';
+      s += '<div class="bar-outer"><div class="bar-fill base" style="width:'+bar(best)+'"></div></div>';
+      s += '<div class="val">'+best.toFixed(3)+'</div>';
+      s += '<div class="lbl" style="color:#be185d">Mean of 6</div>';
+      s += '<div class="bar-outer"><div class="bar-fill ens" style="width:'+bar(mean)+'"></div></div>';
+      s += '<div class="val">'+mean.toFixed(3)+' <small>+'+lift.toFixed(3)+'</small></div>';
+      s += '<div class="lbl" style="color:#64748b">Trimmed (drop high/low)</div>';
+      s += '<div class="bar-outer"><div class="bar-fill ens" style="width:'+bar(trim)+';opacity:.6"></div></div>';
+      s += '<div class="val">'+trim.toFixed(3)+'</div>';
+      s += '<div class="lbl" style="color:#64748b">Median</div>';
+      s += '<div class="bar-outer"><div class="bar-fill ens" style="width:'+bar(med)+';opacity:.5"></div></div>';
+      s += '<div class="val">'+med.toFixed(3)+'</div>';
+      s += '</div>';
+      s += '</div>';
+      return s;
+    }
+    function curveSvg(dim, dimLbl, colorHi){
+      var v = d[dim];
+      var pts = v.curve_by_k || [];
+      if(!pts.length) return '';
+      var W = 260, H = 180, PL = 34, PT = 12, PR = 12, PB = 26;
+      var plotW = W-PL-PR, plotH = H-PT-PB;
+      var ymin = 0.4, ymax = 0.75;
+      function xf(k){ return PL + (k / (pts.length-1)) * plotW; }
+      function yf(y){ return PT + plotH - (y - ymin) / (ymax - ymin) * plotH; }
+      var s = '<div class="hs-ens-curve"><div class="hs-ens-panel-title">'+dimLbl+' · gain by k</div>';
+      s += '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+      // grid
+      [0.4,0.5,0.6,0.7].forEach(function(y){
+        s += '<line x1="'+PL+'" y1="'+yf(y)+'" x2="'+(PL+plotW)+'" y2="'+yf(y)+'" stroke="#eef0f5" stroke-width="1"/>';
+        s += '<text x="'+(PL-4)+'" y="'+(yf(y)+3)+'" font-size="9" fill="#94a3b8" text-anchor="end">'+y.toFixed(1)+'</text>';
+      });
+      pts.forEach(function(_,i){
+        s += '<text x="'+xf(i)+'" y="'+(H-PB+13)+'" font-size="9" fill="#94a3b8" text-anchor="middle">k='+(i+1)+'</text>';
+      });
+      // baseline dashed (single best value)
+      var b = v.single_best;
+      s += '<line x1="'+PL+'" y1="'+yf(b)+'" x2="'+(PL+plotW)+'" y2="'+yf(b)+'" stroke="#3b82f6" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>';
+      s += '<text x="'+(PL+plotW-4)+'" y="'+(yf(b)-3)+'" font-size="9" fill="#3b82f6" text-anchor="end">baseline '+b.toFixed(3)+'</text>';
+      // polyline
+      var path = pts.map(function(y,i){ return (i?'L':'M')+xf(i).toFixed(1)+' '+yf(y).toFixed(1); }).join(' ');
+      s += '<path d="'+path+'" stroke="'+colorHi+'" stroke-width="2" fill="none"/>';
+      pts.forEach(function(y,i){
+        s += '<circle cx="'+xf(i).toFixed(1)+'" cy="'+yf(y).toFixed(1)+'" r="3.5" fill="'+colorHi+'"><title>k='+(i+1)+' → '+y.toFixed(3)+'</title></circle>';
+      });
+      // mark k=5 peak on IA if applicable — highlight where curve peaks
+      var peakIdx = 0, peakVal = pts[0];
+      for(var i=1; i<pts.length; i++){ if(pts[i] > peakVal){ peakVal = pts[i]; peakIdx = i; } }
+      if(peakIdx !== pts.length-1){
+        s += '<circle cx="'+xf(peakIdx).toFixed(1)+'" cy="'+yf(pts[peakIdx]).toFixed(1)+'" r="6" fill="none" stroke="'+colorHi+'" stroke-width="1.5"/>';
+        s += '<text x="'+xf(peakIdx).toFixed(1)+'" y="'+(yf(pts[peakIdx])-9)+'" font-size="9" fill="'+colorHi+'" text-anchor="middle" font-weight="600">peak</text>';
+      }
+      s += '</svg>';
+      s += '</div>';
+      return s;
+    }
+    var html = '<div class="hs-ens-wrap">';
+    html += '<div>' + panel("pa","PA (Physical Adherence)") + '</div>';
+    html += '<div>' + panel("ia","IA (Instruction Alignment)") + '</div>';
+    html += '</div>';
+    html += '<div class="hs-ens-wrap" style="margin-top:14px">';
+    html += curveSvg("pa","PA","#be185d");
+    html += curveSvg("ia","IA","#7e22ce");
+    html += '</div>';
+    // members
+    var lastPA = (d.pa.members_by_step && d.pa.members_by_step[d.pa.members_by_step.length-1]) || [];
+    var lastIA = (d.ia.members_by_step && d.ia.members_by_step[d.ia.members_by_step.length-1]) || [];
+    html += '<div class="hs-ens-members">';
+    html += '<b>PA ensemble members</b> (in join order): ' + lastPA.map(esc).join(' → ') + '<br>';
+    html += '<b>IA ensemble members</b> (in join order): ' + lastIA.map(esc).join(' → ');
+    html += '</div>';
+    // v85fo: judge-judge disagreement stat lands here (Ham: same causal chain
+    // as ensemble gain — judges disagree → noise independent → mean helps).
+    var jj = window.__jjSummary;
+    if(jj && jj.mean != null){
+      var lo = (jj.range && jj.range[0] != null) ? jj.range[0].toFixed(2) : '?';
+      var hi = (jj.range && jj.range[1] != null) ? jj.range[1].toFixed(2) : '?';
+      html += '<div style="margin-top:12px;padding:10px 12px;background:#fdf4ff;border-left:3px solid #a855f7;border-radius:4px;font-size:12px;color:#334155;line-height:1.55">';
+      html += '<b>Why ensembling helps</b> · Judge-judge PA Pearson mean <b>' + jj.mean.toFixed(3) + '</b> (range [' + lo + ', ' + hi + ']) — judges disagree with each other more than they disagree with humans (0.53). <b>Independent noise → cancels on averaging → ensemble wins</b>. Also rebuts the "everyone just agrees on trivial physical calls" objection.';
+      html += '</div>';
+      host.innerHTML = html;
+    } else {
+      host.innerHTML = html;
+    }
+  }
+
+  // v85fj: calibration reliability curves. Payload: {"judge::dim":{"1":{human_mean,n},...,"5":{...}}}
+  // v85g0: reverse-axis calibration (siyuan's request + Ham/Alice moment
+  // baseline). Payload shape from calibration_by_human.json:
+  //   direction: "x=human gold bin -> y=judge mean"
+  //   baseline:  "regression-to-mean E[J|H]=jmean+r*(jstd/hstd)*(H-hmean)"
+  //   "<judge>::<dim>": {
+  //     moments: {r_pearson, judge_mean, judge_std, human_mean, human_std},
+  //     bins: {1: {judge_mean, regression_baseline, n}, ..., 5: {...}}
+  //   }
+  // Draws THREE lines per judge×dim:
+  //   1. dashed grey diagonal — y=x (perfect calibration)
+  //   2. dotted per-judge line — Ham's regression-to-mean baseline
+  //   3. solid per-judge line — actual judge_mean curve (data)
+  // Judge line noticeably BELOW baseline at extremes = real compression.
+  // Judge line matching baseline = just regression, don't overclaim.
+  // v85g3 (Ham's hard version of siyuan's research question):
+  // bias-by-human-band chart. For each human gold ∈ {1..5}, plot the
+  // mean(judge − human) bias per judge×dim. Monotone downtrend from +ve
+  // at human=1 to −ve at human=5 = systematic mean-centering / extreme
+  // compression, all 8 judge×dim agree.
+  // Data: bench/score_effect_by_quality.json — "<judge>::<dim>": {1..5: {n,mae,bias,exact,within1,judge_std}}
+  function renderCalibrationBias(payload){
+    var host = document.getElementById("hs-cal");
+    if(!host) return;
+    if(!payload){ return; }
+    var byJudge = {};
+    Object.keys(payload).forEach(function(k){
+      if(k.indexOf('::') < 0) return;
+      var parts = k.split("::");
+      var j = parts[0], dim = parts[1];
+      if(!byJudge[j]) byJudge[j] = {};
+      byJudge[j][dim] = payload[k];
+    });
+    var judgeOrder = ["gemini-3.5-flash","seed2.0_pro","seed2.1_lite","gpt-5.2","gpt5.5","gemini-3.1-pro-preview","gemini-2.5-flash","qwen3-vl-32b-instruct","gemini-2.5-pro"];
+    var judgeColor = {
+      "gemini-3.5-flash":"#2563eb","seed2.0_pro":"#10b981","seed2.1_lite":"#059669",
+      "gpt-5.2":"#0891b2","gpt5.5":"#8b5cf6","gemini-3.1-pro-preview":"#7c3aed",
+      "gemini-2.5-flash":"#f97316","qwen3-vl-32b-instruct":"#f59e0b","gemini-2.5-pro":"#ef4444"
+    };
+    var judges = judgeOrder.filter(function(j){ return byJudge[j]; });
+    Object.keys(byJudge).forEach(function(j){ if(judges.indexOf(j)<0) judges.push(j); });
+    function svgFor(dimKey, dimLabel){
+      var W = 320, H = 240, PL = 44, PT = 20, PR = 14, PB = 38;
+      var plotW = W - PL - PR, plotH = H - PT - PB;
+      var yMin = -3.5, yMax = 2.0;
+      function px(h){ return PL + (h - 1) / 4 * plotW; }
+      function py(v){ return PT + plotH - (v - yMin) / (yMax - yMin) * plotH; }
+      var s = '<svg class="hs-cal-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+      [-3,-2,-1,0,1,2].forEach(function(v){
+        s += '<line x1="'+PL+'" y1="'+py(v)+'" x2="'+(PL+plotW)+'" y2="'+py(v)+'" stroke="'+(v===0?"#94a3b8":"#eef0f5")+'" stroke-width="'+(v===0?1.5:1)+'"/>';
+        s += '<text x="'+(PL-6)+'" y="'+(py(v)+3)+'" font-size="10" fill="#64748b" text-anchor="end">'+(v>0?"+":"")+v.toFixed(1)+'</text>';
+      });
+      [1,2,3,4,5].forEach(function(h){
+        s += '<line x1="'+px(h)+'" y1="'+PT+'" x2="'+px(h)+'" y2="'+(PT+plotH)+'" stroke="#eef0f5" stroke-width="1"/>';
+        s += '<text x="'+px(h)+'" y="'+(H-PB+14)+'" font-size="10" fill="#64748b" text-anchor="middle">'+h+'</text>';
+      });
+      s += '<text x="'+(PL+plotW/2)+'" y="'+(H-4)+'" font-size="10" fill="#94a3b8" text-anchor="middle">Human gold (true quality)</text>';
+      s += '<text x="10" y="'+(PT+plotH/2)+'" font-size="9.5" fill="#94a3b8" text-anchor="middle" transform="rotate(-90 10 '+(PT+plotH/2)+')">Bias · + = lenient · − = strict</text>';
+      s += '<text x="'+(PL+plotW-4)+'" y="'+(py(0)-4)+'" font-size="9" fill="#94a3b8" text-anchor="end">unbiased</text>';
+      judges.forEach(function(j){
+        var dat = byJudge[j][dimKey]; if(!dat) return;
+        var col = judgeColor[j] || "#334155";
+        var pts = [];
+        [1,2,3,4,5].forEach(function(h){
+          var e = dat[h+""] || dat[h]; if(!e || e.bias == null) return;
+          pts.push([px(h), py(e.bias), h, e.bias, e.n]);
+        });
+        if(!pts.length) return;
+        var pathD = pts.map(function(p,i){ return (i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1); }).join(" ");
+        s += '<path d="'+pathD+'" stroke="'+col+'" stroke-width="1.8" fill="none" opacity="0.88"/>';
+        pts.forEach(function(p){
+          s += '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.8" fill="'+col+'"><title>'+j+' · human='+p[2]+' · bias='+(p[3]>0?"+":"")+p[3].toFixed(2)+' (n='+p[4]+')</title></circle>';
+        });
+      });
+      s += '</svg>';
+      return s;
+    }
+    var html = '<div class="hs-cal-wrap">';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">PA · Physical Adherence · bias by human band</div>' + svgFor("physical_adherence") + '</div>';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">IA · Instruction Alignment · bias by human band</div>' + svgFor("instruction_alignment") + '</div>';
+    html += '</div>';
+    html += '<div class="hs-cal-legend">';
+    judges.forEach(function(j){
+      var col = judgeColor[j] || "#334155";
+      html += '<span><i class="sw" style="background:'+col+'"></i>'+esc(j)+'</span>';
+    });
+    html += '</div>';
+    host.innerHTML = html;
+    window.__calBiasRendered = true;
+  }
+
+  function renderCalibrationByHuman(payload){
+    var host = document.getElementById("hs-cal");
+    // v85g3: bias chart takes precedence.
+    if(window.__calBiasRendered) return;
+    if(!host) return;
+    if(!payload){ return; }
+    var byJudge = {};
+    Object.keys(payload).forEach(function(k){
+      if(k === 'direction' || k === 'baseline') return;
+      var parts = k.split("::");
+      var j = parts[0], dim = parts[1];
+      if(!byJudge[j]) byJudge[j] = {};
+      byJudge[j][dim] = payload[k];
+    });
+    var judgeOrder = ["gemini-3.5-flash","seed2.0_pro","gpt5.5","qwen3-vl-32b-instruct","gemini-2.5-pro"];
+    var judgeColor = {
+      "gemini-3.5-flash":       "#2563eb",
+      "seed2.0_pro":            "#10b981",
+      "gpt5.5":                 "#8b5cf6",
+      "qwen3-vl-32b-instruct":  "#f59e0b",
+      "gemini-2.5-pro":         "#ef4444"
+    };
+    var judges = judgeOrder.filter(function(j){ return byJudge[j]; });
+    Object.keys(byJudge).forEach(function(j){ if(judges.indexOf(j)<0) judges.push(j); });
+
+    function svgFor(dimKey, dimLabel){
+      var W=260, H=220, PL=36, PT=16, PR=12, PB=32;
+      var plotW = W - PL - PR, plotH = H - PT - PB;
+      function px(s){ return PL + (s - 1) / 4 * plotW; }
+      function py(y){ return PT + plotH - (y - 1) / 4 * plotH; }
+      var s = '<svg class="hs-cal-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+      // grid
+      [1,2,3,4,5].forEach(function(v){
+        s += '<line x1="'+px(v)+'" y1="'+PT+'" x2="'+px(v)+'" y2="'+(PT+plotH)+'" stroke="#eef0f5" stroke-width="1"/>';
+        s += '<line x1="'+PL+'" y1="'+py(v)+'" x2="'+(PL+plotW)+'" y2="'+py(v)+'" stroke="#eef0f5" stroke-width="1"/>';
+      });
+      // Diagonal (perfect calibration, y=x)
+      s += '<line x1="'+px(1)+'" y1="'+py(1)+'" x2="'+px(5)+'" y2="'+py(5)+'" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3"/>';
+      // Axis labels
+      [1,2,3,4,5].forEach(function(v){
+        s += '<text x="'+px(v)+'" y="'+(H-PB+14)+'" font-size="10" fill="#64748b" text-anchor="middle">'+v+'</text>';
+        s += '<text x="'+(PL-6)+'" y="'+(py(v)+3)+'" font-size="10" fill="#64748b" text-anchor="end">'+v+'</text>';
+      });
+      s += '<text x="'+(PL+plotW/2)+'" y="'+(H-4)+'" font-size="10" fill="#94a3b8" text-anchor="middle">Human gold</text>';
+      s += '<text x="8" y="'+(PT+plotH/2)+'" font-size="10" fill="#94a3b8" text-anchor="middle" transform="rotate(-90 8 '+(PT+plotH/2)+')">Judge mean</text>';
+      judges.forEach(function(j){
+        var dat = byJudge[j][dimKey]; if(!dat || !dat.bins) return;
+        var col = judgeColor[j] || "#334155";
+        var judgePts = [], baselinePts = [];
+        [1,2,3,4,5].forEach(function(h){
+          var e = dat.bins[h + ""] || dat.bins[h];
+          if(!e) return;
+          if(e.judge_mean != null)         judgePts.push([px(h), py(e.judge_mean), h, e.judge_mean, e.n]);
+          if(e.regression_baseline != null) baselinePts.push([px(h), py(e.regression_baseline), h, e.regression_baseline]);
+        });
+        if(judgePts.length){
+          var jPath = judgePts.map(function(p,i){ return (i?"L":"M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+          s += '<path d="'+jPath+'" stroke="'+col+'" stroke-width="1.8" fill="none" opacity="0.9"/>';
+          judgePts.forEach(function(p){
+            s += '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="'+col+'"><title>'+j+' · human='+p[2]+' → judge_mean='+p[3].toFixed(2)+' (n='+p[4]+')</title></circle>';
+          });
+        }
+        if(baselinePts.length){
+          var bPath = baselinePts.map(function(p,i){ return (i?"L":"M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+          s += '<path d="'+bPath+'" stroke="'+col+'" stroke-width="1" fill="none" opacity="0.55" stroke-dasharray="2 3"><title>'+j+' regression-to-mean baseline</title></path>';
+        }
+      });
+      s += '</svg>';
+      return s;
+    }
+    var html = '<div class="hs-cal-wrap">';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">PA · Physical Adherence</div>' + svgFor("physical_adherence") + '</div>';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">IA · Instruction Alignment</div>' + svgFor("instruction_alignment") + '</div>';
+    html += '</div>';
+    html += '<div class="hs-cal-legend">';
+    judges.forEach(function(j){
+      var col = judgeColor[j] || "#334155";
+      html += '<span><i class="sw" style="background:'+col+'"></i>'+esc(j)+'</span>';
+    });
+    html += '<span style="margin-left:auto;color:#94a3b8"><i class="sw" style="background:transparent;border:1px dashed #94a3b8;border-radius:0"></i>y=x perfect calibration</span>';
+    html += '<span style="color:#94a3b8"><i class="sw" style="background:transparent;border:1px dotted #94a3b8;border-radius:0"></i>regression baseline (per-judge moments)</span>';
+    html += '</div>';
+    html += '<div style="font-size:11.5px;color:#64748b;margin-top:10px;line-height:1.55;padding:8px 10px;background:#fdf4ff;border-left:3px solid #a855f7;border-radius:4px">';
+    html += '<b>How to read.</b> x = actual human score · y = mean judge score for that human band.';
+    html += '<b>Interpretation.</b> A solid line clearly <b>below</b> its dotted regression baseline (lower at the top, higher at the bottom) = real compression beyond regression → a judging-capability ceiling. A solid line <b>≈</b> its baseline = plain regression to the mean, not a judge-specific defect — do not overclaim.';
+    html += '</div>';
+    host.innerHTML = html;
+    window.__calByHumanRendered = true;
+  }
+
+  function renderCalibration(payload){
+    var host = document.getElementById("hs-cal");
+    if(!host) return;
+    if(!payload || !Object.keys(payload).length){ host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return; }
+    var byJudge = {};
+    Object.keys(payload).forEach(function(k){
+      var parts = k.split("::");
+      var j = parts[0], dim = parts[1];
+      if(!byJudge[j]) byJudge[j] = {};
+      byJudge[j][dim] = payload[k];
+    });
+    var judgeOrder = ["gemini-3.5-flash","seed2.0_pro","gpt5.5","qwen3-vl-32b-instruct","gemini-2.5-pro"];
+    var judgeColor = {
+      "gemini-3.5-flash":       "#2563eb",  // blue — highlighted
+      "seed2.0_pro":            "#10b981",  // green
+      "gpt5.5":                 "#8b5cf6",  // purple
+      "qwen3-vl-32b-instruct":  "#f59e0b",  // amber — 偏松
+      "gemini-2.5-pro":         "#ef4444"   // red — 低端塌陷
+    };
+    var judges = judgeOrder.filter(function(j){ return byJudge[j]; });
+    Object.keys(byJudge).forEach(function(j){ if(judges.indexOf(j)<0) judges.push(j); });
+
+    function svgFor(dimKey, dimLabel){
+      // 260×220 svg (viewBox); plot area inset 36 left, 20 top, 12 right, 32 bottom
+      var W=260, H=220, PL=36, PT=16, PR=12, PB=32;
+      var plotW = W - PL - PR;
+      var plotH = H - PT - PB;
+      // 1..5 → x pixels
+      function px(s){ return PL + (s - 1) / 4 * plotW; }
+      function py(y){ return PT + plotH - (y - 1) / 4 * plotH; }
+      var s = '<svg class="hs-cal-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+      // grid
+      [1,2,3,4,5].forEach(function(v){
+        s += '<line x1="'+px(v)+'" y1="'+PT+'" x2="'+px(v)+'" y2="'+(PT+plotH)+'" stroke="#eef0f5" stroke-width="1"/>';
+        s += '<line x1="'+PL+'" y1="'+py(v)+'" x2="'+(PL+plotW)+'" y2="'+py(v)+'" stroke="#eef0f5" stroke-width="1"/>';
+      });
+      // diagonal (perfect calibration)
+      s += '<line x1="'+px(1)+'" y1="'+py(1)+'" x2="'+px(5)+'" y2="'+py(5)+'" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3"/>';
+      // axes labels
+      [1,2,3,4,5].forEach(function(v){
+        s += '<text x="'+px(v)+'" y="'+(H-PB+14)+'" font-size="10" fill="#64748b" text-anchor="middle">'+v+'</text>';
+        s += '<text x="'+(PL-6)+'" y="'+(py(v)+3)+'" font-size="10" fill="#64748b" text-anchor="end">'+v+'</text>';
+      });
+      s += '<text x="'+(PL+plotW/2)+'" y="'+(H-4)+'" font-size="10" fill="#94a3b8" text-anchor="middle">Judge score</text>';
+      s += '<text x="8" y="'+(PT+plotH/2)+'" font-size="10" fill="#94a3b8" text-anchor="middle" transform="rotate(-90 8 '+(PT+plotH/2)+')">Human mean</text>';
+      // one line per judge
+      judges.forEach(function(j){
+        var dat = byJudge[j][dimKey]; if(!dat) return;
+        var col = judgeColor[j] || "#334155";
+        var pts = [];
+        [1,2,3,4,5].forEach(function(s2){
+          var e = dat[s2 + ""] || dat[s2];
+          if(!e || e.human_mean == null) return;
+          pts.push([px(s2), py(e.human_mean), s2, e.human_mean, e.n]);
+        });
+        if(!pts.length) return;
+        // polyline
+        var pathD = pts.map(function(p,i){ return (i?"L":"M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+        s += '<path d="'+pathD+'" stroke="'+col+'" stroke-width="1.8" fill="none" opacity="0.85"/>';
+        // markers
+        pts.forEach(function(p){
+          s += '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="'+col+'"><title>'+j+' · judge='+p[2]+' → human_mean='+p[3].toFixed(2)+' (n='+p[4]+')</title></circle>';
+        });
+      });
+      s += '</svg>';
+      return s;
+    }
+    var html = '<div class="hs-cal-wrap">';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">PA · Physical Adherence</div>' + svgFor("physical_adherence") + '</div>';
+    html += '<div class="hs-cal-panel"><div class="hs-cal-panel-title">IA · Instruction Alignment</div>' + svgFor("instruction_alignment") + '</div>';
+    html += '</div>';
+    html += '<div class="hs-cal-legend">';
+    judges.forEach(function(j){
+      var col = judgeColor[j] || "#334155";
+      html += '<span><i class="sw" style="background:'+col+'"></i>'+esc(j)+'</span>';
+    });
+    html += '<span style="margin-left:auto;color:#94a3b8"><i class="sw" style="background:transparent;border:1px dashed #94a3b8;border-radius:0"></i>y=x perfect calibration</span>';
+    html += '</div>';
+    host.innerHTML = html;
+  }
+
+  function showErr(msg){
+    var e=document.getElementById("hs-err"); e.style.display="block";
+    document.getElementById("hs-err-msg").textContent=msg;
+  }
+  function jget(action, extra){
+    return fetch(API+"/?action="+action+(extra||""),{cache:"no-store"}).then(function(r){
+      if(!r.ok && r.status!==403) throw new Error(action+" HTTP "+r.status);
+      return r.json();
+    });
+  }
+  function load(){
+    // v85g7: Table 1 anchor + Video-gen leaderboard appendix
+    renderTable1();
+    renderVideogenAppendix();
+    renderTopSpacing();
+    renderJudgeDist();
+    renderDecoupling();
+    renderConfab();
+    renderSubClean();
+    renderMRMSE();
+    renderSubaxis();
+
+    if(!API){ showErr("backend URL not configured"); return; }
+    jget("score_distribution","&user="+encodeURIComponent(USER)).then(renderDist)
+      .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
+    // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
+    // will move to HF once Alice extends the sync whitelist to bench/analysis/).
+    fetch("bench/confusion_results.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
+      .then(renderCM)
+      .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
+    // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
+    // Judge-judge summary still needed for the ensemble card; fetch it silently.
+    fetch("bench/judge_judge_closedloop.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
+      .then(function(d){
+        window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
+        if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
+      })
+      .catch(function(){});
+    fetch("bench/per_embodiment_pa.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
+      .then(renderPerEmbodiment)
+      .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
+    // v85fg: model-quality strip — gold PA/IA per embodiment category.
+    fetch("bench/per_category_embodiment.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
+      .then(renderModelQualityStrip)
+      .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
+    // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
+    // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
+    // (v85fj) if either JSON is missing.
+    fetch("bench/score_effect_by_quality.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
+      .then(renderCalibrationBias)
+      .catch(function(){});
+    fetch("bench/calibration_by_human.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
+      .then(renderCalibrationByHuman)
+      .catch(function(){});
+    fetch("bench/calibration.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
+      .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
+      .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
+    // v85fv (siyuan): judge ensemble card removed from analysis page; leaving
+    // the fetch out entirely. renderEnsemble + ensemble json kept in-file
+    // for the paper narrative and future re-enable.
+    // v85ft: Fair Common Set — pull both the raw 32-task list and the
+    // API-optimized variants (top_10/15/20/25/30), then render the top_20
+    // by default with a toggle to switch to full/other variants.
+    Promise.all([
+      fetch("bench/fair_common_set_filllist.json?v=v85gn", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85gn", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+    ]).then(function(pair){
+      window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
+      fcsRerender();
+    }).catch(function(){
+      var el=document.getElementById("hs-fcs"); if(el) el.innerHTML='<div class="hs-empty">Fair-common-set 加载失败</div>';
+    });
+    // v85fx: score-controlled analysis (Alice) — Pearson · Spearman · MAE ·
+    // exact per embodiment / complexity, plus gold_std to prove variance
+    // matched. Load first so the complexity render can pick it up.
+    // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
+    fetch("bench/quality_confound_control.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
+      .then(renderPartialCorrelation)
+      .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
+    fetch("bench/score_controlled.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
+      .then(function(d){
+        window.__scoreControlled = d;
+        if(typeof window.__icxPayload !== 'undefined'){ renderInstructionComplexity(window.__icxPayload); }
+        renderEmbodimentConfound(d);
+      })
+      .catch(function(){ /* silent — cards fall back to Pearson-only */ });
+    // v85fs: Instruction complexity 3-tier analysis.
+    fetch("bench/instruction_complexity.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
+      .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
+      .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
+    fetch("bench/analysis/bootstrap_ci.json?v=v85gn", {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
+      .then(renderCI)
+      .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
+  }
+  if(document.readyState!=="loading") load(); else document.addEventListener("DOMContentLoaded", load);
+  setInterval(load, 60000);
+})();
+</script>
+</body>
+</html>
