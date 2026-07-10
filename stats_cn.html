@@ -268,7 +268,14 @@
           <li><b>问法 2：10 家生成器排名对不对？</b> 用 <b>τ_ap</b>（top-weighted Kendall τ）。最好 = <b>gemini-2.5-pro 0.928</b>、seed2.1 0.881、qwen3-vl-8b 0.807；中间 gemini-3.5-flash 0.733、seed2.0_pro 0.706；差 = cosmos 三家 ~0.39-0.44、gpt5.x ~0.49。</li>
         </ul>
         <b>为什么这两个答案会打架。</b> 10 家生成器的 human-gold PA 从 1.86 到 4.04 差 2.18 分，排名任务本身容易 —— 一个判分很乱的判官只要保住"好模型均分 &gt; 坏模型均分"就能排对，gemini-2.5-pro 就是钻了这个空子。<b>IA 也有同类现象</b>：10 判官子集 ρ_IA = <b>0.81</b>（相关但没绑死），加入 cosmos 后 ρ_IA 掉到 <b>0.49</b> —— <b>cosmos-reason2-32b 是 IA 上另一个 anchoring 判官</b>（Pearson 只有 0.377 但 τ_ap 高达 0.972）。所以旧的"PA 解耦 vs IA 对齐"对照已经不成立，正确的读法是"两轴都有 anchoring 判官，population ρ 会漂"。<br><br>
-        <b>关于 anchoring 判官的正确读法。</b> PA 上 gemini-2.5-pro 是干净 anchoring 例子（Pearson 塌 · rank 保住）；IA 上 cosmos-reason2-32b 是同类反例。<b>但 cosmos-reason 全家不是 gemini-2.5-pro 的完整镜像</b> —— 三家在 PA 上 τ_ap 只 0.39 – 0.44（远低于中位数 0.567），属于 low-P low-τap 象限（逐条乱 + 排名也乱）。<br><br>
+        <b>关于 anchoring 判官的正确读法。</b> PA 上 gemini-2.5-pro 是干净 anchoring 例子（Pearson 塌 · rank 保住）；IA 上 cosmos-reason2-32b 是同类反例。<b>但 cosmos-reason 全家不是 gemini-2.5-pro 的完整镜像</b> —— 三家在 PA 上 τ_ap 只 0.39 – 0.44（远低于 18 家中位数 0.493），属于 low-P low-τap 象限（逐条乱 + 排名也乱）。<br><br>
+        <b>VideoCon —— 最干净的反例（单变量对照，证明 "锚方向 ≠ τ_ap"）。</b> VideoCon（专用视频–文本一致性打分模型，非通用 MLLM 判官）和 gemini-2.5-pro <b>在 PA 上都锚低端、逐条 Pearson 都接近随机</b>，但排名能力完全相反：
+        <ul style="margin:4px 0 6px 20px;padding:0;line-height:1.7">
+          <li><b>gemini-2.5-pro</b>：锚 "1"（严）· PA-Pearson 0.24（近随机）· PA-τ_ap <b>0.928</b>（全场最好）</li>
+          <li><b>VideoCon</b>：锚低端（mean 1.51）· PA-Pearson 0.06（近随机）· PA-τ_ap <b>0.116</b>（18 家里第 16，IA-τ_ap −0.427 比随机还差）</li>
+        </ul>
+        两者<b>锚方向相同、逐条判分都烂</b>，唯一变量是 τ_ap（0.928 vs 0.116）。这是<b>单变量对照</b>：把"锚低端 + 逐条随机"两个条件都固定住，τ_ap 仍能从 0.928 崩到 0.116 → <b>所以决定排名能否保住的不是锚方向、也不是逐条准不准，而是锚定之外的残余分数还能不能单调还原 gold 排名</b>。2.5-pro 的残余顺序保住了、VideoCon 没有。比之前 cosmos-2b vs 2.5-pro 那组更干净：cosmos-2b 锚<b>高端</b>（"5"），差了锚方向 + τ_ap <b>两个</b>变量；VideoCon 只差 τ_ap <b>一个</b>变量 → 教科书级 counter-example。<br><br>
+        <b>anchoring（低 P 高 τap）的招牌存在证明仍是 gemini-2.5-pro（PA · τ_ap 0.928）+ cosmos-reason2-32b（IA · τ_ap 0.972）。</b> 注意：18-家 median 下移（PA-τ_ap 0.567 → 0.493）后，internvl3.5-38b（PA · τ_ap 0.542，仅略高于 median）、cosmos-reason2-2b（IA · τ_ap 0.657）也技术性落进 anchoring 象限 —— 但这是 median-shift 效应（它们绝对 τ_ap 没变、远弱于招牌），不是新的强存在证据。VideoCon 仍是最干净的反差对照。<br><br>
         <b>Table 1 读者怎么用。</b> 想低成本复现榜单 → 按 τ_ap 排（gemini-2.5-pro 就够）。要真的替 human 判每条视频 → 必须看 PA-Pearson，只有 gemini-3.5-flash / seed2.0 / seed2.1 三家达标。Table 1 两列都留是因为两个是独立能力，不是同一件事的两个名字。Appendix G 补一个非排名类的 per-model calibration RMSE（判官在每家生成器上的均分与人类差多少），r = 0.84 和 PA-Pearson 高度一致。
       </div>
       <div id="hs-decoupling" style="margin-top:6px"><div class="hs-empty">加载中…</div></div>
@@ -574,7 +581,7 @@
   function renderVideogenAppendix(){
     var host = document.getElementById("hs-vg-appendix");
     if(!host) return;
-    fetch("bench/videogen_leaderboard.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/videogen_leaderboard.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(data){
         // Collapse _prefix / _rewrite variants into base model, weighted by n
@@ -620,7 +627,7 @@
   function renderJudgeDist(){
     var host = document.getElementById("hs-judgedist");
     if(!host) return;
-    fetch("bench/analysis/judge_distributions.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/analysis/judge_distributions.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.human_gold){ host.innerHTML=""; return; }
@@ -716,8 +723,8 @@
     var host = document.getElementById("hs-decoupling");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/bootstrap_ci.json?v=v85gp", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
-      fetch("bench/model_ranking_strict.json?v=v85gp", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/bootstrap_ci.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch("bench/model_ranking_strict.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
       var ci = (pair[0] && pair[0].judges) || {};
       var strict = pair[1] || {};
@@ -779,12 +786,12 @@
         s += '</svg>';
         return s;
       }
-      var html = '<div class="hs-h" style="border:0;padding:0 0 4px"><h3 style="font-size:13px;color:#334155;margin:0">Pearson × τ_ap — 10 judges</h3></div>';
+      var html = '<div class="hs-h" style="border:0;padding:0 0 4px"><h3 style="font-size:13px;color:#334155;margin:0">Pearson × τ_ap — 18 judges</h3></div>';
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
-      html += '<div>' + panelSvg("PA", "PA", "−0.14 (10 judges) → +0.47 (+cosmos)") + '</div>';
-      html += '<div>' + panelSvg("IA", "IA", "+0.81 (10 judges) → +0.49 (+cosmos)") + '</div>';
+      html += '<div>' + panelSvg("PA", "PA", "−0.14 (10j) → +0.47 (+cosmos) → +0.55 (+internvl) → +0.70 (+video)") + '</div>';
+      html += '<div>' + panelSvg("IA", "IA", "+0.81 (10j) → +0.49 (+cosmos) → +0.46 (+internvl) → +0.64 (+video)") + '</div>';
       html += '</div>';
-      html += '<div style="font-size:11.5px;color:#64748b;padding:6px 4px 0;line-height:1.55">On PA (left), Pearson (x) and τ_ap (y) are near-independent: gemini-2.5-pro (worst Pearson) sits above gemini-3.5-flash (best Pearson) on the τ_ap axis. On IA (right), the same axes align — good per-item calibration and good ranking travel together. τ_ap is the "cheap ranking" capacity; Pearson is the per-item fidelity.</div>';
+      html += '<div style="font-size:11.5px;color:#64748b;padding:6px 4px 0;line-height:1.55">左：PA · 右：IA。每个点 = 一个判官。<b>gemini-2.5-pro</b>（PA-Pearson 0.24 但 τ_ap 0.928）+ <b>cosmos-reason2-32b</b>（IA-Pearson 0.377 但 τ_ap 0.972）是"per-item 判分与 model 排名可以分离"的存在证据。<b>VideoCon</b> 同锚低端 + 同 per-item 随机（PA-Pearson 0.06）但 τ_ap 只 0.116 —— 是单变量对照反例，说明决定 τ_ap 的不是锚方向、也不是逐条判分准确度，而是"锚定之外的残余信号"。population Spearman 随判官池组成漂移（左下角标注 4 个观测点）。</div>';
       host.innerHTML = html;
     }).catch(function(){ host.innerHTML = ""; });
   }
@@ -796,7 +803,7 @@
   function renderConfab(){
     var host = document.getElementById("hs-confab");
     if(!host) return;
-    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.pa || !d.ia){ host.innerHTML = ""; return; }
@@ -856,7 +863,7 @@
   function renderSubClean(){
     var host = document.getElementById("hs-subclean");
     if(!host) return;
-    fetch("bench/analysis/subscore_ci.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/analysis/subscore_ci.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var judges = (d && d.judges) || {};
@@ -957,8 +964,8 @@
     var host = document.getElementById("hs-subaxis");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/judge_subscore_accuracy.json?v=v85gp", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
-      fetch("bench/analysis/subscore_ci.json?v=v85gp", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/judge_subscore_accuracy.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
+      fetch("bench/analysis/subscore_ci.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
         var d = pair[0];
         var ciMap = (pair[1] && pair[1].judges) || {};
@@ -1062,7 +1069,7 @@
   function renderMRMSE(){
     var host = document.getElementById("hs-mrmse");
     if(!host) return;
-    fetch("bench/analysis/model_level_rmse.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/analysis/model_level_rmse.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var byJ = (d && d.judges) || {};
@@ -1108,7 +1115,7 @@
   function renderTopSpacing(){
     var host = document.getElementById("hs-topspacing");
     if(!host) return;
-    fetch("bench/analysis/topspacing.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/analysis/topspacing.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.models){ host.innerHTML=""; return; }
@@ -1171,9 +1178,9 @@
     var host = document.getElementById("hs-table1");
     if(!host) return;
     var md, strict, ciAll;
-    var mdUrl = "bench/leaderboard.md?v=v85gp";
-    var strictUrl = "bench/model_ranking_strict.json?v=v85gp";
-    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85gp";
+    var mdUrl = "bench/leaderboard.md?v=v85gq";
+    var strictUrl = "bench/model_ranking_strict.json?v=v85gq";
+    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85gq";
     // Global scale for the mini error-bar strip: fixed range so error bars are
     // visually comparable across the table (widened enough to fit both the
     // strong-judge PA CIs and weak-judge CIs).
@@ -2183,40 +2190,40 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -2227,8 +2234,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85gp", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85gp", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -2239,11 +2246,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -2252,11 +2259,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/analysis/bootstrap_ci.json?v=v85gp", {cache:"no-store"})
+    fetch("bench/analysis/bootstrap_ci.json?v=v85gq", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });

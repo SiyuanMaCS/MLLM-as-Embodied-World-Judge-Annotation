@@ -1,19 +1,20 @@
 {
   "_meta": {
-    "note": "Pearson (per-item calibration, higher=better) x τ_ap (AP-weighted Kendall on 10-merged base, higher=better). Spearman correlation across 10 judges measures whether these two dimensions align. Both higher-better here (unlike K_norm which was lower-better). | 2026-07-09 update: both 10-judge (pre-cosmos, ρ_PA=−0.14) and 13-judge (with cosmos, ρ_PA=+0.47) slices preserved so §2b can quote whichever fits the argument. Ham argues existence framing (gemini-2.5-pro alone proves decoupling exists) is stronger than population ρ. | 2026-07-10: internvl3.5-38b/8b added (PR #43 merge). 15-judge slice appended. All slices preserved.",
-    "n_judges": 15,
-    "slices_note": "10j = original (no cosmos, no internvl) preserves the −0.14 PA-ρ headline; 13j = +cosmos (ρ→+0.47); 15j = +cosmos +internvl (ρ→see spearman_by_slice)",
+    "note": "Pearson (per-item calibration, higher=better) x τ_ap (AP-weighted Kendall on 10-merged base, higher=better). Spearman correlation across 10 judges measures whether these two dimensions align. Both higher-better here (unlike K_norm which was lower-better). | 2026-07-09 update: both 10-judge (pre-cosmos, ρ_PA=−0.14) and 13-judge (with cosmos, ρ_PA=+0.47) slices preserved so §2b can quote whichever fits the argument. Ham argues existence framing (gemini-2.5-pro alone proves decoupling exists) is stronger than population ρ. | 2026-07-10: internvl3.5-38b/8b added (PR #43 merge). 15-judge slice appended. All slices preserved. | 2026-07-10: VideoCon/VideoPhy2/VideoScore2 added (PR #44 merge, Vincwng=yecheng). 18-judge slice appended. 4 slices preserved.",
+    "n_judges": 18,
+    "slices_note": "10j = original (no cosmos, no internvl, no video specialists); 13j = +cosmos; 15j = +cosmos +internvl; 18j = +cosmos +internvl +video specialists (VideoCon/VideoPhy2/VideoScore2).",
+    "video_specialists_added": "2026-07-10",
     "internvl_added": "2026-07-10",
     "cosmos_added": "2026-07-09"
   },
-  "spearman_pa": 0.546,
-  "spearman_ia": 0.464,
-  "median_pa_pearson": 0.356,
-  "median_pa_tauap": 0.542,
-  "median_ia_pearson": 0.42,
-  "median_ia_tauap": 0.657,
+  "spearman_pa": 0.703,
+  "spearman_ia": 0.643,
+  "median_pa_pearson": 0.243,
+  "median_pa_tauap": 0.493,
+  "median_ia_pearson": 0.387,
+  "median_ia_tauap": 0.603,
   "spearman_by_slice": {
-    "10_judges_no_cosmos_no_internvl": {
+    "10_judges_no_cosmos_no_internvl_no_video_specialists": {
       "pa": -0.139,
       "ia": 0.806,
       "medians_pa": {
@@ -47,6 +48,18 @@
       "medians_ia": {
         "pearson": 0.42,
         "tau_ap": 0.657
+      }
+    },
+    "18_judges_with_video_specialists": {
+      "pa": 0.703,
+      "ia": 0.643,
+      "medians_pa": {
+        "pearson": 0.243,
+        "tau_ap": 0.493
+      },
+      "medians_ia": {
+        "pearson": 0.387,
+        "tau_ap": 0.603
       }
     }
   },
@@ -97,7 +110,7 @@
       "judge": "gpt-5.2",
       "pearson": 0.438,
       "tau_ap": 0.502,
-      "quadrant": "high-P low-τap"
+      "quadrant": "high-P high-τap"
     },
     {
       "judge": "gpt5.5",
@@ -127,7 +140,7 @@
       "judge": "qwen3-vl-8b-instruct",
       "pearson": 0.244,
       "tau_ap": 0.807,
-      "quadrant": "low-P high-τap"
+      "quadrant": "high-P high-τap"
     },
     {
       "judge": "seed2.0_pro",
@@ -140,6 +153,24 @@
       "pearson": 0.499,
       "tau_ap": 0.881,
       "quadrant": "high-P high-τap"
+    },
+    {
+      "judge": "videocon",
+      "pearson": 0.061,
+      "tau_ap": 0.116,
+      "quadrant": "low-P low-τap"
+    },
+    {
+      "judge": "videophy2",
+      "pearson": 0.14,
+      "tau_ap": 0.102,
+      "quadrant": "low-P low-τap"
+    },
+    {
+      "judge": "videoscore2",
+      "pearson": 0.15,
+      "tau_ap": 0.445,
+      "quadrant": "low-P low-τap"
     }
   ],
   "ia": [
@@ -171,7 +202,7 @@
       "judge": "gemini-2.5-pro",
       "pearson": 0.513,
       "tau_ap": 0.631,
-      "quadrant": "high-P low-τap"
+      "quadrant": "high-P high-τap"
     },
     {
       "judge": "gemini-3.1-pro-preview",
@@ -213,7 +244,7 @@
       "judge": "qwen3-vl-32b-instruct",
       "pearson": 0.396,
       "tau_ap": 0.529,
-      "quadrant": "low-P low-τap"
+      "quadrant": "high-P low-τap"
     },
     {
       "judge": "qwen3-vl-8b-instruct",
@@ -232,6 +263,24 @@
       "pearson": 0.56,
       "tau_ap": 0.75,
       "quadrant": "high-P high-τap"
+    },
+    {
+      "judge": "videocon",
+      "pearson": 0.06,
+      "tau_ap": -0.427,
+      "quadrant": "low-P low-τap"
+    },
+    {
+      "judge": "videophy2",
+      "pearson": 0.095,
+      "tau_ap": -0.059,
+      "quadrant": "low-P low-τap"
+    },
+    {
+      "judge": "videoscore2",
+      "pearson": 0.188,
+      "tau_ap": 0.515,
+      "quadrant": "low-P low-τap"
     }
   ]
 }
