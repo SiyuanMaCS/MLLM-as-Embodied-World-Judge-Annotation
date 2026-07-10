@@ -1211,8 +1211,8 @@
         return {
           model: model, n: parseInt(r[1].replace(/,/g,''),10), cov: covPct,
           pa: parseFloat(r[3]), ia: parseFloat(r[4]),
-          pa_tauap: s.PA && s.PA.tau_ap,
-          ia_tauap: s.IA && s.IA.tau_ap,
+          pa_tauap: (ci.pa_tau_ap && ci.pa_tau_ap.est != null) ? ci.pa_tau_ap.est : (s.PA && s.PA.tau_ap),
+          ia_tauap: (ci.ia_tau_ap && ci.ia_tau_ap.est != null) ? ci.ia_tau_ap.est : (s.IA && s.IA.tau_ap),
           pa_ci: ci.pa_pearson || null, ia_ci: ci.ia_pearson || null,
           jf1: parseFloat(r[7]), exact: parseFloat(r[8]), plus1: parseFloat(r[9])
         };
