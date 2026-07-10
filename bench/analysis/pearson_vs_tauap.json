@@ -1,0 +1,201 @@
+{
+  "_meta": {
+    "note": "Pearson (per-item calibration, higher=better) x τ_ap (AP-weighted Kendall on 10-merged base, higher=better). Spearman correlation across 10 judges measures whether these two dimensions align. Both higher-better here (unlike K_norm which was lower-better). | 2026-07-09 update: both 10-judge (pre-cosmos, ρ_PA=−0.14) and 13-judge (with cosmos, ρ_PA=+0.47) slices preserved so §2b can quote whichever fits the argument. Ham argues existence framing (gemini-2.5-pro alone proves decoupling exists) is stronger than population ρ.",
+    "n_judges": 13,
+    "medians_recomputed": "2026-07-09 (13-judge basis, all cosmos included)",
+    "cosmos_added": "2026-07-09",
+    "spearman_note": "Population ρ shifted with cosmos three (concordant low-P low-τap pushes ρ positive). Prefer existence framing over population ρ."
+  },
+  "spearman_pa": 0.467,
+  "spearman_ia": 0.489,
+  "median_pa_pearson": 0.359,
+  "median_pa_tauap": 0.567,
+  "median_ia_pearson": 0.428,
+  "median_ia_tauap": 0.657,
+  "pa": [
+    {
+      "judge": "cosmos-reason2-2b",
+      "pearson": 0.067,
+      "tau_ap": 0.435,
+      "quadrant": "low-P low-τap"
+    },
+    {
+      "judge": "cosmos-reason2-32b",
+      "pearson": 0.219,
+      "tau_ap": 0.389,
+      "quadrant": "low-P low-τap"
+    },
+    {
+      "judge": "cosmos3-nano-reasoner",
+      "pearson": 0.229,
+      "tau_ap": 0.398,
+      "quadrant": "low-P low-τap"
+    },
+    {
+      "judge": "gemini-2.5-flash",
+      "pearson": 0.356,
+      "tau_ap": 0.467,
+      "quadrant": "low-P low-τap"
+    },
+    {
+      "judge": "gemini-2.5-pro",
+      "pearson": 0.242,
+      "tau_ap": 0.928,
+      "quadrant": "low-P high-τap"
+    },
+    {
+      "judge": "gemini-3.1-pro-preview",
+      "pearson": 0.404,
+      "tau_ap": 0.567,
+      "quadrant": "high-P high-τap"
+    },
+    {
+      "judge": "gemini-3.5-flash",
+      "pearson": 0.53,
+      "tau_ap": 0.733,
+      "quadrant": "high-P high-τap"
+    },
+    {
+      "judge": "gpt-5.2",
+      "pearson": 0.438,
+      "tau_ap": 0.502,
+      "quadrant": "high-P low-τap"
+    },
+    {
+      "judge": "gpt5.5",
+      "pearson": 0.417,
+      "tau_ap": 0.485,
+      "quadrant": "high-P low-τap"
+    },
+    {
+      "judge": "qwen3-vl-32b-instruct",
+      "pearson": 0.359,
+      "tau_ap": 0.778,
+      "quadrant": "high-P high-τap"
+    },
+    {
+      "judge": "qwen3-vl-8b-instruct",
+      "pearson": 0.244,
+      "tau_ap": 0.807,
+      "quadrant": "low-P high-τap"
+    },
+    {
+      "judge": "seed2.0_pro",
+      "pearson": 0.496,
+      "tau_ap": 0.706,
+      "quadrant": "high-P high-τap"
+    },
+    {
+      "judge": "seed2.1_lite",
+      "pearson": 0.499,
+      "tau_ap": 0.881,
+      "quadrant": "high-P high-τap"
+    }
+  ],
+  "ia": [
+    {
+      "judge": "cosmos-reason2-2b",
+      "pearson": 0.229,
+      "tau_ap": 0.657,
+      "quadrant": "low-P high-τap"
+    },
+    {
+      "judge": "cosmos-reason2-32b",
+      "pearson": 0.377,
+      "tau_ap": 0.972,
+      "quadrant": "low-P high-τap"
+    },
+    {
+      "judge": "cosmos3-nano-reasoner",
+      "pearson": 0.42,
+      "tau_ap": 0.701,
+      "quadrant": "low-P high-τap"
+    },
+    {
+      "judge": "gemini-2.5-flash",
+      "pearson": 0.37,
+      "tau_ap": 0.519,
+      "quadrant": "low-P low-τap"
+    },
+    {
+      "judge": "gemini-2.5-pro",
+      "pearson": 0.513,
+      "tau_ap": 0.631,
+      "quadrant": "high-P low-τap"
+    },
+    {
+      "judge": "gemini-3.1-pro-preview",
+      "pearson": 0.52,
+      "tau_ap": 0.492,
+      "quadrant": "high-P low-τap"
+    },
+    {
+      "judge": "gemini-3.5-flash",
+      "pearson": 0.428,
+      "tau_ap": 0.39,
+      "quadrant": "high-P low-τap"
+    },
+    {
+      "judge": "gpt-5.2",
+      "pearson": 0.583,
+      "tau_ap": 0.75,
+      "quadrant": "high-P high-τap"
+    },
+    {
+      "judge": "gpt5.5",
+      "pearson": 0.61,
+      "tau_ap": 0.75,
+      "quadrant": "high-P high-τap"
+    },
+    {
+      "judge": "qwen3-vl-32b-instruct",
+      "pearson": 0.396,
+      "tau_ap": 0.529,
+      "quadrant": "low-P low-τap"
+    },
+    {
+      "judge": "qwen3-vl-8b-instruct",
+      "pearson": 0.3,
+      "tau_ap": 0.3,
+      "quadrant": "low-P low-τap"
+    },
+    {
+      "judge": "seed2.0_pro",
+      "pearson": 0.593,
+      "tau_ap": 0.972,
+      "quadrant": "high-P high-τap"
+    },
+    {
+      "judge": "seed2.1_lite",
+      "pearson": 0.56,
+      "tau_ap": 0.75,
+      "quadrant": "high-P high-τap"
+    }
+  ],
+  "spearman_by_slice": {
+    "10_judges_no_cosmos": {
+      "pa": -0.139,
+      "ia": 0.806,
+      "medians_pa": {
+        "pearson": 0.41,
+        "tau_ap": 0.72
+      },
+      "medians_ia": {
+        "pearson": 0.516,
+        "tau_ap": 0.58
+      }
+    },
+    "13_judges_with_cosmos": {
+      "pa": 0.467,
+      "ia": 0.489,
+      "medians_pa": {
+        "pearson": 0.359,
+        "tau_ap": 0.567
+      },
+      "medians_ia": {
+        "pearson": 0.428,
+        "tau_ap": 0.657
+      }
+    }
+  }
+}
