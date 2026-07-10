@@ -294,16 +294,14 @@
       <div id="hs-confab-case" style="margin-top:14px"></div>
     </section>
 
-    <!-- ═══ § 2d  Sub-axis diagnostic · hedging on identity axes (clean pilot n = 1) ═══ -->
+    <!-- ═══ § 2d  Sub-axis diagnostic · object_correct universal collapse (n = 3) ═══ -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2><span style="color:#94a3b8;margin-right:6px">§ 2d</span>细分维度 · 判官把 identity 违规硬拉成 "minor"</h2>
-        <span class="hs-sub">显式小分 · 目前 n = 1 干净判官（gemini-3.5-flash, 865 / 875）</span>
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 2d</span>细分维度 · 判官系统性不肯对身份违规下 hard 判决</h2>
+        <span class="hs-sub">显式小分 · n = 3 家干净判官（gemini-3.5-flash + qwen-3-vl 8b / 32b，覆盖 865-874 / 875）</span>
       </div>
       <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
-        § 2c 那个"判官不肯下 failure 判决"的现象，落到 sub-axis 层面看得更狠。Alice 的 g31 重判 pipeline 里，判官会对组成 PA / IA 的 6 个 sub-axis 各自打一个显式 0 / 1 / 2 分（跟人类同尺度 · 0 = 明确违规 · 1 = 轻微 · 2 = 没问题），完全不需要从 free-text 抽取，判官直接吐数字。在"人类判为明确违规"的子集上我们看两个数：<em>hard recall</em>（判官 <em>也</em> 打了 0）以及 <em>lenient recall</em>（判官打了 0 或 1）。二者的差距就是 hedging 的规模。<br><br>
-        <b>物理三轴 vs 身份三轴对比。</b> 三条物理 sub-axis（scene / interaction / agent consistency）上，判官愿意打 hard-violation 的比例是 54 – 67 %。换到三条 instruction-alignment 上就崩了：agent_match 30 %、goal_completed 31 %，尤其 <b>object_correct 只有 2.8 %</b> —— 人类判 "错物体"的片子里，判官几乎从不硬判违规。但同一批片子的 lenient recall 是 78 – 90 %，说明判官 <em>看到了</em>违规，只是不肯下 "hard" 结论。<b>这是 hedge，不是漏判</b>。这就是 § 2c "不愿下 failure 判决"在 semantic 层面上最严重的表现：general confabulation + semantic-specific hedging 两层伞底下，object-correctness 是极端案例 —— 单一 identity criterion 上有接近 60 个百分点的 hard vs lenient 差距。<br><br>
-        <b>覆盖范围。</b> 目前 pilot 只有 1 家干净判官（gemini-3.5-flash，覆盖 865 / 875）。gemini-3.1-pro-preview 复现跑到 41 / 875 时因为 2026-07-09 17:00 的 Google key 撤销被打断；那批部分数据方向一致但 CI 太宽不能上正文。等新 key 到位再补 n = 5 全套复现。
+        § 2c 那个"判官不肯下 failure 判决"的现象，落到 sub-axis 层面看得更狠 —— Alice 的 g31 显式 0 / 1 / 2 判分暴露出两种并列的失败模式。发现、机制分叉、矩阵、单-judge 详情、结尾 insight 见下。
       </div>
       <div id="hs-subclean" style="margin-top:6px"><div class="hs-empty">loading…</div></div>
     </section>

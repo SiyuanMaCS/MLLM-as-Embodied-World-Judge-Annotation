@@ -283,16 +283,14 @@
       <div id="hs-confab-case" style="margin-top:14px"></div>
     </section>
 
-    <!-- ═══ § 2d  Sub-axis diagnostic · hedging on identity axes (clean pilot n = 1) ═══ -->
+    <!-- ═══ § 2d  Sub-axis diagnostic · object_correct universal collapse (n = 3) ═══ -->
     <section class="hs-card">
       <div class="hs-h">
-        <h2><span style="color:#94a3b8;margin-right:6px">§ 2d</span>Sub-axis diagnostic · judges hedge identity violations to "minor"</h2>
-        <span class="hs-sub">clean explicit sub-score verdicts · pilot n = 1 judge (gemini-3.5-flash 865 / 875)</span>
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 2d</span>Sub-axis diagnostic · judges fail to issue hard verdicts on identity</h2>
+        <span class="hs-sub">clean explicit sub-score verdicts · n = 3 judges (gemini-3.5-flash + qwen-3-vl 8b / 32b, 865-874 / 875 covered)</span>
       </div>
       <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
-        The § 2c reluctance-to-flag-violations sharpens at the sub-axis level. Under Alice's g31 re-judge pipeline the judge outputs an explicit 0 / 1 / 2 verdict for each of the six sub-axes that make up PA and IA, on the same three-tier scale humans use (0 = clear violation · 1 = minor · 2 = holds). No text extraction — the judge writes the number. We report two quantities on the sub-population of clips a human marked as a clear violation on the axis in question: <em>hard recall</em> — the fraction the judge <em>also</em> called a clear violation (0) — and <em>lenient recall</em> — the fraction the judge scored at most "minor" (0 or 1). The gap between the two is the hedging signal.<br><br>
-        <b>Physical axes vs identity axes.</b> On the three physical-adherence sub-axes (scene / interaction / agent consistency), the judge is willing to issue a hard-violation verdict on 54 – 67 % of the clips a human flagged. On the three instruction-alignment sub-axes it collapses: agent_match 30 %, goal_completed 31 %, and <b>object_correct only 2.8 %</b> — humans and the judge disagree on almost every "wrong object" case. The lenient recall on the same clips is 78 – 90 %, so the judge <em>is</em> seeing the violation. It just refuses to call it clear. <b>Hedging, not missing.</b> This is the semantic-severe manifestation of the § 2c reluctance-to-flag: under the two-layer umbrella (general confabulation + semantic-specific hedging), object-correctness is the extreme case — an almost 60-point hard-to-lenient gap on a single identity criterion.<br><br>
-        <b>Scope.</b> Pilot at n = 1 clean judge (gemini-3.5-flash, 865 of 875 items covered). A second replication on gemini-3.1-pro-preview reached 41 / 875 before being aborted at 17:00 with the 2026-07-09 Google-key revocation; on that partial sample the direction agrees but the confidence intervals are too wide to headline. Full n = 5 replication resumes once fresh keys arrive.
+        The § 2c reluctance-to-flag-violations sharpens at the sub-axis level, where explicit 0 / 1 / 2 verdicts from Alice's g31 pipeline expose two distinct failure modes side by side. Finding, mechanism split, matrix, per-judge detail, and insight follow.
       </div>
       <div id="hs-subclean" style="margin-top:6px"><div class="hs-empty">loading…</div></div>
     </section>
