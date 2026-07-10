@@ -581,7 +581,7 @@
   function renderVideogenAppendix(){
     var host = document.getElementById("hs-vg-appendix");
     if(!host) return;
-    fetch("bench/videogen_leaderboard.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/videogen_leaderboard.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(data){
         // Collapse _prefix / _rewrite variants into base model, weighted by n
@@ -627,7 +627,7 @@
   function renderJudgeDist(){
     var host = document.getElementById("hs-judgedist");
     if(!host) return;
-    fetch("bench/analysis/judge_distributions.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/analysis/judge_distributions.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.human_gold){ host.innerHTML=""; return; }
@@ -723,8 +723,8 @@
     var host = document.getElementById("hs-decoupling");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/bootstrap_ci.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
-      fetch("bench/model_ranking_strict.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/bootstrap_ci.json?v=v85gs", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch("bench/model_ranking_strict.json?v=v85gs", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
       var ci = (pair[0] && pair[0].judges) || {};
       var strict = pair[1] || {};
@@ -803,7 +803,7 @@
   function renderConfab(){
     var host = document.getElementById("hs-confab");
     if(!host) return;
-    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.pa || !d.ia){ host.innerHTML = ""; return; }
@@ -855,102 +855,193 @@
       .catch(function(){ host.innerHTML = ""; });
   }
 
-  // v85gf: § 2d clean sub-axis diagnostic. Replaces the rule-based extractor
-  // heatmap (retracted by Yu) with Alice's explicit-sub-score g31 output as
-  // reported through Isabella's canonical CI at bench/analysis/subscore_ci.json.
-  // Currently pilot n = 1 clean judge (gemini-3.5-flash 865/875); 3.1-pro
-  // partial 41/875 aborted at 2026-07-09 key revocation.
+  // v85gs: § 2d clean sub-axis 诊断, n = 3(gemini-3.5-flash + qwen-3vl-8b/32b)。
+  // Isabella 已 fold 3-家 CI 到 bench/analysis/subscore_ci.json。数据驱动。
   function renderSubClean(){
     var host = document.getElementById("hs-subclean");
     if(!host) return;
-    fetch("bench/analysis/subscore_ci.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/analysis/subscore_ci.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var judges = (d && d.judges) || {};
-        var pilot = judges["gemini-3.5-flash"];
-        if(!pilot){ host.innerHTML = ""; return; }
-        // Order: sort by hard_recall descending so physical axes group top, identity axes bottom
-        var axes = Object.keys(pilot);
-        axes.sort(function(a,b){
-          var av = (pilot[a] && pilot[a].hard_recall && pilot[a].hard_recall.est) || 0;
-          var bv = (pilot[b] && pilot[b].hard_recall && pilot[b].hard_recall.est) || 0;
-          return bv - av;
+        var judgeNames = Object.keys(judges);
+        if(!judgeNames.length){ host.innerHTML = ""; return; }
+        judgeNames.sort(function(a,b){
+          var order = { "gemini-3.5-flash": 0, "qwen3-vl-32b-instruct": 1, "qwen3-vl-8b-instruct": 2 };
+          var oa = a in order ? order[a] : 100;
+          var ob = b in order ? order[b] : 100;
+          if(oa !== ob) return oa - ob;
+          return a.localeCompare(b);
         });
+        var AXIS_ORDER = ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"];
         var axisLabel = {
-          agent_consistency:  "agent consistency",
-          scene_consistency:  "scene consistency",
-          interaction_realism: "interaction realism",
-          agent_match:        "agent match",
-          object_correct:     "object correct",
-          goal_completed:     "goal completed"
+          agent_consistency:  "机械手/人手一致",
+          scene_consistency:  "场景/物体一致",
+          interaction_realism: "交互真实",
+          agent_match:        "机械手/人手匹配",
+          object_correct:     "物体正确",
+          goal_completed:     "目标完成"
         };
         var PA_AXES = { agent_consistency:1, scene_consistency:1, interaction_realism:1 };
-        var IA_AXES = { agent_match:1, object_correct:1, goal_completed:1 };
+        var judgeShort = {
+          "gemini-3.5-flash":       "gemini-3.5-flash",
+          "qwen3-vl-8b-instruct":   "qwen-3-vl 8b",
+          "qwen3-vl-32b-instruct":  "qwen-3-vl 32b"
+        };
+        var AXIS_TAG = {
+          object_correct:      { label: "普适", color: "#7c3aed", bg: "#f5f3ff", detail: "3 家全崩" },
+          agent_consistency:   { label: "flash-only", color: "#0891b2", bg: "#ecfeff", detail: "只有 flash 敢判物理" },
+          scene_consistency:   { label: "flash-only", color: "#0891b2", bg: "#ecfeff", detail: "只有 flash 敢判物理" },
+          interaction_realism: { label: "flash-only", color: "#0891b2", bg: "#ecfeff", detail: "只有 flash 敢判物理" },
+          agent_match:         { label: "qwen-only", color: "#dc2626", bg: "#fef2f2", detail: "qwen 反超 flash" },
+          goal_completed:      { label: "mixed",     color: "#64748b", bg: "#f8fafc", detail: "无主导 pattern" }
+        };
         function fmtPct(v){ return v == null ? '—' : (v * 100).toFixed(1) + ' %'; }
         function ciStr(ci){ return ci ? ' [' + (ci.lo*100).toFixed(1) + ', ' + (ci.hi*100).toFixed(1) + ']' : ''; }
         function widthPct(v){ return Math.max(1.5, Math.min(100, (v || 0) * 100)); }
-        var html = '<div class="hs-h" style="border:0;padding:0 0 6px"><h3 style="font-size:13px;color:#334155;margin:0">Recall of human-marked violations · gemini-3.5-flash (n = 865)</h3></div>';
-        html += '<table style="width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums">';
+        function classifyJudge(rec){
+          var hards = [], gaps = [];
+          Object.keys(rec).forEach(function(ax){
+            var r = rec[ax];
+            if(!r) return;
+            var h = r.hard_recall && r.hard_recall.est;
+            var l = r.lenient_recall && r.lenient_recall.est;
+            if(h != null) hards.push(h);
+            if(h != null && l != null) gaps.push(l - h);
+          });
+          hards.sort(function(a,b){return a-b;});
+          gaps.sort(function(a,b){return a-b;});
+          var medHard = hards.length ? hards[Math.floor(hards.length/2)] : 0;
+          var medGap  = gaps.length  ? gaps[Math.floor(gaps.length/2)]  : 0;
+          if(medGap > 0.25) return { label: "hedge 主导", color: "#7c3aed", bg: "#f5f3ff", detail: "看到违规 → 降级成 minor" };
+          if(medHard < 0.15) return { label: "miss 主导", color: "#0891b2", bg: "#ecfeff", detail: "根本没标出违规" };
+          return { label: "混合", color: "#64748b", bg: "#f8fafc", detail: "无单一主导机制" };
+        }
+
+        var html = '';
+
+        // ── 1. 顶部结论 banner(Alice v85gs 中文定稿)──
+        html += '<div style="padding:14px 16px;background:linear-gradient(135deg,#fef2f2 0%,#f5f3ff 100%);border-left:4px solid #7c3aed;border-radius:6px;margin-bottom:14px;line-height:1.6">';
+        html += '<div style="font-size:12px;font-weight:700;color:#7c3aed;letter-spacing:.3px;text-transform:uppercase;margin-bottom:6px">发现 · n = ' + judgeNames.length + '</div>';
+        html += '<div style="font-size:13.5px;color:#0f172a">';
+        html += '判官系统性不肯对"身份违规"下 hard 判决 —— 3 家判官(gemini-3.5-flash + qwen-8b/32b)在 <b>object_correct</b> 上全部崩:人类判"拿错物体"的视频里,判官几乎从不硬判违规。机制两分:gemini 看到了却打成"轻微"(<b style="color:#7c3aed">hedge</b>),qwen 根本没标出来(<b style="color:#0891b2">miss</b>)。';
+        html += '</div></div>';
+
+        // ── 2. 3-judge 汇总矩阵(带 Yu 三类标签)──
+        html += '<div style="margin-top:14px"><h3 style="font-size:13px;color:#334155;margin:0 0 8px 0">Hard-recall 矩阵(人类标违规的视频中,判官也硬判违规的比例)</h3>';
+        html += '<table style="width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums">';
         html += '<thead><tr style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px">';
-        html += '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e2e8f0">Sub-axis</th>';
-        html += '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e2e8f0;color:#dc2626">Hard recall (judge = 0) · 95 % CI</th>';
-        html += '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e2e8f0;color:#f59e0b">Lenient recall (judge ≤ 1) · 95 % CI</th>';
-        html += '<th style="text-align:right;padding:6px 8px;border-bottom:1px solid #e2e8f0;color:#7c3aed">Hedging gap</th>';
-        html += '<th style="text-align:right;padding:6px 8px;border-bottom:1px solid #e2e8f0;color:#64748b">n violation</th>';
+        html += '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e2e8f0">子轴</th>';
+        judgeNames.forEach(function(jn){
+          html += '<th style="text-align:right;padding:6px 8px;border-bottom:1px solid #e2e8f0">'+esc(judgeShort[jn] || jn)+'</th>';
+        });
+        html += '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e2e8f0">分类</th>';
         html += '</tr></thead><tbody>';
-        axes.forEach(function(ax){
-          var rec = pilot[ax];
-          if(!rec) return;
-          var hard = rec.hard_recall || {};
-          var lenient = rec.lenient_recall || {};
-          var gap = (lenient.est != null && hard.est != null) ? (lenient.est - hard.est) : null;
+        AXIS_ORDER.forEach(function(ax){
           var isPA = !!PA_AXES[ax];
           var rowBg = isPA ? '#f0f9ff' : '#fef2f2';
-          var axisTag = isPA
-            ? '<span style="font-size:9.5px;font-weight:600;color:#1d4ed8;background:#dbeafe;padding:1px 5px;border-radius:2px;margin-left:6px">PA</span>'
-            : '<span style="font-size:9.5px;font-weight:600;color:#b91c1c;background:#fee2e2;padding:1px 5px;border-radius:2px;margin-left:6px">IA</span>';
+          var tag = AXIS_TAG[ax] || { label: "—", color: "#64748b", bg: "#f8fafc", detail: "" };
           html += '<tr style="border-bottom:1px solid #f1f5f9;background:'+rowBg+'">';
-          html += '<td style="padding:8px;font-weight:600;color:#0f172a">'+esc(axisLabel[ax] || ax)+axisTag+'</td>';
-          // Hard recall bar
-          html += '<td style="padding:8px">';
-          html += '<div style="display:flex;align-items:center;gap:8px">';
-          html += '<div style="flex:1;height:16px;background:rgba(255,255,255,0.7);border-radius:3px;position:relative;overflow:hidden">';
-          html += '<div style="position:absolute;left:0;top:0;bottom:0;width:'+widthPct(hard.est)+'%;background:#dc2626;border-radius:3px;opacity:0.85"></div>';
-          if(hard.lo != null && hard.hi != null){
-            html += '<div style="position:absolute;left:'+widthPct(hard.lo)+'%;top:4px;bottom:4px;width:'+(widthPct(hard.hi) - widthPct(hard.lo))+'%;border-left:1px solid #7f1d1d;border-right:1px solid #7f1d1d"></div>';
-          }
-          html += '</div>';
-          html += '<span style="min-width:130px;font-size:11.5px;color:#0f172a;font-weight:600">'+fmtPct(hard.est)+' <small style="color:#94a3b8;font-weight:400">'+ciStr(hard)+'</small></span>';
-          html += '</div>';
+          html += '<td style="padding:8px;font-weight:600;color:#0f172a">'+esc(axisLabel[ax] || ax);
+          html += isPA
+            ? ' <span style="font-size:9.5px;font-weight:600;color:#1d4ed8;background:#dbeafe;padding:1px 5px;border-radius:2px;margin-left:4px">PA</span>'
+            : ' <span style="font-size:9.5px;font-weight:600;color:#b91c1c;background:#fee2e2;padding:1px 5px;border-radius:2px;margin-left:4px">IA</span>';
           html += '</td>';
-          // Lenient recall bar
-          html += '<td style="padding:8px">';
-          html += '<div style="display:flex;align-items:center;gap:8px">';
-          html += '<div style="flex:1;height:16px;background:rgba(255,255,255,0.7);border-radius:3px;position:relative;overflow:hidden">';
-          html += '<div style="position:absolute;left:0;top:0;bottom:0;width:'+widthPct(lenient.est)+'%;background:#f59e0b;border-radius:3px;opacity:0.85"></div>';
-          if(lenient.lo != null && lenient.hi != null){
-            html += '<div style="position:absolute;left:'+widthPct(lenient.lo)+'%;top:4px;bottom:4px;width:'+(widthPct(lenient.hi) - widthPct(lenient.lo))+'%;border-left:1px solid #78350f;border-right:1px solid #78350f"></div>';
-          }
-          html += '</div>';
-          html += '<span style="min-width:130px;font-size:11.5px;color:#0f172a;font-weight:600">'+fmtPct(lenient.est)+' <small style="color:#94a3b8;font-weight:400">'+ciStr(lenient)+'</small></span>';
-          html += '</div>';
-          html += '</td>';
-          // Hedging gap
-          var gapColor = gap != null && gap > 0.35 ? '#7c3aed' : (gap != null && gap > 0.15 ? '#a855f7' : '#94a3b8');
-          html += '<td style="padding:8px;text-align:right;font-weight:700;color:'+gapColor+'">'+(gap != null ? (gap * 100).toFixed(1) + ' pt' : '—')+'</td>';
-          html += '<td style="padding:8px;text-align:right;color:#64748b">'+((rec.n_violation_items != null) ? rec.n_violation_items : '—')+'</td>';
+          judgeNames.forEach(function(jn){
+            var rec = judges[jn] && judges[jn][ax];
+            var hard = rec && rec.hard_recall;
+            var v = hard && hard.est;
+            var bg = v == null ? '#ffffff' : (v < 0.15 ? '#fee2e2' : v < 0.4 ? '#fef3c7' : '#dcfce7');
+            var color = v == null ? '#94a3b8' : (v < 0.15 ? '#b91c1c' : v < 0.4 ? '#92400e' : '#166534');
+            html += '<td style="padding:8px;text-align:right;background:'+bg+';color:'+color+';font-weight:700">'+fmtPct(v)+'</td>';
+          });
+          html += '<td style="padding:8px"><span style="font-size:10px;font-weight:700;color:'+tag.color+';background:'+tag.bg+';padding:2px 7px;border-radius:3px;border:1px solid '+tag.color+'22">'+esc(tag.label)+'</span> <small style="color:#94a3b8;font-size:10.5px;margin-left:4px">'+esc(tag.detail)+'</small></td>';
           html += '</tr>';
         });
         html += '</tbody></table>';
-        html += '<div style="font-size:11.5px;color:#334155;margin-top:12px;line-height:1.55;padding:10px 12px;background:#f5f3ff;border-left:3px solid #7c3aed;border-radius:4px">';
-        html += '<b>How to read.</b> Bars show the fraction of clips a human marked as a violation on that sub-axis that the judge also flagged. Red bar = clips the judge called "clear violation" (0). Amber bar = clips the judge called at most "minor" (0 or 1). Both bars carry cluster-bootstrap 95 % CI (B = 10 000, cluster by item). The <b>hedging gap</b> is amber − red — the fraction of violations the judge quietly downgraded to "minor". Object-correctness sits at 2.8 % hard vs 60.3 % lenient, a 57-point gap: humans call "wrong object", the judge <em>sees</em> it, but calls it "minor" rather than "clear violation".';
+        html += '<div style="font-size:11px;color:#64748b;margin-top:6px">绿色 ≥ 40 % · 琥珀 15-40 % · 红 &lt; 15 %。行底色标注子轴族(PA 物理 / IA 指令)。分类:<b style="color:#7c3aed">普适</b> = 3 家全崩 · <b style="color:#0891b2">flash-only</b> = 仅 gemini-3.5-flash 的深度 exhibit · <b style="color:#dc2626">qwen-only</b> = qwen 超过 flash 的轴 · <b style="color:#64748b">mixed</b> = 无主导 pattern。</div>';
         html += '</div>';
-        // Partial-coverage caveat if 3.1-pro partial exists
-        var partial = judges["gemini-3.1-pro-preview"];
-        if(partial){
-          var partialCov = partial.agent_consistency && partial.agent_consistency.n_coverage;
-          html += '<div style="font-size:11px;color:#78350f;margin-top:8px;padding:8px 10px;background:#fef3c7;border-radius:4px;line-height:1.5">Partial replication: gemini-3.1-pro-preview covered '+ (partialCov || 41) +' / 875 items before the 2026-07-09 key revocation aborted the run. On that sample the direction of the finding agrees — physical-axis hard recall &gt; identity-axis hard recall — but the CIs are too wide to headline. Full pilot resumes once fresh keys arrive.</div>';
-        }
+
+        // ── 3. 单-judge 详细表(loop)──
+        html += '<div style="margin-top:20px"><h3 style="font-size:13px;color:#334155;margin:0 0 8px 0">单-judge 详情(hard / lenient / hedging gap,带 cluster-bootstrap 95 % CI)</h3>';
+        judgeNames.forEach(function(jn){
+          var rec = judges[jn];
+          if(!rec) return;
+          var cls = classifyJudge(rec);
+          var nCov = rec.agent_consistency && rec.agent_consistency.n_coverage;
+          var axesSorted = AXIS_ORDER.slice().sort(function(a,b){
+            var av = (rec[a] && rec[a].hard_recall && rec[a].hard_recall.est) || 0;
+            var bv = (rec[b] && rec[b].hard_recall && rec[b].hard_recall.est) || 0;
+            return bv - av;
+          });
+
+          html += '<div style="margin-top:12px;padding:10px 12px;background:'+cls.bg+';border-radius:6px;border:1px solid #e2e8f0">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">';
+          html += '<div><b style="font-size:12.5px;color:#0f172a">'+esc(judgeShort[jn] || jn)+'</b> <small style="color:#64748b">n = '+ (nCov != null ? nCov : '?') +'</small></div>';
+          html += '<div><span style="font-size:10.5px;font-weight:700;color:'+cls.color+';background:#ffffff;padding:3px 8px;border-radius:3px;border:1px solid '+cls.color+'">'+cls.label+'</span> <small style="color:#64748b;margin-left:6px">'+cls.detail+'</small></div>';
+          html += '</div>';
+          html += '<table style="width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums">';
+          html += '<thead><tr style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:.4px">';
+          html += '<th style="text-align:left;padding:5px 6px">子轴</th>';
+          html += '<th style="text-align:left;padding:5px 6px;color:#dc2626">Hard recall</th>';
+          html += '<th style="text-align:left;padding:5px 6px;color:#f59e0b">Lenient recall</th>';
+          html += '<th style="text-align:right;padding:5px 6px;color:#7c3aed">Gap</th>';
+          html += '<th style="text-align:right;padding:5px 6px;color:#64748b">n 违规</th>';
+          html += '</tr></thead><tbody>';
+          axesSorted.forEach(function(ax){
+            var r = rec[ax];
+            if(!r) return;
+            var hard = r.hard_recall || {};
+            var lenient = r.lenient_recall || {};
+            var gap = (lenient.est != null && hard.est != null) ? (lenient.est - hard.est) : null;
+            var isPA = !!PA_AXES[ax];
+            var axisTag = isPA
+              ? '<span style="font-size:9px;font-weight:600;color:#1d4ed8;background:#dbeafe;padding:1px 4px;border-radius:2px;margin-left:4px">PA</span>'
+              : '<span style="font-size:9px;font-weight:600;color:#b91c1c;background:#fee2e2;padding:1px 4px;border-radius:2px;margin-left:4px">IA</span>';
+            html += '<tr style="border-top:1px solid #f1f5f9">';
+            html += '<td style="padding:6px;font-weight:600;color:#0f172a">'+esc(axisLabel[ax] || ax)+axisTag+'</td>';
+            html += '<td style="padding:6px">';
+            html += '<div style="display:flex;align-items:center;gap:6px">';
+            html += '<div style="flex:1;height:12px;background:#ffffff;border-radius:2px;position:relative;overflow:hidden;border:1px solid #e2e8f0">';
+            html += '<div style="position:absolute;left:0;top:0;bottom:0;width:'+widthPct(hard.est)+'%;background:#dc2626;opacity:0.85"></div>';
+            html += '</div>';
+            html += '<span style="min-width:120px;font-size:11px;color:#0f172a;font-weight:600">'+fmtPct(hard.est)+' <small style="color:#94a3b8;font-weight:400">'+ciStr(hard)+'</small></span>';
+            html += '</div>';
+            html += '</td>';
+            html += '<td style="padding:6px">';
+            html += '<div style="display:flex;align-items:center;gap:6px">';
+            html += '<div style="flex:1;height:12px;background:#ffffff;border-radius:2px;position:relative;overflow:hidden;border:1px solid #e2e8f0">';
+            html += '<div style="position:absolute;left:0;top:0;bottom:0;width:'+widthPct(lenient.est)+'%;background:#f59e0b;opacity:0.85"></div>';
+            html += '</div>';
+            html += '<span style="min-width:120px;font-size:11px;color:#0f172a;font-weight:600">'+fmtPct(lenient.est)+' <small style="color:#94a3b8;font-weight:400">'+ciStr(lenient)+'</small></span>';
+            html += '</div>';
+            html += '</td>';
+            var gapColor = gap != null && gap > 0.3 ? '#7c3aed' : (gap != null && gap > 0.1 ? '#a855f7' : '#94a3b8');
+            html += '<td style="padding:6px;text-align:right;font-weight:700;color:'+gapColor+'">'+(gap != null ? (gap * 100).toFixed(1) + ' pt' : '—')+'</td>';
+            html += '<td style="padding:6px;text-align:right;color:#64748b">'+((r.n_violation_items != null) ? r.n_violation_items : '—')+'</td>';
+            html += '</tr>';
+          });
+          html += '</tbody></table>';
+          html += '</div>';
+        });
+        html += '</div>';
+
+        // ── 4. 阅读方法 ──
+        html += '<div style="font-size:11.5px;color:#334155;margin-top:14px;line-height:1.55;padding:10px 12px;background:#f5f3ff;border-left:3px solid #7c3aed;border-radius:4px">';
+        html += '<b>阅读方法。</b> 柱条显示人类在该子轴上标违规的视频里、判官也标违规的比例。<span style="color:#dc2626;font-weight:600">红柱</span> = 判官打"明确违规"(0)。<span style="color:#f59e0b;font-weight:600">琥珀柱</span> = 判官至少打"轻微"(0 或 1);分母为人类标违规的样本(P(judge ≤ 1 | gold = 0))。两个柱都带 cluster-bootstrap 95% CI(B = 10 000,按 item 聚类)。<b>Hedging gap</b> = 琥珀 − 红。两种失败模式并列:<b style="color:#7c3aed">hedge</b>(gap 大 = 判官看到但降级,如 flash object_correct hard 2.8% vs lenient 60.3%)和 <b style="color:#0891b2">miss</b>(gap 小 + hard 低 = 判官根本没标,如 qwen 8b/32b 的 object_correct)。';
+        html += '</div>';
+
+        // ── 5. Alice insight(中文定稿)──
+        html += '<div style="margin-top:14px;padding:12px 14px;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:4px;font-size:12.5px;color:#0f172a;line-height:1.6">';
+        html += '<div style="font-weight:700;color:#92400e;margin-bottom:8px;text-transform:uppercase;font-size:11px;letter-spacing:.3px">洞察(n = 3, Alice + Yu + Isabella 定稿)</div>';
+        html += '<ol style="margin:0;padding-left:20px">';
+        html += '<li style="margin-bottom:6px">唯一跨判官普适的 finding = <b>object_correct 三家全崩</b>(hard 2.8% / 8.4% / 10.7%),两种机制:gemini <em>hedge</em>(看到降级,lenient 60%)· qwen <em>miss</em>(没看到,lenient 仅 13-17%)。</li>';
+        html += '<li style="margin-bottom:6px">qwen 在 <b>agent_match</b> 上 hard 0.37-0.38 反超 flash 0.30 → qwen <em>有能力</em>硬判部分身份轴,只是不用到 object → object_correct 是最极端特例。</li>';
+        html += '<li style="margin-bottom:6px">"敢判物理(0.54-0.67)、独 hedge 身份"只在 <b>flash</b> 成立;qwen 物理也不敢判(0.02-0.29,整体弱)→ "物理 &gt; 身份"是 flash 的深度 exhibit,不是判官通病。</li>';
+        html += '<li>这把 § 2c"编成功故事"从单判官现象升级成<b>跨判官的 hard-judgment 缺失</b>:总榜分数盖住,只在"人类判违规"子集 + 子维度层面暴露。</li>';
+        html += '</ol>';
+        html += '</div>';
+
         host.innerHTML = html;
       })
       .catch(function(){ host.innerHTML = ""; });
@@ -964,8 +1055,8 @@
     var host = document.getElementById("hs-subaxis");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/judge_subscore_accuracy.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
-      fetch("bench/analysis/subscore_ci.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/judge_subscore_accuracy.json?v=v85gs", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
+      fetch("bench/analysis/subscore_ci.json?v=v85gs", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
         var d = pair[0];
         var ciMap = (pair[1] && pair[1].judges) || {};
@@ -1069,7 +1160,7 @@
   function renderMRMSE(){
     var host = document.getElementById("hs-mrmse");
     if(!host) return;
-    fetch("bench/analysis/model_level_rmse.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/analysis/model_level_rmse.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var byJ = (d && d.judges) || {};
@@ -1115,7 +1206,7 @@
   function renderTopSpacing(){
     var host = document.getElementById("hs-topspacing");
     if(!host) return;
-    fetch("bench/analysis/topspacing.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/analysis/topspacing.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.models){ host.innerHTML=""; return; }
@@ -1178,9 +1269,9 @@
     var host = document.getElementById("hs-table1");
     if(!host) return;
     var md, strict, ciAll;
-    var mdUrl = "bench/leaderboard.md?v=v85gq";
-    var strictUrl = "bench/model_ranking_strict.json?v=v85gq";
-    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85gq";
+    var mdUrl = "bench/leaderboard.md?v=v85gs";
+    var strictUrl = "bench/model_ranking_strict.json?v=v85gs";
+    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85gs";
     // Global scale for the mini error-bar strip: fixed range so error bars are
     // visually comparable across the table (widened enough to fit both the
     // strong-judge PA CIs and weak-judge CIs).
@@ -2190,40 +2281,40 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -2234,8 +2325,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85gq", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85gs", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85gs", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -2246,11 +2337,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -2259,11 +2350,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/analysis/bootstrap_ci.json?v=v85gq", {cache:"no-store"})
+    fetch("bench/analysis/bootstrap_ci.json?v=v85gs", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
