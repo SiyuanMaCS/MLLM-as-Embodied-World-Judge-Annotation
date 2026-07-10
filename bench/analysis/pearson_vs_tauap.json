@@ -1,17 +1,55 @@
 {
   "_meta": {
-    "note": "Pearson (per-item calibration, higher=better) x τ_ap (AP-weighted Kendall on 10-merged base, higher=better). Spearman correlation across 10 judges measures whether these two dimensions align. Both higher-better here (unlike K_norm which was lower-better). | 2026-07-09 update: both 10-judge (pre-cosmos, ρ_PA=−0.14) and 13-judge (with cosmos, ρ_PA=+0.47) slices preserved so §2b can quote whichever fits the argument. Ham argues existence framing (gemini-2.5-pro alone proves decoupling exists) is stronger than population ρ.",
-    "n_judges": 13,
-    "medians_recomputed": "2026-07-09 (13-judge basis, all cosmos included)",
-    "cosmos_added": "2026-07-09",
-    "spearman_note": "Population ρ shifted with cosmos three (concordant low-P low-τap pushes ρ positive). Prefer existence framing over population ρ."
+    "note": "Pearson (per-item calibration, higher=better) x τ_ap (AP-weighted Kendall on 10-merged base, higher=better). Spearman correlation across 10 judges measures whether these two dimensions align. Both higher-better here (unlike K_norm which was lower-better). | 2026-07-09 update: both 10-judge (pre-cosmos, ρ_PA=−0.14) and 13-judge (with cosmos, ρ_PA=+0.47) slices preserved so §2b can quote whichever fits the argument. Ham argues existence framing (gemini-2.5-pro alone proves decoupling exists) is stronger than population ρ. | 2026-07-10: internvl3.5-38b/8b added (PR #43 merge). 15-judge slice appended. All slices preserved.",
+    "n_judges": 15,
+    "slices_note": "10j = original (no cosmos, no internvl) preserves the −0.14 PA-ρ headline; 13j = +cosmos (ρ→+0.47); 15j = +cosmos +internvl (ρ→see spearman_by_slice)",
+    "internvl_added": "2026-07-10",
+    "cosmos_added": "2026-07-09"
   },
-  "spearman_pa": 0.467,
-  "spearman_ia": 0.489,
-  "median_pa_pearson": 0.359,
-  "median_pa_tauap": 0.567,
-  "median_ia_pearson": 0.428,
+  "spearman_pa": 0.546,
+  "spearman_ia": 0.464,
+  "median_pa_pearson": 0.356,
+  "median_pa_tauap": 0.542,
+  "median_ia_pearson": 0.42,
   "median_ia_tauap": 0.657,
+  "spearman_by_slice": {
+    "10_judges_no_cosmos_no_internvl": {
+      "pa": -0.139,
+      "ia": 0.806,
+      "medians_pa": {
+        "pearson": 0.41,
+        "tau_ap": 0.72
+      },
+      "medians_ia": {
+        "pearson": 0.516,
+        "tau_ap": 0.58
+      }
+    },
+    "13_judges_with_cosmos": {
+      "pa": 0.467,
+      "ia": 0.489,
+      "medians_pa": {
+        "pearson": 0.359,
+        "tau_ap": 0.567
+      },
+      "medians_ia": {
+        "pearson": 0.428,
+        "tau_ap": 0.657
+      }
+    },
+    "15_judges_with_internvl": {
+      "pa": 0.546,
+      "ia": 0.464,
+      "medians_pa": {
+        "pearson": 0.356,
+        "tau_ap": 0.542
+      },
+      "medians_ia": {
+        "pearson": 0.42,
+        "tau_ap": 0.657
+      }
+    }
+  },
   "pa": [
     {
       "judge": "cosmos-reason2-2b",
@@ -35,7 +73,7 @@
       "judge": "gemini-2.5-flash",
       "pearson": 0.356,
       "tau_ap": 0.467,
-      "quadrant": "low-P low-τap"
+      "quadrant": "high-P low-τap"
     },
     {
       "judge": "gemini-2.5-pro",
@@ -66,6 +104,18 @@
       "pearson": 0.417,
       "tau_ap": 0.485,
       "quadrant": "high-P low-τap"
+    },
+    {
+      "judge": "internvl3.5-38b",
+      "pearson": 0.152,
+      "tau_ap": 0.542,
+      "quadrant": "low-P high-τap"
+    },
+    {
+      "judge": "internvl3.5-8b",
+      "pearson": 0.116,
+      "tau_ap": 0.106,
+      "quadrant": "low-P low-τap"
     },
     {
       "judge": "qwen3-vl-32b-instruct",
@@ -109,7 +159,7 @@
       "judge": "cosmos3-nano-reasoner",
       "pearson": 0.42,
       "tau_ap": 0.701,
-      "quadrant": "low-P high-τap"
+      "quadrant": "high-P high-τap"
     },
     {
       "judge": "gemini-2.5-flash",
@@ -148,6 +198,18 @@
       "quadrant": "high-P high-τap"
     },
     {
+      "judge": "internvl3.5-38b",
+      "pearson": 0.31,
+      "tau_ap": 0.676,
+      "quadrant": "low-P high-τap"
+    },
+    {
+      "judge": "internvl3.5-8b",
+      "pearson": 0.196,
+      "tau_ap": 0.574,
+      "quadrant": "low-P low-τap"
+    },
+    {
       "judge": "qwen3-vl-32b-instruct",
       "pearson": 0.396,
       "tau_ap": 0.529,
@@ -171,31 +233,5 @@
       "tau_ap": 0.75,
       "quadrant": "high-P high-τap"
     }
-  ],
-  "spearman_by_slice": {
-    "10_judges_no_cosmos": {
-      "pa": -0.139,
-      "ia": 0.806,
-      "medians_pa": {
-        "pearson": 0.41,
-        "tau_ap": 0.72
-      },
-      "medians_ia": {
-        "pearson": 0.516,
-        "tau_ap": 0.58
-      }
-    },
-    "13_judges_with_cosmos": {
-      "pa": 0.467,
-      "ia": 0.489,
-      "medians_pa": {
-        "pearson": 0.359,
-        "tau_ap": 0.567
-      },
-      "medians_ia": {
-        "pearson": 0.428,
-        "tau_ap": 0.657
-      }
-    }
-  }
+  ]
 }
