@@ -275,7 +275,7 @@
         <span class="hs-sub">PA 7.4 % ≈ IA 7.9 % · not instruction-conditioned · not random</span>
       </div>
       <div style="font-size:13px;color:#334155;padding:6px 4px;line-height:1.75">
-        <b>Judges confabulate task success.</b> On clips humans rate as clear failures, judges do not merely miss the error — they narrate a fluent, specific success. Across the sub-population of clips humans marked as clear violations, judges confidently assign passing scores in agreement across independent judges, and at nearly the same rate on instruction-alignment and physical-adherence dimensions alike (7.9 % vs 7.4 %). The failure is <em>dimension-general</em>: it appears at almost the same rate on physical-adherence judging that sees no instruction, and independent judges collectively confabulate the same false pass. The rationale reads convincingly but reports the expected outcome, not the rendered one — a general grounding failure, not random noise. The aggregate leaderboard scores mask this per-clip failure; it surfaces only when we condition on the sub-population humans marked as clear violations.
+        On clips humans rate as clear failures, judges do not just miss the error — they confidently narrate a specific success. Independent judges collectively pass 7.9 % of IA violations and 7.4 % of PA violations; the rate is nearly identical, so the failure is not driven by the instruction (physical-adherence judging sees no instruction and shows the same rate). Aggregate leaderboard scores hide this — it only surfaces on the subset humans marked as clear violations.
       </div>
       <div id="hs-confab" style="margin-top:6px"><div class="hs-empty">loading…</div></div>
       <div id="hs-confab-case" style="margin-top:14px"></div>
@@ -568,7 +568,7 @@
   function renderVideogenAppendix(){
     var host = document.getElementById("hs-vg-appendix");
     if(!host) return;
-    fetch("bench/videogen_leaderboard.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/videogen_leaderboard.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(data){
         // Collapse _prefix / _rewrite variants into base model, weighted by n
@@ -614,7 +614,7 @@
   function renderJudgeDist(){
     var host = document.getElementById("hs-judgedist");
     if(!host) return;
-    fetch("bench/analysis/judge_distributions.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/analysis/judge_distributions.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.human_gold){ host.innerHTML=""; return; }
@@ -710,8 +710,8 @@
     var host = document.getElementById("hs-decoupling");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/bootstrap_ci.json?v=v85gk", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
-      fetch("bench/model_ranking_strict.json?v=v85gk", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/bootstrap_ci.json?v=v85gl", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch("bench/model_ranking_strict.json?v=v85gl", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
       var ci = (pair[0] && pair[0].judges) || {};
       var strict = pair[1] || {};
@@ -790,7 +790,7 @@
   function renderConfab(){
     var host = document.getElementById("hs-confab");
     if(!host) return;
-    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.pa || !d.ia){ host.innerHTML = ""; return; }
@@ -820,12 +820,6 @@
         html += '</div>';
         html += '<div></div>';
         html += '</div>';
-        // Conclusion callout
-        if(d.conclusion){
-          html += '<div style="font-size:11.5px;color:#334155;margin-top:14px;line-height:1.55;padding:8px 10px;background:#f0f9ff;border-left:3px solid #0284c7;border-radius:4px">';
-          html += '<b>Control experiment.</b> ' + esc(d.conclusion.replace(/\\u2014/g, '—'));
-          html += '</div>';
-        }
         host.innerHTML = html;
 
         // Ham's hand-verified exhibit (extractor-independent — verdict from
@@ -833,15 +827,14 @@
         // for the 5-of-5 case Ham read manually).
         var caseHost = document.getElementById("hs-confab-case");
         if(caseHost){
-          var cx = '<div class="hs-h" style="border:0;padding:0 0 4px"><h3 style="font-size:13px;color:#334155;margin:0">Hand-verified exhibit · all five judges confabulate success</h3></div>';
+          var cx = '<div class="hs-h" style="border:0;padding:0 0 4px"><h3 style="font-size:13px;color:#334155;margin:0">Example clip · all five judges narrated a success that never happened</h3></div>';
           cx += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;background:linear-gradient(135deg,#fef2f2,#fff)">';
-          cx += '<div style="font-size:12px;color:#334155;margin-bottom:6px"><b>Clip.</b> <code style="background:#fff;padding:1px 5px;border-radius:3px;font-size:11.5px">agibot_world / task_0042</code> · generator = <code style="background:#fff;padding:1px 5px;border-radius:3px;font-size:11.5px">wow_wan14b_f105_rewrite</code> · human IA = 1 · human PA = 1 · all five full-reasoning judges rated IA ≥ 4 (gpt-5.2 = 5 · gpt5.5 = 4 · gemini-2.5-pro = 4 · seed2.0_pro = 5 · seed2.1_lite = 5). Manually inspected by Ham; independently verified by Alice on the canonical dedup + int-round pipeline.</div>';
-          cx += '<div style="font-size:12px;color:#334155;margin-bottom:8px"><b>All five independent judges narrate a smooth, specific success.</b></div>';
+          cx += '<div style="font-size:12px;color:#334155;margin-bottom:8px"><code style="background:#fff;padding:1px 5px;border-radius:3px;font-size:11.5px">agibot_world / task_0042</code> · human PA = 1 · human IA = 1 · all five judges rated IA ≥ 4.</div>';
           cx += '<div style="display:grid;grid-template-columns:1fr;gap:6px;font-size:12px;font-family:ui-sans-serif,system-ui,sans-serif">';
           cx += '<div style="padding:6px 10px;background:#fff;border-left:3px solid #dc2626;border-radius:4px"><span style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">gpt-5.2</span><br><span style="color:#0f172a;font-style:italic">"The right gripper picks up the green bottle and moves it into the open grey fabric bag."</span></div>';
           cx += '<div style="padding:6px 10px;background:#fff;border-left:3px solid #dc2626;border-radius:4px"><span style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;font-weight:600">gemini-2.5-pro</span><br><span style="color:#0f172a;font-style:italic">"The robot correctly manipulates all three specified objects: the green bottle, the crumpled bag, and the pink mug."</span></div>';
           cx += '</div>';
-          cx += '<div style="font-size:11.5px;color:#7f1d1d;margin-top:10px;line-height:1.55">Neither event occurs in the clip (human PA = 1). Both quotes are lifted from the judges\' free-text rationale for a clip they scored IA ≥ 4. This is the mechanism the aggregate above measures — plausible-sounding rationales reporting the expected outcome rather than the rendered one.</div>';
+          cx += '<div style="font-size:11.5px;color:#7f1d1d;margin-top:10px;line-height:1.55">Neither event occurs in the clip. The rationales sound plausible but describe the expected outcome, not the rendered one.</div>';
           cx += '</div>';
           caseHost.innerHTML = cx;
         }
@@ -857,7 +850,7 @@
   function renderSubClean(){
     var host = document.getElementById("hs-subclean");
     if(!host) return;
-    fetch("bench/analysis/subscore_ci.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/analysis/subscore_ci.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var judges = (d && d.judges) || {};
@@ -958,8 +951,8 @@
     var host = document.getElementById("hs-subaxis");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/judge_subscore_accuracy.json?v=v85gk", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
-      fetch("bench/analysis/subscore_ci.json?v=v85gk", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/judge_subscore_accuracy.json?v=v85gl", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
+      fetch("bench/analysis/subscore_ci.json?v=v85gl", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
         var d = pair[0];
         var ciMap = (pair[1] && pair[1].judges) || {};
@@ -1063,7 +1056,7 @@
   function renderMRMSE(){
     var host = document.getElementById("hs-mrmse");
     if(!host) return;
-    fetch("bench/analysis/model_level_rmse.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/analysis/model_level_rmse.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var byJ = (d && d.judges) || {};
@@ -1109,7 +1102,7 @@
   function renderTopSpacing(){
     var host = document.getElementById("hs-topspacing");
     if(!host) return;
-    fetch("bench/analysis/topspacing.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/analysis/topspacing.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.models){ host.innerHTML=""; return; }
@@ -1172,9 +1165,9 @@
     var host = document.getElementById("hs-table1");
     if(!host) return;
     var md, strict, ciAll;
-    var mdUrl = "bench/leaderboard.md?v=v85gk";
-    var strictUrl = "bench/model_ranking_strict.json?v=v85gk";
-    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85gk";
+    var mdUrl = "bench/leaderboard.md?v=v85gl";
+    var strictUrl = "bench/model_ranking_strict.json?v=v85gl";
+    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85gl";
     // Global scale for the mini error-bar strip: fixed range so error bars are
     // visually comparable across the table (widened enough to fit both the
     // strong-judge PA CIs and weak-judge CIs).
@@ -2184,40 +2177,40 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -2228,8 +2221,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85gk", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85gk", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85gl", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85gl", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -2240,11 +2233,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -2253,11 +2246,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/analysis/bootstrap_ci.json?v=v85gk", {cache:"no-store"})
+    fetch("bench/analysis/bootstrap_ci.json?v=v85gl", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
