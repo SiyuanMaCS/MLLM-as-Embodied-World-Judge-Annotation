@@ -1407,18 +1407,10 @@ function renderItem(it) {
   bindVideoSources(gen, it.video_sources);
   gen.load();
   setInitFrame(it.init_frame_url, "");
-  const gtFig = document.getElementById("gt-fig");
-  const gt = document.getElementById("gt-video");
-  if (it.gt_url) {
-    // GT-side sources may be a separate field; fall back to host-swap on the gt_url.
-    gt.src = pickVideoUrl(it.gt_video_sources, it.gt_url);
-    bindVideoSources(gt, it.gt_video_sources);
-    gt.load();
-    gtFig.hidden = false;
-  } else {
-    gt.removeAttribute("src");
-    gtFig.hidden = true;
-  }
+  // v85gr (siyuan): GT reference now lives inside the init-frame figure below
+  // the init image (see setInitFrameGtVideo). The old row-level gt-fig / gt-video
+  // column is gone; the item still carries gt_url + gt_video_sources unchanged.
+  setInitFrameGtVideo(it.gt_url, it.gt_video_sources, "");
   document.getElementById("physical_notes").value = "";
   document.getElementById("instruction_notes").value = "";
   // v85k: default fresh item to score 5 + all subs ✓ — siyuan: 完美视频可直接保存.
@@ -1589,6 +1581,33 @@ function bindVideoSources(videoEl, sources) {
    (default empty = '#init-frame-fig'+'#init-frame-img'; 'al-' for align form,
    'al-others-' for the review panel). Click → lightbox via openImageLightbox.
    Ham confirms init_frame_url is on every backend item payload + proxied (China-reachable). */
+/* v85gr (siyuan): populate a small ground-truth reference video under the init
+   frame in task / review / align, so annotators can see the real GT while
+   scoring the generated clip. The video element (`<video class="init-frame-gt-video">`)
+   sits inside the same `.init-frame-fig` figure below the init image.
+   Backend-provided `it.gt_url` (+ optional `it.gt_video_sources` for host
+   fallback) drives it; the video is muted/looped/inline so it plays without
+   pulling focus. */
+function setInitFrameGtVideo(url, sources, prefix) {
+  const p = prefix || "";
+  const vid = document.getElementById(p + "init-frame-gt-video");
+  if (!vid) return;
+  const cap = vid.parentElement ? vid.parentElement.querySelector(".init-frame-gt-cap") : null;
+  if (!url) {
+    vid.hidden = true;
+    if (cap) cap.hidden = true;
+    try { vid.pause(); } catch (_) {}
+    vid.removeAttribute("src");
+    vid.dataset.originalSrc = "";
+    return;
+  }
+  const chosen = pickVideoUrl(sources, url);
+  vid.src = chosen;
+  bindVideoSources(vid, sources);
+  vid.hidden = false;
+  if (cap) cap.hidden = false;
+}
+
 function setInitFrame(url, prefix) {
   const p = prefix || "";
   const fig = document.getElementById(p + "init-frame-fig");
@@ -4053,6 +4072,7 @@ function renderReviewItem(it) {
   bindVideoSources(reviewGen, it.video_sources);
   reviewGen.load();
   setInitFrame(it.init_frame_url, "");
+  setInitFrameGtVideo(it.gt_url, it.gt_video_sources, "");
   // v85aa: Ham added init_frame_url + instruction + instruction_cn to review_next,
   // so reuse the standard fetchPrompt path (handles inline + HF fallback + lang toggle).
   document.getElementById("prompt-text").textContent = "(loading instruction…)";
@@ -4385,6 +4405,7 @@ function renderArbitrationItem(it) {
   bindVideoSources(v, it.video_sources);
   v.load();
   setInitFrame(it.init_frame_url, "");
+  setInitFrameGtVideo(it.gt_url, it.gt_video_sources, "");
   CURRENT_INSTRUCTION = {
     video_url: it.video_url, targetId: "prompt-text",
     en: it.instruction || "", cn: it.instruction_cn || "",
@@ -6004,6 +6025,7 @@ async function loadAlignNext() {
     bindVideoSources(vid, d.video_sources);
     vid.load();
     setInitFrame(d.init_frame_url, "al-");
+    setInitFrameGtVideo(d.gt_url, d.gt_video_sources, "al-");
     // Ignore d.prompt (may be prefix/rewrite version) — always use canonical instruction.
     CURRENT_INSTRUCTION = {
       video_url: d.video_url,
@@ -6243,9 +6265,10 @@ async function loadAlignItemForEdit(itSeed) {
   bindVideoSources(vid, it.video_sources);
   vid.load();
   setInitFrame(it.init_frame_url, "al-");
+  setInitFrameGtVideo(it.gt_url, it.gt_video_sources, "al-");
   CURRENT_INSTRUCTION = {
     video_url: it.video_url, targetId: "al-prompt",
-    en: it.instruction || "", cn: it.instruction_cn || "",
+  en: it.instruction || "", cn: it.instruction_cn || "",
   };
   if (CURRENT_INSTRUCTION.en || CURRENT_INSTRUCTION.cn) applyCurrentInstruction();
   else fetchInstructionInto(it.video_url, "al-prompt");
@@ -6292,9 +6315,10 @@ async function loadAlignItemForAnnotate(itSeed) {
   bindVideoSources(vid, it.video_sources);
   vid.load();
   setInitFrame(it.init_frame_url, "al-");
+  setInitFrameGtVideo(it.gt_url, it.gt_video_sources, "al-");
   CURRENT_INSTRUCTION = {
     video_url: it.video_url, targetId: "al-prompt",
-    en: it.instruction || "", cn: it.instruction_cn || "",
+  en: it.instruction || "", cn: it.instruction_cn || "",
   };
   if (CURRENT_INSTRUCTION.en || CURRENT_INSTRUCTION.cn) applyCurrentInstruction();
   else fetchInstructionInto(it.video_url, "al-prompt");
@@ -6405,6 +6429,7 @@ async function showAlignOthers(item_id) {
       ov.load();
     }
     setInitFrame(d.init_frame_url, "al-others-");
+    setInitFrameGtVideo(d.gt_url, d.gt_video_sources, "al-others-");
     // Instruction (same path as the annotate form — prefer backend-supplied text, fallback HF fetch).
     CURRENT_INSTRUCTION = {
       video_url: d.video_url,

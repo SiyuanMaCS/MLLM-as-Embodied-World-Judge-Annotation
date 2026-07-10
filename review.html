@@ -6,7 +6,7 @@
 <title>Review Queue — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85gn4">
+<link rel="stylesheet" href="style.css?v=v85gr">
 </head>
 <body>
 <main>
@@ -46,6 +46,8 @@
       <figure class="init-frame-fig" id="init-frame-fig" hidden>
         <figcaption data-i18n="task.init_frame">Init frame</figcaption>
         <img id="init-frame-img" class="init-frame-img" alt="Init frame" loading="lazy">
+        <figcaption class="init-frame-gt-cap" data-i18n="task.gt_reference" hidden>Ground-truth reference</figcaption>
+        <video id="init-frame-gt-video" class="init-frame-gt-video" controls preload="metadata" muted loop playsinline webkit-playsinline="true" x5-playsinline="true" hidden></video>
       </figure>
       <figure><figcaption>Generated</figcaption><video id="gen-video" controls preload="metadata" muted playsinline webkit-playsinline="true" x5-playsinline="true"></video></figure>
     </div>
@@ -147,6 +149,6 @@
 
   <section id="error" class="card error" hidden><h3 data-i18n="common.notice">Notice</h3><p id="error-msg">—</p><button id="retry-btn" data-i18n="common.retry">Retry</button></section>
 </main>
-<script src="app.js?v=v85gn4" defer></script>
+<script src="app.js?v=v85gr" defer></script>
 </body>
 </html>
