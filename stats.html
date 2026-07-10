@@ -281,6 +281,23 @@
       <div id="hs-confab-case" style="margin-top:14px"></div>
     </section>
 
+    <!-- ═══ § 2d  Sub-axis diagnostic · which axis do judges systematically fail on? ═══ -->
+    <section class="hs-card">
+      <div class="hs-h">
+        <h2><span style="color:#94a3b8;margin-right:6px">§ 2d</span>Sub-axis diagnostic · what do the judges fail to detect?</h2>
+        <span class="hs-sub">recall of human-marked violations · higher = better</span>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 12px;margin:4px 4px 12px;font-size:12.5px;color:#78350f;line-height:1.55">
+        ⚠️ <b>Preliminary numbers — do not cite the point estimates.</b> The sub-axis judgements are extracted from each judge's free-text reasoning by a rule-based parser that Yu subsequently found to have a ~27 % false-negative rate (it misses violations that the judge in fact stated using negated phrasings such as "not performed by the same manipulator"). Per-cell recall_violation values are therefore systematically biased low; Isabella's cluster-bootstrap CI is narrow but describes sampling variance, not the extraction bias. The <em>directional</em> finding — physical-artifact axes are caught much more reliably than identity-grounding axes — appears qualitatively robust on the 5 full-reasoning judges. Precise numbers will be revised once the clean-extraction re-judge lands (Alice's g31 pipeline with explicit sub-score output; 1 / 5 judges complete on gemini-3.5-flash, second replication paused by the 07-09 Gemini-key deletion until fresh keys arrive).
+      </div>
+      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
+        Every human annotation carries a 6-dimensional sub-score (agent consistency, scene consistency, interaction realism, agent match, object correct, goal completed). We extract the corresponding sub-judgements from each judge's free-text reasoning and, per siyuan's default rule, treat an omitted dimension as the judge inferring "no problem" (pass = 1). Colour = 1 − recall_violation on the human-flagged violation set (red = judge missed the violation, green = judge caught it). Reading down each column exposes the axes on which VLM judges most consistently fail; reading across each row exposes each judge's own blind spots.<br><br>
+        <b>Directional finding (5 full-reasoning judges, qualitative only).</b> The three visual-artifact axes (scene / interaction / agent consistency) are caught reliably; the two identity-grounding axes (agent_match, object_correct) are missed much more often. Judges catch what a video looks wrong at, but systematically miss whether the video obeys the instruction's identity constraints. <em>Physical perception outruns semantic grounding.</em> This is the semantic-severe manifestation of the § 2c general reluctance to flag violations — under the two-layer umbrella (general confabulation + semantic-specific hedging), object-correctness is the extreme case: humans mark "wrong object" and judges hedge overwhelmingly to "minor" or "pass" rather than issue a hard violation verdict.<br><br>
+        <b>Truncated rows (last 5).</b> The Gemini and qwen judges had their reasoning field truncated at ~300 characters when originally run, so the 3rd sub-dimension onward is usually missing; the corresponding cells default to pass and are marked with hatching. Numbers preliminary until reruns with full reasoning; see the preliminary-numbers caveat above.
+      </div>
+      <div id="hs-subaxis"><div class="hs-empty">loading…</div></div>
+    </section>
+
     <!-- ═══ § 3  Per-embodiment (analysis + main viz + quality-vs-error confound) ═══ -->
     <section class="hs-card">
       <div class="hs-h">
@@ -369,22 +386,6 @@
       <div id="hs-mrmse"><div class="hs-empty">loading…</div></div>
     </section>
 
-    <!-- F. Sub-axis error heatmap (10 judges × 6 sub-axes) — Yu's extraction -->
-    <section class="hs-card">
-      <div class="hs-h">
-        <h2><span style="color:#94a3b8;margin-right:6px">F</span>Sub-axis diagnostic · what do the judges fail to detect?</h2>
-        <span class="hs-sub">recall of human-marked violations · higher = better</span>
-      </div>
-      <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 12px;margin:4px 4px 12px;font-size:12.5px;color:#78350f;line-height:1.55">
-        ⚠️ <b>Preliminary numbers — do not cite the point estimates.</b> The sub-axis judgements are extracted from each judge's free-text reasoning by a rule-based parser that Yu subsequently found to have a ~27 % false-negative rate (it misses violations that the judge in fact stated using negated phrasings such as "not performed by the same manipulator"). Per-cell recall_violation values are therefore systematically biased low; Isabella's cluster-bootstrap CI is narrow but describes sampling variance, not the extraction bias. The <em>directional</em> finding — physical-artifact axes are caught much more reliably than identity-grounding axes — appears qualitatively robust on the 5 full-reasoning judges. Precise numbers will be revised once the extractor is re-run through an LLM (Gemini flash-lite) on the same reasoning strings.
-      </div>
-      <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
-        Every human annotation carries a 6-dimensional sub-score (agent consistency, scene consistency, interaction realism, agent match, object correct, goal completed). We extract the corresponding sub-judgements from each judge's free-text reasoning and, per siyuan's default rule, treat an omitted dimension as the judge inferring "no problem" (pass = 1). Colour = 1 − recall_violation on the human-flagged violation set (red = judge missed the violation, green = judge caught it). Reading down each column exposes the axes on which VLM judges most consistently fail; reading across each row exposes each judge's own blind spots.<br><br>
-        <b>Directional finding (5 full-reasoning judges, qualitative only).</b> The three visual-artifact axes (scene / interaction / agent consistency) are caught reliably; the two identity-grounding axes (agent_match, object_correct) are missed much more often. Judges catch what a video looks wrong at, but systematically miss whether the video obeys the instruction's identity constraints. <em>Physical perception outruns semantic grounding.</em> Precise recall values will re-populate once the LLM extractor lands.<br><br>
-        <b>Truncated rows (last 5).</b> The Gemini and qwen judges had their reasoning field truncated at ~300 characters when originally run, so the 3rd sub-dimension onward is usually missing; the corresponding cells default to pass and are marked with hatching. Numbers preliminary until Ham reruns them with full reasoning.
-      </div>
-      <div id="hs-subaxis"><div class="hs-empty">loading…</div></div>
-    </section>
 
     <!-- D. Score distributions -->
     <section class="hs-card">
@@ -570,7 +571,7 @@
   function renderVideogenAppendix(){
     var host = document.getElementById("hs-vg-appendix");
     if(!host) return;
-    fetch("bench/videogen_leaderboard.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/videogen_leaderboard.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(data){
         // Collapse _prefix / _rewrite variants into base model, weighted by n
@@ -618,7 +619,7 @@
   function renderJudgeDist(){
     var host = document.getElementById("hs-judgedist");
     if(!host) return;
-    fetch("bench/analysis/judge_distributions.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/analysis/judge_distributions.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.human_gold){ host.innerHTML=""; return; }
@@ -711,8 +712,8 @@
     var host = document.getElementById("hs-decoupling");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/bootstrap_ci.json?v=v85gd", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
-      fetch("bench/model_ranking_strict.json?v=v85gd", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/bootstrap_ci.json?v=v85ge", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch("bench/model_ranking_strict.json?v=v85ge", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
       var ci = (pair[0] && pair[0].judges) || {};
       var strict = pair[1] || {};
@@ -791,7 +792,7 @@
   function renderConfab(){
     var host = document.getElementById("hs-confab");
     if(!host) return;
-    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.pa || !d.ia){ host.innerHTML = ""; return; }
@@ -858,8 +859,8 @@
     var host = document.getElementById("hs-subaxis");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/judge_subscore_accuracy.json?v=v85gd", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
-      fetch("bench/analysis/subscore_ci.json?v=v85gd", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/judge_subscore_accuracy.json?v=v85ge", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
+      fetch("bench/analysis/subscore_ci.json?v=v85ge", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
         var d = pair[0];
         var ciMap = (pair[1] && pair[1].judges) || {};
@@ -963,7 +964,7 @@
   function renderMRMSE(){
     var host = document.getElementById("hs-mrmse");
     if(!host) return;
-    fetch("bench/analysis/model_level_rmse.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/analysis/model_level_rmse.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var byJ = (d && d.judges) || {};
@@ -1009,7 +1010,7 @@
   function renderTopSpacing(){
     var host = document.getElementById("hs-topspacing");
     if(!host) return;
-    fetch("bench/analysis/topspacing.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/analysis/topspacing.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.models){ host.innerHTML=""; return; }
@@ -1070,9 +1071,9 @@
     var host = document.getElementById("hs-table1");
     if(!host) return;
     var md, strict, ciAll;
-    var mdUrl = "bench/leaderboard.md?v=v85gd";
-    var strictUrl = "bench/model_ranking_strict.json?v=v85gd";
-    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85gd";
+    var mdUrl = "bench/leaderboard.md?v=v85ge";
+    var strictUrl = "bench/model_ranking_strict.json?v=v85ge";
+    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85ge";
     // Global scale for the mini error-bar strip: fixed range so error bars are
     // visually comparable across the table (widened enough to fit both the
     // strong-judge PA CIs and weak-judge CIs).
@@ -2082,40 +2083,40 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -2126,8 +2127,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85gd", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85gd", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85ge", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85ge", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -2138,11 +2139,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -2151,11 +2152,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/analysis/bootstrap_ci.json?v=v85gd", {cache:"no-store"})
+    fetch("bench/analysis/bootstrap_ci.json?v=v85ge", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
