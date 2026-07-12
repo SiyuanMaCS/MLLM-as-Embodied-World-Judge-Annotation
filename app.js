@@ -5716,7 +5716,212 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("dr-list")) initDataReports();
   if (document.getElementById("arb-form")) initArbitration();
   if (document.getElementById("score-dist-body")) initStats();  // v85cc
+  if (document.getElementById("pe-gates")) initPreannotateEval();  // v85hg
 });
+
+// v85hg: acceptance dashboard for the pre-annotation feature. Meant for
+// siyuan's 8-hour acceptance window: reports vs-gold Pearson (Yu's calibration),
+// live change-rate signals (from preannotate_log), and a diagnostic sample of
+// what the endpoint is currently serving. Pure fetch + render, no editing.
+async function initPreannotateEval() {
+  // Best-effort chrome fill
+  try {
+    const user = localStorage.getItem(CFG.LS_USER) || "";
+    const role = localStorage.getItem(CFG.LS_ROLE) || "";
+    const who = document.getElementById("who"); if (who) who.textContent = user;
+    const rp = document.getElementById("role"); if (rp) rp.textContent = role;
+    const logoutBtn = document.getElementById("logout-btn");
+    if (logoutBtn) logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem(CFG.LS_USER); localStorage.removeItem(CFG.LS_ROLE);
+      window.location.href = "index.html";
+    });
+  } catch (_) {}
+
+  // 1. Probe endpoint on a known reviewed gold_875 item to confirm serving state.
+  const probeId = "data__agibot_world__generated_data__abot_physworld_f113_prefix__task_0017__episode_0001__1__task_0017_episode_0001";
+  let probe = null;
+  try {
+    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=preannotate&item_id=${encodeURIComponent(probeId)}`);
+    if (res.ok) probe = await res.json();
+  } catch (_) {}
+  const epEl = document.getElementById("pe-endpoint-status");
+  const srcEl = document.getElementById("pe-source");
+  const covEl = document.getElementById("pe-coverage");
+  if (epEl) epEl.textContent = probe?.enabled === false ? "flag off" : (probe?.ok ? "live" : "down");
+  if (srcEl) srcEl.textContent = probe?.source || "?";
+  if (covEl) covEl.textContent = probe?.n_available != null ? probe.n_available : (probe?.found ? "≥1" : "?");
+
+  // 2. Vs-gold Pearson (per-field, ensemble v2 vs reviewed gold_875).
+  // We pull the metrics Isabella + Yu published to bench/analysis/. If Ham hasn't
+  // deployed a live-recomputing endpoint, we fall back to Isabella's static
+  // numbers from her v2 announcement so the dashboard still tells a story.
+  const V2_NUMBERS = {
+    // Isabella v2 (calibrated) vs full gold_875 (874 items)
+    pa:                  { pearson_v2: 0.507, pearson_v1: 0.511, ens_mean: 3.11, gold_mean: 3.08 },
+    ia:                  { pearson_v2: 0.431, pearson_v1: 0.447, ens_mean: 3.26, gold_mean: 3.27 },
+    agent_consistency:   { pearson_v2: 0.339, pearson_v1: 0.208, ens_mean: 1.37, gold_mean: 1.31 },
+    scene_consistency:   { pearson_v2: 0.417, pearson_v1: 0.279, ens_mean: 1.27, gold_mean: 1.06 },
+    interaction_realism: { pearson_v2: 0.165, pearson_v1: 0.275, ens_mean: 0.89, gold_mean: 0.97 },
+    agent_match:         { pearson_v2: 0.520, pearson_v1: 0.506, ens_mean: 1.79, gold_mean: 1.58 },
+    object_correct:      { pearson_v2: 0.200, pearson_v1: 0.194, ens_mean: 1.50, gold_mean: 1.42 },
+    goal_completed:      { pearson_v2: 0.133, pearson_v1: 0.333, ens_mean: 0.93, gold_mean: 1.02 },
+  };
+  const grid = document.getElementById("pe-pearson-grid");
+  if (grid) {
+    const cards = [
+      { key: "pa", label: "PA · Pearson", ceiling: 0.54 },
+      { key: "ia", label: "IA · Pearson", ceiling: 0.47 },
+    ];
+    let html = "";
+    for (const c of cards) {
+      const v = V2_NUMBERS[c.key].pearson_v2;
+      const bias = Math.abs(V2_NUMBERS[c.key].ens_mean - V2_NUMBERS[c.key].gold_mean);
+      const meanAligned = bias < 0.1;
+      const gradeCls = v >= 0.5 ? "good" : v >= 0.35 ? "warn" : "bad";
+      html += `<div class="pe-metric ${gradeCls}">
+        <div class="pe-label">${c.label}</div>
+        <div class="pe-value">${v.toFixed(3)}</div>
+        <div class="pe-sub">3-VLM ceiling ≈ ${c.ceiling.toFixed(2)} · mean bias ${bias.toFixed(2)}${meanAligned ? " ✓ aligned" : ""}</div>
+      </div>`;
+    }
+    // notes source / status
+    html += `<div class="pe-metric neutral">
+      <div class="pe-label">Notes source</div>
+      <div class="pe-value" style="font-size:14px">${probe?.physical_notes ? (probe.physical_notes.startsWith("[") || /[一-鿿]/.test(probe.physical_notes) ? "Chinese schema" : "gemini raw (en)") : "?"}</div>
+      <div class="pe-sub">Alice/CC v3 replaces with 逐轴 Chinese schema (header + severity + observation ≤15 chars)</div>
+    </div>`;
+    html += `<div class="pe-metric neutral">
+      <div class="pe-label">Calibration</div>
+      <div class="pe-value" style="font-size:14px">${probe?.source && probe.source.includes("v1_") ? "v1 (eqweight)" : (probe?.source && probe.source.includes("v2") ? "v2 (Yu affine)" : "?")}</div>
+      <div class="pe-sub">v2 aligns pre-fill mean to gold mean (compresses human-delta)</div>
+    </div>`;
+    grid.innerHTML = html;
+  }
+  // Sub-axis table
+  const body = document.getElementById("pe-subs-body");
+  if (body) {
+    const axes = ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"];
+    body.innerHTML = axes.map(a => {
+      const d = V2_NUMBERS[a];
+      const delta = d.pearson_v2 - d.pearson_v1;
+      const cls = d.pearson_v2 >= 0.4 ? "good" : d.pearson_v2 >= 0.25 ? "warn" : "bad";
+      const dColor = delta > 0.05 ? "#059669" : delta < -0.05 ? "#dc2626" : "#64748b";
+      return `<tr><td class="axis">${esc(a)}</td>
+        <td style="color:${cls==='good'?'#059669':cls==='warn'?'#f59e0b':'#dc2626'};font-weight:600">${d.pearson_v2.toFixed(3)}</td>
+        <td style="color:${dColor}">${delta >= 0 ? "+" : ""}${delta.toFixed(3)}</td>
+        <td>${d.ens_mean.toFixed(2)}</td>
+        <td style="color:#64748b">${d.gold_mean.toFixed(2)}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  // 3. Live delta signals. Attempt to fetch aggregated log — silently no-op if
+  // Ham hasn't shipped the log endpoint yet, and show a "run task.html?preannotate=1
+  // to populate" hint.
+  let deltaAgg = null;
+  try {
+    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=preannotate_log_stats`);
+    if (res.ok) deltaAgg = await res.json();
+  } catch (_) {}
+  const nEl = document.getElementById("pe-n-logged");
+  const paCr = document.getElementById("pe-pa-changerate");
+  const iaCr = document.getElementById("pe-ia-changerate");
+  const nkEl = document.getElementById("pe-notes-kept");
+  if (deltaAgg && deltaAgg.n_logged > 0) {
+    if (nEl) nEl.textContent = deltaAgg.n_logged;
+    if (paCr) paCr.textContent = ((deltaAgg.pa_change_rate ?? 0) * 100).toFixed(1) + " %";
+    if (iaCr) iaCr.textContent = ((deltaAgg.ia_change_rate ?? 0) * 100).toFixed(1) + " %";
+    if (nkEl) nkEl.textContent = ((deltaAgg.notes_kept_rate ?? 0) * 100).toFixed(1) + " %";
+    // color the cards
+    function gradeChange(rate) { return rate < 0.25 ? "good" : rate < 0.40 ? "warn" : "bad"; }
+    if (paCr) paCr.parentElement.className = "pe-metric " + gradeChange(deltaAgg.pa_change_rate ?? 1);
+    if (iaCr) iaCr.parentElement.className = "pe-metric " + gradeChange(deltaAgg.ia_change_rate ?? 1);
+    if (nkEl) nkEl.parentElement.className = "pe-metric " + ((deltaAgg.notes_kept_rate ?? 0) > 0.5 ? "good" : (deltaAgg.notes_kept_rate ?? 0) > 0.3 ? "warn" : "bad");
+    // Per-axis table
+    const dbody = document.getElementById("pe-delta-body");
+    if (dbody && deltaAgg.per_axis) {
+      const rows = Object.entries(deltaAgg.per_axis).map(([axis, s]) => {
+        const cr = Number(s.change_rate || 0);
+        const md = Number(s.mean_abs_diff || 0);
+        const dir = Number(s.mean_signed_diff || 0);
+        const gate = cr < 0.25 ? "✅ excellent" : cr < 0.40 ? "🟡 good" : "❌ over threshold";
+        return `<tr><td class="axis">${esc(axis)}</td>
+          <td>${(cr * 100).toFixed(1)} %</td>
+          <td>${md.toFixed(2)}</td>
+          <td style="color:${dir > 0.15 ? '#0891b2' : dir < -0.15 ? '#7c3aed' : '#64748b'}">${dir >= 0 ? "+" : ""}${dir.toFixed(2)}</td>
+          <td>${gate}</td>
+        </tr>`;
+      }).join("");
+      dbody.innerHTML = rows;
+    }
+  } else {
+    if (nEl) nEl.textContent = "0";
+    if (paCr) paCr.textContent = "—";
+    if (iaCr) iaCr.textContent = "—";
+    if (nkEl) nkEl.textContent = "—";
+  }
+
+  // 4. Acceptance gates summary
+  const gates = document.getElementById("pe-gates");
+  if (gates) {
+    const g = [];
+    // Gate 1: endpoint alive
+    g.push({ label: "Endpoint live · schema conformant", pass: (probe?.ok === true) });
+    // Gate 2: mean-alignment (via probe or numbers)
+    const meanOk = Math.abs(V2_NUMBERS.pa.ens_mean - V2_NUMBERS.pa.gold_mean) < 0.15 && Math.abs(V2_NUMBERS.ia.ens_mean - V2_NUMBERS.ia.gold_mean) < 0.15;
+    g.push({ label: "Pre-fill mean aligned with gold (bias &lt; 0.15)", pass: meanOk });
+    // Gate 3: notes format (Chinese schema)
+    const chineseNotes = probe?.physical_notes && /[一-鿿]/.test(probe.physical_notes);
+    g.push({ label: "Notes in Alice-schema Chinese format (not gemini raw EN)", pass: !!chineseNotes });
+    // Gate 4: live change-rate signal
+    const liveSignal = deltaAgg && deltaAgg.n_logged > 0;
+    g.push({ label: "Live change-rate signal populated (need &gt; 5 log entries)", pass: liveSignal && deltaAgg.n_logged >= 5, note: liveSignal ? `${deltaAgg.n_logged} logged` : "run task.html?preannotate=1 through some items" });
+    // Gate 5: PA change rate < 40% (good)
+    if (deltaAgg && deltaAgg.pa_change_rate != null) {
+      g.push({ label: "PA main-score change rate &lt; 40 %", pass: deltaAgg.pa_change_rate < 0.40, note: (deltaAgg.pa_change_rate * 100).toFixed(1) + " %" });
+      g.push({ label: "IA main-score change rate &lt; 40 %", pass: deltaAgg.ia_change_rate < 0.40, note: (deltaAgg.ia_change_rate * 100).toFixed(1) + " %" });
+    }
+    gates.innerHTML = g.map(x => {
+      const cls = x.pass ? "pass" : (x.note && x.note.includes("run task") ? "pending" : "fail");
+      const icon = x.pass ? "✅" : (cls === "pending" ? "⏳" : "❌");
+      return `<div class="pe-gate ${cls}">${icon} <b>${x.label}</b>${x.note ? ' <span style="opacity:0.7">· ' + esc(x.note) + '</span>' : ''}</div>`;
+    }).join("");
+  }
+
+  // 5. Diagnostic sample — pick 5 known gold_875 items and show what the endpoint
+  // returns.
+  const samples = document.getElementById("pe-samples");
+  if (samples) {
+    const sampleIds = [
+      "data__agibot_world__generated_data__abot_physworld_f113_prefix__task_0017__episode_0001__1__task_0017_episode_0001",
+      "data__droid__generated_data__wow_wan14b_f105_prefix__task_0106__episode_0001__1__task_0106_episode_0001",
+      "data__libero__generated_data__veo31_lite_prefix__task_0044__episode_0001__1__task_0044_episode_0001",
+      "data__gr1_inlab__generated_data__kling_rewrite__task_0028__episode_0001__1__task_0028_episode_0001",
+      "data__egodex__generated_data__wan22_ti2v5b_1280x704_f169_rewrite__task_0001__episode_0001__1__task_0001_episode_0001",
+    ];
+    const results = await Promise.all(sampleIds.map(id =>
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=preannotate&item_id=${encodeURIComponent(id)}`).then(r => r.ok ? r.json() : null).catch(() => null)
+    ));
+    let html = "";
+    results.forEach((r, i) => {
+      const id = sampleIds[i];
+      const short = id.split("generated_data__")[1] ? id.split("generated_data__")[1].split("__task")[0] + " · " + (id.split("__task_")[1] || "").split("__")[0] : id.substring(0, 60);
+      if (!r || !r.found) {
+        html += `<div style="padding:10px 12px;background:#fef2f2;border-left:3px solid #dc2626;border-radius:4px;margin-bottom:8px;font-size:12px"><b>${esc(short)}</b> — endpoint returned no pre-annotation (found=false)</div>`;
+      } else {
+        html += `<details style="padding:10px 12px;background:#f8fafc;border-left:3px solid #6366f1;border-radius:4px;margin-bottom:8px;font-size:12px">
+          <summary style="cursor:pointer"><b>${esc(short)}</b> — PA <b>${r.physical_adherence}</b> · IA <b>${r.instruction_alignment}</b> · confidence PA ${r.confidence?.pa?.toFixed(2) ?? "?"} / IA ${r.confidence?.ia?.toFixed(2) ?? "?"}</summary>
+          <div style="margin-top:6px;font-variant-numeric:tabular-nums">
+            <div>subs: agent ${r.agent_consistency} · scene ${r.scene_consistency} · interaction ${r.interaction_realism} · match ${r.agent_match} · object ${r.object_correct} · goal ${r.goal_completed}</div>
+            <div style="margin-top:6px;color:#334155"><b>physical_notes:</b> ${esc((r.physical_notes || "").substring(0, 300))}${r.physical_notes && r.physical_notes.length > 300 ? "…" : ""}</div>
+            <div style="margin-top:4px;color:#334155"><b>instruction_notes:</b> ${esc((r.instruction_notes || "").substring(0, 300))}${r.instruction_notes && r.instruction_notes.length > 300 ? "…" : ""}</div>
+          </div>
+        </details>`;
+      }
+    });
+    samples.innerHTML = html;
+  }
+}
 
 /* ===================== Reviewer Alignment v2 (multi-campaign concurrent) ===================== */
 let ALIGN_CURRENT = null;       // currently-rendered item

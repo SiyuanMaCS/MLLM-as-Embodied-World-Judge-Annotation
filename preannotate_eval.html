@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pre-annotate eval — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css?v=v85hg">
+<style>
+  .pe-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin:12px 0 }
+  .pe-metric { padding:14px 16px; background:#f8fafc; border-left:3px solid #6366f1; border-radius:6px }
+  .pe-metric .pe-label { font-size:10.5px; color:#64748b; letter-spacing:.5px; text-transform:uppercase; font-weight:600 }
+  .pe-metric .pe-value { font-size:22px; font-weight:700; color:#0f172a; margin-top:4px; font-variant-numeric:tabular-nums }
+  .pe-metric .pe-sub { font-size:11px; color:#64748b; margin-top:2px }
+  .pe-metric.good { border-left-color:#059669; background:#ecfdf5 }
+  .pe-metric.warn { border-left-color:#f59e0b; background:#fffbeb }
+  .pe-metric.bad  { border-left-color:#dc2626; background:#fef2f2 }
+  .pe-metric.neutral { border-left-color:#64748b; background:#f8fafc }
+  .pe-section { padding:16px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:14px }
+  .pe-section h2 { margin:0 0 4px; font-size:15px; color:#0f172a }
+  .pe-section .pe-sub-title { font-size:12px; color:#64748b; margin-bottom:12px }
+  .pe-table { width:100%; border-collapse:collapse; font-size:12.5px; font-variant-numeric:tabular-nums }
+  .pe-table th { text-align:right; padding:6px 8px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:.4px; font-size:10.5px; border-bottom:1px solid #e2e8f0 }
+  .pe-table td { padding:6px 8px; text-align:right; border-bottom:1px solid #f1f5f9 }
+  .pe-table td.axis { text-align:left; font-weight:600; color:#0f172a }
+  .pe-gate { padding:12px 16px; border-radius:6px; margin-top:10px; font-size:13px; line-height:1.5 }
+  .pe-gate.pass { background:#ecfdf5; border:1px solid #10b981; color:#065f46 }
+  .pe-gate.fail { background:#fef2f2; border:1px solid #dc2626; color:#991b1b }
+  .pe-gate.pending { background:#eef2ff; border:1px solid #6366f1; color:#312e81 }
+</style>
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1>🤖 Pre-annotation acceptance dashboard</h1>
+    <div class="user-chip">
+      <span id="who">—</span> <span class="role-pill" id="role">—</span>
+      <button id="logout-btn" class="link">logout</button>
+    </div>
+  </header>
+  <nav class="page-nav">
+    <a href="dashboard.html" class="back-link">← Back</a>
+    <span class="nav-stat"><span>Endpoint:</span> <code id="pe-endpoint-status">?</code></span>
+    <span class="nav-stat"><span>Source:</span> <code id="pe-source">?</code></span>
+    <span class="nav-stat"><span>Coverage:</span> <code id="pe-coverage">?</code> / 875</span>
+    <span class="nav-stat"><a href="task.html?preannotate=1" style="color:#6366f1;font-weight:600">▶ Preview task.html?preannotate=1</a></span>
+  </nav>
+
+  <div class="pe-section">
+    <h2>Acceptance gates (siyuan)</h2>
+    <div class="pe-sub-title">
+      siyuan (2026-07-12): the pre-annotation pipeline needs a <b>val set</b> (does not have to be full test-875) and must reach <b>Pearson ≥ 0.65</b> on that val set. The 3-VLM ensemble baseline caps at ~0.54, so the val-set gate can only be cleared by (a) a cleaner multi-annotator val set (noise averaging boosts the ceiling), or (b) upgraded pre-annotation methodology (Alice's dense-frame + explicit-violation prompting + Chinese notes) — likely both together.
+    </div>
+    <div id="pe-gates">Loading…</div>
+  </div>
+
+  <div class="pe-section">
+    <h2>Val-set Pearson (siyuan's primary gate ≥ 0.65)</h2>
+    <div class="pe-sub-title">
+      Val set: a multi-annotator subset independent of the ensemble's train items, k ≥ 3 humans per item (Isabella / Alice building). PA and IA reported separately; sub-axes for diagnostic value only.
+    </div>
+    <div class="pe-grid" id="pe-valset-grid">
+      <div class="pe-metric neutral"><div class="pe-label">Val-set size</div><div class="pe-value" id="pe-val-n">—</div><div class="pe-sub">items with k ≥ 3 human annotations</div></div>
+      <div class="pe-metric neutral"><div class="pe-label">PA Pearson (val)</div><div class="pe-value" id="pe-val-pa">—</div><div class="pe-sub">gate ≥ 0.65 · currently pending val-set build</div></div>
+      <div class="pe-metric neutral"><div class="pe-label">IA Pearson (val)</div><div class="pe-value" id="pe-val-ia">—</div><div class="pe-sub">gate ≥ 0.65 · currently pending val-set build</div></div>
+      <div class="pe-metric neutral"><div class="pe-label">Pipeline version</div><div class="pe-value" id="pe-pipeline" style="font-size:14px">?</div><div class="pe-sub">v1 eqweight → v2 Yu calibration → v3 Alice generator</div></div>
+    </div>
+  </div>
+
+  <div class="pe-section">
+    <h2>Ensemble alignment vs gold_875 (reviewed-only)</h2>
+    <div class="pe-sub-title">Yu-calibrated ensemble Pearson against the 617-item reviewed subset (gold hygiene). Ceiling for 3 VLM judges is ~0.54.</div>
+    <div class="pe-grid" id="pe-pearson-grid">Loading…</div>
+    <table class="pe-table" id="pe-subs-table">
+      <thead><tr><th class="axis" style="text-align:left">Sub-axis</th><th>Pearson (v2)</th><th>Δ vs v1</th><th>Ensemble mean</th><th>Gold mean</th></tr></thead>
+      <tbody id="pe-subs-body"><tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px">loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="pe-section">
+    <h2>Live change-rate signals (from <code>?action=preannotate_log</code>)</h2>
+    <div class="pe-sub-title">
+      When a real annotator submits an item that was pre-annotated, the client fire-and-forgets a delta log. Once someone runs <code>task.html?preannotate=1</code> through a few items these numbers will populate. Gate: main-axis change-rate &lt; 40 % (good) or &lt; 25 % (excellent); notes-retention &gt; 50 %.
+    </div>
+    <div class="pe-grid" id="pe-delta-grid">
+      <div class="pe-metric neutral"><div class="pe-label">Logged submissions</div><div class="pe-value" id="pe-n-logged">—</div><div class="pe-sub">unique item-user pairs where preannotate was seeded</div></div>
+      <div class="pe-metric neutral"><div class="pe-label">PA change rate</div><div class="pe-value" id="pe-pa-changerate">—</div><div class="pe-sub">humans that adjusted the seeded PA main score</div></div>
+      <div class="pe-metric neutral"><div class="pe-label">IA change rate</div><div class="pe-value" id="pe-ia-changerate">—</div><div class="pe-sub">humans that adjusted the seeded IA main score</div></div>
+      <div class="pe-metric neutral"><div class="pe-label">Notes kept</div><div class="pe-value" id="pe-notes-kept">—</div><div class="pe-sub">physical + instruction notes not fully rewritten</div></div>
+    </div>
+    <table class="pe-table" id="pe-delta-table">
+      <thead><tr><th class="axis" style="text-align:left">Axis</th><th>Change-rate</th><th>Mean |Δ|</th><th>Direction</th><th>Gate</th></tr></thead>
+      <tbody id="pe-delta-body"><tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px">no delta logs yet — run task.html?preannotate=1 through a few items to populate</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="pe-section">
+    <h2>Diagnostic sample (first 5 pre-annotations)</h2>
+    <div class="pe-sub-title">Sanity check: does the endpoint return the expected schema? Notes format follows Alice's reverse-engineered human template (axis-name + severity + observation).</div>
+    <div id="pe-samples">Loading…</div>
+  </div>
+
+  <section id="pe-error" class="card error" hidden><h3>Failed</h3><p id="pe-err-msg">—</p></section>
+</main>
+<script src="app.js?v=v85hg" defer></script>
+</body>
+</html>
