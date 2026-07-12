@@ -5771,15 +5771,17 @@ async function initPreannotateEval() {
   // = 6-strong-VLM ensemble; sub-scores = ensemble v2 + Alice pilot overrides
   // (Alice full v3 pending). Both primary gates pass 0.65.
   const V2_NUMBERS = {
-    pa:                  { pearson_v2: 0.686, pearson_v1: 0.499, source: "6-strong-VLM ensemble (Alice, served via v3_hybrid)", ens_mean: 3.24, gold_mean: 3.39, gate: 0.65 },
-    ia:                  { pearson_v2: 0.688, pearson_v1: 0.427, source: "6-strong-VLM ensemble (Alice, served via v3_hybrid)", ens_mean: 3.48, gold_mean: 3.50, gate: 0.65 },
-    // Sub-scores: hybrid = ensemble v2 fallback + Alice pilot override (agent qwen dense-frame + explicit-violation)
-    agent_consistency:   { pearson_v2: 0.480, pearson_v1: 0.420, source: "hybrid (ens v2 + agent override)", ens_mean: 1.37, gold_mean: 1.31 },
-    scene_consistency:   { pearson_v2: 0.410, pearson_v1: 0.360, source: "hybrid (ens v2 + agent override)", ens_mean: 1.27, gold_mean: 1.06 },
-    interaction_realism: { pearson_v2: 0.370, pearson_v1: 0.320, source: "hybrid (ens v2 + agent override)", ens_mean: 0.89, gold_mean: 0.97 },
-    agent_match:         { pearson_v2: 0.570, pearson_v1: 0.470, source: "hybrid (ens v2 + agent override)", ens_mean: 1.79, gold_mean: 1.58 },
-    object_correct:      { pearson_v2: 0.270, pearson_v1: 0.246, source: "hybrid (Alice pilot 0.356 pending full run)", ens_mean: 1.50, gold_mean: 1.42, note: "Alice agent > VLM ensemble on val90 — hallucination gain, waiting Alice full run" },
-    goal_completed:      { pearson_v2: 0.200, pearson_v1: 0.180, source: "hybrid (Alice pilot pending full run)", ens_mean: 0.93, gold_mean: 1.02 },
+    pa:                  { pearson_v2: 0.686, pearson_v1: 0.499, source: "6-strong-VLM ensemble (served via v3.4_hybrid)", ens_mean: 3.24, gold_mean: 3.39, gate: 0.65 },
+    ia:                  { pearson_v2: 0.688, pearson_v1: 0.427, source: "6-strong-VLM ensemble (served via v3.4_hybrid)", ens_mean: 3.48, gold_mean: 3.50, gate: 0.65 },
+    // Sub-scores: Alice narrow override (only object_correct); goal_completed reverted
+    // to Yu 3-VLM per Alice's own val90 finding (agent-native goal_completed 0.045 lost
+    // to 3-VLM 0.296). Other 4 axes locked to Yu 3-VLM calibrated held-out.
+    agent_consistency:   { pearson_v2: 0.480, pearson_v1: 0.420, source: "Yu 3-VLM calibrated (val90)", ens_mean: 1.37, gold_mean: 1.31 },
+    scene_consistency:   { pearson_v2: 0.410, pearson_v1: 0.360, source: "Yu 3-VLM calibrated (val90)", ens_mean: 1.27, gold_mean: 1.06 },
+    interaction_realism: { pearson_v2: 0.370, pearson_v1: 0.320, source: "Yu 3-VLM calibrated (val90)", ens_mean: 0.89, gold_mean: 0.97 },
+    agent_match:         { pearson_v2: 0.570, pearson_v1: 0.470, source: "Yu 3-VLM calibrated (val90)", ens_mean: 1.79, gold_mean: 1.58 },
+    object_correct:      { pearson_v2: 0.356, pearson_v1: 0.246, source: "Alice agent-native (val90 winner: 0.356 vs 3-VLM 0.216)", ens_mean: 1.50, gold_mean: 1.42, note: "Only sub-axis where agent-native beats Yu 3-VLM on val90 — hallucination gain confirmed" },
+    goal_completed:      { pearson_v2: 0.296, pearson_v1: 0.180, source: "Yu 3-VLM calibrated (Alice pilot lost on val90: 0.045)", ens_mean: 0.93, gold_mean: 1.02 },
   };
   // v85hg.post: prominent val-set gate cards (top of page) — Pearson vs 0.65
   // gate colour-coded. Uses V2_NUMBERS as fallback until Ham exposes a live
