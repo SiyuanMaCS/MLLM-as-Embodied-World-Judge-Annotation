@@ -5857,37 +5857,47 @@ async function initPreannotateEval() {
     }).join("");
   }
 
-  // 3. Live delta signals. Attempt to fetch aggregated log — silently no-op if
-  // Ham hasn't shipped the log endpoint yet, and show a "run task.html?preannotate=1
-  // to populate" hint.
+  // 3. Live delta signals. Fetch aggregated log via Ham's endpoint. Ham
+  // schema (v3.2+): { ok, enabled, n_submissions, by_axis:{<axis>:{n,
+  // change_rate, mean_abs_diff, mean_signed_diff}}, physical_notes_rewrite_rate,
+  // instruction_notes_rewrite_rate }. `preannotate_log_stats` is aliased to
+  // `preannotate_delta`; either works.
   let deltaAgg = null;
   try {
-    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=preannotate_log_stats`);
+    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=preannotate_delta`);
     if (res.ok) deltaAgg = await res.json();
   } catch (_) {}
   const nEl = document.getElementById("pe-n-logged");
   const paCr = document.getElementById("pe-pa-changerate");
   const iaCr = document.getElementById("pe-ia-changerate");
   const nkEl = document.getElementById("pe-notes-kept");
-  if (deltaAgg && deltaAgg.n_logged > 0) {
-    if (nEl) nEl.textContent = deltaAgg.n_logged;
-    if (paCr) paCr.textContent = ((deltaAgg.pa_change_rate ?? 0) * 100).toFixed(1) + " %";
-    if (iaCr) iaCr.textContent = ((deltaAgg.ia_change_rate ?? 0) * 100).toFixed(1) + " %";
-    if (nkEl) nkEl.textContent = ((deltaAgg.notes_kept_rate ?? 0) * 100).toFixed(1) + " %";
-    // color the cards
+  const nSub = (deltaAgg && (deltaAgg.n_submissions ?? deltaAgg.n_logged)) || 0;
+  if (deltaAgg && nSub > 0) {
+    const byAxis = deltaAgg.by_axis || deltaAgg.per_axis || {};
+    const paRate = byAxis.physical_adherence?.change_rate ?? deltaAgg.pa_change_rate ?? null;
+    const iaRate = byAxis.instruction_alignment?.change_rate ?? deltaAgg.ia_change_rate ?? null;
+    const pRw = deltaAgg.physical_notes_rewrite_rate;
+    const iRw = deltaAgg.instruction_notes_rewrite_rate;
+    const notesKeptRate = (pRw != null && iRw != null)
+      ? 1 - (pRw + iRw) / 2
+      : (deltaAgg.notes_kept_rate ?? null);
+    if (nEl) nEl.textContent = nSub;
+    if (paCr) paCr.textContent = paRate != null ? (paRate * 100).toFixed(1) + " %" : "—";
+    if (iaCr) iaCr.textContent = iaRate != null ? (iaRate * 100).toFixed(1) + " %" : "—";
+    if (nkEl) nkEl.textContent = notesKeptRate != null ? (notesKeptRate * 100).toFixed(1) + " %" : "—";
     function gradeChange(rate) { return rate < 0.25 ? "good" : rate < 0.40 ? "warn" : "bad"; }
-    if (paCr) paCr.parentElement.className = "pe-metric " + gradeChange(deltaAgg.pa_change_rate ?? 1);
-    if (iaCr) iaCr.parentElement.className = "pe-metric " + gradeChange(deltaAgg.ia_change_rate ?? 1);
-    if (nkEl) nkEl.parentElement.className = "pe-metric " + ((deltaAgg.notes_kept_rate ?? 0) > 0.5 ? "good" : (deltaAgg.notes_kept_rate ?? 0) > 0.3 ? "warn" : "bad");
+    if (paCr && paRate != null) paCr.parentElement.className = "pe-metric " + gradeChange(paRate);
+    if (iaCr && iaRate != null) iaCr.parentElement.className = "pe-metric " + gradeChange(iaRate);
+    if (nkEl && notesKeptRate != null) nkEl.parentElement.className = "pe-metric " + (notesKeptRate > 0.5 ? "good" : notesKeptRate > 0.3 ? "warn" : "bad");
     // Per-axis table
     const dbody = document.getElementById("pe-delta-body");
-    if (dbody && deltaAgg.per_axis) {
-      const rows = Object.entries(deltaAgg.per_axis).map(([axis, s]) => {
+    if (dbody && Object.keys(byAxis).length) {
+      const rows = Object.entries(byAxis).map(([axis, s]) => {
         const cr = Number(s.change_rate || 0);
         const md = Number(s.mean_abs_diff || 0);
         const dir = Number(s.mean_signed_diff || 0);
         const gate = cr < 0.25 ? "✅ excellent" : cr < 0.40 ? "🟡 good" : "❌ over threshold";
-        return `<tr><td class="axis">${esc(axis)}</td>
+        return `<tr><td class="axis">${esc(axis)}<span style="color:#94a3b8;font-weight:400"> · n=${s.n ?? 0}</span></td>
           <td>${(cr * 100).toFixed(1)} %</td>
           <td>${md.toFixed(2)}</td>
           <td style="color:${dir > 0.15 ? '#0891b2' : dir < -0.15 ? '#7c3aed' : '#64748b'}">${dir >= 0 ? "+" : ""}${dir.toFixed(2)}</td>
@@ -5919,8 +5929,9 @@ async function initPreannotateEval() {
     g.push({ label: "Pre-fill mean aligned with gold (bias &lt; 0.15)", pass: meanOk, note: "supporting — reduces human 'drag to correct'" });
     const chineseNotes = probe?.physical_notes && /[一-鿿]/.test(probe.physical_notes);
     g.push({ label: "Notes in Alice-schema Chinese format", pass: !!chineseNotes, note: "supporting — English gemini raw until Alice/CC v3" });
-    const liveSignal = deltaAgg && deltaAgg.n_logged > 0;
-    g.push({ label: "Live change-rate signal populated (task.html?preannotate=1 usage)", pass: liveSignal && deltaAgg.n_logged >= 5, note: liveSignal ? `supporting · ${deltaAgg.n_logged} logged` : "supporting · pending real-user runs" });
+    const nSubGate = (deltaAgg && (deltaAgg.n_submissions ?? deltaAgg.n_logged)) || 0;
+    const liveSignal = deltaAgg && nSubGate > 0;
+    g.push({ label: "Live change-rate signal populated (task.html?preannotate=1 usage)", pass: liveSignal && nSubGate >= 5, note: liveSignal ? `supporting · ${nSubGate} logged` : "supporting · pending real-user runs" });
     gates.innerHTML = g.map((x, i) => {
       const isPrimary = i < 2;
       const cls = x.pass ? "pass" : (x.note && x.note.includes("pending") ? "pending" : "fail");
