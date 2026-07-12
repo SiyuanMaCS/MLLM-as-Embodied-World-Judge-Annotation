@@ -1987,6 +1987,7 @@ async function initDashboard() {
   await loadDashboard();
   await loadBadges();
   await loadMilestoneProgress();
+  await loadReviewCoverage();
   await loadLeaderboard();
   // v85cc: model averages + score distribution moved to dedicated /stats.html page.
   if (isAdmin) await loadDataReports();
@@ -1996,7 +1997,7 @@ async function initDashboard() {
   await loadMyAlignmentCard();
   let timer = setInterval(() => {
     if (!document.hidden) {
-      loadDashboard(); loadBadges(); loadMilestoneProgress(); loadLeaderboard();
+      loadDashboard(); loadBadges(); loadMilestoneProgress(); loadReviewCoverage(); loadLeaderboard();
       if (isAdmin) loadDataReports();
     }
   }, 30000);
@@ -2881,6 +2882,73 @@ async function loadMilestoneProgress() {
     if (teamEl && teamToday > 0) teamEl.textContent = tr("leaderboard.team_today_summary").replace("{n}", teamToday);
     // Re-anchor settle countdown to Ham's server time (avoids browser clock skew).
     setSettleAnchorFromBody(d);
+  } catch (_) {
+    card.hidden = true;
+  }
+}
+
+// v85hc: Test-set review coverage panel (siyuan asked "review 进度如何 · 每人
+// 剩多少" — pool is shared, so aggregate + per-dataset pending + per-reviewer
+// done). Ham's `?action=review_coverage&user=<u>` returns the aggregate; the
+// per-dataset + per-reviewer breakdown is admin-only. Fails silently until Ham
+// deploys the endpoint.
+async function loadReviewCoverage() {
+  const card = document.getElementById("review-coverage-card");
+  if (!card) return;
+  const user = localStorage.getItem(CFG.LS_USER);
+  if (!user || !CFG.APPS_SCRIPT_URL) { card.hidden = true; return; }
+  try {
+    const res = await fetch(`${CFG.APPS_SCRIPT_URL}/?action=review_coverage&user=${encodeURIComponent(user)}`);
+    if (!res.ok) { card.hidden = true; return; }
+    const d = await res.json();
+    const total = Number(d?.test_total || 0);
+    if (!total) { card.hidden = true; return; }
+    card.hidden = false;
+    const reviewed = Number(d?.reviewed || 0);
+    const pending = Number(d?.pending_review ?? (total - reviewed));
+    const pct = Math.max(0, Math.min(100, (reviewed / total) * 100));
+    const bar = document.getElementById("rc-bar");
+    if (bar) bar.style.width = pct.toFixed(1) + "%";
+    const countsEl = document.getElementById("rc-counts");
+    if (countsEl) countsEl.textContent = `${reviewed} / ${total} · ${pending} 待 review · ${pct.toFixed(1)} %`;
+    // Admin / masiyuan detail: by-dataset (sorted by pending desc) + by-reviewer contribution
+    const role = (localStorage.getItem(CFG.LS_ROLE) || "").toLowerCase();
+    const isAdminView = role === "admin" || user === "masiyuan";
+    const detail = document.getElementById("rc-detail");
+    if (detail && isAdminView) {
+      let html = "";
+      if (d?.by_dataset && typeof d.by_dataset === "object") {
+        const rows = Object.entries(d.by_dataset)
+          .map(([k, v]) => ({ ds: k, pending: Number(v?.pending || 0), reviewed: Number(v?.reviewed || 0), total: Number(v?.total || 0) }))
+          .sort((a, b) => b.pending - a.pending);
+        if (rows.length) {
+          html += '<div style="margin-bottom:10px"><h4 style="margin:0 0 6px;font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.3px">Remaining by dataset</h4>';
+          html += '<table style="width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums"><thead><tr style="color:#94a3b8;font-size:10.5px"><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #e2e8f0">Dataset</th><th style="text-align:right;padding:4px 6px;border-bottom:1px solid #e2e8f0">Pending</th><th style="text-align:right;padding:4px 6px;border-bottom:1px solid #e2e8f0">Reviewed</th></tr></thead><tbody>';
+          rows.forEach(r => {
+            html += `<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:5px 6px;color:#0f172a">${esc(r.ds)}</td><td style="padding:5px 6px;text-align:right;font-weight:600;color:${r.pending > 0 ? '#0891b2' : '#059669'}">${r.pending}</td><td style="padding:5px 6px;text-align:right;color:#64748b">${r.reviewed}${r.total ? ' / ' + r.total : ''}</td></tr>`;
+          });
+          html += '</tbody></table></div>';
+        }
+      }
+      if (Array.isArray(d?.by_reviewer)) {
+        const rows = d.by_reviewer.slice().sort((a, b) => Number(b?.n || 0) - Number(a?.n || 0));
+        if (rows.length) {
+          html += '<div><h4 style="margin:0 0 6px;font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.3px">Done by reviewer (pool is shared)</h4>';
+          html += '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;font-variant-numeric:tabular-nums">';
+          rows.forEach(r => {
+            const u = r?.user || "?";
+            const n = Number(r?.n || 0);
+            html += `<span style="padding:3px 8px;background:#f1f5f9;border-radius:4px;color:#0f172a"><b>${esc(u)}</b> <span style="color:#64748b">${n}</span></span>`;
+          });
+          html += '</div></div>';
+        }
+      }
+      detail.innerHTML = html;
+      detail.hidden = !html;
+    } else if (detail) {
+      detail.innerHTML = "";
+      detail.hidden = true;
+    }
   } catch (_) {
     card.hidden = true;
   }

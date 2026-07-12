@@ -6,7 +6,7 @@
 <title>Home — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85gr">
+<link rel="stylesheet" href="style.css?v=v85hc">
 </head>
 <body>
 <main>
@@ -171,6 +171,22 @@
     <p class="muted small" id="ms-note" data-i18n="milestone.note">Items auto-routed across the pool — your contributions count toward the shared milestone.</p>
   </section>
 
+  <!-- v85hc: Test-set review coverage panel (siyuan: 现在 review 的进度如何了).
+       Renders 612/875-style aggregate for everyone; admin / masiyuan sees
+       by-dataset breakdown of remaining + by-reviewer contribution list.
+       Backend contract: ?action=review_coverage&user=<u> → { test_total,
+       reviewed, pending_review, review_coverage, by_dataset{ds:{pending,...}},
+       by_reviewer[{user,n}...] }. Silently hides until Ham deploys endpoint. -->
+  <section class="card review-coverage-card" id="review-coverage-card" hidden>
+    <div class="ms-head">
+      <h3 data-i18n="review_cov.title">Test-set review coverage</h3>
+      <span class="ms-sub muted small" id="rc-counts">—</span>
+    </div>
+    <div class="ms-bar"><div class="ms-bar-fill" id="rc-bar" style="width:0%;background:#0891b2"></div></div>
+    <p class="muted small" data-i18n="review_cov.note">Reviewed / total test-set items across the whole team. Pool-based — any reviewer can pull from the shared pending pool.</p>
+    <div id="rc-detail" hidden style="margin-top:10px"></div>
+  </section>
+
   <section class="card" id="self-summary" hidden></section>
 
   <section class="card" id="leaderboard-card" hidden>
@@ -199,6 +215,6 @@
     <p id="dash-err-msg">—</p>
   </section>
 </main>
-<script src="app.js?v=v85gr" defer></script>
+<script src="app.js?v=v85hc" defer></script>
 </body>
 </html>
