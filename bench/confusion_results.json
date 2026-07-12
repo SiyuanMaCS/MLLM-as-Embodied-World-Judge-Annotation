@@ -1,362 +1,1725 @@
 {
- "gemini-3.5-flash::physical_adherence": {
-  "matrix": [
-   [
-    59,
-    64,
-    22,
-    6,
-    5
-   ],
-   [
-    45,
-    86,
-    130,
-    47,
-    29
-   ],
-   [
-    2,
-    11,
-    31,
-    39,
-    19
-   ],
-   [
-    2,
-    5,
-    15,
-    19,
-    21
-   ],
-   [
-    3,
-    19,
-    48,
-    76,
-    71
-   ]
-  ],
-  "n": 874,
-  "exact": 0.304,
-  "within1": 0.763,
-  "dir_bias": -0.255,
-  "pred_std": 1.46,
-  "var_collapse": false
- },
- "gemini-3.5-flash::instruction_alignment": {
-  "matrix": [
-   [
-    4,
-    4,
-    3,
-    1,
-    8
-   ],
-   [
-    70,
-    102,
-    79,
-    39,
-    25
-   ],
-   [
-    17,
-    26,
-    53,
-    21,
-    25
-   ],
-   [
-    6,
-    27,
-    47,
-    43,
-    106
-   ],
-   [
-    10,
-    12,
-    38,
-    30,
-    79
-   ]
-  ],
-  "n": 875,
-  "exact": 0.321,
-  "within1": 0.759,
-  "dir_bias": -0.026,
-  "pred_std": 1.195,
-  "var_collapse": false
- },
- "qwen3-vl-32b-instruct::physical_adherence": {
-  "matrix": [
-   [
-    10,
-    9,
-    4,
-    1,
-    0
-   ],
-   [
-    26,
-    25,
-    18,
-    5,
-    5
-   ],
-   [
-    15,
-    13,
-    12,
-    4,
-    3
-   ],
-   [
-    19,
-    24,
-    36,
-    20,
-    7
-   ],
-   [
-    41,
-    113,
-    176,
-    157,
-    131
-   ]
-  ],
-  "n": 874,
-  "exact": 0.227,
-  "within1": 0.535,
-  "dir_bias": 1.307,
-  "pred_std": 1.103,
-  "var_collapse": false
- },
- "qwen3-vl-32b-instruct::instruction_alignment": {
-  "matrix": [
-   [
-    3,
-    2,
-    5,
-    1,
-    9
-   ],
-   [
-    45,
-    54,
-    28,
-    11,
-    20
-   ],
-   [
-    38,
-    61,
-    84,
-    30,
-    29
-   ],
-   [
-    4,
-    3,
-    10,
-    10,
-    11
-   ],
-   [
-    16,
-    51,
-    93,
-    82,
-    174
-   ]
-  ],
-  "n": 874,
-  "exact": 0.372,
-  "within1": 0.68,
-  "dir_bias": 0.498,
-  "pred_std": 1.276,
-  "var_collapse": false
- },
- "gpt5.5::physical_adherence": {
-  "matrix": [
-   [
-    3,
-    2,
-    0,
-    0,
-    0
-   ],
-   [
-    51,
-    55,
-    35,
-    6,
-    3
-   ],
-   [
-    22,
-    36,
-    58,
-    38,
-    13
-   ],
-   [
-    31,
-    78,
-    129,
-    118,
-    103
-   ],
-   [
-    4,
-    12,
-    21,
-    25,
-    25
-   ]
-  ],
-  "n": 868,
-  "exact": 0.298,
-  "within1": 0.781,
-  "dir_bias": 0.464,
-  "pred_std": 0.91,
-  "var_collapse": false
- },
- "gpt5.5::instruction_alignment": {
-  "matrix": [
-   [
-    1,
-    1,
-    0,
-    0,
-    0
-   ],
-   [
-    72,
-    86,
-    54,
-    11,
-    11
-   ],
-   [
-    27,
-    59,
-    110,
-    58,
-    55
-   ],
-   [
-    7,
-    14,
-    41,
-    42,
-    55
-   ],
-   [
-    0,
-    7,
-    13,
-    23,
-    121
-   ]
-  ],
-  "n": 868,
-  "exact": 0.415,
-  "within1": 0.833,
-  "dir_bias": 0.014,
-  "pred_std": 1.066,
-  "var_collapse": false
- },
- "gemini-2.5-pro::physical_adherence": {
-  "matrix": [
-   [
-    106,
-    165,
-    205,
-    130,
-    95
-   ],
-   [
-    4,
-    14,
-    16,
-    32,
-    24
-   ],
-   [
-    0,
-    1,
-    2,
-    5,
-    6
-   ],
-   [
-    0,
-    0,
-    2,
-    0,
-    1
-   ],
-   [
-    1,
-    2,
-    18,
-    20,
-    18
-   ]
-  ],
-  "n": 867,
-  "exact": 0.161,
-  "within1": 0.408,
-  "dir_bias": -1.663,
-  "pred_std": 1.055,
-  "var_collapse": false
- },
- "gemini-2.5-pro::instruction_alignment": {
-  "matrix": [
-   [
-    63,
-    69,
-    64,
-    20,
-    16
-   ],
-   [
-    32,
-    63,
-    76,
-    34,
-    51
-   ],
-   [
-    5,
-    20,
-    56,
-    38,
-    42
-   ],
-   [
-    4,
-    3,
-    9,
-    13,
-    27
-   ],
-   [
-    3,
-    12,
-    13,
-    29,
-    106
-   ]
-  ],
-  "n": 868,
-  "exact": 0.347,
-  "within1": 0.692,
-  "dir_bias": -0.662,
-  "pred_std": 1.424,
-  "var_collapse": false
- }
+  "_meta": {
+    "axes": {
+      "rows": "judge predicted score (1-5)",
+      "cols": "human gold score (1-5)"
+    },
+    "cell": "matrix[i][j] = number of clips where the judge scored (i+1) and the human gold scored (j+1)",
+    "how_to_read": "diagonal = judge agrees with human; below-diagonal (row>col) = judge scores HIGHER than human (lenient); above-diagonal (row<col) = judge scores LOWER (strict).",
+    "metrics": "exact = diagonal fraction; within1 = |judge-gold|<=1 fraction; dir_bias = mean(judge-gold) (+ve=lenient, -ve=strict); pred_std = std of judge scores (low=anchored); var_collapse = >90% of judge scores in one value.",
+    "scale": "1-5",
+    "n_gold_items": 875,
+    "n_judges": 19,
+    "key_format": "<judge>::<physical_adherence|instruction_alignment>"
+  },
+  "cosmos-reason2-2b::physical_adherence": {
+    "matrix": [
+      [
+        2,
+        3,
+        4,
+        2,
+        0
+      ],
+      [
+        1,
+        3,
+        0,
+        2,
+        0
+      ],
+      [
+        2,
+        1,
+        3,
+        1,
+        3
+      ],
+      [
+        6,
+        4,
+        9,
+        4,
+        2
+      ],
+      [
+        100,
+        174,
+        230,
+        178,
+        141
+      ]
+    ],
+    "n": 875,
+    "exact": 0.175,
+    "within1": 0.398,
+    "dir_bias": 1.795,
+    "pred_std": 0.568,
+    "var_collapse": true
+  },
+  "cosmos-reason2-2b::instruction_alignment": {
+    "matrix": [
+      [
+        28,
+        39,
+        26,
+        17,
+        14
+      ],
+      [
+        2,
+        4,
+        3,
+        0,
+        4
+      ],
+      [
+        14,
+        17,
+        14,
+        10,
+        14
+      ],
+      [
+        2,
+        6,
+        13,
+        3,
+        6
+      ],
+      [
+        61,
+        105,
+        164,
+        104,
+        205
+      ]
+    ],
+    "n": 875,
+    "exact": 0.29,
+    "within1": 0.512,
+    "dir_bias": 0.928,
+    "pred_std": 1.451,
+    "var_collapse": false
+  },
+  "cosmos-reason2-32b::physical_adherence": {
+    "matrix": [
+      [
+        10,
+        11,
+        10,
+        5,
+        3
+      ],
+      [
+        17,
+        16,
+        15,
+        8,
+        5
+      ],
+      [
+        17,
+        29,
+        26,
+        10,
+        11
+      ],
+      [
+        4,
+        9,
+        14,
+        6,
+        5
+      ],
+      [
+        63,
+        120,
+        181,
+        158,
+        122
+      ]
+    ],
+    "n": 875,
+    "exact": 0.206,
+    "within1": 0.502,
+    "dir_bias": 1.274,
+    "pred_std": 1.181,
+    "var_collapse": false
+  },
+  "cosmos-reason2-32b::instruction_alignment": {
+    "matrix": [
+      [
+        30,
+        29,
+        16,
+        3,
+        6
+      ],
+      [
+        14,
+        25,
+        7,
+        5,
+        5
+      ],
+      [
+        18,
+        48,
+        66,
+        29,
+        35
+      ],
+      [
+        5,
+        9,
+        14,
+        4,
+        12
+      ],
+      [
+        40,
+        60,
+        117,
+        93,
+        185
+      ]
+    ],
+    "n": 875,
+    "exact": 0.354,
+    "within1": 0.635,
+    "dir_bias": 0.657,
+    "pred_std": 1.38,
+    "var_collapse": false
+  },
+  "cosmos3-nano-reasoner::physical_adherence": {
+    "matrix": [
+      [
+        2,
+        2,
+        0,
+        1,
+        0
+      ],
+      [
+        20,
+        30,
+        19,
+        3,
+        3
+      ],
+      [
+        4,
+        4,
+        4,
+        4,
+        1
+      ],
+      [
+        2,
+        3,
+        4,
+        2,
+        6
+      ],
+      [
+        83,
+        146,
+        219,
+        177,
+        136
+      ]
+    ],
+    "n": 875,
+    "exact": 0.199,
+    "within1": 0.469,
+    "dir_bias": 1.579,
+    "pred_std": 0.92,
+    "var_collapse": false
+  },
+  "cosmos3-nano-reasoner::instruction_alignment": {
+    "matrix": [
+      [
+        23,
+        24,
+        16,
+        5,
+        5
+      ],
+      [
+        19,
+        37,
+        31,
+        13,
+        13
+      ],
+      [
+        35,
+        49,
+        74,
+        26,
+        20
+      ],
+      [
+        2,
+        2,
+        3,
+        3,
+        4
+      ],
+      [
+        28,
+        59,
+        96,
+        87,
+        201
+      ]
+    ],
+    "n": 875,
+    "exact": 0.386,
+    "within1": 0.664,
+    "dir_bias": 0.528,
+    "pred_std": 1.413,
+    "var_collapse": false
+  },
+  "gemini-2.5-flash::physical_adherence": {
+    "matrix": [
+      [
+        40,
+        52,
+        31,
+        10,
+        5
+      ],
+      [
+        40,
+        74,
+        91,
+        48,
+        33
+      ],
+      [
+        4,
+        10,
+        21,
+        19,
+        19
+      ],
+      [
+        9,
+        6,
+        27,
+        25,
+        18
+      ],
+      [
+        15,
+        42,
+        75,
+        84,
+        71
+      ]
+    ],
+    "n": 869,
+    "exact": 0.266,
+    "within1": 0.658,
+    "dir_bias": 0.022,
+    "pred_std": 1.54,
+    "var_collapse": false
+  },
+  "gemini-2.5-flash::instruction_alignment": {
+    "matrix": [
+      [
+        16,
+        21,
+        15,
+        10,
+        17
+      ],
+      [
+        53,
+        75,
+        78,
+        26,
+        36
+      ],
+      [
+        16,
+        30,
+        71,
+        33,
+        23
+      ],
+      [
+        1,
+        5,
+        5,
+        8,
+        9
+      ],
+      [
+        19,
+        39,
+        50,
+        57,
+        157
+      ]
+    ],
+    "n": 870,
+    "exact": 0.376,
+    "within1": 0.705,
+    "dir_bias": 0.009,
+    "pred_std": 1.451,
+    "var_collapse": false
+  },
+  "gemini-2.5-pro::physical_adherence": {
+    "matrix": [
+      [
+        106,
+        167,
+        208,
+        130,
+        95
+      ],
+      [
+        4,
+        15,
+        16,
+        32,
+        25
+      ],
+      [
+        0,
+        1,
+        2,
+        5,
+        6
+      ],
+      [
+        0,
+        0,
+        2,
+        0,
+        1
+      ],
+      [
+        1,
+        2,
+        18,
+        20,
+        19
+      ]
+    ],
+    "n": 875,
+    "exact": 0.162,
+    "within1": 0.409,
+    "dir_bias": -1.661,
+    "pred_std": 1.058,
+    "var_collapse": false
+  },
+  "gemini-2.5-pro::instruction_alignment": {
+    "matrix": [
+      [
+        63,
+        72,
+        65,
+        20,
+        16
+      ],
+      [
+        32,
+        63,
+        76,
+        34,
+        52
+      ],
+      [
+        5,
+        21,
+        56,
+        38,
+        42
+      ],
+      [
+        4,
+        3,
+        9,
+        13,
+        27
+      ],
+      [
+        3,
+        12,
+        14,
+        29,
+        106
+      ]
+    ],
+    "n": 875,
+    "exact": 0.344,
+    "within1": 0.691,
+    "dir_bias": -0.663,
+    "pred_std": 1.425,
+    "var_collapse": false
+  },
+  "gemini-3.1-pro-preview::physical_adherence": {
+    "matrix": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        108,
+        166,
+        194,
+        108,
+        63
+      ],
+      [
+        1,
+        10,
+        25,
+        30,
+        27
+      ],
+      [
+        2,
+        9,
+        27,
+        49,
+        55
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    ],
+    "n": 875,
+    "exact": 0.275,
+    "within1": 0.76,
+    "dir_bias": -0.648,
+    "pred_std": 0.76,
+    "var_collapse": false
+  },
+  "gemini-3.1-pro-preview::instruction_alignment": {
+    "matrix": [
+      [
+        7,
+        14,
+        6,
+        3,
+        6
+      ],
+      [
+        94,
+        134,
+        140,
+        70,
+        59
+      ],
+      [
+        3,
+        15,
+        38,
+        19,
+        23
+      ],
+      [
+        3,
+        8,
+        34,
+        41,
+        152
+      ],
+      [
+        0,
+        0,
+        2,
+        1,
+        3
+      ]
+    ],
+    "n": 875,
+    "exact": 0.255,
+    "within1": 0.791,
+    "dir_bias": -0.633,
+    "pred_std": 0.948,
+    "var_collapse": false
+  },
+  "gemini-3.5-flash::physical_adherence": {
+    "matrix": [
+      [
+        59,
+        64,
+        22,
+        6,
+        5
+      ],
+      [
+        45,
+        86,
+        130,
+        47,
+        29
+      ],
+      [
+        2,
+        11,
+        31,
+        39,
+        19
+      ],
+      [
+        2,
+        5,
+        15,
+        19,
+        21
+      ],
+      [
+        3,
+        19,
+        48,
+        76,
+        71
+      ]
+    ],
+    "n": 874,
+    "exact": 0.304,
+    "within1": 0.763,
+    "dir_bias": -0.255,
+    "pred_std": 1.46,
+    "var_collapse": false
+  },
+  "gemini-3.5-flash::instruction_alignment": {
+    "matrix": [
+      [
+        4,
+        4,
+        3,
+        1,
+        8
+      ],
+      [
+        70,
+        102,
+        79,
+        39,
+        25
+      ],
+      [
+        17,
+        26,
+        53,
+        21,
+        25
+      ],
+      [
+        6,
+        27,
+        47,
+        43,
+        106
+      ],
+      [
+        10,
+        12,
+        38,
+        30,
+        79
+      ]
+    ],
+    "n": 875,
+    "exact": 0.321,
+    "within1": 0.759,
+    "dir_bias": -0.026,
+    "pred_std": 1.195,
+    "var_collapse": false
+  },
+  "gpt-5.2::physical_adherence": {
+    "matrix": [
+      [
+        3,
+        4,
+        1,
+        0,
+        0
+      ],
+      [
+        54,
+        65,
+        43,
+        10,
+        9
+      ],
+      [
+        38,
+        58,
+        90,
+        63,
+        26
+      ],
+      [
+        14,
+        54,
+        102,
+        104,
+        94
+      ],
+      [
+        2,
+        4,
+        10,
+        10,
+        17
+      ]
+    ],
+    "n": 875,
+    "exact": 0.319,
+    "within1": 0.808,
+    "dir_bias": 0.211,
+    "pred_std": 0.88,
+    "var_collapse": false
+  },
+  "gpt-5.2::instruction_alignment": {
+    "matrix": [
+      [
+        14,
+        17,
+        3,
+        0,
+        4
+      ],
+      [
+        63,
+        74,
+        62,
+        22,
+        11
+      ],
+      [
+        26,
+        62,
+        115,
+        53,
+        58
+      ],
+      [
+        1,
+        6,
+        15,
+        17,
+        33
+      ],
+      [
+        3,
+        12,
+        25,
+        42,
+        137
+      ]
+    ],
+    "n": 875,
+    "exact": 0.408,
+    "within1": 0.805,
+    "dir_bias": -0.038,
+    "pred_std": 1.212,
+    "var_collapse": false
+  },
+  "gpt5.5::physical_adherence": {
+    "matrix": [
+      [
+        3,
+        2,
+        0,
+        0,
+        0
+      ],
+      [
+        51,
+        55,
+        35,
+        6,
+        3
+      ],
+      [
+        22,
+        36,
+        58,
+        38,
+        13
+      ],
+      [
+        31,
+        79,
+        131,
+        118,
+        103
+      ],
+      [
+        4,
+        13,
+        22,
+        25,
+        27
+      ]
+    ],
+    "n": 875,
+    "exact": 0.298,
+    "within1": 0.779,
+    "dir_bias": 0.471,
+    "pred_std": 0.912,
+    "var_collapse": false
+  },
+  "gpt5.5::instruction_alignment": {
+    "matrix": [
+      [
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        72,
+        88,
+        54,
+        11,
+        11
+      ],
+      [
+        27,
+        61,
+        111,
+        58,
+        56
+      ],
+      [
+        7,
+        14,
+        41,
+        42,
+        55
+      ],
+      [
+        0,
+        7,
+        14,
+        23,
+        121
+      ]
+    ],
+    "n": 875,
+    "exact": 0.415,
+    "within1": 0.832,
+    "dir_bias": 0.016,
+    "pred_std": 1.065,
+    "var_collapse": false
+  },
+  "internvl3.5-38b::physical_adherence": {
+    "matrix": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        6,
+        6,
+        3,
+        0,
+        0
+      ],
+      [
+        12,
+        12,
+        11,
+        10,
+        8
+      ],
+      [
+        92,
+        162,
+        231,
+        177,
+        137
+      ]
+    ],
+    "n": 869,
+    "exact": 0.174,
+    "within1": 0.407,
+    "dir_bias": 1.812,
+    "pred_std": 0.375,
+    "var_collapse": true
+  },
+  "internvl3.5-38b::instruction_alignment": {
+    "matrix": [
+      [
+        3,
+        3,
+        0,
+        0,
+        0
+      ],
+      [
+        16,
+        14,
+        7,
+        3,
+        3
+      ],
+      [
+        26,
+        49,
+        56,
+        24,
+        16
+      ],
+      [
+        5,
+        2,
+        9,
+        5,
+        11
+      ],
+      [
+        54,
+        100,
+        148,
+        102,
+        213
+      ]
+    ],
+    "n": 869,
+    "exact": 0.335,
+    "within1": 0.589,
+    "dir_bias": 1.113,
+    "pred_std": 1.006,
+    "var_collapse": false
+  },
+  "internvl3.5-8b::physical_adherence": {
+    "matrix": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        14,
+        14,
+        16,
+        4,
+        6
+      ],
+      [
+        97,
+        167,
+        229,
+        183,
+        139
+      ]
+    ],
+    "n": 869,
+    "exact": 0.165,
+    "within1": 0.4,
+    "dir_bias": 1.853,
+    "pred_std": 0.241,
+    "var_collapse": true
+  },
+  "internvl3.5-8b::instruction_alignment": {
+    "matrix": [
+      [
+        2,
+        1,
+        1,
+        1,
+        0
+      ],
+      [
+        1,
+        3,
+        4,
+        1,
+        3
+      ],
+      [
+        17,
+        18,
+        12,
+        5,
+        2
+      ],
+      [
+        2,
+        8,
+        12,
+        2,
+        2
+      ],
+      [
+        82,
+        138,
+        191,
+        125,
+        236
+      ]
+    ],
+    "n": 869,
+    "exact": 0.293,
+    "within1": 0.487,
+    "dir_bias": 1.501,
+    "pred_std": 0.669,
+    "var_collapse": false
+  },
+  "qwen3-vl-32b-instruct::physical_adherence": {
+    "matrix": [
+      [
+        10,
+        9,
+        4,
+        1,
+        0
+      ],
+      [
+        26,
+        25,
+        18,
+        5,
+        5
+      ],
+      [
+        15,
+        13,
+        12,
+        4,
+        3
+      ],
+      [
+        19,
+        24,
+        36,
+        20,
+        7
+      ],
+      [
+        41,
+        113,
+        176,
+        157,
+        131
+      ]
+    ],
+    "n": 874,
+    "exact": 0.227,
+    "within1": 0.535,
+    "dir_bias": 1.307,
+    "pred_std": 1.103,
+    "var_collapse": false
+  },
+  "qwen3-vl-32b-instruct::instruction_alignment": {
+    "matrix": [
+      [
+        3,
+        2,
+        5,
+        1,
+        9
+      ],
+      [
+        45,
+        54,
+        28,
+        11,
+        20
+      ],
+      [
+        38,
+        61,
+        84,
+        30,
+        29
+      ],
+      [
+        4,
+        3,
+        10,
+        10,
+        11
+      ],
+      [
+        16,
+        51,
+        93,
+        82,
+        174
+      ]
+    ],
+    "n": 874,
+    "exact": 0.372,
+    "within1": 0.68,
+    "dir_bias": 0.498,
+    "pred_std": 1.276,
+    "var_collapse": false
+  },
+  "qwen3-vl-8b-instruct::physical_adherence": {
+    "matrix": [
+      [
+        1,
+        3,
+        1,
+        0,
+        0
+      ],
+      [
+        9,
+        6,
+        6,
+        4,
+        1
+      ],
+      [
+        21,
+        19,
+        24,
+        10,
+        5
+      ],
+      [
+        20,
+        31,
+        31,
+        20,
+        9
+      ],
+      [
+        60,
+        125,
+        184,
+        153,
+        131
+      ]
+    ],
+    "n": 874,
+    "exact": 0.208,
+    "within1": 0.483,
+    "dir_bias": 1.497,
+    "pred_std": 0.819,
+    "var_collapse": false
+  },
+  "qwen3-vl-8b-instruct::instruction_alignment": {
+    "matrix": [
+      [
+        12,
+        18,
+        11,
+        6,
+        18
+      ],
+      [
+        37,
+        33,
+        26,
+        4,
+        9
+      ],
+      [
+        14,
+        31,
+        26,
+        15,
+        14
+      ],
+      [
+        1,
+        5,
+        7,
+        5,
+        5
+      ],
+      [
+        42,
+        84,
+        149,
+        104,
+        197
+      ]
+    ],
+    "n": 873,
+    "exact": 0.313,
+    "within1": 0.591,
+    "dir_bias": 0.801,
+    "pred_std": 1.392,
+    "var_collapse": false
+  },
+  "robobrain2.5-8b::physical_adherence": {
+    "matrix": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        3,
+        0,
+        4,
+        0,
+        2
+      ],
+      [
+        1,
+        2,
+        6,
+        2,
+        2
+      ],
+      [
+        2,
+        1,
+        8,
+        5,
+        1
+      ],
+      [
+        105,
+        182,
+        228,
+        180,
+        141
+      ]
+    ],
+    "n": 875,
+    "exact": 0.174,
+    "within1": 0.402,
+    "dir_bias": 1.838,
+    "pred_std": 0.406,
+    "var_collapse": true
+  },
+  "robobrain2.5-8b::instruction_alignment": {
+    "matrix": [
+      [
+        5,
+        10,
+        3,
+        0,
+        2
+      ],
+      [
+        10,
+        15,
+        17,
+        9,
+        7
+      ],
+      [
+        15,
+        24,
+        29,
+        18,
+        22
+      ],
+      [
+        2,
+        7,
+        3,
+        4,
+        3
+      ],
+      [
+        75,
+        115,
+        167,
+        103,
+        209
+      ]
+    ],
+    "n": 874,
+    "exact": 0.3,
+    "within1": 0.515,
+    "dir_bias": 1.172,
+    "pred_std": 1.08,
+    "var_collapse": false
+  },
+  "seed2.0_pro::physical_adherence": {
+    "matrix": [
+      [
+        6,
+        8,
+        6,
+        1,
+        0
+      ],
+      [
+        83,
+        110,
+        85,
+        34,
+        13
+      ],
+      [
+        13,
+        43,
+        81,
+        60,
+        37
+      ],
+      [
+        5,
+        11,
+        47,
+        37,
+        43
+      ],
+      [
+        4,
+        13,
+        27,
+        55,
+        53
+      ]
+    ],
+    "n": 875,
+    "exact": 0.328,
+    "within1": 0.813,
+    "dir_bias": 0.009,
+    "pred_std": 1.148,
+    "var_collapse": false
+  },
+  "seed2.0_pro::instruction_alignment": {
+    "matrix": [
+      [
+        17,
+        12,
+        3,
+        0,
+        1
+      ],
+      [
+        70,
+        101,
+        66,
+        26,
+        22
+      ],
+      [
+        15,
+        41,
+        107,
+        51,
+        53
+      ],
+      [
+        2,
+        2,
+        10,
+        16,
+        13
+      ],
+      [
+        3,
+        15,
+        34,
+        41,
+        154
+      ]
+    ],
+    "n": 875,
+    "exact": 0.451,
+    "within1": 0.799,
+    "dir_bias": -0.056,
+    "pred_std": 1.269,
+    "var_collapse": false
+  },
+  "seed2.1_lite::physical_adherence": {
+    "matrix": [
+      [
+        3,
+        3,
+        0,
+        0,
+        0
+      ],
+      [
+        78,
+        101,
+        85,
+        25,
+        13
+      ],
+      [
+        29,
+        72,
+        139,
+        107,
+        79
+      ],
+      [
+        1,
+        9,
+        20,
+        46,
+        43
+      ],
+      [
+        0,
+        0,
+        2,
+        9,
+        11
+      ]
+    ],
+    "n": 875,
+    "exact": 0.343,
+    "within1": 0.819,
+    "dir_bias": -0.255,
+    "pred_std": 0.761,
+    "var_collapse": false
+  },
+  "seed2.1_lite::instruction_alignment": {
+    "matrix": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        60,
+        62,
+        39,
+        4,
+        8
+      ],
+      [
+        33,
+        73,
+        106,
+        56,
+        36
+      ],
+      [
+        2,
+        8,
+        18,
+        17,
+        17
+      ],
+      [
+        12,
+        27,
+        57,
+        57,
+        182
+      ]
+    ],
+    "n": 875,
+    "exact": 0.419,
+    "within1": 0.786,
+    "dir_bias": 0.368,
+    "pred_std": 1.183,
+    "var_collapse": false
+  },
+  "videocon::physical_adherence": {
+    "matrix": [
+      [
+        70,
+        114,
+        147,
+        110,
+        78
+      ],
+      [
+        33,
+        55,
+        82,
+        58,
+        50
+      ],
+      [
+        7,
+        14,
+        12,
+        17,
+        17
+      ],
+      [
+        1,
+        2,
+        5,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "n": 875,
+    "exact": 0.159,
+    "within1": 0.463,
+    "dir_bias": -1.574,
+    "pred_std": 0.692,
+    "var_collapse": false
+  },
+  "videocon::instruction_alignment": {
+    "matrix": [
+      [
+        72,
+        96,
+        123,
+        81,
+        134
+      ],
+      [
+        19,
+        42,
+        48,
+        17,
+        52
+      ],
+      [
+        13,
+        26,
+        35,
+        28,
+        41
+      ],
+      [
+        2,
+        4,
+        13,
+        7,
+        16
+      ],
+      [
+        1,
+        3,
+        1,
+        1,
+        0
+      ]
+    ],
+    "n": 875,
+    "exact": 0.178,
+    "within1": 0.461,
+    "dir_bias": -1.567,
+    "pred_std": 0.952,
+    "var_collapse": false
+  },
+  "videophy2::physical_adherence": {
+    "matrix": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        47,
+        60,
+        86,
+        49,
+        29
+      ],
+      [
+        61,
+        122,
+        157,
+        130,
+        111
+      ],
+      [
+        3,
+        3,
+        3,
+        8,
+        6
+      ]
+    ],
+    "n": 875,
+    "exact": 0.254,
+    "within1": 0.694,
+    "dir_bias": 0.634,
+    "pred_std": 0.506,
+    "var_collapse": false
+  },
+  "videophy2::instruction_alignment": {
+    "matrix": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        12,
+        18,
+        23,
+        18,
+        27
+      ],
+      [
+        84,
+        115,
+        147,
+        88,
+        139
+      ],
+      [
+        10,
+        37,
+        47,
+        26,
+        72
+      ],
+      [
+        1,
+        1,
+        3,
+        2,
+        5
+      ]
+    ],
+    "n": 875,
+    "exact": 0.224,
+    "within1": 0.634,
+    "dir_bias": -0.134,
+    "pred_std": 0.607,
+    "var_collapse": false
+  },
+  "videoscore2::physical_adherence": {
+    "matrix": [
+      [
+        0,
+        1,
+        1,
+        0,
+        1
+      ],
+      [
+        26,
+        34,
+        34,
+        20,
+        10
+      ],
+      [
+        65,
+        120,
+        154,
+        123,
+        91
+      ],
+      [
+        19,
+        30,
+        57,
+        44,
+        42
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        2
+      ]
+    ],
+    "n": 875,
+    "exact": 0.267,
+    "within1": 0.728,
+    "dir_bias": -0.005,
+    "pred_std": 0.618,
+    "var_collapse": false
+  },
+  "videoscore2::instruction_alignment": {
+    "matrix": [
+      [
+        0,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        10,
+        16,
+        21,
+        8,
+        7
+      ],
+      [
+        63,
+        95,
+        102,
+        63,
+        94
+      ],
+      [
+        33,
+        58,
+        97,
+        61,
+        139
+      ],
+      [
+        1,
+        1,
+        0,
+        2,
+        2
+      ]
+    ],
+    "n": 875,
+    "exact": 0.207,
+    "within1": 0.696,
+    "dir_bias": 0.113,
+    "pred_std": 0.637,
+    "var_collapse": false
+  }
 }
