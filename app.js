@@ -5948,12 +5948,15 @@ async function initPreannotateEval() {
   // returns.
   const samples = document.getElementById("pe-samples");
   if (samples) {
+    // Real IDs sampled from served 875 hybrid (v3.5) — 5 diverse in-domain datasets ×
+    // generators, all guaranteed to resolve on Ham's endpoint so the diagnostic panel
+    // renders live data instead of "not found" cards.
     const sampleIds = [
-      "data__agibot_world__generated_data__abot_physworld_f113_prefix__task_0017__episode_0001__1__task_0017_episode_0001",
-      "data__droid__generated_data__wow_wan14b_f105_prefix__task_0106__episode_0001__1__task_0106_episode_0001",
-      "data__libero__generated_data__veo31_lite_prefix__task_0044__episode_0001__1__task_0044_episode_0001",
-      "data__gr1_inlab__generated_data__kling_rewrite__task_0028__episode_0001__1__task_0028_episode_0001",
-      "data__egodex__generated_data__wan22_ti2v5b_1280x704_f169_rewrite__task_0001__episode_0001__1__task_0001_episode_0001",
+      "data__agibot_world__generated_data__cogvideo_i2v_f113_rewrite__task_0176__episode_0001__1__task_0176_episode_0001",
+      "data__droid__generated_data__abot_physworld_f113_prefix__task_0107__episode_0001__1__task_0107_episode_0001",
+      "data__robotwin__generated_data__happyhorse_prefix__task_0183__episode_0001__1__task_0183_episode_0001",
+      "data__gr1_inlab__generated_data__gigaworld_gr1_2b_f113_prefix__task_0127__episode_0001__1__task_0127_episode_0001",
+      "data__open_x_embodiment__generated_data__cogvideo_i2v_f113_rewrite__task_0002__episode_0001__1__task_0002_episode_0001",
     ];
     const results = await Promise.all(sampleIds.map(id =>
       fetch(`${CFG.APPS_SCRIPT_URL}/?action=preannotate&item_id=${encodeURIComponent(id)}`).then(r => r.ok ? r.json() : null).catch(() => null)
