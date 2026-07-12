@@ -1164,6 +1164,21 @@ function showLoginMsg(text, isErr) {
 /* ---------- task.html: annotation loop ---------- */
 let CURRENT = null;
 
+// v85hf (siyuan pre-annotation feature, not yet production-live):
+// Machine pre-annotation is gated behind `?preannotate=1` in the URL so the
+// staging build never affects real annotators. When enabled the task page
+// fetches an ensemble pre-annotation for the served item and pre-fills the
+// form (PA, IA, 6 sub-scores, physical_notes, instruction_notes) so a human
+// only has to verify / edit. UI shows a "🤖 预标注" chip and a "清空预标注"
+// button. Prefill vs final delta is logged for iterative eval.
+const PREANNOTATE_ENABLED = (function(){
+  try {
+    const q = new URLSearchParams(window.location.search);
+    return q.get('preannotate') === '1';
+  } catch (_) { return false; }
+})();
+let CURRENT_PREANNOTATION = null;
+
 async function initTask() {
   const username = localStorage.getItem(CFG.LS_USER);
   let role = localStorage.getItem(CFG.LS_ROLE);
@@ -1385,9 +1400,124 @@ async function loadNext() {
     CURRENT = data;
     renderItem(CURRENT);
     hide("loading"); show("item");
+    // v85hf: staging preannotation. Only when ?preannotate=1 in URL.
+    // Runs after the item is rendered so form fields are guaranteed to exist.
+    if (PREANNOTATE_ENABLED) {
+      await maybeApplyPreannotation(CURRENT.id);
+    } else {
+      CURRENT_PREANNOTATION = null;
+      hidePreannotationChip();
+    }
   } catch (err) {
     showError("Failed to load next item: " + err.message);
   }
+}
+
+// v85hf: fetch the ensemble pre-annotation for a given item and prefill the
+// form. Silently no-ops on 404 / non-2xx / empty body so the page still works
+// while Ham's endpoint is under development. During development, if the URL
+// carries ?preannotate=1&mock=1 the function falls back to a hardcoded mock
+// payload so the frontend can be exercised end-to-end before the backend ships.
+async function maybeApplyPreannotation(itemId) {
+  CURRENT_PREANNOTATION = null;
+  if (!itemId) return;
+  const user = localStorage.getItem(CFG.LS_USER);
+  let payload = null;
+  const q = new URLSearchParams(window.location.search);
+  const useMock = q.get('mock') === '1';
+  try {
+    if (useMock) {
+      payload = mockPreannotation(itemId);
+    } else {
+      const url = `${CFG.APPS_SCRIPT_URL}/?action=preannotate&user=${encodeURIComponent(user)}&item_id=${encodeURIComponent(itemId)}`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const body = await res.json().catch(() => ({}));
+      // Ham's contract: {ok:true, physical_adherence, instruction_alignment, ...6 subs, physical_notes, instruction_notes, source, confidence:{pa,ia}}
+      if (body?.ok === false || !body || body.physical_adherence == null) return;
+      payload = body;
+    }
+    prefillAnnotateForm(payload);
+    CURRENT_PREANNOTATION = payload;
+    showPreannotationChip(payload);
+  } catch (err) {
+    console.warn("preannotate fetch failed", err);
+  }
+}
+
+function mockPreannotation(itemId) {
+  // Deterministic mock keyed on itemId hash so the same item always mocks the
+  // same values; keeps end-to-end testing predictable.
+  let h = 0; for (let i = 0; i < itemId.length; i++) h = ((h << 5) - h + itemId.charCodeAt(i)) | 0;
+  const pa = 3 + ((h >> 0) & 1);       // 3 or 4
+  const ia = 3 + ((h >> 2) & 1);       // 3 or 4
+  const sub = (bit) => (bit ? 2 : 1);  // 1 or 2
+  return {
+    physical_adherence: pa,
+    instruction_alignment: ia,
+    agent_consistency: sub((h >> 3) & 1),
+    scene_consistency: sub((h >> 5) & 1),
+    interaction_realism: sub((h >> 7) & 1),
+    agent_match: sub((h >> 9) & 1),
+    object_correct: sub((h >> 11) & 1),
+    goal_completed: sub((h >> 13) & 1),
+    physical_notes: "[mock] 场景大体稳定;第 ~4s 处夹爪与物体接触帧出现轻微穿模,scene 稳定但 interaction 边缘伪影(σ estimate);其余 axes 未见明显违规。",
+    instruction_notes: "[mock] 指令目标基本达成:目标物体识别正确,末帧到达指令位置;agent_match 正确(用了指令要求的夹爪);goal 完成度 ~80%,末段有轻微对不上目标点位。",
+    source: "mock",
+    confidence: { pa: 0.68, ia: 0.62 }
+  };
+}
+
+function showPreannotationChip(pa) {
+  const item = document.getElementById("item");
+  if (!item) return;
+  let chip = document.getElementById("preannotate-chip");
+  if (!chip) {
+    chip = document.createElement("div");
+    chip.id = "preannotate-chip";
+    chip.style.cssText = "margin:6px 0;padding:8px 12px;background:#eef2ff;border-left:3px solid #6366f1;border-radius:4px;font-size:12.5px;color:#312e81;display:flex;justify-content:space-between;align-items:center;gap:12px";
+    item.insertBefore(chip, item.firstChild);
+  }
+  const src = String(pa?.source || "ensemble");
+  const conf = pa?.confidence || {};
+  const paC = conf.pa != null ? conf.pa.toFixed(2) : "?";
+  const iaC = conf.ia != null ? conf.ia.toFixed(2) : "?";
+  chip.innerHTML =
+    '<div><b>🤖 机器预标注已填入</b> <span style="opacity:0.75;font-size:11px">source: ' + esc(src) + ' · 置信度 PA ' + paC + ' · IA ' + iaC + '</span><div style="font-size:11px;color:#4338ca;margin-top:2px">请<b>逐项核对</b>后再提交(不核对直接提交等同没审)。</div></div>' +
+    '<button type="button" id="clear-preannotate-btn" class="ghost" style="padding:4px 10px;font-size:11.5px">🧹 清空重填</button>';
+  const btn = document.getElementById("clear-preannotate-btn");
+  if (btn) btn.addEventListener("click", clearPreannotationForm);
+}
+
+function hidePreannotationChip() {
+  const chip = document.getElementById("preannotate-chip");
+  if (chip) chip.remove();
+}
+
+function clearPreannotationForm() {
+  const setDefault = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.value = val;
+      const out = document.getElementById(id + "-out");
+      if (out) out.value = val;
+    }
+  };
+  setDefault("physical_adherence", 5);
+  setDefault("instruction_alignment", 5);
+  for (const id of ["agent_consistency", "scene_consistency", "interaction_realism", "agent_match", "object_correct", "goal_completed"]) {
+    setSubTri(id, 2);
+  }
+  const pn = document.getElementById("physical_notes"); if (pn) pn.value = "";
+  const ins = document.getElementById("instruction_notes"); if (ins) ins.value = "";
+  for (const id of ["physical_adherence", "instruction_alignment"]) {
+    const slider = document.getElementById(id);
+    if (slider) slider.dispatchEvent(new Event("input"));
+  }
+  const chip = document.getElementById("preannotate-chip");
+  if (chip) chip.style.opacity = "0.5";
+  const btn = document.getElementById("clear-preannotate-btn");
+  if (btn) btn.disabled = true;
 }
 
 function renderItem(it) {
