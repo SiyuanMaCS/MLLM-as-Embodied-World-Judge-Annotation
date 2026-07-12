@@ -338,7 +338,7 @@
         <span class="hs-sub">reference exhibit for the variance collapse in § 3</span>
       </div>
       <div style="font-size:12.5px;color:#334155;padding:6px 4px;line-height:1.6">
-        Rows = judge prediction, columns = human gold, diagonal ring = correct call. Reference exhibit for reviewers: qwen32b is systematically lenient (dir_bias +1.31), gemini-2.5-pro collapses ~80% of predictions to the lowest bucket (variance collapse — a static view of the § 3 compression story). Does not carry a headline claim.
+        行 = 判官打分 (1-5)，列 = 人类 gold (1-5)，绿色对角线 = 判官和人类一致。19 家判官全在，每张矩阵都带明确坐标轴标题。参考展示：cosmos-reason2-2b / internvl3.5-8b / internvl3.5-38b / robobrain2.5-8b 四家在 PA 上均触发 variance collapse（>90% 集中在 judge=5 行），gemini-2.5-pro PA 集中在 judge=1 行、dir_bias −1.66（锚低/严）。§ 3 压缩现象的静态版展示，不承担 headline 声明。
       </div>
       <div id="hs-cm"><div class="hs-empty">加载中…</div></div>
     </section>
@@ -579,7 +579,7 @@
   function renderVideogenAppendix(){
     var host = document.getElementById("hs-vg-appendix");
     if(!host) return;
-    fetch("bench/videogen_leaderboard.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/videogen_leaderboard.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(data){
         // Collapse _prefix / _rewrite variants into base model, weighted by n
@@ -619,96 +619,111 @@
       .catch(function(){ host.innerHTML='<div class="hs-empty">video-gen 榜加载失败</div>'; });
   }
 
-  // v85gh (siyuan directive: "上下的图太丑了 · 弄成 2×2"):
-  //   HUMAN gold as full-width baseline strip at top, then 4 judges in a 2×2
-  //   grid of tiles below. Data: bench/analysis/judge_distributions.json (Isabella).
+  // v85gz (siyuan: "把所有 judge 的分布都画出来"):
+  //   HUMAN gold 顶端全宽基线 + 每一家判官(数据驱动、无 hardcode)3 列自适应
+  //   网格,按 mean PA 升序显示;每张 tile 自动分类失败模式(anchor-low / 变差
+  //   压缩 / near-human / anchor-high / shifted-low/high / wide-off-centre)
+  //   基于 (Δμ, σ 比 human 的 rule)。
   function renderJudgeDist(){
     var host = document.getElementById("hs-judgedist");
     if(!host) return;
-    fetch("bench/analysis/judge_distributions.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/analysis/judge_distributions.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.human_gold){ host.innerHTML=""; return; }
         var humanPA = d.human_gold.pa;
         if(!humanPA){ host.innerHTML=""; return; }
         var humanMean = humanPA.mean, humanStd = humanPA.std;
-        // 4 judges laid out 2×2 (siyuan-guided representatives, no HUMAN in the grid)
-        var JUDGES = [
-          { key: 'seed2.0_pro',             label: 'seed2.0_pro',      mode: 'good (near human)',           color: '#10b981' },
-          { key: 'seed2.1_lite',            label: 'seed2.1_lite',     mode: 'regression → mid-scale',      color: '#f59e0b' },
-          { key: 'qwen3-vl-8b-instruct',    label: 'qwen3-vl-8b',      mode: 'anchor high (+ extreme)',     color: '#ef4444' },
-          { key: 'gemini-2.5-pro',          label: 'gemini-2.5-pro',   mode: 'anchor low (− extreme)',      color: '#7c3aed' }
-        ];
-        // pass 1: shared max histogram value across HUMAN + 4 judges so bars share y-scale
+        // 数据驱动 —— 收 JSON 里每一家判官(未来 Ham/Isabella 加新家自动 pick up)
+        var judgeKeys = Object.keys(d).filter(function(k){
+          return k !== '_meta' && k !== 'human_gold' && d[k] && d[k].pa && d[k].pa.histogram;
+        });
+        // 按 PA mean 升序 —— 锚低 → 近 human → 锚高,谱系一目了然
+        judgeKeys.sort(function(a, b){ return (d[a].pa.mean || 0) - (d[b].pa.mean || 0); });
+        function classify(mu, sig){
+          var deltaMu = mu - humanMean;
+          var sigRatio = sig / (humanStd || 1);
+          if(sigRatio < 0.45){
+            if(deltaMu < -0.5) return { label: '锚低 (anchor low)',  color: '#7c3aed', bg: '#f5f3ff' };
+            if(deltaMu >  0.5) return { label: '锚高 (anchor high)', color: '#ef4444', bg: '#fef2f2' };
+            return { label: '方差塌缩 (var collapse)', color: '#dc2626', bg: '#fee2e2' };
+          }
+          if(Math.abs(deltaMu) < 0.3 && Math.abs(sigRatio - 1) < 0.35) return { label: '近人类 (near-human)', color: '#059669', bg: '#ecfdf5' };
+          if(deltaMu < -0.3) return { label: '偏低 (shifted low)',  color: '#8b5cf6', bg: '#f5f3ff' };
+          if(deltaMu >  0.3) return { label: '偏高 (shifted high)', color: '#f97316', bg: '#fff7ed' };
+          return { label: '宽但偏心 (wide off-centre)', color: '#64748b', bg: '#f8fafc' };
+        }
         var maxH = 0;
-        var allKeys = ['human_gold'].concat(JUDGES.map(function(r){return r.key;}));
-        allKeys.forEach(function(k){ var pa = d[k] && d[k].pa; if(!pa || !pa.histogram) return; for(var i=1;i<=5;i++){ var v = pa.histogram[i] || pa.histogram[String(i)] || 0; if(v > maxH) maxH = v; } });
+        ['human_gold'].concat(judgeKeys).forEach(function(k){
+          var pa = d[k] && d[k].pa;
+          if(!pa || !pa.histogram) return;
+          for(var i = 1; i <= 5; i++){ var v = pa.histogram[i] || pa.histogram[String(i)] || 0; if(v > maxH) maxH = v; }
+        });
         if(maxH <= 0) maxH = 1;
         function scoreColor(s){
-          var stops=[[229,72,77],[240,138,52],[240,180,40],[120,170,70],[46,139,87]];
-          var i = Math.max(0, Math.min(4, s-1));
+          var stops = [[229,72,77],[240,138,52],[240,180,40],[120,170,70],[46,139,87]];
+          var i = Math.max(0, Math.min(4, s - 1));
           var a = stops[i];
-          return "rgba("+a[0]+","+a[1]+","+a[2]+",0.82)";
+          return 'rgba(' + a[0] + ',' + a[1] + ',' + a[2] + ',0.82)';
         }
         function fmt(v, dd){ return (v == null || !isFinite(v)) ? '—' : v.toFixed(dd == null ? 2 : dd); }
         function histSvg(hist, isHuman){
-          var W = 340, H = 110, PL = 4, PR = 4, PB = 16;
+          var W = 320, H = 96, PL = 4, PR = 4, PB = 14;
           var plotW = W - PL - PR, plotH = H - PB - 4;
           var barW = plotW / 5;
-          var s = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:'+H+'px;display:block;background:linear-gradient(180deg,#fcfdff,#f6f8fc);border:1px solid #eef0f5;border-radius:6px">';
-          for(var k=1;k<=5;k++){
+          var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:' + H + 'px;display:block;background:linear-gradient(180deg,#fcfdff,#f6f8fc);border:1px solid #eef0f5;border-radius:6px">';
+          for(var k = 1; k <= 5; k++){
             var v = hist[k] || hist[String(k)] || 0;
             var barH = (v / maxH) * plotH;
-            var xL = PL + (k-1) * barW + 3;
+            var xL = PL + (k - 1) * barW + 3;
             var yT = 4 + (plotH - barH);
             var fill = isHuman ? '#0f172a' : scoreColor(k);
             var opacity = isHuman ? 0.88 : 0.9;
-            s += '<rect x="'+xL.toFixed(1)+'" y="'+yT.toFixed(1)+'" width="'+(barW-6).toFixed(1)+'" height="'+barH.toFixed(1)+'" rx="1.5" fill="'+fill+'" opacity="'+opacity+'"/>';
-            s += '<text x="'+(xL + (barW-6)/2).toFixed(1)+'" y="'+(H-3)+'" font-size="9" fill="#94a3b8" text-anchor="middle">'+k+'</text>';
+            s += '<rect x="' + xL.toFixed(1) + '" y="' + yT.toFixed(1) + '" width="' + (barW - 6).toFixed(1) + '" height="' + barH.toFixed(1) + '" rx="1.5" fill="' + fill + '" opacity="' + opacity + '"/>';
+            s += '<text x="' + (xL + (barW - 6) / 2).toFixed(1) + '" y="' + (H - 3) + '" font-size="9" fill="#94a3b8" text-anchor="middle">' + k + '</text>';
             if(v >= 0.08){
-              s += '<text x="'+(xL + (barW-6)/2).toFixed(1)+'" y="'+(yT - 2).toFixed(1)+'" font-size="9" fill="#334155" text-anchor="middle" font-weight="600">'+Math.round(v*100)+'%</text>';
+              s += '<text x="' + (xL + (barW - 6) / 2).toFixed(1) + '" y="' + (yT - 2).toFixed(1) + '" font-size="9" fill="#334155" text-anchor="middle" font-weight="600">' + Math.round(v * 100) + '%</text>';
             }
           }
           s += '</svg>';
           return s;
         }
-        // v85gj (siyuan: "横着太宽"): cap panel + histogram width, tighten spacing
-        var html = '<div class="hs-h" style="border:0;padding:0 0 6px"><h3 style="font-size:13px;color:#334155;margin:0">Per-judge score distribution vs human gold · PA</h3></div>';
-        html += '<div style="max-width:640px">';
-        // Human baseline strip (top)
-        html += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;background:#fafafa;margin-bottom:10px">';
-        html += '<div style="display:grid;grid-template-columns:120px 1fr auto;column-gap:10px;align-items:center">';
-        html += '<div><div style="font-weight:700;color:#0f172a;font-size:12.5px">HUMAN gold</div><div style="font-size:10px;color:#64748b">baseline</div></div>';
+        var html = '<div class="hs-h" style="border:0;padding:0 0 6px"><h3 style="font-size:13px;color:#334155;margin:0">每家判官 PA 打分分布 vs 人类 gold · 全 pool(n = ' + judgeKeys.length + ')</h3></div>';
+        // HUMAN gold 基线
+        html += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;background:#fafafa;margin-bottom:12px">';
+        html += '<div style="display:grid;grid-template-columns:130px 1fr auto;column-gap:10px;align-items:center">';
+        html += '<div><div style="font-weight:700;color:#0f172a;font-size:12.5px">HUMAN gold</div><div style="font-size:10px;color:#64748b">基线</div></div>';
         html += '<div>' + histSvg(humanPA.histogram, true) + '</div>';
-        html += '<div style="font-size:10.5px;color:#334155;text-align:right;font-variant-numeric:tabular-nums;min-width:96px">'
-             +   '<div>μ <b>'+fmt(humanMean)+'</b></div>'
-             +   '<div>σ <b>'+fmt(humanStd)+'</b> (×1.00)</div>'
+        html += '<div style="font-size:10.5px;color:#334155;text-align:right;font-variant-numeric:tabular-nums;min-width:104px">'
+             +   '<div>μ <b>' + fmt(humanMean) + '</b></div>'
+             +   '<div>σ <b>' + fmt(humanStd) + '</b> <small style="color:#64748b">(×1.00)</small></div>'
              + '</div>';
-        html += '</div>';
-        html += '</div>';
-        // 2×2 grid of judge tiles
-        html += '<div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px">';
-        JUDGES.forEach(function(row){
-          var pa = d[row.key] && d[row.key].pa;
-          if(!pa){ return; }
+        html += '</div></div>';
+        // 3-列自适应网格
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:10px">';
+        judgeKeys.forEach(function(k){
+          var pa = d[k].pa;
           var mu = pa.mean, sig = pa.std;
-          var sigRatio = sig / humanStd;
+          var sigRatio = sig / (humanStd || 1);
           var deltaMu = mu - humanMean;
           var dCol = Math.abs(deltaMu) > 0.5 ? '#ef4444' : (Math.abs(deltaMu) > 0.2 ? '#f59e0b' : '#334155');
           var dSign = deltaMu >= 0 ? '+' : '';
-          html += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;background:#fff">';
+          var cls = classify(mu, sig);
+          html += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;background:' + cls.bg + '">';
           html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:6px">';
-          html += '<div style="min-width:0"><div style="font-weight:700;color:'+row.color+';font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(row.label)+'</div><div style="font-size:10px;color:#64748b">'+row.mode+'</div></div>';
+          html += '<div style="min-width:0"><div style="font-weight:700;color:#0f172a;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(k) + '">' + esc(k) + '</div>';
+          html += '<div style="font-size:9.5px;font-weight:600;color:' + cls.color + ';letter-spacing:.3px;margin-top:2px">' + cls.label + '</div></div>';
           html += '<div style="font-size:10.5px;color:#334155;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap">'
-               +   '<div>μ <b>'+fmt(mu)+'</b> · Δ<b style="color:'+dCol+'">'+dSign+fmt(deltaMu)+'</b></div>'
-               +   '<div>σ <b>'+fmt(sig)+'</b> <small style="color:#64748b">(×'+fmt(sigRatio)+')</small></div>'
+               +   '<div>μ <b>' + fmt(mu) + '</b> · Δ<b style="color:' + dCol + '">' + dSign + fmt(deltaMu) + '</b></div>'
+               +   '<div>σ <b>' + fmt(sig) + '</b> <small style="color:#64748b">(×' + fmt(sigRatio) + ')</small></div>'
                + '</div>';
           html += '</div>';
           html += histSvg(pa.histogram, false);
           html += '</div>';
         });
         html += '</div>';
-        html += '</div>'; // close max-width wrapper
+        // 图例
+        html += '<div style="font-size:11px;color:#64748b;margin-top:10px;line-height:1.6">柱条 = 判官在 875 条 item 上打 1-5 分的比例(PA)。Δ = μ<sub>判官</sub> − μ<sub>人类</sub>；σ 比 = σ<sub>判官</sub> / σ<sub>人类</sub>。分类:<b style="color:#059669">近人类</b>(Δ &lt; 0.3、σ 比 [0.65, 1.35]) · <b style="color:#dc2626">方差塌缩</b>(σ 比 &lt; 0.45、居中) · <b style="color:#7c3aed">锚低</b>(σ 比 &lt; 0.45、Δ &lt; −0.5) · <b style="color:#ef4444">锚高</b>(σ 比 &lt; 0.45、Δ &gt; +0.5) · <b style="color:#8b5cf6">偏低</b> / <b style="color:#f97316">偏高</b>(分布宽但偏心)。</div>';
         host.innerHTML = html;
       })
       .catch(function(){ host.innerHTML=""; });
@@ -721,8 +736,8 @@
     var host = document.getElementById("hs-decoupling");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/bootstrap_ci.json?v=v85gy", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
-      fetch("bench/model_ranking_strict.json?v=v85gy", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/bootstrap_ci.json?v=v85gz", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch("bench/model_ranking_strict.json?v=v85gz", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
       var ci = (pair[0] && pair[0].judges) || {};
       var strict = pair[1] || {};
@@ -801,7 +816,7 @@
   function renderConfab(){
     var host = document.getElementById("hs-confab");
     if(!host) return;
-    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.pa || !d.ia){ host.innerHTML = ""; return; }
@@ -858,7 +873,7 @@
   function renderSubClean(){
     var host = document.getElementById("hs-subclean");
     if(!host) return;
-    fetch("bench/analysis/subscore_ci.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/analysis/subscore_ci.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var judges = (d && d.judges) || {};
@@ -1053,8 +1068,8 @@
     var host = document.getElementById("hs-subaxis");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/judge_subscore_accuracy.json?v=v85gy", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
-      fetch("bench/analysis/subscore_ci.json?v=v85gy", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/judge_subscore_accuracy.json?v=v85gz", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
+      fetch("bench/analysis/subscore_ci.json?v=v85gz", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
         var d = pair[0];
         var ciMap = (pair[1] && pair[1].judges) || {};
@@ -1158,7 +1173,7 @@
   function renderMRMSE(){
     var host = document.getElementById("hs-mrmse");
     if(!host) return;
-    fetch("bench/analysis/model_level_rmse.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/analysis/model_level_rmse.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var byJ = (d && d.judges) || {};
@@ -1204,7 +1219,7 @@
   function renderTopSpacing(){
     var host = document.getElementById("hs-topspacing");
     if(!host) return;
-    fetch("bench/analysis/topspacing.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/analysis/topspacing.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.models){ host.innerHTML=""; return; }
@@ -1267,9 +1282,9 @@
     var host = document.getElementById("hs-table1");
     if(!host) return;
     var md, strict, ciAll;
-    var mdUrl = "bench/leaderboard.md?v=v85gy";
-    var strictUrl = "bench/model_ranking_strict.json?v=v85gy";
-    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85gy";
+    var mdUrl = "bench/leaderboard.md?v=v85gz";
+    var strictUrl = "bench/model_ranking_strict.json?v=v85gz";
+    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v85gz";
     // Global scale for the mini error-bar strip: fixed range so error bars are
     // visually comparable across the table (widened enough to fit both the
     // strong-judge PA CIs and weak-judge CIs).
@@ -1348,21 +1363,35 @@
     });
   }
 
+  // v85gz(siyuan:"混淆矩阵不清楚 我都不知道行列分别是啥"):每张矩阵加显式
+  // 坐标轴标题 + 顶部通俗说明,与 EN 版对齐;belt-and-suspenders guard 拦 _meta。
   function renderCM(payload){
     var host = document.getElementById("hs-cm");
     if(!payload || !Object.keys(payload).length){
       host.innerHTML = '<div class="hs-empty">暂无数据</div>'; return;
     }
-    // Group by judge — 2 columns per judge (PA / IA), stacked
+    // 按判官分组 —— PA + IA 各一列。跳过 _meta 及任何以下划线开头的键,
+    // 并要求 key 严格拆成 [<judge>, <dim>] 两段非空。
     var byJudge = {};
     Object.keys(payload).forEach(function(key){
+      if(!key || key.charAt(0) === '_') return;
       var parts = key.split("::");
+      if(parts.length !== 2 || !parts[0] || !parts[1]) return;
       var j = parts[0], dim = parts[1];
       if(!byJudge[j]) byJudge[j] = {};
       byJudge[j][dim] = payload[key];
     });
     var dimLabel = { physical_adherence: "PA", instruction_alignment: "IA" };
     var html = "";
+    // 顶部一次性通俗说明
+    html += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:3px solid #2563eb;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#334155;line-height:1.65">';
+    html += '<b style="color:#0f172a">怎么看每张 5 × 5 矩阵。</b> ';
+    html += '格子(行 = <b style="color:#2563eb">judge</b> 打 i、列 = <b style="color:#059669">人类 gold</b> 打 j)= 判官打 i 而人类打 j 的片段数。';
+    html += '<b style="color:#059669">绿色对角线</b> = 判官和人类一致。';
+    html += '<b>对角线下方</b>(judge &gt; gold)= 判官偏 <b style="color:#dc2626">松(lenient)</b>;';
+    html += '<b>对角线上方</b>(judge &lt; gold)= 判官偏 <b style="color:#7c3aed">严(strict)</b>。';
+    html += '某判官所有 mass 集中在单一行 = <b>方差塌缩(variance collapse)</b>(判官忽略 per-clip 差异、几乎所有片段打同一分,per-item Pearson 不可信)。';
+    html += '</div>';
     Object.keys(byJudge).forEach(function(j){
       html += '<div class="hs-cm-judge"><div class="hs-cm-judge-name">' + esc(j) + '</div><div class="hs-cm-pair">';
       ["physical_adherence","instruction_alignment"].forEach(function(dim){
@@ -1370,15 +1399,19 @@
         var maxCount = 0;
         d.matrix.forEach(function(row){ row.forEach(function(v){ if(v>maxCount) maxCount=v; }); });
         var flag = d.var_collapse
-          ? '<span class="hs-cm-flag err">variance collapse · Pearson unreliable</span>' : '';
-        var bias = d.dir_bias>0 ? 'lenient +' + d.dir_bias.toFixed(2)
-                  : 'strict ' + d.dir_bias.toFixed(2);
+          ? '<span class="hs-cm-flag err">方差塌缩 · Pearson 不可信</span>' : '';
+        var bias = d.dir_bias>0 ? '偏松 +' + d.dir_bias.toFixed(2)
+                  : '偏严 ' + d.dir_bias.toFixed(2);
         html += '<div class="hs-cm-box"><div class="hs-cm-title">' + dimLabel[dim] + ' · n=' + d.n + flag + '</div>';
+        // 列轴标题
+        html += '<div style="font-size:10px;color:#059669;font-weight:600;text-align:center;letter-spacing:.3px;margin:2px 0 3px 22px">人类 gold  1 → 5</div>';
+        // 两列布局:[左侧竖排轴标题] + [矩阵]
+        html += '<div style="display:grid;grid-template-columns:12px 1fr;column-gap:4px;align-items:center">';
+        html += '<div style="font-size:10px;color:#2563eb;font-weight:600;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;letter-spacing:.3px">Judge 打分  1 → 5</div>';
         html += '<div class="hs-cm-grid">';
-        // headers row
+        // 表头
         html += '<div class="hs-cm-corner"></div>';
         for(var g=1; g<=5; g++) html += '<div class="hs-cm-hdr">' + g + '</div>';
-        // rows: judge prediction 1..5 (label on left)
         for(var p=0; p<5; p++){
           html += '<div class="hs-cm-hdr side">' + (p+1) + '</div>';
           for(var g2=0; g2<5; g2++){
@@ -1386,11 +1419,12 @@
             var t = maxCount ? v/maxCount : 0;
             var isDiag = (p === g2);
             html += '<div class="hs-cm-cell' + (isDiag ? ' diag' : '') + '" '
-                 + 'style="background:rgba(37,99,235,' + t.toFixed(3) + ')" title="pred=' + (p+1) + ' gold=' + (g2+1) + ' · n=' + v + '">'
+                 + 'style="background:rgba(37,99,235,' + t.toFixed(3) + ')" title="judge=' + (p+1) + ' gold=' + (g2+1) + ' · n=' + v + '">'
                  + (v>0 ? v : '') + '</div>';
           }
         }
-        html += '</div>';
+        html += '</div>'; // .hs-cm-grid
+        html += '</div>'; // 布局 wrapper
         html += '<div class="hs-cm-foot">'
              + '<span>exact <b>' + d.exact.toFixed(3) + '</b></span>'
              + '<span>±1 <b>' + d.within1.toFixed(3) + '</b></span>'
@@ -2279,40 +2313,40 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -2323,8 +2357,8 @@
     // API-optimized variants (top_10/15/20/25/30), then render the top_20
     // by default with a toggle to switch to full/other variants.
     Promise.all([
-      fetch("bench/fair_common_set_filllist.json?v=v85gy", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch("bench/fair_common_set_api_optimized.json?v=v85gy", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_filllist.json?v=v85gz", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch("bench/fair_common_set_api_optimized.json?v=v85gz", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(pair){
       window.__fcsSources = { raw: pair[0], optimized: pair[1], pick: (pair[1] && (pair[1].recommended || 'top_20')) || 'full' };
       fcsRerender();
@@ -2335,11 +2369,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -2348,11 +2382,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/analysis/bootstrap_ci.json?v=v85gy", {cache:"no-store"})
+    fetch("bench/analysis/bootstrap_ci.json?v=v85gz", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
