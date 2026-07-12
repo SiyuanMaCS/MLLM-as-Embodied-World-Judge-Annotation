@@ -1447,25 +1447,87 @@ async function maybeApplyPreannotation(itemId) {
 
 function mockPreannotation(itemId) {
   // Deterministic mock keyed on itemId hash so the same item always mocks the
-  // same values; keeps end-to-end testing predictable.
+  // same values; keeps end-to-end testing predictable. Notes follow Alice's
+  // reverse-engineered schema (v85hf Task C finding, 2026-07-12): header line
+  // per dim + one line per deducted axis of the shape "<axis_cn> <severity>：
+  // <observation ≤~15 chars>", axes at 2 are omitted.
   let h = 0; for (let i = 0; i < itemId.length; i++) h = ((h << 5) - h + itemId.charCodeAt(i)) | 0;
   const pa = 3 + ((h >> 0) & 1);       // 3 or 4
   const ia = 3 + ((h >> 2) & 1);       // 3 or 4
   const sub = (bit) => (bit ? 2 : 1);  // 1 or 2
+  const ac = sub((h >> 3) & 1);
+  const sc = sub((h >> 5) & 1);
+  const ir = sub((h >> 7) & 1);
+  const am = sub((h >> 9) & 1);
+  const oc = sub((h >> 11) & 1);
+  const gc = sub((h >> 13) & 1);
+  const PA_HEAD = { 5: "物理高度真实", 4: "物理明显不一致", 3: "物理明显不一致", 2: "物理严重违反", 1: "物理完全崩坏" }[pa];
+  const IA_HEAD = { 5: "指令完全符合", 4: "指令基本符合", 3: "指令部分偏离", 2: "指令完全不符", 1: "指令完全不符" }[ia];
+  const paLines = [PA_HEAD + "。"];
+  if (ac < 2) paLines.push("机械手/人手完整性 " + (ac === 0 ? "严重违反" : "存在问题") + "：夹爪结构在中段轻微形变。");
+  if (sc < 2) paLines.push("背景与物体一致性 " + (sc === 0 ? "严重违反" : "存在问题") + "：桌面纹理在 t≈3s 处漂移。");
+  if (ir < 2) paLines.push("交互真实性 " + (ir === 0 ? "严重违反" : "存在问题") + "：接触帧出现穿模。");
+  const iaLines = [IA_HEAD + "。"];
+  if (am < 2) iaLines.push("动作与主体匹配 " + (am === 0 ? "严重不符" : "存在问题") + "：使用了指令未指定的夹爪。");
+  if (oc < 2) iaLines.push("目标物正确 " + (oc === 0 ? "严重不符" : "存在问题") + "：抓取了颜色相近的非目标物。");
+  if (gc < 2) iaLines.push("目标完成度 " + (gc === 0 ? "未完成" : "部分完成") + "：末帧未到达指令位置。");
   return {
     physical_adherence: pa,
     instruction_alignment: ia,
-    agent_consistency: sub((h >> 3) & 1),
-    scene_consistency: sub((h >> 5) & 1),
-    interaction_realism: sub((h >> 7) & 1),
-    agent_match: sub((h >> 9) & 1),
-    object_correct: sub((h >> 11) & 1),
-    goal_completed: sub((h >> 13) & 1),
-    physical_notes: "[mock] 场景大体稳定;第 ~4s 处夹爪与物体接触帧出现轻微穿模,scene 稳定但 interaction 边缘伪影(σ estimate);其余 axes 未见明显违规。",
-    instruction_notes: "[mock] 指令目标基本达成:目标物体识别正确,末帧到达指令位置;agent_match 正确(用了指令要求的夹爪);goal 完成度 ~80%,末段有轻微对不上目标点位。",
+    agent_consistency: ac,
+    scene_consistency: sc,
+    interaction_realism: ir,
+    agent_match: am,
+    object_correct: oc,
+    goal_completed: gc,
+    physical_notes: paLines.join("\n"),
+    instruction_notes: iaLines.join("\n"),
     source: "mock",
     confidence: { pa: 0.68, ia: 0.62 }
   };
+}
+
+// v85hf: fire-and-forget delta log to Ham's ?action=preannotate_log endpoint.
+// Records which axes the human changed vs the seeded values so we can track
+// prefill quality over time. If Ham's log endpoint doesn't exist yet the
+// request 404s silently and we don't retry.
+function logPreannotationDelta(itemId, seeded, submitted) {
+  if (!itemId || !seeded || !submitted) return;
+  const axes = ["physical_adherence", "instruction_alignment",
+                "agent_consistency", "scene_consistency", "interaction_realism",
+                "agent_match", "object_correct", "goal_completed"];
+  const delta = {};
+  for (const a of axes) {
+    const s = Number(seeded[a] ?? -1);
+    const f = Number(submitted[a] ?? -1);
+    delta[a] = { seeded: s, final: f, changed: (s !== f) ? 1 : 0, diff: Math.abs(s - f) };
+  }
+  delta.physical_notes_changed = (String(seeded.physical_notes || "") !== String(submitted.physical_notes || "")) ? 1 : 0;
+  delta.instruction_notes_changed = (String(seeded.instruction_notes || "") !== String(submitted.instruction_notes || "")) ? 1 : 0;
+  const user = localStorage.getItem(CFG.LS_USER) || "";
+  const body = {
+    preannotate_log: true,
+    user, item_id: itemId,
+    seeded: seeded,
+    submitted: {
+      physical_adherence: submitted.physical_adherence,
+      instruction_alignment: submitted.instruction_alignment,
+      agent_consistency: submitted.agent_consistency,
+      scene_consistency: submitted.scene_consistency,
+      interaction_realism: submitted.interaction_realism,
+      agent_match: submitted.agent_match,
+      object_correct: submitted.object_correct,
+      goal_completed: submitted.goal_completed,
+    },
+    delta,
+    source: seeded.source || "unknown"
+  };
+  fetch(CFG.APPS_SCRIPT_URL + "/", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(body),
+    keepalive: true,
+  }).catch(() => {});
 }
 
 function showPreannotationChip(pa) {
@@ -1913,6 +1975,13 @@ async function onSubmit(skip) {
   if (EDIT_MODE && EDIT_MODE.item_id === CURRENT.id) body.edit = true;
   try {
     await submitAnnotation(body);
+    // v85hf: if this submission was seeded from a machine pre-annotation,
+    // fire-and-forget a delta log so we can measure prefill vs final over
+    // time (which axes get overwritten most, how often the human keeps the
+    // score / notes intact, etc.). Safe on any endpoint state — best-effort.
+    if (PREANNOTATE_ENABLED && CURRENT_PREANNOTATION && !skip) {
+      try { logPreannotationDelta(CURRENT.id, CURRENT_PREANNOTATION, payload); } catch (_) {}
+    }
     // v85v: remember the just-submitted item so the next page render can
     // surface a "↺ 修改上一条" shortcut. Per-user keyed in localStorage.
     try { localStorage.setItem("ewj_last_item:" + (localStorage.getItem(CFG.LS_USER) || ""), CURRENT.id); } catch {}
