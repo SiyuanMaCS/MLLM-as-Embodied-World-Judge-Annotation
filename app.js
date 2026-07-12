@@ -2888,10 +2888,11 @@ async function loadMilestoneProgress() {
 }
 
 // v85hc: Test-set review coverage panel (siyuan asked "review 进度如何 · 每人
-// 剩多少" — pool is shared, so aggregate + per-dataset pending + per-reviewer
-// done). Ham's `?action=review_coverage&user=<u>` returns the aggregate; the
-// per-dataset + per-reviewer breakdown is admin-only. Fails silently until Ham
-// deploys the endpoint.
+// 剩多少"). Alice's correction v85hd: reviews are per-reviewer hash-assigned
+// under REVIEW_WEEK_MODE via `_testset_assignee`, so per-person remaining is a
+// meaningful quantity. Endpoint returns aggregate + by_dataset + by_reviewer_
+// pending (hash-assigned remaining) + by_reviewer (contribution). The panel
+// hides silently on 404 / non-2xx / empty until Ham deploys the endpoint.
 async function loadReviewCoverage() {
   const card = document.getElementById("review-coverage-card");
   if (!card) return;
@@ -2930,15 +2931,34 @@ async function loadReviewCoverage() {
           html += '</tbody></table></div>';
         }
       }
+      // v85hd (Alice correction): reviews are per-reviewer hash-assigned
+      // (REVIEW_WEEK_MODE), not pooled — so "剩多少" is meaningful per person.
+      // Endpoint should return by_reviewer_pending (from _testset_assignee hash);
+      // by_reviewer_done (contribution) is kept as a secondary chip row.
+      if (Array.isArray(d?.by_reviewer_pending)) {
+        const rows = d.by_reviewer_pending.slice()
+          .map(r => ({ user: r?.user || "?", pending: Number(r?.pending ?? r?.n ?? 0) }))
+          .sort((a, b) => b.pending - a.pending);
+        if (rows.length) {
+          html += '<div style="margin-bottom:10px"><h4 style="margin:0 0 6px;font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.3px">Remaining by reviewer (hash-assigned)</h4>';
+          html += '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;font-variant-numeric:tabular-nums">';
+          rows.forEach(r => {
+            const col = r.pending === 0 ? '#059669' : r.pending > 60 ? '#dc2626' : r.pending > 20 ? '#f59e0b' : '#0891b2';
+            html += `<span style="padding:3px 8px;background:#f1f5f9;border-left:3px solid ${col};border-radius:4px;color:#0f172a"><b>${esc(r.user)}</b> <span style="color:${col};font-weight:600">${r.pending}</span></span>`;
+          });
+          html += '</div></div>';
+        }
+      }
       if (Array.isArray(d?.by_reviewer)) {
+        // Backward-compatible done-count chip row (kept as secondary detail).
         const rows = d.by_reviewer.slice().sort((a, b) => Number(b?.n || 0) - Number(a?.n || 0));
         if (rows.length) {
-          html += '<div><h4 style="margin:0 0 6px;font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.3px">Done by reviewer (pool is shared)</h4>';
-          html += '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;font-variant-numeric:tabular-nums">';
+          html += '<div><h4 style="margin:0 0 6px;font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.3px">Done by reviewer (contribution)</h4>';
+          html += '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px;font-variant-numeric:tabular-nums;color:#64748b">';
           rows.forEach(r => {
             const u = r?.user || "?";
             const n = Number(r?.n || 0);
-            html += `<span style="padding:3px 8px;background:#f1f5f9;border-radius:4px;color:#0f172a"><b>${esc(u)}</b> <span style="color:#64748b">${n}</span></span>`;
+            html += `<span style="padding:2px 7px;background:#f8fafc;border-radius:4px"><b style="color:#0f172a">${esc(u)}</b> ${n}</span>`;
           });
           html += '</div></div>';
         }
