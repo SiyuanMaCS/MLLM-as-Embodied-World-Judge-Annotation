@@ -5781,7 +5781,7 @@ async function initPreannotateEval() {
     interaction_realism: { pearson_v2: 0.370, pearson_v1: 0.320, source: "Yu 3-VLM calibrated (val90)", ens_mean: 0.89, gold_mean: 0.97 },
     agent_match:         { pearson_v2: 0.570, pearson_v1: 0.470, source: "Yu 3-VLM calibrated (val90)", ens_mean: 1.79, gold_mean: 1.58 },
     object_correct:      { pearson_v2: 0.356, pearson_v1: 0.246, source: "Alice agent-native (val90 winner: 0.356 vs 3-VLM 0.216)", ens_mean: 1.50, gold_mean: 1.42, note: "Only sub-axis where agent-native beats Yu 3-VLM on val90 — hallucination gain confirmed" },
-    goal_completed:      { pearson_v2: 0.296, pearson_v1: 0.180, source: "Yu 3-VLM calibrated (Alice pilot lost on val90: 0.045)", ens_mean: 0.93, gold_mean: 1.02 },
+    goal_completed:      { pearson_v2: 0.222, pearson_v1: 0.180, source: "Yu 3-VLM calibrated (Alice agent-native lost val90: 0.045)", ens_mean: 0.93, gold_mean: 1.02 },
   };
   // v85hg.post: prominent val-set gate cards (top of page) — Pearson vs 0.65
   // gate colour-coded. Uses V2_NUMBERS as fallback until Ham exposes a live
