@@ -5755,22 +5755,55 @@ async function initPreannotateEval() {
   // We pull the metrics Isabella + Yu published to bench/analysis/. If Ham hasn't
   // deployed a live-recomputing endpoint, we fall back to Isabella's static
   // numbers from her v2 announcement so the dashboard still tells a story.
+  // v85hg.post (siyuan 2026-07-12): gate = PA/IA overall Pearson ≥ 0.65 on
+  // Isabella's val90. Sub-scores are a "means" (used by Alice's per-axis
+  // prompting to force the ensemble toward higher main-score Pearson) and
+  // §2c/§2d hallucination research data, not a gate. Numbers below are
+  // Isabella's v2-calibrated baseline on the 90-item val set; they will be
+  // superseded live once Ham exposes ?action=preannotate_val_pearson.
   const V2_NUMBERS = {
-    // Isabella v2 (calibrated) vs full gold_875 (874 items)
-    pa:                  { pearson_v2: 0.507, pearson_v1: 0.511, ens_mean: 3.11, gold_mean: 3.08 },
-    ia:                  { pearson_v2: 0.431, pearson_v1: 0.447, ens_mean: 3.26, gold_mean: 3.27 },
-    agent_consistency:   { pearson_v2: 0.339, pearson_v1: 0.208, ens_mean: 1.37, gold_mean: 1.31 },
-    scene_consistency:   { pearson_v2: 0.417, pearson_v1: 0.279, ens_mean: 1.27, gold_mean: 1.06 },
-    interaction_realism: { pearson_v2: 0.165, pearson_v1: 0.275, ens_mean: 0.89, gold_mean: 0.97 },
-    agent_match:         { pearson_v2: 0.520, pearson_v1: 0.506, ens_mean: 1.79, gold_mean: 1.58 },
-    object_correct:      { pearson_v2: 0.200, pearson_v1: 0.194, ens_mean: 1.50, gold_mean: 1.42 },
-    goal_completed:      { pearson_v2: 0.133, pearson_v1: 0.333, ens_mean: 0.93, gold_mean: 1.02 },
+    // v2 calibrated ensemble vs Isabella's val90 (annotator+reviewer agreed subset)
+    pa:                  { pearson_v2: 0.499, pearson_v1: 0.511, ens_mean: 3.11, gold_mean: 3.08, gate: 0.65 },
+    ia:                  { pearson_v2: 0.427, pearson_v1: 0.447, ens_mean: 3.26, gold_mean: 3.27, gate: 0.65 },
+    agent_consistency:   { pearson_v2: 0.450, pearson_v1: 0.208, ens_mean: 1.37, gold_mean: 1.31 },
+    scene_consistency:   { pearson_v2: 0.402, pearson_v1: 0.279, ens_mean: 1.27, gold_mean: 1.06 },
+    interaction_realism: { pearson_v2: 0.381, pearson_v1: 0.275, ens_mean: 0.89, gold_mean: 0.97 },
+    agent_match:         { pearson_v2: 0.571, pearson_v1: 0.506, ens_mean: 1.79, gold_mean: 1.58 },
+    object_correct:      { pearson_v2: 0.246, pearson_v1: 0.194, ens_mean: 1.50, gold_mean: 1.42 },
+    goal_completed:      { pearson_v2: 0.222, pearson_v1: 0.333, ens_mean: 0.93, gold_mean: 1.02 },
   };
+  // v85hg.post: prominent val-set gate cards (top of page) — Pearson vs 0.65
+  // gate colour-coded. Uses V2_NUMBERS as fallback until Ham exposes a live
+  // val-Pearson endpoint.
+  const paCard = document.getElementById("pe-val-pa");
+  const iaCard = document.getElementById("pe-val-ia");
+  const paSub = document.getElementById("pe-val-pa-sub");
+  const iaSub = document.getElementById("pe-val-ia-sub");
+  function gradeVsGate(v, gate) {
+    if (v == null || !isFinite(v)) return "neutral";
+    if (v >= gate) return "good";
+    if (v >= gate - 0.10) return "warn";
+    return "bad";
+  }
+  if (paCard) {
+    const v = V2_NUMBERS.pa.pearson_v2;
+    paCard.textContent = v.toFixed(3);
+    const p = paCard.closest(".pe-metric");
+    if (p) p.className = "pe-metric " + gradeVsGate(v, 0.65);
+    if (paSub) paSub.innerHTML = v >= 0.65 ? "✅ passes gate ≥ 0.65" : `gate ≥ 0.65 · <b style="color:#dc2626">gap ${(0.65 - v).toFixed(2)}</b> · v3 pipeline needed`;
+  }
+  if (iaCard) {
+    const v = V2_NUMBERS.ia.pearson_v2;
+    iaCard.textContent = v.toFixed(3);
+    const p = iaCard.closest(".pe-metric");
+    if (p) p.className = "pe-metric " + gradeVsGate(v, 0.65);
+    if (iaSub) iaSub.innerHTML = v >= 0.65 ? "✅ passes gate ≥ 0.65" : `gate ≥ 0.65 · <b style="color:#dc2626">gap ${(0.65 - v).toFixed(2)}</b> · Alice v3 pilot 0.52 (best so far, above 3-VLM ceiling 0.47)`;
+  }
   const grid = document.getElementById("pe-pearson-grid");
   if (grid) {
     const cards = [
-      { key: "pa", label: "PA · Pearson", ceiling: 0.54 },
-      { key: "ia", label: "IA · Pearson", ceiling: 0.47 },
+      { key: "pa", label: "PA · Pearson (diagnostic view)", ceiling: 0.54 },
+      { key: "ia", label: "IA · Pearson (diagnostic view)", ceiling: 0.47 },
     ];
     let html = "";
     for (const c of cards) {
@@ -5861,30 +5894,31 @@ async function initPreannotateEval() {
     if (nkEl) nkEl.textContent = "—";
   }
 
-  // 4. Acceptance gates summary
+  // 4. Acceptance gates summary — v85hg.post: siyuan only cares about PA/IA
+  // overall Pearson ≥ 0.65 on val90. Other signals are supporting.
   const gates = document.getElementById("pe-gates");
   if (gates) {
     const g = [];
-    // Gate 1: endpoint alive
-    g.push({ label: "Endpoint live · schema conformant", pass: (probe?.ok === true) });
-    // Gate 2: mean-alignment (via probe or numbers)
+    const pa = V2_NUMBERS.pa.pearson_v2;
+    const ia = V2_NUMBERS.ia.pearson_v2;
+    // Primary gates
+    g.push({ label: "PA · overall Pearson ≥ 0.65 (val90)", pass: pa >= 0.65, note: `current ${pa.toFixed(3)}` });
+    g.push({ label: "IA · overall Pearson ≥ 0.65 (val90)", pass: ia >= 0.65, note: `current ${ia.toFixed(3)}` });
+    // Supporting signals (not gates, just visibility)
+    g.push({ label: "Endpoint live · schema conformant", pass: (probe?.ok === true), note: "supporting" });
     const meanOk = Math.abs(V2_NUMBERS.pa.ens_mean - V2_NUMBERS.pa.gold_mean) < 0.15 && Math.abs(V2_NUMBERS.ia.ens_mean - V2_NUMBERS.ia.gold_mean) < 0.15;
-    g.push({ label: "Pre-fill mean aligned with gold (bias &lt; 0.15)", pass: meanOk });
-    // Gate 3: notes format (Chinese schema)
+    g.push({ label: "Pre-fill mean aligned with gold (bias &lt; 0.15)", pass: meanOk, note: "supporting — reduces human 'drag to correct'" });
     const chineseNotes = probe?.physical_notes && /[一-鿿]/.test(probe.physical_notes);
-    g.push({ label: "Notes in Alice-schema Chinese format (not gemini raw EN)", pass: !!chineseNotes });
-    // Gate 4: live change-rate signal
+    g.push({ label: "Notes in Alice-schema Chinese format", pass: !!chineseNotes, note: "supporting — English gemini raw until Alice/CC v3" });
     const liveSignal = deltaAgg && deltaAgg.n_logged > 0;
-    g.push({ label: "Live change-rate signal populated (need &gt; 5 log entries)", pass: liveSignal && deltaAgg.n_logged >= 5, note: liveSignal ? `${deltaAgg.n_logged} logged` : "run task.html?preannotate=1 through some items" });
-    // Gate 5: PA change rate < 40% (good)
-    if (deltaAgg && deltaAgg.pa_change_rate != null) {
-      g.push({ label: "PA main-score change rate &lt; 40 %", pass: deltaAgg.pa_change_rate < 0.40, note: (deltaAgg.pa_change_rate * 100).toFixed(1) + " %" });
-      g.push({ label: "IA main-score change rate &lt; 40 %", pass: deltaAgg.ia_change_rate < 0.40, note: (deltaAgg.ia_change_rate * 100).toFixed(1) + " %" });
-    }
-    gates.innerHTML = g.map(x => {
-      const cls = x.pass ? "pass" : (x.note && x.note.includes("run task") ? "pending" : "fail");
+    g.push({ label: "Live change-rate signal populated (task.html?preannotate=1 usage)", pass: liveSignal && deltaAgg.n_logged >= 5, note: liveSignal ? `supporting · ${deltaAgg.n_logged} logged` : "supporting · pending real-user runs" });
+    gates.innerHTML = g.map((x, i) => {
+      const isPrimary = i < 2;
+      const cls = x.pass ? "pass" : (x.note && x.note.includes("pending") ? "pending" : "fail");
       const icon = x.pass ? "✅" : (cls === "pending" ? "⏳" : "❌");
-      return `<div class="pe-gate ${cls}">${icon} <b>${x.label}</b>${x.note ? ' <span style="opacity:0.7">· ' + esc(x.note) + '</span>' : ''}</div>`;
+      const style = isPrimary ? "font-size:14px;font-weight:600;border-width:2px" : "font-size:12.5px;opacity:0.85";
+      const primaryTag = isPrimary ? '<span style="background:#6366f1;color:white;padding:1px 6px;border-radius:3px;font-size:10px;margin-left:6px">GATE</span>' : '';
+      return `<div class="pe-gate ${cls}" style="${style}">${icon} <b>${x.label}</b>${primaryTag}${x.note ? ' <span style="opacity:0.7">· ' + esc(x.note) + '</span>' : ''}</div>`;
     }).join("");
   }
 

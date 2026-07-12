@@ -55,22 +55,26 @@
     <div id="pe-gates">Loading…</div>
   </div>
 
-  <div class="pe-section">
-    <h2>Val-set Pearson (siyuan's primary gate ≥ 0.65)</h2>
+  <div class="pe-section" style="border-left:4px solid #6366f1;background:linear-gradient(135deg,#eef2ff,#fdf4ff)">
+    <h2 style="font-size:17px">🎯 GATE · Val-90 Pearson ≥ 0.65</h2>
     <div class="pe-sub-title">
-      Val set: a multi-annotator subset independent of the ensemble's train items, k ≥ 3 humans per item (Isabella / Alice building). PA and IA reported separately; sub-axes for diagnostic value only.
+      siyuan 2026-07-12: <b>overall PA/IA on Isabella's val90 is the only gate</b>. Val90 = 10 v2-alignment (later dropped — not in gold_875) + 90 high-confidence stratified items where annotator + reviewer both agreed no score change (approve, no mismatch). Sub-scores are a <em>means</em> (drilldown prompts that force per-axis violation calls → higher main-score Pearson) and §2c / §2d hallucination-research data.
+      <br><br>
+      <b style="color:#b45309">⚠ Rigor caveat (Ham):</b> Val90 is <b>reviewer-anchored, not blind-independent</b> — the reviewer saw the annotator's scores before pressing "approve, no change". That gives lower rater noise than raw gold_875 but is <em>not</em> the same purity as the v2 alignment set's 8 truly-independent humans. Same v2 model tested on both surfaces jumps only +0.04 / +0.05 (Ham measurement), so ~0.15 of the remaining PA gap to 0.65 has to come from methodology (Alice v3 dense-frame + explicit-violation prompting), not from cleaner gold alone.
     </div>
-    <div class="pe-grid" id="pe-valset-grid">
-      <div class="pe-metric neutral"><div class="pe-label">Val-set size</div><div class="pe-value" id="pe-val-n">—</div><div class="pe-sub">items with k ≥ 3 human annotations</div></div>
-      <div class="pe-metric neutral"><div class="pe-label">PA Pearson (val)</div><div class="pe-value" id="pe-val-pa">—</div><div class="pe-sub">gate ≥ 0.65 · currently pending val-set build</div></div>
-      <div class="pe-metric neutral"><div class="pe-label">IA Pearson (val)</div><div class="pe-value" id="pe-val-ia">—</div><div class="pe-sub">gate ≥ 0.65 · currently pending val-set build</div></div>
-      <div class="pe-metric neutral"><div class="pe-label">Pipeline version</div><div class="pe-value" id="pe-pipeline" style="font-size:14px">?</div><div class="pe-sub">v1 eqweight → v2 Yu calibration → v3 Alice generator</div></div>
+    <div class="pe-grid" id="pe-valset-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+      <div class="pe-metric neutral" style="min-height:120px"><div class="pe-label">PA · overall Pearson</div><div class="pe-value" id="pe-val-pa" style="font-size:32px">—</div><div class="pe-sub" id="pe-val-pa-sub">gate ≥ 0.65 · v2 baseline 0.499 (Isabella) · +0.15 to close</div></div>
+      <div class="pe-metric neutral" style="min-height:120px"><div class="pe-label">IA · overall Pearson</div><div class="pe-value" id="pe-val-ia" style="font-size:32px">—</div><div class="pe-sub" id="pe-val-ia-sub">gate ≥ 0.65 · v2 baseline 0.427 (Isabella) · Alice v3 pilot 0.52 (best so far)</div></div>
+      <div class="pe-metric neutral"><div class="pe-label">Val-set size</div><div class="pe-value" id="pe-val-n">90</div><div class="pe-sub">Isabella preannotate_val100_v2.json (annotator+reviewer agreed)</div></div>
+      <div class="pe-metric neutral"><div class="pe-label">Serving pipeline</div><div class="pe-value" id="pe-pipeline" style="font-size:14px">v2 (Yu calibration)</div><div class="pe-sub">v3 = Alice dense-frame + explicit-violation prompting (in pilot)</div></div>
     </div>
   </div>
 
   <div class="pe-section">
-    <h2>Ensemble alignment vs gold_875 (reviewed-only)</h2>
-    <div class="pe-sub-title">Yu-calibrated ensemble Pearson against the 617-item reviewed subset (gold hygiene). Ceiling for 3 VLM judges is ~0.54.</div>
+    <h2>Sub-axis Pearson (diagnostic, not gate)</h2>
+    <div class="pe-sub-title">
+      <b>Sub-scores are a means, not a gate.</b> They (a) drive Alice's explicit-per-axis-violation prompt so the ensemble can't default-holds, which lifts main-score Pearson toward the 0.65 gate, and (b) supply the §2c / §2d hallucination-research data. Numbers below are v2-calibrated ensemble vs Isabella's val90; Alice v3 pilot IA main is already 0.52 (above 3-VLM ceiling 0.47), pilot-level sub-score improvements to be swapped in as v3 finalises.
+    </div>
     <div class="pe-grid" id="pe-pearson-grid">Loading…</div>
     <table class="pe-table" id="pe-subs-table">
       <thead><tr><th class="axis" style="text-align:left">Sub-axis</th><th>Pearson (v2)</th><th>Δ vs v1</th><th>Ensemble mean</th><th>Gold mean</th></tr></thead>
