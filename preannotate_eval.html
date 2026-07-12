@@ -6,7 +6,7 @@
 <title>Pre-annotate eval — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85hg">
+<link rel="stylesheet" href="style.css?v=v85hg2">
 <style>
   .pe-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin:12px 0 }
   .pe-metric { padding:14px 16px; background:#f8fafc; border-left:3px solid #6366f1; border-radius:6px }
@@ -63,10 +63,10 @@
       <b style="color:#b45309">⚠ Rigor caveat (Ham):</b> Val90 is <b>reviewer-anchored, not blind-independent</b> — the reviewer saw the annotator's scores before pressing "approve, no change". That gives lower rater noise than raw gold_875 but is <em>not</em> the same purity as the v2 alignment set's 8 truly-independent humans. Same v2 model tested on both surfaces jumps only +0.04 / +0.05 (Ham measurement), so ~0.15 of the remaining PA gap to 0.65 has to come from methodology (Alice v3 dense-frame + explicit-violation prompting), not from cleaner gold alone.
     </div>
     <div class="pe-grid" id="pe-valset-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
-      <div class="pe-metric neutral" style="min-height:120px"><div class="pe-label">PA · overall Pearson</div><div class="pe-value" id="pe-val-pa" style="font-size:32px">—</div><div class="pe-sub" id="pe-val-pa-sub">gate ≥ 0.65 · v2 baseline 0.499 (Isabella) · +0.15 to close</div></div>
-      <div class="pe-metric neutral" style="min-height:120px"><div class="pe-label">IA · overall Pearson</div><div class="pe-value" id="pe-val-ia" style="font-size:32px">—</div><div class="pe-sub" id="pe-val-ia-sub">gate ≥ 0.65 · v2 baseline 0.427 (Isabella) · Alice v3 pilot 0.52 (best so far)</div></div>
+      <div class="pe-metric neutral" style="min-height:120px"><div class="pe-label">PA · overall Pearson</div><div class="pe-value" id="pe-val-pa" style="font-size:32px">—</div><div class="pe-sub" id="pe-val-pa-sub">gate ≥ 0.65</div></div>
+      <div class="pe-metric neutral" style="min-height:120px"><div class="pe-label">IA · overall Pearson</div><div class="pe-value" id="pe-val-ia" style="font-size:32px">—</div><div class="pe-sub" id="pe-val-ia-sub">gate ≥ 0.65</div></div>
       <div class="pe-metric neutral"><div class="pe-label">Val-set size</div><div class="pe-value" id="pe-val-n">90</div><div class="pe-sub">Isabella preannotate_val100_v2.json (annotator+reviewer agreed)</div></div>
-      <div class="pe-metric neutral"><div class="pe-label">Serving pipeline</div><div class="pe-value" id="pe-pipeline" style="font-size:14px">v2 (Yu calibration)</div><div class="pe-sub">v3 = Alice dense-frame + explicit-violation prompting (in pilot)</div></div>
+      <div class="pe-metric neutral"><div class="pe-label">Serving pipeline</div><div class="pe-value" id="pe-pipeline" style="font-size:14px">v3 (Alice 6-strong ensemble + agent sub-scores)</div><div class="pe-sub">Main scores = 6-strong-VLM ens · Sub-scores + notes = qwen agent-native</div></div>
     </div>
   </div>
 
@@ -107,6 +107,6 @@
 
   <section id="pe-error" class="card error" hidden><h3>Failed</h3><p id="pe-err-msg">—</p></section>
 </main>
-<script src="app.js?v=v85hg" defer></script>
+<script src="app.js?v=v85hg2" defer></script>
 </body>
 </html>
