@@ -5770,14 +5770,16 @@ async function initPreannotateEval() {
   // end-to-end on `?action=preannotate` after Ham's hot-swap). Main-score PA/IA
   // = 6-strong-VLM ensemble; sub-scores = ensemble v2 + Alice pilot overrides
   // (Alice full v3 pending). Both primary gates pass 0.65.
-  // v85hg7: siyuan picked 5-judge (drop expensive gemini-3.1-pro-preview, keep
-  // Flash). Yu's n=495 (full high-confidence pool, not just val90) is now the
-  // authoritative gate — no more sampling variance debate. Numbers point-pass
-  // 0.65 but 95% CIs cross the gate, so Yu's honest read is "hovering, not
-  // securely above." That framing is preserved in the sub-captions + prose.
+  // v85hg8: Yu 2026-07-12 22:05 caught a float-vs-int gap I was ignoring — the
+  // 0.663/0.679 gate numbers were the RAW ensemble-mean-float Pearson, but the
+  // annotator actually sees INT-rounded pre-fill (3.4 → 3), which drops Pearson
+  // by ~0.03. The honest "what the human actually gets" numbers are PA 0.634
+  // (below gate) / IA 0.661 (barely above). Dashboard now surfaces INT as the
+  // primary service gate (that's what pre-fill really is), with the float raw
+  // ensemble mean shown as a secondary caption for methodology transparency.
   const V2_NUMBERS = {
-    pa:                  { pearson_v2: 0.663, ci_lo: 0.61, ci_hi: 0.71, pearson_v1: 0.499, source: "5-judge ensemble · Flash + seed2.0/2.1 + gpt-5.2/5.5 (v3.7)", ens_mean: 3.24, gold_mean: 3.39, gate: 0.65 },
-    ia:                  { pearson_v2: 0.679, ci_lo: 0.63, ci_hi: 0.72, pearson_v1: 0.427, source: "5-judge ensemble · Flash + seed2.0/2.1 + gpt-5.2/5.5 (v3.7)", ens_mean: 3.48, gold_mean: 3.50, gate: 0.65 },
+    pa:                  { pearson_v2: 0.634, pearson_float: 0.663, ci_lo: 0.58, ci_hi: 0.69, pearson_v1: 0.499, source: "5-judge ensemble · Flash + seed2.0/2.1 + gpt-5.2/5.5 (v3.7 int-round served)", ens_mean: 3.24, gold_mean: 3.39, gate: 0.65 },
+    ia:                  { pearson_v2: 0.661, pearson_float: 0.679, ci_lo: 0.61, ci_hi: 0.71, pearson_v1: 0.427, source: "5-judge ensemble · Flash + seed2.0/2.1 + gpt-5.2/5.5 (v3.7 int-round served)", ens_mean: 3.48, gold_mean: 3.50, gate: 0.65 },
     // Sub-scores: Alice narrow override (only object_correct); goal_completed reverted
     // to Yu 3-VLM per Alice's own val90 finding (agent-native goal_completed 0.045 lost
     // to 3-VLM 0.296). Other 4 axes locked to Yu 3-VLM calibrated held-out.
@@ -5802,10 +5804,22 @@ async function initPreannotateEval() {
     return "bad";
   }
   function ciCaption(d) {
-    if (d.ci_lo == null || d.ci_hi == null) return "";
-    const straddles = d.ci_lo < 0.65 && d.ci_hi >= 0.65;
-    const belowNote = straddles ? ' <span style="color:#b45309">· CI crosses 0.65 — Yu 2026-07-12: "hovering, not securely above"</span>' : "";
-    return ` <span style="opacity:0.75">[95% CI ${d.ci_lo.toFixed(2)}, ${d.ci_hi.toFixed(2)}] · n=495 gate</span>${belowNote}`;
+    const parts = [];
+    if (d.ci_lo != null && d.ci_hi != null) {
+      parts.push(`[95% CI ${d.ci_lo.toFixed(2)}, ${d.ci_hi.toFixed(2)}] · n=495 gate`);
+    }
+    if (d.pearson_float != null && d.pearson_float !== d.pearson_v2) {
+      parts.push(`raw ensemble-mean float = ${d.pearson_float.toFixed(3)} · int-round drops it ~${(d.pearson_float - d.pearson_v2).toFixed(2)}`);
+    }
+    const summary = parts.length ? ` <span style="opacity:0.75">${parts.join(" · ")}</span>` : "";
+    const below065 = d.pearson_v2 < 0.65;
+    const straddles = d.ci_lo != null && d.ci_hi != null && d.ci_lo < 0.65 && d.ci_hi >= 0.65;
+    const caveat = below065
+      ? ' <span style="color:#b45309">· int-round served value is below 0.65 gate (Yu 2026-07-12: what the annotator actually sees)</span>'
+      : straddles
+        ? ' <span style="color:#b45309">· CI crosses 0.65 — hovering, not securely above</span>'
+        : "";
+    return summary + caveat;
   }
   if (paCard) {
     const d = V2_NUMBERS.pa;

@@ -6,7 +6,7 @@
 <title>Pre-annotate eval — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85hg7">
+<link rel="stylesheet" href="style.css?v=v85hg8">
 <style>
   .pe-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin:12px 0 }
   .pe-metric { padding:14px 16px; background:#f8fafc; border-left:3px solid #6366f1; border-radius:6px }
@@ -58,9 +58,9 @@
   <div class="pe-section" style="border-left:4px solid #6366f1;background:linear-gradient(135deg,#eef2ff,#fdf4ff)">
     <h2 style="font-size:17px">🎯 GATE · Val-90 Pearson ≥ 0.65</h2>
     <div class="pe-sub-title">
-      siyuan 2026-07-12: overall PA/IA Pearson ≥ 0.65 is the acceptance gate. After Yu's n=495 measurement on the full reviewer-agreed high-confidence pool (not just val90's stratified 90), the authoritative numbers are <b>PA 0.663 [0.61, 0.71]</b> and <b>IA 0.679 [0.63, 0.72]</b>. Both point estimates pass; both 95% CIs cross the gate.
+      siyuan 2026-07-12: overall PA/IA Pearson ≥ 0.65 is the acceptance gate. On Yu's n=495 reviewer-agreed pool, the served <b>int-rounded pre-fill</b> (what the annotator actually receives) gives <b>PA 0.634</b> (below gate) and <b>IA 0.661</b> (marginal pass). The raw ensemble-mean float (0.663 / 0.679) is ~0.03 higher — int-rounding compresses the 5-value ordinal and drops Pearson.
       <br><br>
-      <b style="color:#b45309">⚠ Honest reading (Yu 2026-07-12):</b> point estimates pass, but the CIs straddle 0.65 → <em>"hovering, not securely above"</em>. In-the-wild PA/IA will drift toward the lower half of the CI. On the fresh test90 hold-out, PA slipped to ~0.61-0.67 depending on the sampled 90 (val90 was slightly PA-favorable). Full 875 (single-annotator, noisy) trails at PA 0.58 · IA 0.63.
+      <b style="color:#b45309">⚠ Honest reading (Yu 2026-07-12 22:05):</b> the number people care about is what the human actually gets from `?action=preannotate` — that's the int-rounded value. Under that measure, PA is 0.634, below the gate. Alice's proposed remedy: 17 PA + 76 IA targeted human edits (~11% of 875, high-leverage items where ensemble disagrees most with real gold) lifts served PA → 0.678 and IA → 0.805, without touching the ensemble weights (pending siyuan approval).
       <br><br>
       <b>Pipeline (v3.7, siyuan-approved 5-judge)</b>: main PA/IA ← 5-judge ensemble (drop expensive gemini-3.1-pro-preview; keep gemini-3.5-flash + seed2.0/2.1 + gpt-5.2/5.5). Halves the Gemini API footprint vs prior 6-strong for future re-runs; existing 875 uses pre-computed jsonls (zero API). Sub-scores + Chinese notes unchanged: object_correct ← Alice agent-native (val90 winner), 5 other axes ← Yu 3-VLM calibrated, notes ← CC assemble_notes (F1 0.67 against real human note-axis hits).
     </div>
@@ -109,6 +109,6 @@
 
   <section id="pe-error" class="card error" hidden><h3>Failed</h3><p id="pe-err-msg">—</p></section>
 </main>
-<script src="app.js?v=v85hg7" defer></script>
+<script src="app.js?v=v85hg8" defer></script>
 </body>
 </html>
