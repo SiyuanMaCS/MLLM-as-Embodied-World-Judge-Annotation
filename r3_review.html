@@ -6,7 +6,7 @@
 <title>R3 挑错 · admin 仲裁 — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85hi2">
+<link rel="stylesheet" href="style.css?v=v85hi3">
 <style>
   body { background:#f1f5f9 }
   main { max-width:1080px; margin:0 auto; padding:16px }
@@ -146,7 +146,7 @@
 
   <div class="r3-sync-log" id="sync-log"></div>
 </main>
-<script src="app.js?v=v85hi2" defer></script>
+<script src="app.js?v=v85hi3" defer></script>
 <script>
 // v85hi · R3 admin arbitration page. Loads bench/analysis/r3_queue_top90.json,
 // renders 90 cards, stores local state in localStorage, POSTs each verdict to
@@ -188,7 +188,7 @@
       } catch(_) {}
     }
     // Fallback — Yu's file has video_url + init_frame_url baked in
-    const r2 = await fetch("bench/analysis/r3_queue_top90.json?v=v85hi2", {cache:"no-store"});
+    const r2 = await fetch("bench/analysis/r3_queue_top90.json?v=v85hi3", {cache:"no-store"});
     if (r2.ok) {
       const arr = await r2.json();
       // normalise: Yu uses video_url singular, Ham uses video_sources[]
@@ -251,10 +251,17 @@
   }
 
   function renderCard(it) {
-    const v = vLocal[it.item_id];
-    const doneCls = v ? " done" : "";
-    const verdictBadgeCls = v ? (v.verdict === "wrong" ? "wrong" : (v.verdict === "skip" ? "skip" : "")) : "";
-    const verdictBadgeText = v ? (v.verdict === "wrong" ? `已改 → PA ${v.new_pa ?? "?"} · IA ${v.new_ia ?? "?"}` : v.verdict === "skip" ? "跳过" : "gold 对 · 保持") : "";
+    // Server truth (Ham's _arbitrated) wins over localStorage; local is only for
+    // just-clicked-but-not-yet-synced state or if endpoint is unreachable.
+    const srv = it._arbitrated;
+    const local = vLocal[it.item_id];
+    const eff = srv || local;
+    const doneCls = eff ? " done" : "";
+    const effVerdict = eff && (eff.decision || eff.verdict);
+    const isWrong = effVerdict === "gold_wrong" || effVerdict === "wrong";
+    const isSkip = effVerdict === "skip";
+    const verdictBadgeCls = isWrong ? "wrong" : (isSkip ? "skip" : "");
+    const verdictBadgeText = eff ? (isWrong ? `已改 → PA ${eff.new_pa ?? "?"} · IA ${eff.new_ia ?? "?"}` : isSkip ? "跳过" : "gold 对 · 保持") : "";
     const confCls = "c" + it.confidence;
     const confLabel = ["conf-1", "conf-2", "conf-3"][it.confidence - 1] || "conf-?";
     const aliceLine = it.alice_handjudged ? `<span style="padding:2px 6px;background:#dcfce7;color:#166534;font-size:11px;border-radius:4px;font-weight:600">Alice 手判</span>` : "";
@@ -276,8 +283,8 @@
       </div>
       <div class="r3-card-body">
         <div class="r3-media">
-          <video controls preload="metadata" playsinline muted>${(it.video_sources || [it.video_url].filter(Boolean)).map(u => `<source src="${esc(u)}">`).join("")}</video>
-          <div class="media-caption">generated video · axis=${esc(it.axis)}${(it.video_sources && it.video_sources.length > 1) ? ` · ${it.video_sources.length} sources (fallback if 1st fails)` : ""}</div>
+          <video controls preload="metadata" playsinline muted>${((it.video_sources || [it.video_url]).filter(Boolean).map(v => typeof v === "string" ? v : v.url).filter(Boolean)).map(u => `<source src="${esc(u)}">`).join("")}</video>
+          <div class="media-caption">generated video · axis=${esc(it.axis)}${(it.video_sources && it.video_sources.length > 1) ? ` · ${it.video_sources.length} sources (${(it.video_sources || []).map(v => typeof v === "object" && v.label ? v.label : "raw").join(" / ")})` : ""}</div>
           <img src="${esc(it.init_frame_url)}" alt="init frame">
           <div class="media-caption">init_frame</div>
         </div>
