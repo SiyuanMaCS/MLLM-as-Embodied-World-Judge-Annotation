@@ -2158,6 +2158,25 @@ async function initDashboard() {
   // v85bn: meta-reviewer (siyuanw, masiyuan) gets the ⚖ Arbitration card.
   const isMeta = localStorage.getItem("ewj_is_meta_reviewer") === "1";
   document.querySelectorAll('.home-actions [data-show-if="is_meta_reviewer"]').forEach(el => { el.hidden = !isMeta; });
+  // v85hi: R3 挑错 card is admin-only (masiyuan-only role gate on backend also enforces).
+  const isAdminRow = document.body.getAttribute("data-role") === "admin" || (localStorage.getItem("ewj_role") || "") === "admin";
+  document.querySelectorAll('.home-actions [data-show-if="is_admin"]').forEach(el => { el.hidden = !isAdminRow; });
+  // R3 progress badge — populate from Ham's ?action=r3_admin_progress
+  if (isAdminRow) {
+    const r3Badge = document.getElementById("r3-admin-badge");
+    const r3Sub = document.getElementById("r3-admin-sub");
+    if (r3Badge) {
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=r3_admin_progress&user=${encodeURIComponent(localStorage.getItem("ewj_user") || "masiyuan")}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(j => {
+          if (!j || !j.ok) return;
+          const remaining = j.remaining ?? (j.total - j.done);
+          if (remaining > 0) { r3Badge.textContent = String(remaining); r3Badge.hidden = false; }
+          if (r3Sub) r3Sub.textContent = `Top-${j.total ?? 90} · ${j.done ?? 0} 已判 · ${remaining ?? "?"} 待判`;
+        })
+        .catch(() => {});
+    }
+  }
   // v85bb: KPI gate — reviewers who didn't meet yesterday's annotation quota get the
   // Review card grayed out + an inline banner. siyuanw (pure reviewer) is exempt by
   // backend (met_yesterday_kpi === null for non-author reviewers).

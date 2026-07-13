@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R3 挑错 · admin 仲裁 — Embodied World Judge</title>
+<script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css?v=v85hi">
+<style>
+  body { background:#f1f5f9 }
+  main { max-width:1080px; margin:0 auto; padding:16px }
+  .r3-hero { padding:18px 22px; background:linear-gradient(135deg,#eef2ff,#fdf4ff); border:1px solid #6366f1; border-radius:10px; margin-bottom:14px }
+  .r3-hero h1 { margin:0 0 6px; font-size:18px }
+  .r3-hero .subtitle { font-size:12.5px; color:#475569; line-height:1.55 }
+  .r3-quota { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:14px }
+  .r3-quota .cell { padding:12px 14px; background:#fff; border-radius:6px; border-left:3px solid #6366f1 }
+  .r3-quota .cell .label { font-size:10.5px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; font-weight:600 }
+  .r3-quota .cell .value { font-size:24px; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums; margin-top:2px }
+  .r3-quota .cell.done { border-left-color:#059669 }
+  .r3-quota .cell.pending { border-left-color:#f59e0b }
+  .progress-bar { height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden; margin-top:8px }
+  .progress-bar .fill { height:100%; background:linear-gradient(90deg,#6366f1,#8b5cf6); transition:width .3s }
+  .r3-controls { display:flex; gap:8px; margin:14px 0; flex-wrap:wrap; align-items:center }
+  .r3-controls select, .r3-controls button { padding:6px 12px; font-size:12px; border:1px solid #cbd5e1; border-radius:5px; background:#fff; cursor:pointer }
+  .r3-controls button.primary { background:#6366f1; color:#fff; border-color:#6366f1 }
+  .r3-controls .count { color:#64748b; font-size:12px }
+
+  .r3-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,.03) }
+  .r3-card.done { opacity:.55; background:#f8fafc; border-color:#cbd5e1 }
+  .r3-card.done .r3-arbitrate { display:none }
+  .r3-card.done .r3-verdict-badge { display:inline-block }
+  .r3-card .r3-verdict-badge { display:none; margin-left:6px; padding:2px 8px; background:#059669; color:#fff; font-size:11px; border-radius:4px }
+  .r3-card .r3-verdict-badge.wrong { background:#dc2626 }
+  .r3-card .r3-verdict-badge.skip { background:#64748b }
+
+  .r3-card-head { display:flex; align-items:baseline; gap:10px; margin-bottom:10px; flex-wrap:wrap }
+  .r3-card-head .rank { font-size:11px; color:#94a3b8; font-weight:600; letter-spacing:.5px }
+  .r3-card-head .axis-chip { padding:2px 8px; font-size:11px; font-weight:700; border-radius:4px; letter-spacing:.5px }
+  .r3-card-head .axis-chip.PA { background:#dcfce7; color:#166534 }
+  .r3-card-head .axis-chip.IA { background:#dbeafe; color:#1e40af }
+  .r3-card-head .conf-chip { padding:2px 8px; font-size:11px; font-weight:600; border-radius:4px }
+  .r3-card-head .conf-chip.c3 { background:#fef3c7; color:#78350f; border:1px solid #fbbf24 }
+  .r3-card-head .conf-chip.c2 { background:#e0e7ff; color:#3730a3 }
+  .r3-card-head .conf-chip.c1 { background:#f1f5f9; color:#475569 }
+  .r3-card-head .dm { font-size:11px; color:#64748b; font-family:monospace }
+  .r3-card-head .gold-dir { font-size:11px; color:#b45309; font-weight:600; padding:2px 6px; background:#fffbeb; border-radius:4px }
+
+  .r3-card-body { display:grid; grid-template-columns:minmax(280px,1fr) minmax(340px,1.2fr); gap:16px; margin-bottom:12px }
+  @media (max-width:800px) { .r3-card-body { grid-template-columns:1fr } }
+  .r3-media { display:flex; flex-direction:column; gap:8px }
+  .r3-media video { width:100%; max-height:280px; background:#000; border-radius:6px; object-fit:contain }
+  .r3-media img { width:100%; max-height:180px; background:#000; border-radius:6px; object-fit:contain }
+  .r3-media .media-caption { font-size:10.5px; color:#94a3b8; margin-top:-4px }
+
+  .r3-facts { font-size:12.5px; line-height:1.55 }
+  .r3-facts .instr { padding:8px 10px; background:#f8fafc; border-left:3px solid #6366f1; border-radius:4px; margin-bottom:10px; white-space:pre-wrap; color:#0f172a; max-height:140px; overflow-y:auto }
+  .r3-facts .instr .label { font-size:10.5px; color:#64748b; font-weight:600; letter-spacing:.4px; text-transform:uppercase; display:block; margin-bottom:2px }
+  .r3-scores { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin:10px 0 }
+  .r3-scores .box { padding:8px 10px; background:#f8fafc; border-radius:5px; border-left:2px solid #94a3b8 }
+  .r3-scores .box .lbl { font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.4px }
+  .r3-scores .box .val { font-size:20px; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums }
+  .r3-scores .box.gold { border-left-color:#dc2626 }
+  .r3-scores .box.gold .val { color:#991b1b }
+  .r3-scores .box.ens { border-left-color:#6366f1 }
+  .r3-scores .box.alice { border-left-color:#059669 }
+  .r3-scores .box.alice .val { color:#065f46 }
+  .r3-judges { display:flex; gap:4px; margin:6px 0; font-family:monospace; font-size:12px }
+  .r3-judges .j { padding:2px 6px; background:#e2e8f0; border-radius:3px }
+
+  .r3-why { padding:10px 12px; background:#fef3c7; border-left:3px solid #f59e0b; border-radius:4px; margin:10px 0; font-size:12.5px; color:#78350f; white-space:pre-wrap }
+  .r3-why .why-label { font-size:10px; color:#a16207; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-right:6px }
+
+  .r3-arbitrate { display:flex; gap:8px; padding-top:10px; border-top:1px dashed #cbd5e1; flex-wrap:wrap; align-items:center }
+  .r3-arbitrate button { padding:8px 14px; font-size:13px; font-weight:600; border:1px solid #cbd5e1; border-radius:5px; cursor:pointer; background:#fff }
+  .r3-arbitrate button.ok { background:#059669; color:#fff; border-color:#059669 }
+  .r3-arbitrate button.wrong { background:#f59e0b; color:#fff; border-color:#f59e0b }
+  .r3-arbitrate button.skip { background:#f1f5f9; color:#475569 }
+  .r3-arbitrate .new-scores { display:none; gap:6px; align-items:center; padding:6px 10px; background:#fef3c7; border-radius:5px }
+  .r3-arbitrate.correcting .new-scores { display:inline-flex }
+  .r3-arbitrate .new-scores input { width:52px; padding:4px 6px; font-size:14px; border:1px solid #cbd5e1; border-radius:4px; font-variant-numeric:tabular-nums; text-align:center }
+  .r3-arbitrate .new-scores label { font-size:11px; color:#78350f; font-weight:600 }
+  .r3-arbitrate .new-scores button.confirm { background:#dc2626; color:#fff; border-color:#dc2626 }
+
+  .r3-sync-log { position:fixed; bottom:12px; right:12px; max-width:280px; padding:8px 12px; background:rgba(15,23,42,.9); color:#fff; font-size:11px; border-radius:6px; opacity:0; pointer-events:none; transition:opacity .3s; z-index:1000 }
+  .r3-sync-log.show { opacity:1 }
+</style>
+</head>
+<body>
+<main>
+  <header class="bar">
+    <h1>🔎 R3 · gold_875 挑错(admin 仲裁)</h1>
+    <div class="user-chip">
+      <span id="who">—</span> <span class="role-pill" id="role">—</span>
+      <button id="logout-btn" class="link">logout</button>
+    </div>
+  </header>
+  <nav class="page-nav">
+    <a href="dashboard.html" class="back-link">← Back</a>
+    <span class="nav-stat"><span>队列:</span> <code>top-90 (Yu/Ham/Alice/CC 合并)</code></span>
+    <span class="nav-stat"><span>Endpoint:</span> <code id="r3-endpoint-status">?</code></span>
+    <span class="nav-stat"><span>Progress:</span> <code id="r3-progress-text">? / ?</code></span>
+  </nav>
+
+  <div class="r3-hero">
+    <h1>siyuan approved · N=90 · goal-1 kickoff</h1>
+    <div class="subtitle">
+      每条 = <b>5 判官 + Alice + Ham 全库 scan 共识 vs 当前 gold 强分歧</b>的高置信 gold-错误候选。你只判"当前 gold 对不对";若错,填新分。<br>
+      <b>conf-3(黄章)= 三重确认</b>(判官 + Alice + 全库 scan 都指 gold 错) — 4 条,几乎肯定,可快速过。<br>
+      <b>conf-2</b>(蓝章) = 判官共识 + Alice 手判 命中之一 — 49 条主批。<br>
+      <b>conf-1</b>(灰章) = 只判官共识 — 37 条尾批。<br>
+      看完 → Isabella 写 revised gold 到 `gold_875_r3_revised.jsonl`(不覆盖原 canonical)· Yu 复算 vs 修正 gold 的 gate(判官在这批本来对 · 会明显↑)。
+    </div>
+    <div class="r3-quota" id="r3-quota-cells">
+      <div class="cell"><div class="label">目标 top-N</div><div class="value">90</div></div>
+      <div class="cell pending"><div class="label">已判</div><div class="value" id="q-done">0</div></div>
+      <div class="cell"><div class="label">gold 对 · 保持</div><div class="value" id="q-ok" style="color:#059669">0</div></div>
+      <div class="cell"><div class="label">gold 错 · 已改</div><div class="value" id="q-wrong" style="color:#dc2626">0</div></div>
+      <div class="cell"><div class="label">跳过</div><div class="value" id="q-skip" style="color:#64748b">0</div></div>
+    </div>
+    <div class="progress-bar"><div class="fill" id="q-progress-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="r3-controls">
+    <label>过滤:</label>
+    <select id="filter-conf">
+      <option value="all">全部 conf</option>
+      <option value="3">仅 conf-3(黄章 · 4 条)</option>
+      <option value="2">仅 conf-2(蓝章 · 49 条)</option>
+      <option value="1">仅 conf-1(灰章 · 37 条)</option>
+    </select>
+    <select id="filter-axis">
+      <option value="all">全部 axis</option>
+      <option value="PA">仅 PA · 物理</option>
+      <option value="IA">仅 IA · 指令</option>
+    </select>
+    <select id="filter-done">
+      <option value="pending">仅未判</option>
+      <option value="all">全部(含已判)</option>
+      <option value="done">仅已判</option>
+    </select>
+    <span class="count" id="visible-count">— 条</span>
+    <button id="export-btn" style="margin-left:auto">📥 导出仲裁结果</button>
+    <button id="reset-btn">🔄 重置本地进度</button>
+  </div>
+
+  <div id="r3-list">Loading top-90…</div>
+
+  <div class="r3-sync-log" id="sync-log"></div>
+</main>
+<script src="app.js?v=v85hi" defer></script>
+<script>
+// v85hi · R3 admin arbitration page. Loads bench/analysis/r3_queue_top90.json,
+// renders 90 cards, stores local state in localStorage, POSTs each verdict to
+// ?action=r3_arbitrate (Ham to build). Falls back to local-only queue if
+// endpoint 404.
+(function(){
+  const LS_KEY = "r3_verdicts_v1";
+  function loadVerdicts() { try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch(_) { return {}; } }
+  function saveVerdicts(v) { localStorage.setItem(LS_KEY, JSON.stringify(v)); }
+  function showLog(msg, ms) {
+    const el = document.getElementById("sync-log");
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), ms || 2500);
+  }
+  function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  const vLocal = loadVerdicts();
+  let items = [];
+
+  function currentUser() {
+    // Match dashboard.html's user cookie pattern.
+    try { const m = document.cookie.match(/(?:^|; )ewj_user=([^;]+)/); if (m) return decodeURIComponent(m[1]); } catch(_) {}
+    return "masiyuan";
+  }
+  async function fetchQueue() {
+    // Prefer Ham's live bulk endpoint if he ships one; otherwise walk
+    // ?action=r3_admin_next in a small batch to grab enriched items with
+    // proxied video_sources. Fall back to static shipped file (Yu's raw HF URLs).
+    const APPS = (window.__APPS_SCRIPT_URL__ || "").replace(/\/$/, "");
+    const user = currentUser();
+    if (APPS) {
+      try {
+        const r = await fetch(APPS + "/?action=r3_admin_queue&user=" + encodeURIComponent(user));
+        if (r.ok) {
+          const j = await r.json();
+          if (j.ok && Array.isArray(j.items)) return j.items;
+        }
+      } catch(_) {}
+    }
+    // Fallback — Yu's file has video_url + init_frame_url baked in
+    const r2 = await fetch("bench/analysis/r3_queue_top90.json?v=v85hi", {cache:"no-store"});
+    if (r2.ok) {
+      const arr = await r2.json();
+      // normalise: Yu uses video_url singular, Ham uses video_sources[]
+      return arr.map(it => ({ ...it, video_sources: it.video_sources || [it.video_url].filter(Boolean) }));
+    }
+    throw new Error("no queue source");
+  }
+  async function submitVerdict(item_id, verdict) {
+    const APPS = (window.__APPS_SCRIPT_URL__ || "").replace(/\/$/, "");
+    if (!APPS) return { ok: false, reason: "no endpoint" };
+    const user = currentUser();
+    // Ham schema: {admin, item_id, decision: "gold_correct"|"gold_wrong"|"skip", new_pa, new_ia, note}
+    const body = { admin: user, item_id, decision: verdict.verdict === "ok" ? "gold_correct" : verdict.verdict === "wrong" ? "gold_wrong" : "skip" };
+    if (verdict.new_pa != null) body.new_pa = verdict.new_pa;
+    if (verdict.new_ia != null) body.new_ia = verdict.new_ia;
+    if (verdict.note) body.note = verdict.note;
+    try {
+      const r = await fetch(APPS + "/?action=r3_admin_arbitrate", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(body)
+      });
+      if (r.ok) return await r.json();
+      if (r.status === 403) return { ok: false, reason: "admin-only (403)" };
+      return { ok: false, status: r.status };
+    } catch(e) { return { ok: false, reason: String(e) }; }
+  }
+  async function fetchProgress() {
+    const APPS = (window.__APPS_SCRIPT_URL__ || "").replace(/\/$/, "");
+    if (!APPS) return null;
+    try {
+      const r = await fetch(APPS + "/?action=r3_admin_progress&user=" + encodeURIComponent(currentUser()));
+      if (r.ok) return await r.json();
+    } catch(_) {}
+    return null;
+  }
+
+  function updateQuota() {
+    const total = items.length;
+    let ok = 0, wrong = 0, skip = 0;
+    for (const it of items) {
+      const v = vLocal[it.item_id];
+      if (!v) continue;
+      if (v.verdict === "ok") ok++;
+      else if (v.verdict === "wrong") wrong++;
+      else if (v.verdict === "skip") skip++;
+    }
+    const done = ok + wrong + skip;
+    document.getElementById("q-done").textContent = done;
+    document.getElementById("q-ok").textContent = ok;
+    document.getElementById("q-wrong").textContent = wrong;
+    document.getElementById("q-skip").textContent = skip;
+    document.getElementById("q-progress-fill").style.width = total ? (100 * done / total).toFixed(1) + "%" : "0%";
+    document.getElementById("r3-progress-text").textContent = done + " / " + total;
+    // colour hero cell
+    const doneCell = document.querySelector("#r3-quota-cells .cell.pending");
+    if (doneCell) {
+      doneCell.classList.remove("done", "pending");
+      doneCell.classList.add(done >= total ? "done" : "pending");
+    }
+  }
+
+  function renderCard(it) {
+    const v = vLocal[it.item_id];
+    const doneCls = v ? " done" : "";
+    const verdictBadgeCls = v ? (v.verdict === "wrong" ? "wrong" : (v.verdict === "skip" ? "skip" : "")) : "";
+    const verdictBadgeText = v ? (v.verdict === "wrong" ? `已改 → PA ${v.new_pa ?? "?"} · IA ${v.new_ia ?? "?"}` : v.verdict === "skip" ? "跳过" : "gold 对 · 保持") : "";
+    const confCls = "c" + it.confidence;
+    const confLabel = ["conf-1", "conf-2", "conf-3"][it.confidence - 1] || "conf-?";
+    const aliceLine = it.alice_handjudged ? `<span style="padding:2px 6px;background:#dcfce7;color:#166534;font-size:11px;border-radius:4px;font-weight:600">Alice 手判</span>` : "";
+    const hamLine = it.in_ham_scan ? `<span style="padding:2px 6px;background:#e0e7ff;color:#3730a3;font-size:11px;border-radius:4px;font-weight:600">Ham scan</span>` : "";
+    const judgesRow = (it.judges || []).map(j => `<span class="j">${j}</span>`).join("");
+    const goldBox = `<div class="box gold"><div class="lbl">当前 gold ${esc(it.axis)}</div><div class="val">${it.gold}</div></div>`;
+    const ensBox = `<div class="box ens"><div class="lbl">ensemble</div><div class="val">${it.ens}</div></div>`;
+    const meanBox = `<div class="box"><div class="lbl">judges mean</div><div class="val">${((it.judges||[]).reduce((a,b)=>a+b,0)/(it.judges?.length||1)).toFixed(2)}</div></div>`;
+    const stdBox = `<div class="box"><div class="lbl">judges std</div><div class="val">${(it.std ?? 0).toFixed(2)}</div></div>`;
+    return `<div class="r3-card${doneCls}" data-id="${esc(it.item_id)}" data-conf="${it.confidence}" data-axis="${esc(it.axis)}" data-done="${v ? 1 : 0}">
+      <div class="r3-card-head">
+        <span class="rank">#${it.my_rank}</span>
+        <span class="axis-chip ${esc(it.axis)}">${esc(it.axis)}</span>
+        <span class="conf-chip ${confCls}">${confLabel}</span>
+        <span class="gold-dir">${esc(it.gold_direction || "")}</span>
+        ${aliceLine} ${hamLine}
+        <span class="dm">${esc(it.dataset)}/${esc(it.model)}</span>
+        <span class="r3-verdict-badge ${verdictBadgeCls}">${esc(verdictBadgeText)}</span>
+      </div>
+      <div class="r3-card-body">
+        <div class="r3-media">
+          <video controls preload="metadata" playsinline muted>${(it.video_sources || [it.video_url].filter(Boolean)).map(u => `<source src="${esc(u)}">`).join("")}</video>
+          <div class="media-caption">generated video · axis=${esc(it.axis)}${(it.video_sources && it.video_sources.length > 1) ? ` · ${it.video_sources.length} sources (fallback if 1st fails)` : ""}</div>
+          <img src="${esc(it.init_frame_url)}" alt="init frame">
+          <div class="media-caption">init_frame</div>
+        </div>
+        <div class="r3-facts">
+          <div class="instr"><span class="label">instruction</span><span data-instr="1" data-id="${esc(it.item_id)}">Loading…</span></div>
+          <div class="r3-scores">${goldBox}${ensBox}${meanBox}${stdBox}</div>
+          <div style="margin:6px 0"><span style="font-size:10.5px;color:#64748b;letter-spacing:.4px;text-transform:uppercase;font-weight:600">5 judges</span> <span class="r3-judges">${judgesRow}</span></div>
+          <div class="r3-why"><span class="why-label">为什么疑似 gold 错</span>${esc(it.cc_why || "")}</div>
+        </div>
+      </div>
+      <div class="r3-arbitrate" data-id="${esc(it.item_id)}">
+        <button class="ok" data-verdict="ok">✅ gold 对 · 保持</button>
+        <button class="wrong" data-verdict="wrong-begin">⚠ gold 错 · 填新分</button>
+        <button class="skip" data-verdict="skip">跳过</button>
+        <span class="new-scores">
+          <label>new PA <input type="number" min="1" max="5" data-field="new_pa" value="${it.axis==='PA'?Math.round((it.judges||[it.ens]).reduce((a,b)=>a+b,0)/(it.judges?.length||1)):''}"></label>
+          <label>new IA <input type="number" min="1" max="5" data-field="new_ia" value="${it.axis==='IA'?Math.round((it.judges||[it.ens]).reduce((a,b)=>a+b,0)/(it.judges?.length||1)):''}"></label>
+          <button class="confirm" data-verdict="wrong">确认改</button>
+        </span>
+      </div>
+    </div>`;
+  }
+
+  function applyFilters() {
+    const fConf = document.getElementById("filter-conf").value;
+    const fAxis = document.getElementById("filter-axis").value;
+    const fDone = document.getElementById("filter-done").value;
+    let n = 0;
+    document.querySelectorAll(".r3-card").forEach(card => {
+      const c = card.dataset.conf;
+      const a = card.dataset.axis;
+      const d = card.dataset.done === "1";
+      let show = true;
+      if (fConf !== "all" && c !== fConf) show = false;
+      if (fAxis !== "all" && a !== fAxis) show = false;
+      if (fDone === "pending" && d) show = false;
+      else if (fDone === "done" && !d) show = false;
+      card.style.display = show ? "" : "none";
+      if (show) n++;
+    });
+    document.getElementById("visible-count").textContent = n + " 条";
+  }
+
+  async function handleVerdict(item_id, verdict, extra) {
+    const record = { verdict, ts: new Date().toISOString(), ...extra };
+    vLocal[item_id] = record;
+    saveVerdicts(vLocal);
+    updateQuota();
+    // Re-render this one card
+    const card = document.querySelector(`.r3-card[data-id="${item_id}"]`);
+    if (card) {
+      const it = items.find(x => x.item_id === item_id);
+      if (it) card.outerHTML = renderCard(it);
+    }
+    // Fire-and-forget to backend
+    const res = await submitVerdict(item_id, record);
+    if (res.ok) showLog(`✓ 已同步 ${item_id.substring(0, 40)}…`);
+    else showLog(`⚠ 未同步(本地已存) · ${res.reason || res.status || "endpoint down"}`, 3500);
+  }
+
+  document.addEventListener("click", async ev => {
+    const btn = ev.target.closest(".r3-arbitrate button");
+    if (!btn) return;
+    const wrap = btn.closest(".r3-arbitrate");
+    const item_id = wrap.dataset.id;
+    const verdict = btn.dataset.verdict;
+    if (verdict === "wrong-begin") {
+      wrap.classList.add("correcting");
+      return;
+    }
+    if (verdict === "wrong") {
+      const npa = wrap.querySelector('[data-field="new_pa"]').value;
+      const nia = wrap.querySelector('[data-field="new_ia"]').value;
+      if (!npa || !nia) { alert("请填 new PA + new IA"); return; }
+      await handleVerdict(item_id, "wrong", { new_pa: parseInt(npa), new_ia: parseInt(nia) });
+      return;
+    }
+    if (verdict === "ok" || verdict === "skip") {
+      await handleVerdict(item_id, verdict);
+    }
+  });
+
+  document.getElementById("filter-conf").addEventListener("change", applyFilters);
+  document.getElementById("filter-axis").addEventListener("change", applyFilters);
+  document.getElementById("filter-done").addEventListener("change", applyFilters);
+  document.getElementById("reset-btn").addEventListener("click", () => {
+    if (!confirm("清除本地仲裁进度(不影响后端 · Ham 端点若有则以那边为准)?")) return;
+    localStorage.removeItem(LS_KEY);
+    location.reload();
+  });
+  document.getElementById("export-btn").addEventListener("click", () => {
+    const out = { exported_at: new Date().toISOString(), verdicts: vLocal };
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "r3_verdicts_" + new Date().toISOString().slice(0, 10) + ".json";
+    a.click();
+  });
+
+  // Lazy-fetch instructions per item (from Ham existing endpoint).
+  async function fetchInstruction(item_id) {
+    const APPS = (window.__APPS_SCRIPT_URL__ || "").replace(/\/$/, "");
+    if (!APPS) return null;
+    try {
+      const r = await fetch(APPS + "/?action=instruction&item_id=" + encodeURIComponent(item_id));
+      if (r.ok) { const j = await r.json(); return j.instruction || j.text || null; }
+    } catch(_) {}
+    return null;
+  }
+  async function populateInstructions() {
+    const spans = document.querySelectorAll("[data-instr='1']");
+    for (const span of spans) {
+      const id = span.dataset.id;
+      const text = await fetchInstruction(id);
+      span.textContent = text || "(instruction not available)";
+    }
+  }
+
+  async function init() {
+    try {
+      items = await fetchQueue();
+      document.getElementById("r3-list").innerHTML = items.map(renderCard).join("");
+      document.getElementById("r3-endpoint-status").textContent = "static top-90 (queue file)";
+      applyFilters();
+      updateQuota();
+      populateInstructions();
+    } catch (e) {
+      document.getElementById("r3-list").innerHTML = `<div class="pe-gate fail">Failed to load queue: ${esc(String(e))}</div>`;
+    }
+  }
+  init();
+})();
+</script>
+</body>
+</html>
