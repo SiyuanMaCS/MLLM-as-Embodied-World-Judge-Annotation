@@ -5770,9 +5770,14 @@ async function initPreannotateEval() {
   // end-to-end on `?action=preannotate` after Ham's hot-swap). Main-score PA/IA
   // = 6-strong-VLM ensemble; sub-scores = ensemble v2 + Alice pilot overrides
   // (Alice full v3 pending). Both primary gates pass 0.65.
+  // v85hg7: siyuan picked 5-judge (drop expensive gemini-3.1-pro-preview, keep
+  // Flash). Yu's n=495 (full high-confidence pool, not just val90) is now the
+  // authoritative gate — no more sampling variance debate. Numbers point-pass
+  // 0.65 but 95% CIs cross the gate, so Yu's honest read is "hovering, not
+  // securely above." That framing is preserved in the sub-captions + prose.
   const V2_NUMBERS = {
-    pa:                  { pearson_v2: 0.686, pearson_v1: 0.499, source: "6-strong-VLM ensemble (served via v3.4_hybrid)", ens_mean: 3.24, gold_mean: 3.39, gate: 0.65 },
-    ia:                  { pearson_v2: 0.688, pearson_v1: 0.427, source: "6-strong-VLM ensemble (served via v3.4_hybrid)", ens_mean: 3.48, gold_mean: 3.50, gate: 0.65 },
+    pa:                  { pearson_v2: 0.663, ci_lo: 0.61, ci_hi: 0.71, pearson_v1: 0.499, source: "5-judge ensemble · Flash + seed2.0/2.1 + gpt-5.2/5.5 (v3.7)", ens_mean: 3.24, gold_mean: 3.39, gate: 0.65 },
+    ia:                  { pearson_v2: 0.679, ci_lo: 0.63, ci_hi: 0.72, pearson_v1: 0.427, source: "5-judge ensemble · Flash + seed2.0/2.1 + gpt-5.2/5.5 (v3.7)", ens_mean: 3.48, gold_mean: 3.50, gate: 0.65 },
     // Sub-scores: Alice narrow override (only object_correct); goal_completed reverted
     // to Yu 3-VLM per Alice's own val90 finding (agent-native goal_completed 0.045 lost
     // to 3-VLM 0.296). Other 4 axes locked to Yu 3-VLM calibrated held-out.
@@ -5796,19 +5801,27 @@ async function initPreannotateEval() {
     if (v >= gate - 0.10) return "warn";
     return "bad";
   }
+  function ciCaption(d) {
+    if (d.ci_lo == null || d.ci_hi == null) return "";
+    const straddles = d.ci_lo < 0.65 && d.ci_hi >= 0.65;
+    const belowNote = straddles ? ' <span style="color:#b45309">· CI crosses 0.65 — Yu 2026-07-12: "hovering, not securely above"</span>' : "";
+    return ` <span style="opacity:0.75">[95% CI ${d.ci_lo.toFixed(2)}, ${d.ci_hi.toFixed(2)}] · n=495 gate</span>${belowNote}`;
+  }
   if (paCard) {
-    const v = V2_NUMBERS.pa.pearson_v2;
+    const d = V2_NUMBERS.pa;
+    const v = d.pearson_v2;
     paCard.textContent = v.toFixed(3);
     const p = paCard.closest(".pe-metric");
     if (p) p.className = "pe-metric " + gradeVsGate(v, 0.65);
-    if (paSub) paSub.innerHTML = v >= 0.65 ? "✅ passes gate ≥ 0.65" : `gate ≥ 0.65 · <b style="color:#dc2626">gap ${(0.65 - v).toFixed(2)}</b> · v3 pipeline needed`;
+    if (paSub) paSub.innerHTML = (v >= 0.65 ? "✅ passes gate ≥ 0.65" : `gate ≥ 0.65 · <b style="color:#dc2626">gap ${(0.65 - v).toFixed(2)}</b>`) + ciCaption(d);
   }
   if (iaCard) {
-    const v = V2_NUMBERS.ia.pearson_v2;
+    const d = V2_NUMBERS.ia;
+    const v = d.pearson_v2;
     iaCard.textContent = v.toFixed(3);
     const p = iaCard.closest(".pe-metric");
     if (p) p.className = "pe-metric " + gradeVsGate(v, 0.65);
-    if (iaSub) iaSub.innerHTML = v >= 0.65 ? "✅ passes gate ≥ 0.65" : `gate ≥ 0.65 · <b style="color:#dc2626">gap ${(0.65 - v).toFixed(2)}</b> · Alice v3 pilot 0.52 (best so far, above 3-VLM ceiling 0.47)`;
+    if (iaSub) iaSub.innerHTML = (v >= 0.65 ? "✅ passes gate ≥ 0.65" : `gate ≥ 0.65 · <b style="color:#dc2626">gap ${(0.65 - v).toFixed(2)}</b>`) + ciCaption(d);
   }
   const grid = document.getElementById("pe-pearson-grid");
   if (grid) {
