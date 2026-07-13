@@ -6,7 +6,7 @@
 <title>R3 挑错 · admin 仲裁 — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85hi">
+<link rel="stylesheet" href="style.css?v=v85hi2">
 <style>
   body { background:#f1f5f9 }
   main { max-width:1080px; margin:0 auto; padding:16px }
@@ -106,9 +106,8 @@
     <h1>siyuan approved · N=90 · goal-1 kickoff</h1>
     <div class="subtitle">
       每条 = <b>5 判官 + Alice + Ham 全库 scan 共识 vs 当前 gold 强分歧</b>的高置信 gold-错误候选。你只判"当前 gold 对不对";若错,填新分。<br>
-      <b>conf-3(黄章)= 三重确认</b>(判官 + Alice + 全库 scan 都指 gold 错) — 4 条,几乎肯定,可快速过。<br>
-      <b>conf-2</b>(蓝章) = 判官共识 + Alice 手判 命中之一 — 49 条主批。<br>
-      <b>conf-1</b>(灰章) = 只判官共识 — 37 条尾批。<br>
+      <b>conf-3(黄章)= 三重确认</b>(判官 + Alice + 全库 scan 都指 gold 错) — 7 条,几乎肯定,可快速过。<br>
+      <b>conf-2(蓝章)</b> = 判官共识 + Alice 手判 命中之一 — 83 条主批(top-90 里全部剩余)。<br>
       看完 → Isabella 写 revised gold 到 `gold_875_r3_revised.jsonl`(不覆盖原 canonical)· Yu 复算 vs 修正 gold 的 gate(判官在这批本来对 · 会明显↑)。
     </div>
     <div class="r3-quota" id="r3-quota-cells">
@@ -125,9 +124,8 @@
     <label>过滤:</label>
     <select id="filter-conf">
       <option value="all">全部 conf</option>
-      <option value="3">仅 conf-3(黄章 · 4 条)</option>
-      <option value="2">仅 conf-2(蓝章 · 49 条)</option>
-      <option value="1">仅 conf-1(灰章 · 37 条)</option>
+      <option value="3">仅 conf-3(黄章 · 7 条 · 三重确认最铁)</option>
+      <option value="2">仅 conf-2(蓝章 · 83 条)</option>
     </select>
     <select id="filter-axis">
       <option value="all">全部 axis</option>
@@ -148,7 +146,7 @@
 
   <div class="r3-sync-log" id="sync-log"></div>
 </main>
-<script src="app.js?v=v85hi" defer></script>
+<script src="app.js?v=v85hi2" defer></script>
 <script>
 // v85hi · R3 admin arbitration page. Loads bench/analysis/r3_queue_top90.json,
 // renders 90 cards, stores local state in localStorage, POSTs each verdict to
@@ -190,7 +188,7 @@
       } catch(_) {}
     }
     // Fallback — Yu's file has video_url + init_frame_url baked in
-    const r2 = await fetch("bench/analysis/r3_queue_top90.json?v=v85hi", {cache:"no-store"});
+    const r2 = await fetch("bench/analysis/r3_queue_top90.json?v=v85hi2", {cache:"no-store"});
     if (r2.ok) {
       const arr = await r2.json();
       // normalise: Yu uses video_url singular, Ham uses video_sources[]
