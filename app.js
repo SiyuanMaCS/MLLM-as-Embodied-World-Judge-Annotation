@@ -2172,7 +2172,7 @@ async function initDashboard() {
           if (!j || !j.ok) return;
           const remaining = j.remaining ?? (j.total - j.done);
           if (remaining > 0) { r3Badge.textContent = String(remaining); r3Badge.hidden = false; }
-          if (r3Sub) r3Sub.textContent = `Top-${j.total ?? 90} · ${j.done ?? 0} 已判 · ${remaining ?? "?"} 待判`;
+          if (r3Sub) r3Sub.textContent = `${remaining ?? "?"} / ${j.total ?? 90} 待判`;
         })
         .catch(() => {});
     }
