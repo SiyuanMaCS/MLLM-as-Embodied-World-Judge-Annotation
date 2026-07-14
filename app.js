@@ -1563,6 +1563,8 @@ function logPreannotationDelta(itemId, seeded, submitted) {
   }).catch(() => {});
 }
 
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
 function showPreannotationChip(pa) {
   const item = document.getElementById("item");
   if (!item) return;
