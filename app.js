@@ -3149,34 +3149,40 @@ async function loadReviewCoverage() {
           html += '</tbody></table></div>';
         }
       }
-      // v85hd (Alice correction): reviews are per-reviewer hash-assigned
-      // (REVIEW_WEEK_MODE), not pooled — so "剩多少" is meaningful per person.
-      // Endpoint should return by_reviewer_pending (from _testset_assignee hash);
-      // by_reviewer_done (contribution) is kept as a secondary chip row.
-      if (Array.isArray(d?.by_reviewer_pending)) {
+      // v85hk (siyuan 2026-07-14): Ham shipped by_reviewer_full = list of
+      // {user, done, today, pending} — render as a single sortable table
+      // (accumulated / today / pending), sorted by done desc. Replaces the
+      // separate pending-chip + done-chip rows.
+      if (Array.isArray(d?.by_reviewer_full)) {
+        const rows = d.by_reviewer_full.slice()
+          .map(r => ({
+            user: r?.user || "?",
+            done: Number(r?.done ?? 0),
+            today: Number(r?.today ?? 0),
+            pending: Number(r?.pending ?? 0),
+          }))
+          .sort((a, b) => b.done - a.done);
+        if (rows.length) {
+          html += '<div style="margin-bottom:10px"><h4 style="margin:0 0 6px;font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.3px">Reviewer progress</h4>';
+          html += '<table style="width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums"><thead><tr style="color:#94a3b8;font-size:10.5px"><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #e2e8f0">User</th><th style="text-align:right;padding:4px 6px;border-bottom:1px solid #e2e8f0">累计</th><th style="text-align:right;padding:4px 6px;border-bottom:1px solid #e2e8f0">今日</th><th style="text-align:right;padding:4px 6px;border-bottom:1px solid #e2e8f0">待审</th></tr></thead><tbody>';
+          rows.forEach(r => {
+            const pendCol = r.pending === 0 ? '#059669' : r.pending > 60 ? '#dc2626' : r.pending > 20 ? '#f59e0b' : '#0891b2';
+            const todayCol = r.today > 0 ? '#0f172a' : '#94a3b8';
+            html += `<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:5px 6px;color:#0f172a"><b>${esc(r.user)}</b></td><td style="padding:5px 6px;text-align:right;color:#0f172a">${r.done}</td><td style="padding:5px 6px;text-align:right;color:${todayCol}">${r.today || "—"}</td><td style="padding:5px 6px;text-align:right;font-weight:600;color:${pendCol}">${r.pending}</td></tr>`;
+          });
+          html += '</tbody></table></div>';
+        }
+      } else if (Array.isArray(d?.by_reviewer_pending)) {
+        // Legacy fallback (if endpoint hasn't been redeployed with by_reviewer_full)
         const rows = d.by_reviewer_pending.slice()
           .map(r => ({ user: r?.user || "?", pending: Number(r?.pending ?? r?.n ?? 0) }))
           .sort((a, b) => b.pending - a.pending);
         if (rows.length) {
-          html += '<div style="margin-bottom:10px"><h4 style="margin:0 0 6px;font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.3px">Remaining by reviewer (hash-assigned)</h4>';
+          html += '<div style="margin-bottom:10px"><h4 style="margin:0 0 6px;font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.3px">Remaining by reviewer</h4>';
           html += '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;font-variant-numeric:tabular-nums">';
           rows.forEach(r => {
             const col = r.pending === 0 ? '#059669' : r.pending > 60 ? '#dc2626' : r.pending > 20 ? '#f59e0b' : '#0891b2';
             html += `<span style="padding:3px 8px;background:#f1f5f9;border-left:3px solid ${col};border-radius:4px;color:#0f172a"><b>${esc(r.user)}</b> <span style="color:${col};font-weight:600">${r.pending}</span></span>`;
-          });
-          html += '</div></div>';
-        }
-      }
-      if (Array.isArray(d?.by_reviewer)) {
-        // Backward-compatible done-count chip row (kept as secondary detail).
-        const rows = d.by_reviewer.slice().sort((a, b) => Number(b?.n || 0) - Number(a?.n || 0));
-        if (rows.length) {
-          html += '<div><h4 style="margin:0 0 6px;font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.3px">Done by reviewer (contribution)</h4>';
-          html += '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px;font-variant-numeric:tabular-nums;color:#64748b">';
-          rows.forEach(r => {
-            const u = r?.user || "?";
-            const n = Number(r?.n || 0);
-            html += `<span style="padding:2px 7px;background:#f8fafc;border-radius:4px"><b style="color:#0f172a">${esc(u)}</b> ${n}</span>`;
           });
           html += '</div></div>';
         }
