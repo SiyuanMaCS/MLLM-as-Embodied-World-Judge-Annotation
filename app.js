@@ -4244,28 +4244,20 @@ async function refreshReviewProgress() {
     const d = await r.json();
     const wrap = document.getElementById("review-progress");
     if (!wrap) return;
-    const quota = d?.review_target_today ?? d?.review_quota;
-    if (quota == null) { wrap.hidden = true; } else {
-      const today = Number(d?.review_done_today ?? d?.review_today ?? 0);
-      document.getElementById("review-today").textContent = today;
-      document.getElementById("review-quota").textContent = quota;
-      wrap.hidden = false;
-      wrap.classList.toggle("met", today >= quota);
-    }
-    // v85ck: test-set coverage progress bar (visible to reviewer + admin).
-    const cov = d?.testset_review_coverage;
+    // v85hj.post: siyuan 2026-07-14 dropped daily review quota globally (10^9)
+    // and asked to remove both the "/quota" tail and the test-coverage panel.
+    // Show just "今日审核 N" if the user has any reviewed-today count; hide the
+    // whole chip only if the endpoint returns nothing at all.
+    const today = Number(d?.review_done_today ?? d?.review_today ?? 0);
+    const todayEl = document.getElementById("review-today");
+    if (todayEl) todayEl.textContent = today;
+    // Reviewer role signal — same trigger as before (endpoint returned a quota
+    // field, meaning this user was tagged as reviewer), we just don't display it.
+    const isReviewer = (d?.review_target_today ?? d?.review_quota) != null;
+    wrap.hidden = !isReviewer;
+    // test-coverage panel removed per siyuan — hide the element if it exists.
     const covEl = document.getElementById("review-coverage");
-    if (covEl) {
-      if (cov && typeof cov.total === "number" && cov.total > 0) {
-        const done = Number(cov.reviewed ?? 0);
-        const total = Number(cov.total);
-        const pct = Math.round((done / total) * 100);
-        covEl.innerHTML = `<span data-i18n="review.coverage">test 覆盖</span> <strong>${done}</strong>/<strong>${total}</strong> (${pct}%)`;
-        covEl.hidden = false;
-      } else {
-        covEl.hidden = true;
-      }
-    }
+    if (covEl) covEl.hidden = true;
   } catch (_) { /* silent */ }
 }
 
