@@ -6,7 +6,7 @@
 <title>R3 挑错 · admin 仲裁 — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v85hj">
+<link rel="stylesheet" href="style.css?v=v85hk">
 <style>
   body { background:#f1f5f9 }
   main { max-width:1080px; margin:0 auto; padding:16px }
@@ -139,7 +139,7 @@
 
   <div class="r3-sync-log" id="sync-log"></div>
 </main>
-<script src="app.js?v=v85hj" defer></script>
+<script src="app.js?v=v85hk" defer></script>
 <script>
 // v85hi · R3 admin arbitration page. Loads bench/analysis/r3_queue_top90.json,
 // renders 90 cards, stores local state in localStorage, POSTs each verdict to
@@ -181,7 +181,7 @@
       } catch(_) {}
     }
     // Fallback — Yu's file has video_url + init_frame_url baked in
-    const r2 = await fetch("bench/analysis/r3_queue_top90.json?v=v85hj", {cache:"no-store"});
+    const r2 = await fetch("bench/analysis/r3_queue_top90.json?v=v85hk", {cache:"no-store"});
     if (r2.ok) {
       const arr = await r2.json();
       // normalise: Yu uses video_url singular, Ham uses video_sources[]
@@ -367,14 +367,36 @@
     a.click();
   });
 
-  // Lazy-fetch instructions per item (from Ham existing endpoint).
+  // v85hj-fix: item_id → HF-hosted instruction.txt URL, then fetch text.
+  // Ham's /?action=instruction doesn't exist (returns health-check payload),
+  // so derive the canonical URL client-side. Kept the endpoint call as a
+  // fallback in case Ham later ships it.
+  function itemIdToInstructionUrl(item_id) {
+    if (!item_id || !item_id.startsWith("data__")) return null;
+    const parts = item_id.split("__");
+    if (parts.length < 7 || parts[2] !== "generated_data") return null;
+    const ds = parts[1], model = parts[3], task = parts[4], episode = parts[5];
+    return `https://huggingface.co/datasets/HuggingFriends/mllm-as-embodied-world-judge/resolve/main/data/${ds}/generated_data/${model}/${task}/${episode}/1/prompt/instruction.txt`;
+  }
   async function fetchInstruction(item_id) {
+    const url = itemIdToInstructionUrl(item_id);
+    if (url) {
+      try {
+        const r = await fetch(url);
+        if (r.ok) { const t = (await r.text()).trim(); return t || null; }
+      } catch(_) {}
+    }
     const APPS = (window.__APPS_SCRIPT_URL__ || "").replace(/\/$/, "");
-    if (!APPS) return null;
-    try {
-      const r = await fetch(APPS + "/?action=instruction&item_id=" + encodeURIComponent(item_id));
-      if (r.ok) { const j = await r.json(); return j.instruction || j.text || null; }
-    } catch(_) {}
+    if (APPS) {
+      try {
+        const r = await fetch(APPS + "/?action=instruction&item_id=" + encodeURIComponent(item_id));
+        if (r.ok) {
+          const ct = r.headers.get("content-type") || "";
+          if (ct.includes("json")) { const j = await r.json(); return j.instruction || j.text || null; }
+          const t = (await r.text()).trim(); return t || null;
+        }
+      } catch(_) {}
+    }
     return null;
   }
   async function populateInstructions() {
