@@ -1413,11 +1413,40 @@ async function loadNext() {
   }
 }
 
-// v85hf: fetch the ensemble pre-annotation for a given item and prefill the
-// form. Silently no-ops on 404 / non-2xx / empty body so the page still works
-// while Ham's endpoint is under development. During development, if the URL
-// carries ?preannotate=1&mock=1 the function falls back to a hardcoded mock
-// payload so the frontend can be exercised end-to-end before the backend ships.
+// v86: static pre-annotation from HuggingFace JSONL (bypasses backend).
+// Fetches the full ensemble file once, caches in memory as a Map keyed by item_id.
+// Falls back to backend endpoint if HF fetch fails.
+const _PREANNOTATION_HF_URL = "https://huggingface.co/datasets/HuggingFriends/MLLM-as-Embodied-World-Judge/resolve/main/bench/train_preannot/preannotations_train_hybrid.jsonl";
+let _PREANNOTATION_MAP = null;
+let _PREANNOTATION_MAP_LOADING = null;
+
+async function _loadPreannotationMap() {
+  if (_PREANNOTATION_MAP) return _PREANNOTATION_MAP;
+  if (_PREANNOTATION_MAP_LOADING) return _PREANNOTATION_MAP_LOADING;
+  _PREANNOTATION_MAP_LOADING = (async () => {
+    try {
+      const res = await fetch(_PREANNOTATION_HF_URL);
+      if (!res.ok) throw new Error("HF fetch " + res.status);
+      const text = await res.text();
+      const map = new Map();
+      for (const line of text.split("\n")) {
+        if (!line.trim()) continue;
+        try {
+          const obj = JSON.parse(line);
+          if (obj.item_id) map.set(obj.item_id, obj);
+        } catch (_) {}
+      }
+      _PREANNOTATION_MAP = map;
+      console.log(`[preannotate] loaded ${map.size} items from HF`);
+      return map;
+    } catch (err) {
+      console.warn("[preannotate] HF load failed, will try backend", err);
+      return null;
+    }
+  })();
+  return _PREANNOTATION_MAP_LOADING;
+}
+
 async function maybeApplyPreannotation(itemId) {
   CURRENT_PREANNOTATION = null;
   if (!itemId) return;
@@ -1429,14 +1458,21 @@ async function maybeApplyPreannotation(itemId) {
     if (useMock) {
       payload = mockPreannotation(itemId);
     } else {
-      const url = `${CFG.APPS_SCRIPT_URL}/?action=preannotate&user=${encodeURIComponent(user)}&item_id=${encodeURIComponent(itemId)}`;
-      const res = await fetch(url);
-      if (!res.ok) return;
-      const body = await res.json().catch(() => ({}));
-      // Ham's contract: {ok:true, physical_adherence, instruction_alignment, ...6 subs, physical_notes, instruction_notes, source, confidence:{pa,ia}}
-      if (body?.ok === false || !body || body.physical_adherence == null) return;
-      payload = body;
+      // Try static HF map first
+      const map = await _loadPreannotationMap();
+      if (map && map.has(itemId)) {
+        payload = map.get(itemId);
+      } else {
+        // Fallback to backend
+        const url = `${CFG.APPS_SCRIPT_URL}/?action=preannotate&user=${encodeURIComponent(user)}&item_id=${encodeURIComponent(itemId)}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const body = await res.json().catch(() => ({}));
+        if (body?.ok === false || !body || body.physical_adherence == null) return;
+        payload = body;
+      }
     }
+    if (!payload || payload.physical_adherence == null) return;
     prefillAnnotateForm(payload);
     CURRENT_PREANNOTATION = payload;
     showPreannotationChip(payload);
