@@ -1365,15 +1365,12 @@ async function refreshStats() {
       }
       const quotaEl = document.getElementById("quota");
       const quotaBlock = quotaEl?.parentElement;
-      // v85aw: pure-reviewer (siyuanw) has no annotation KPI → quota=null. Hide the
-      // whole today/quota chip instead of showing a misleading "today N / —".
+      // v86: default daily quota to 50 when backend returns 0 (pool open).
+      const effectiveQuota = (typeof data.quota === "number" && data.quota > 0) ? data.quota : 50;
       if (quotaBlock) {
-        const hasQuota = typeof data.quota === "number" && data.quota > 0;
-        quotaBlock.hidden = !hasQuota;
-        if (hasQuota) {
-          quotaEl.textContent = data.quota;
-          quotaBlock.classList.toggle("met", (data.today + R) >= data.quota);
-        }
+        quotaBlock.hidden = false;
+        quotaEl.textContent = effectiveQuota;
+        quotaBlock.classList.toggle("met", (data.today + R) >= effectiveQuota);
       }
     }
   } catch (err) {
@@ -3278,11 +3275,10 @@ async function loadBadges() {
       }
     }
   }
-  // v85i (siyuan): Annotate card badge = today's remaining daily quota (WeChat-style
-  // unread count). Falls back to backend `annotate_remaining` when stats lacks quota.
+  // v86: default daily quota to 50 when backend returns 0.
   const todayDone = Number(statsData?.today ?? 0);
-  const dailyQuota = Number(statsData?.quota ?? 0);
-  const todayRemaining = dailyQuota > 0 ? Math.max(0, dailyQuota - todayDone) : Number(data.annotate_remaining || 0);
+  const dailyQuota = (Number(statsData?.quota ?? 0) > 0) ? Number(statsData.quota) : 50;
+  const todayRemaining = Math.max(0, dailyQuota - todayDone);
   const map = {
     annotate:     todayRemaining,
     myreviewed:   myreviewedNew,
