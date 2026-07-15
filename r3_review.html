@@ -6,7 +6,7 @@
 <title>R3 挑错 · admin 仲裁 — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v98">
+<link rel="stylesheet" href="style.css?v=v99">
 <style>
   body { background:#f1f5f9 }
   main { max-width:1080px; margin:0 auto; padding:16px }
@@ -75,11 +75,20 @@
   .r3-arbitrate button.ok { background:#059669; color:#fff; border-color:#059669 }
   .r3-arbitrate button.wrong { background:#f59e0b; color:#fff; border-color:#f59e0b }
   .r3-arbitrate button.skip { background:#f1f5f9; color:#475569 }
-  .r3-arbitrate .new-scores { display:none; gap:6px; align-items:center; padding:6px 10px; background:#fef3c7; border-radius:5px }
-  .r3-arbitrate.correcting .new-scores { display:inline-flex }
-  .r3-arbitrate .new-scores input { width:52px; padding:4px 6px; font-size:14px; border:1px solid #cbd5e1; border-radius:4px; font-variant-numeric:tabular-nums; text-align:center }
+  .r3-arbitrate .new-scores { display:none; width:100%; padding:10px 12px; margin-top:8px; background:#fef3c7; border-radius:6px }
+  .r3-arbitrate.correcting .new-scores { display:block }
+  .r3-arbitrate .new-scores .ns-row { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin-bottom:8px }
+  .r3-arbitrate .new-scores .ns-row > b { font-size:11px; color:#78350f; min-width:34px }
+  .r3-arbitrate .new-scores input[type=number] { width:52px; padding:4px 6px; font-size:14px; border:1px solid #cbd5e1; border-radius:4px; font-variant-numeric:tabular-nums; text-align:center }
   .r3-arbitrate .new-scores label { font-size:11px; color:#78350f; font-weight:600 }
-  .r3-arbitrate .new-scores button.confirm { background:#dc2626; color:#fff; border-color:#dc2626 }
+  .r3-arbitrate .new-scores .mini select { margin-left:2px; padding:2px 4px; font-size:12px; border:1px solid #cbd5e1; border-radius:4px }
+  .r3-arbitrate .new-scores.ns-notes { }
+  .r3-arbitrate .new-scores .ns-notes label { display:flex; flex-direction:column; flex:1 1 45%; gap:2px }
+  .r3-arbitrate .new-scores textarea { width:100%; font-size:12px; padding:5px 7px; border:1px solid #cbd5e1; border-radius:4px; resize:vertical }
+  .r3-arbitrate .new-scores button.confirm { background:#dc2626; color:#fff; border-color:#dc2626; margin-top:2px }
+  .box .subline { font-size:11px; color:#475569; margin-top:3px }
+  .box .noteline { font-size:11px; color:#334155; margin-top:3px; line-height:1.4 }
+  .box .whyline { font-size:11px; color:#92400e; margin-top:3px; font-style:italic }
 
   .r3-sync-log { position:fixed; bottom:12px; right:12px; max-width:280px; padding:8px 12px; background:rgba(15,23,42,.9); color:#fff; font-size:11px; border-radius:6px; opacity:0; pointer-events:none; transition:opacity .3s; z-index:1000 }
   .r3-sync-log.show { opacity:1 }
@@ -139,7 +148,7 @@
 
   <div class="r3-sync-log" id="sync-log"></div>
 </main>
-<script src="app.js?v=v98" defer></script>
+<script src="app.js?v=v99" defer></script>
 <script>
 // v85hi · R3 admin arbitration page. Loads bench/analysis/r3_queue_top90.json,
 // renders 90 cards, stores local state in localStorage, POSTs each verdict to
@@ -181,7 +190,7 @@
       } catch(_) {}
     }
     // Fallback — Yu's file has video_url + init_frame_url baked in
-    const r2 = await fetch("bench/analysis/r3_queue_top90.json?v=v85hk", {cache:"no-store"});
+    const r2 = await fetch("bench/analysis/r3_queue_top90.json?v=v99", {cache:"no-store"});
     if (r2.ok) {
       const arr = await r2.json();
       // normalise: Yu uses video_url singular, Ham uses video_sources[]
@@ -195,6 +204,7 @@
     const user = currentUser();
     // Ham schema: {admin, item_id, decision: "gold_correct"|"gold_wrong"|"skip", new_pa, new_ia, note}
     const body = { admin: user, item_id, decision: verdict.verdict === "ok" ? "gold_correct" : verdict.verdict === "wrong" ? "gold_wrong" : "skip" };
+    if (verdict.new_payload) body.new_payload = verdict.new_payload;   // v99: full PA/IA+6subs+notes
     if (verdict.new_pa != null) body.new_pa = verdict.new_pa;
     if (verdict.new_ia != null) body.new_ia = verdict.new_ia;
     if (verdict.note) body.note = verdict.note;
@@ -254,10 +264,26 @@
     const isWrong = effVerdict === "gold_wrong" || effVerdict === "wrong";
     const isSkip = effVerdict === "skip";
     const verdictBadgeCls = isWrong ? "wrong" : (isSkip ? "skip" : "");
-    const verdictBadgeText = eff ? (isWrong ? `已改 → PA ${eff.new_pa ?? "?"} · IA ${eff.new_ia ?? "?"}` : isSkip ? "跳过" : "gold 对 · 保持") : "";
+    const np = (eff && eff.new_payload) || {};
+    const verdictBadgeText = eff ? (isWrong ? `已改 → PA ${np.physical_adherence ?? eff.new_pa ?? "?"} · IA ${np.instruction_alignment ?? eff.new_ia ?? "?"}` : isSkip ? "跳过" : "gold 对 · 保持") : "";
     const isHighConf = it.confidence >= 3;
-    const goldBox = `<div class="box gold"><div class="lbl">现标注 ${esc(it.axis)}</div><div class="val">${it.gold}</div></div>`;
-    const aiBox = `<div class="box ens"><div class="lbl">AI 判 ${esc(it.axis)}</div><div class="val">${it.ens}</div></div>`;
+    // v99 (siyuan: 仲裁界面要像审核——预填之前的分 PA/IA+6子分+note、全可改、参考 AI 建议):
+    // current_annotation = 真人原始标注(预填); ai_suggestion = AI ensemble 参考. (Ham contract)
+    const SUBS = ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"];
+    const short = k => k.split("_")[0];
+    const ca = it.current_annotation || {};
+    const ai = it.ai_suggestion || {};
+    const caPa = ca.physical_adherence ?? (it.axis==='PA' ? it.gold : "");
+    const caIa = ca.instruction_alignment ?? (it.axis==='IA' ? it.gold : "");
+    const aiEns = ai.ensemble;
+    const aiPa = (aiEns && typeof aiEns === "object") ? (aiEns.pa ?? aiEns.physical_adherence ?? "—") : (it.axis==='PA' ? (aiEns ?? it.ens) : "—");
+    const aiIa = (aiEns && typeof aiEns === "object") ? (aiEns.ia ?? aiEns.instruction_alignment ?? "—") : (it.axis==='IA' ? (aiEns ?? it.ens) : "—");
+    const caSubLine = SUBS.some(k=>ca[k]!=null) ? `<div class="subline">${SUBS.map(k=>`${short(k)}=${ca[k] ?? "—"}`).join(" · ")}</div>` : "";
+    const caNoteLine = (ca.physical_notes||ca.instruction_notes) ? `<div class="noteline"><b>P:</b> ${esc(ca.physical_notes||"—")} <b>I:</b> ${esc(ca.instruction_notes||"—")}</div>` : "";
+    const aiNoteLine = (ai.physical_notes||ai.instruction_notes) ? `<div class="noteline"><b>P:</b> ${esc(ai.physical_notes||"—")} <b>I:</b> ${esc(ai.instruction_notes||"—")}</div>` : "";
+    const goldBox = `<div class="box gold"><div class="lbl">现标注 (预填)</div><div class="val">PA ${caPa} · IA ${caIa}</div>${caSubLine}${caNoteLine}</div>`;
+    const aiBox = `<div class="box ens"><div class="lbl">🤖 AI 建议</div><div class="val">PA ${aiPa} · IA ${aiIa}</div>${aiNoteLine}${ai.why?`<div class="whyline">${esc(ai.why)}</div>`:""}</div>`;
+    const subSel = k => `<label class="mini">${short(k)} <select data-sub="${k}">${[0,1,2].map(v=>`<option value="${v}"${String(ca[k]??2)===String(v)?" selected":""}>${v}</option>`).join("")}</select></label>`;
     return `<div class="r3-card${doneCls}" data-id="${esc(it.item_id)}" data-conf="${it.confidence}" data-axis="${esc(it.axis)}" data-done="${eff ? 1 : 0}">
       <div class="r3-card-head">
         <span class="axis-chip ${esc(it.axis)}">${esc(it.axis)}</span>
@@ -279,14 +305,15 @@
         </div>
       </div>
       <div class="r3-arbitrate" data-id="${esc(it.item_id)}">
-        <button class="ok" data-verdict="ok">✅ 标注没错</button>
-        <button class="wrong" data-verdict="wrong-begin">⚠ 标注错了 · 填新分</button>
+        <button class="ok" data-verdict="ok">✅ 标注没错(保持)</button>
+        <button class="wrong" data-verdict="wrong-begin">✏ 改(参考 AI)</button>
         <button class="skip" data-verdict="skip">跳过</button>
-        <span class="new-scores">
-          <label>新 PA <input type="number" min="1" max="5" data-field="new_pa" value="${it.axis==='PA'?Math.round((it.judges||[it.ens]).reduce((a,b)=>a+b,0)/(it.judges?.length||1)):''}"></label>
-          <label>新 IA <input type="number" min="1" max="5" data-field="new_ia" value="${it.axis==='IA'?Math.round((it.judges||[it.ens]).reduce((a,b)=>a+b,0)/(it.judges?.length||1)):''}"></label>
-          <button class="confirm" data-verdict="wrong">确认</button>
-        </span>
+        <div class="new-scores">
+          <div class="ns-row"><b>大分</b> <label>PA <input type="number" min="1" max="5" data-field="new_pa" value="${caPa}"></label> <label>IA <input type="number" min="1" max="5" data-field="new_ia" value="${caIa}"></label></div>
+          <div class="ns-row"><b>小分</b> ${SUBS.map(subSel).join("")}</div>
+          <div class="ns-row ns-notes"><label>P-note <textarea data-field="physical_notes" rows="2">${esc(ca.physical_notes||"")}</textarea></label><label>I-note <textarea data-field="instruction_notes" rows="2">${esc(ca.instruction_notes||"")}</textarea></label></div>
+          <button class="confirm" data-verdict="wrong">确认修改</button>
+        </div>
       </div>
     </div>`;
   }
@@ -341,8 +368,15 @@
     if (verdict === "wrong") {
       const npa = wrap.querySelector('[data-field="new_pa"]').value;
       const nia = wrap.querySelector('[data-field="new_ia"]').value;
-      if (!npa || !nia) { alert("请填 new PA + new IA"); return; }
-      await handleVerdict(item_id, "wrong", { new_pa: parseInt(npa), new_ia: parseInt(nia) });
+      if (!npa || !nia) { alert("请填 PA + IA"); return; }
+      const new_payload = {
+        physical_adherence: parseInt(npa), instruction_alignment: parseInt(nia),
+        physical_notes: (wrap.querySelector('[data-field="physical_notes"]')?.value || "").trim(),
+        instruction_notes: (wrap.querySelector('[data-field="instruction_notes"]')?.value || "").trim(),
+        subs_v: 2,
+      };
+      wrap.querySelectorAll('[data-sub]').forEach(s => { new_payload[s.dataset.sub] = parseInt(s.value); });
+      await handleVerdict(item_id, "wrong", { new_payload, new_pa: parseInt(npa), new_ia: parseInt(nia) });
       return;
     }
     if (verdict === "ok" || verdict === "skip") {

@@ -4875,28 +4875,28 @@ function renderArbitrationItem(it) {
   const min2 = document.getElementById("mr-instruction_notes"); if (min2) min2.value = ann.instruction_notes || "";
   const mf = document.getElementById("modify-fields"); if (mf) mf.hidden = false;
   ARB_MODIFY_OPEN = true;
-  renderArbAiSuggestion(it.item_id);
+  renderArbAiSuggestion(it);
 }
 
-// v98: AI (preannotation ensemble) suggestion for the arbitration item — reference only.
-async function renderArbAiSuggestion(itemId) {
+// v98: AI (ensemble judge) suggestion for the arbitration item — reference only.
+// R3 items are gold_875 test items (NOT in the training preannotation map, per Yu),
+// so the suggestion is served ON the arbitration_queue item as `ai_suggest`
+// {physical_adherence, instruction_alignment, 6 subs, physical_notes, instruction_notes, source}.
+function renderArbAiSuggestion(it) {
   const host = document.getElementById("arb-ai-suggest");
   if (!host) return;
-  try {
-    const map = await _loadPreannotationMap();
-    const p = map && map.get(itemId);
-    if (!p) { host.hidden = true; return; }
-    const nl2br = s => escapeHtml(s).replace(/\n/g, "<br>");
-    const subLine = keys => keys.map(k => `${k.split("_")[0]}=${p[k] ?? "—"}`).join(", ");
-    host.hidden = false;
-    host.innerHTML =
-      '<h4>🤖 <span data-i18n="arbitration.ai_suggest">AI 建议</span> · <span class="muted small">' + esc(p.source || "ensemble") + '</span></h4>' +
-      '<p>Physical: <strong>' + (p.physical_adherence ?? "—") + '</strong> · Instruction: <strong>' + (p.instruction_alignment ?? "—") + '</strong></p>' +
-      '<p class="muted small">P-subs: ' + subLine(["agent_consistency", "scene_consistency", "interaction_realism"]) + ' · I-subs: ' + subLine(["agent_match", "object_correct", "goal_completed"]) + '</p>' +
-      '<p class="notes">' + ((p.physical_notes || p.instruction_notes)
-        ? '<strong>P:</strong> ' + nl2br(p.physical_notes || "—") + '<br><strong>I:</strong> ' + nl2br(p.instruction_notes || "—")
-        : "(no AI note)") + '</p>';
-  } catch (_) { host.hidden = true; }
+  const p = it && (it.ai_suggest || it.ens_payload || null);
+  if (!p) { host.hidden = true; return; }
+  const nl2br = s => escapeHtml(s).replace(/\n/g, "<br>");
+  const subLine = keys => keys.map(k => `${k.split("_")[0]}=${p[k] ?? "—"}`).join(", ");
+  host.hidden = false;
+  host.innerHTML =
+    '<h4>🤖 AI 建议 · <span class="muted small">' + esc(p.source || "ensemble") + '</span></h4>' +
+    '<p>Physical: <strong>' + (p.physical_adherence ?? "—") + '</strong> · Instruction: <strong>' + (p.instruction_alignment ?? "—") + '</strong></p>' +
+    '<p class="muted small">P-subs: ' + subLine(["agent_consistency", "scene_consistency", "interaction_realism"]) + ' · I-subs: ' + subLine(["agent_match", "object_correct", "goal_completed"]) + '</p>' +
+    '<p class="notes">' + ((p.physical_notes || p.instruction_notes)
+      ? '<strong>P:</strong> ' + nl2br(p.physical_notes || "—") + '<br><strong>I:</strong> ' + nl2br(p.instruction_notes || "—")
+      : "(no AI note)") + '</p>';
 }
 
 async function submitArbitration(decision) {
