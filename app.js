@@ -4741,9 +4741,7 @@ async function loadNextArbitration() {
       return;
     }
     ARB_CURRENT = items[0];
-    renderArbitrationItem(ARB_CURRENT);
-    document.getElementById("modify-fields").hidden = true;
-    ARB_MODIFY_OPEN = false;
+    renderArbitrationItem(ARB_CURRENT);   // v98: prefills + keeps modify-fields visible
     document.getElementById("modify-btn").textContent = tr("arbitration.modify");
     hide("loading"); show("item");
   } catch (err) {
@@ -4860,6 +4858,45 @@ function renderArbitrationItem(it) {
   document.getElementById("rev-notes").innerHTML = (rev.physical_notes || rev.instruction_notes)
     ? `<strong>P:</strong> ${nl2br(rev.physical_notes || "—")}<br><strong>I:</strong> ${nl2br(rev.instruction_notes || "—")}`
     : "(no notes)";
+  // v98 (siyuan: 仲裁界面照审核那套——预填之前的分、全部可改、参考 AI 建议改或通过):
+  // prefill the editable meta form with the annotator's original (main + subs + notes)
+  // and keep it always visible so the meta-reviewer edits from there (no click-to-open).
+  for (const id of ["physical_adherence", "instruction_alignment"]) {
+    const val = ann[id] ?? 3;
+    const inp = document.getElementById("mr-" + id);
+    const out = document.getElementById("mr-" + id + "-out");
+    if (inp) { inp.value = val; inp.dispatchEvent(new Event("input")); }
+    if (out) out.value = val;
+    const hint = document.getElementById("mr-" + id + "-hint");
+    if (hint) hint.className = `score-hint level-${val}`;
+  }
+  for (const id of subKeys) setSubTri("mr-" + id, ann[id] ?? 2);
+  const mpn = document.getElementById("mr-physical_notes"); if (mpn) mpn.value = ann.physical_notes || "";
+  const min2 = document.getElementById("mr-instruction_notes"); if (min2) min2.value = ann.instruction_notes || "";
+  const mf = document.getElementById("modify-fields"); if (mf) mf.hidden = false;
+  ARB_MODIFY_OPEN = true;
+  renderArbAiSuggestion(it.item_id);
+}
+
+// v98: AI (preannotation ensemble) suggestion for the arbitration item — reference only.
+async function renderArbAiSuggestion(itemId) {
+  const host = document.getElementById("arb-ai-suggest");
+  if (!host) return;
+  try {
+    const map = await _loadPreannotationMap();
+    const p = map && map.get(itemId);
+    if (!p) { host.hidden = true; return; }
+    const nl2br = s => escapeHtml(s).replace(/\n/g, "<br>");
+    const subLine = keys => keys.map(k => `${k.split("_")[0]}=${p[k] ?? "—"}`).join(", ");
+    host.hidden = false;
+    host.innerHTML =
+      '<h4>🤖 <span data-i18n="arbitration.ai_suggest">AI 建议</span> · <span class="muted small">' + esc(p.source || "ensemble") + '</span></h4>' +
+      '<p>Physical: <strong>' + (p.physical_adherence ?? "—") + '</strong> · Instruction: <strong>' + (p.instruction_alignment ?? "—") + '</strong></p>' +
+      '<p class="muted small">P-subs: ' + subLine(["agent_consistency", "scene_consistency", "interaction_realism"]) + ' · I-subs: ' + subLine(["agent_match", "object_correct", "goal_completed"]) + '</p>' +
+      '<p class="notes">' + ((p.physical_notes || p.instruction_notes)
+        ? '<strong>P:</strong> ' + nl2br(p.physical_notes || "—") + '<br><strong>I:</strong> ' + nl2br(p.instruction_notes || "—")
+        : "(no AI note)") + '</p>';
+  } catch (_) { host.hidden = true; }
 }
 
 async function submitArbitration(decision) {
