@@ -1182,11 +1182,14 @@ let CURRENT = null;
 // form (PA, IA, 6 sub-scores, physical_notes, instruction_notes) so a human
 // only has to verify / edit. UI shows a "🤖 预标注" chip and a "清空预标注"
 // button. Prefill vs final delta is logged for iterative eval.
+// v89 (siyuan: 预标注要对所有标注员默认上线): default ON for everyone; opt out
+// with ?preannotate=0. Previously it was staging-gated behind ?preannotate=1 so a
+// plain URL showed nothing — that's why it looked "完全没上线".
 const PREANNOTATE_ENABLED = (function(){
   try {
     const q = new URLSearchParams(window.location.search);
-    return q.get('preannotate') === '1';
-  } catch (_) { return false; }
+    return q.get('preannotate') !== '0';
+  } catch (_) { return true; }
 })();
 let CURRENT_PREANNOTATION = null;
 
