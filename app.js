@@ -2272,9 +2272,11 @@ async function initDashboard() {
   // v85bn: meta-reviewer (siyuanw, masiyuan) gets the ⚖ Arbitration card.
   const isMeta = localStorage.getItem("ewj_is_meta_reviewer") === "1";
   document.querySelectorAll('.home-actions [data-show-if="is_meta_reviewer"]').forEach(el => { el.hidden = !isMeta; });
-  // v85hi: R3 挑错 card is admin-only (masiyuan-only role gate on backend also enforces).
   const isAdminRow = document.body.getAttribute("data-role") === "admin" || (localStorage.getItem("ewj_role") || "") === "admin";
   document.querySelectorAll('.home-actions [data-show-if="is_admin"]').forEach(el => { el.hidden = !isAdminRow; });
+  // v102 (siyuan: R3 仲裁池开放给所有 reviewer): R3 挑错 card now shows for reviewers + admins
+  // (Ham opened r3_admin_* to is_reviewer; conflict via lock/409).
+  document.querySelectorAll('.home-actions [data-show-if="r3_arbiter"]').forEach(el => { el.hidden = !(isReviewer || isAdminRow); });
   // R3 progress badge — populate from Ham's ?action=r3_admin_progress
   if (isAdminRow) {
     const r3Badge = document.getElementById("r3-admin-badge");

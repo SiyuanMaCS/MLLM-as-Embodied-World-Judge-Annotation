@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>R3 挑错 · admin 仲裁 — Embodied World Judge</title>
+<title>R3 挑错 · 仲裁 — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v101">
+<link rel="stylesheet" href="style.css?v=v102">
 <style>
   body { background:#f1f5f9 }
   main { max-width:1080px; margin:0 auto; padding:16px }
@@ -148,7 +148,7 @@
 
   <div class="r3-sync-log" id="sync-log"></div>
 </main>
-<script src="app.js?v=v101" defer></script>
+<script src="app.js?v=v102" defer></script>
 <script>
 // v85hi · R3 admin arbitration page. Loads bench/analysis/r3_queue_top90.json,
 // renders 90 cards, stores local state in localStorage, POSTs each verdict to
@@ -214,7 +214,8 @@
         body: JSON.stringify(body)
       });
       if (r.ok) return await r.json();
-      if (r.status === 403) return { ok: false, reason: "admin-only (403)" };
+      if (r.status === 409) { const c = await r.json().catch(()=>({})); return { ok: false, conflict: true, by: c.by, decision: c.decision }; }
+      if (r.status === 403) return { ok: false, reason: "reviewers/admins only (403)" };
       return { ok: false, status: r.status };
     } catch(e) { return { ok: false, reason: String(e) }; }
   }
@@ -259,13 +260,17 @@
     const srv = it._arbitrated;
     const local = vLocal[it.item_id];
     const eff = srv || local;
-    const doneCls = eff ? " done" : "";
+    // v102: lock — grey out items another reviewer already arbitrated (Ham's _arbitrated_by).
+    const arbBy = it._arbitrated_by;
+    const byOther = arbBy && arbBy !== currentUser();
+    const whoSuffix = byOther ? ` · ${esc(arbBy)}` : "";
+    const doneCls = (eff || byOther) ? " done" : "";
     const effVerdict = eff && (eff.decision || eff.verdict);
     const isWrong = effVerdict === "gold_wrong" || effVerdict === "wrong";
     const isSkip = effVerdict === "skip";
     const verdictBadgeCls = isWrong ? "wrong" : (isSkip ? "skip" : "");
     const np = (eff && eff.new_payload) || {};
-    const verdictBadgeText = eff ? (isWrong ? `已改 → PA ${np.physical_adherence ?? eff.new_pa ?? "?"} · IA ${np.instruction_alignment ?? eff.new_ia ?? "?"}` : isSkip ? "跳过" : "gold 对 · 保持") : "";
+    const verdictBadgeText = eff ? ((isWrong ? `已改 → PA ${np.physical_adherence ?? eff.new_pa ?? "?"} · IA ${np.instruction_alignment ?? eff.new_ia ?? "?"}` : isSkip ? "跳过" : "gold 对 · 保持") + whoSuffix) : (byOther ? `已被 ${esc(arbBy)} 判` : "");
     const isHighConf = it.confidence >= 3;
     // v99 (siyuan: 仲裁界面要像审核——预填之前的分 PA/IA+6子分+note、全可改、参考 AI 建议):
     // current_annotation = 真人原始标注(预填); ai_suggestion = AI ensemble 参考. (Ham contract)
@@ -352,6 +357,14 @@
     // Fire-and-forget to backend
     const res = await submitVerdict(item_id, record);
     if (res.ok) showLog(`✓ 已同步 ${item_id.substring(0, 40)}…`);
+    else if (res.conflict) {
+      // v102: another reviewer already arbitrated this item (first-write-wins) — revert local, grey out, reload card.
+      showLog(`⚠ 已被 ${res.by || "他人"} 判过(${res.decision || "?"})· 该条锁定`, 4500);
+      delete vLocal[item_id]; saveVerdicts(vLocal); updateQuota();
+      const it = items.find(x => x.item_id === item_id);
+      if (it) { it._arbitrated = { decision: res.decision }; it._arbitrated_by = res.by;
+        const card = document.querySelector(`.r3-card[data-id="${item_id}"]`); if (card) card.outerHTML = renderCard(it); }
+    }
     else showLog(`⚠ 未同步(本地已存) · ${res.reason || res.status || "endpoint down"}`, 3500);
   }
 
