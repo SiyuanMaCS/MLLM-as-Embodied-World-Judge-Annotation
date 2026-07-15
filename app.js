@@ -2428,7 +2428,7 @@ function renderAlignmentMetricsBlock(m) {
       live_differs: a.live_differs === true })),
     ...models.map(x => ({ kind: "model", label: x.model, n: x.n ?? nItems,
       pa: x.pa_pearson, ia: x.ia_pearson, qwk_pa: x.pa_qwk, qwk_ia: x.ia_qwk,
-      exact_pa: x.pa_exact })),
+      exact_pa: x.pa_exact, note: x.note })),
   ].filter(r => r.pa != null || r.ia != null);
   rows.sort((a, b) => (b.pa ?? -999) - (a.pa ?? -999));
   // v85db (siyuan: 某个指标绿色就显示绿色 不要整行 / user 整行就正常颜色 / 不需要红色):
@@ -2473,7 +2473,7 @@ function renderAlignmentMetricsBlock(m) {
       : `<span class="am-tag am-tag-user">USER</span>`;
     return `<tr class="${rowClass}">
       <td class="am-rank">${i + 1}</td>
-      <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong></td>
+      <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong>${r.note ? ` <span class="am-note-flag" title="${escapeHtml(r.note)}">⚠ 备注</span>` : ""}</td>
       <td class="am-n muted small">${r.n ?? "—"}</td>
       <td class="am-metric am-pa">${bar(r.pa, consensusPA, r.kind, r.pa_live, r.live_differs === true)}</td>
       <td class="am-metric am-ia">${bar(r.ia, consensusIA, r.kind, r.ia_live, r.live_differs === true)}</td>

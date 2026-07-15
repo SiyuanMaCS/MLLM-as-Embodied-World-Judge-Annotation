@@ -2842,3 +2842,8 @@ button.danger-outline:hover, .danger-outline:hover { background: #fee2e2; }
 .report-modal select { width: 100%; padding: 6px 10px; }
 .report-modal textarea { width: 100%; padding: 6px 10px; }
 .report-modal .actions { margin-top: 10px; }
+
+/* v90: caveat chip on alignment-board MODEL rows (e.g. n=19 lenient/degenerate) */
+.am-note-flag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;
+  font-size:11px;font-weight:600;color:#8a6d00;background:#fff4d6;border:1px solid #f0d98a;
+  cursor:help;vertical-align:middle;}
