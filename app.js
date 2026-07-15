@@ -19,13 +19,15 @@ const CFG = {
   ],
 };
 
-// v87 (siyuan: 一致性分析排行榜里不要出现 agent 的分数): agent-operated annotation
-// accounts. They submitted alignment-calibration annotations per earlier tasks, which
-// got mixed into the human consistency pool. Filter them out of the IAA / alignment
-// metrics RANKING only — display-side, reversible, no backend data touched.
-const AGENT_ACCOUNTS = new Set(["Yu"]);
+// v87/v88 (siyuan: 一致性分析排行榜里不要出现 agent 的分数): agent-operated annotation
+// accounts. They submitted alignment-calibration annotations per earlier tasks (e.g. the
+// 标准对齐v2 campaign had all 6 agents label 10 items each), which got mixed into the human
+// consistency pool. Filter them out of the IAA / alignment metrics RANKING only —
+// display-side, reversible, no backend data touched. Match case-insensitively so handle
+// casing (Yu vs yu, alice vs Alice) can't leak an agent through. (Ham audit 2026-07-15.)
+const AGENT_ACCOUNTS = new Set(["yu", "ham", "cc", "alice", "francis", "isabella"]);
 function isAgentAccount(name) {
-  return AGENT_ACCOUNTS.has(String(name || "").trim());
+  return AGENT_ACCOUNTS.has(String(name || "").trim().toLowerCase());
 }
 
 /* ===================== i18n ===================== */
