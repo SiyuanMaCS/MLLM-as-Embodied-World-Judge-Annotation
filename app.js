@@ -2534,7 +2534,7 @@ function renderAlignmentMetricsBlock(m) {
       : `<span class="am-tag am-tag-user">USER</span>`;
     return `<tr class="${rowClass}">
       <td class="am-rank">${i + 1}</td>
-      <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong>${r.note ? ` <span class="am-note-flag" title="${escapeHtml(r.note)}">⚠ 备注</span>` : ""}</td>
+      <td class="am-label">${kindTag} <strong>${escapeHtml(r.label)}</strong></td>
       <td class="am-n muted small">${r.n ?? "—"}</td>
       <td class="am-metric am-pa">${bar(r.pa, consensusPA, r.kind, r.pa_live, r.live_differs === true)}</td>
       <td class="am-metric am-ia">${bar(r.ia, consensusIA, r.kind, r.ia_live, r.live_differs === true)}</td>
