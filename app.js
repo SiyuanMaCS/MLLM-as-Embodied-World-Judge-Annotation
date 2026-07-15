@@ -19,6 +19,15 @@ const CFG = {
   ],
 };
 
+// v87 (siyuan: 一致性分析排行榜里不要出现 agent 的分数): agent-operated annotation
+// accounts. They submitted alignment-calibration annotations per earlier tasks, which
+// got mixed into the human consistency pool. Filter them out of the IAA / alignment
+// metrics RANKING only — display-side, reversible, no backend data touched.
+const AGENT_ACCOUNTS = new Set(["Yu"]);
+function isAgentAccount(name) {
+  return AGENT_ACCOUNTS.has(String(name || "").trim());
+}
+
 /* ===================== i18n ===================== */
 const LANG = {
   en: {
@@ -2369,6 +2378,15 @@ async function loadLeaderboard() {
    Small-n campaigns (n_items<20) get a low-confidence banner. */
 function renderAlignmentMetricsBlock(m) {
   if (!m || !m.annotators || !m.annotators.length) return "";
+  // v87: drop agent accounts from the ranking (siyuan). Backend data untouched;
+  // this only removes them from the displayed consistency leaderboard.
+  if (m.annotators.some(a => isAgentAccount(a.user))) {
+    const kept = m.annotators.filter(a => !isAgentAccount(a.user));
+    if (!kept.length) return "";
+    const nRemoved = m.annotators.length - kept.length;
+    m = { ...m, annotators: kept,
+      n_annotators: typeof m.n_annotators === "number" ? Math.max(0, m.n_annotators - nRemoved) : m.n_annotators };
+  }
   // v85ea (siyuan: 完成 alignment 的人数不足时不出总分; Alice softer copy):
   // when backend flags n_ready=false, show the not-enough-yet empty state
   // instead of the score table (still shows heading so the section isn't blank).

@@ -1,0 +1,207 @@
+{
+  "_meta": {
+    "source": "CANONICAL from Isabella subscore_ci.json (rebuilt to align — hard=P(jv==0|gv==0), lenient=P(jv<=1|gv==0), MAE per canonical)",
+    "judges": [
+      "gemini-3.5-flash",
+      "qwen3-vl-8b-instruct",
+      "qwen3-vl-32b-instruct"
+    ],
+    "n_judges": 3,
+    "by": "Yu 2026-07-10 (rebuilt from canonical after Isabella def-mismatch catch)"
+  },
+  "per_judge": {
+    "gemini-3.5-flash": {
+      "scene_consistency": {
+        "axis_group": "PA",
+        "hard_recall": 0.6708,
+        "lenient_recall": 0.8168,
+        "hedging_gap": 0.146,
+        "mae": 0.5726,
+        "n_violation": 322
+      },
+      "interaction_realism": {
+        "axis_group": "PA",
+        "hard_recall": 0.6209,
+        "lenient_recall": 0.8507,
+        "hedging_gap": 0.23,
+        "mae": 0.68,
+        "n_violation": 335
+      },
+      "agent_consistency": {
+        "axis_group": "PA",
+        "hard_recall": 0.5365,
+        "lenient_recall": 0.8412,
+        "hedging_gap": 0.305,
+        "mae": 0.6309,
+        "n_violation": 233
+      },
+      "goal_completed": {
+        "axis_group": "IA",
+        "hard_recall": 0.305,
+        "lenient_recall": 0.8962,
+        "hedging_gap": 0.591,
+        "mae": 0.6697,
+        "n_violation": 318
+      },
+      "agent_match": {
+        "axis_group": "IA",
+        "hard_recall": 0.2987,
+        "lenient_recall": 0.7792,
+        "hedging_gap": 0.48,
+        "mae": 0.496,
+        "n_violation": 154
+      },
+      "object_correct": {
+        "axis_group": "IA",
+        "hard_recall": 0.0279,
+        "lenient_recall": 0.6034,
+        "hedging_gap": 0.576,
+        "mae": 0.6389,
+        "n_violation": 179
+      }
+    },
+    "qwen3-vl-8b-instruct": {
+      "scene_consistency": {
+        "axis_group": "PA",
+        "hard_recall": 0.0187,
+        "lenient_recall": 0.1308,
+        "hedging_gap": 0.112,
+        "mae": 0.8982,
+        "n_violation": 321
+      },
+      "interaction_realism": {
+        "axis_group": "PA",
+        "hard_recall": 0.2904,
+        "lenient_recall": 0.6647,
+        "hedging_gap": 0.374,
+        "mae": 0.786,
+        "n_violation": 334
+      },
+      "agent_consistency": {
+        "axis_group": "PA",
+        "hard_recall": 0.073,
+        "lenient_recall": 0.1245,
+        "hedging_gap": 0.052,
+        "mae": 0.6476,
+        "n_violation": 233
+      },
+      "goal_completed": {
+        "axis_group": "IA",
+        "hard_recall": 0.3312,
+        "lenient_recall": 0.5647,
+        "hedging_gap": 0.233,
+        "mae": 0.7689,
+        "n_violation": 317
+      },
+      "agent_match": {
+        "axis_group": "IA",
+        "hard_recall": 0.3791,
+        "lenient_recall": 0.4314,
+        "hedging_gap": 0.052,
+        "mae": 0.3535,
+        "n_violation": 153
+      },
+      "object_correct": {
+        "axis_group": "IA",
+        "hard_recall": 0.0843,
+        "lenient_recall": 0.1348,
+        "hedging_gap": 0.051,
+        "mae": 0.5595,
+        "n_violation": 178
+      }
+    },
+    "qwen3-vl-32b-instruct": {
+      "scene_consistency": {
+        "axis_group": "PA",
+        "hard_recall": 0.0748,
+        "lenient_recall": 0.2741,
+        "hedging_gap": 0.199,
+        "mae": 0.8272,
+        "n_violation": 321
+      },
+      "interaction_realism": {
+        "axis_group": "PA",
+        "hard_recall": 0.1707,
+        "lenient_recall": 0.4671,
+        "hedging_gap": 0.296,
+        "mae": 0.8192,
+        "n_violation": 334
+      },
+      "agent_consistency": {
+        "axis_group": "PA",
+        "hard_recall": 0.0815,
+        "lenient_recall": 0.1416,
+        "hedging_gap": 0.06,
+        "mae": 0.6556,
+        "n_violation": 233
+      },
+      "goal_completed": {
+        "axis_group": "IA",
+        "hard_recall": 0.4416,
+        "lenient_recall": 0.6877,
+        "hedging_gap": 0.246,
+        "mae": 0.6568,
+        "n_violation": 317
+      },
+      "agent_match": {
+        "axis_group": "IA",
+        "hard_recall": 0.366,
+        "lenient_recall": 0.3791,
+        "hedging_gap": 0.013,
+        "mae": 0.3169,
+        "n_violation": 153
+      },
+      "object_correct": {
+        "axis_group": "IA",
+        "hard_recall": 0.1067,
+        "lenient_recall": 0.1742,
+        "hedging_gap": 0.067,
+        "mae": 0.5503,
+        "n_violation": 178
+      }
+    }
+  },
+  "findings": {
+    "UNIVERSAL": {
+      "object_correct": {
+        "hard": {
+          "gemini-3.5-flash": 0.0279,
+          "qwen3-vl-8b-instruct": 0.0843,
+          "qwen3-vl-32b-instruct": 0.1067
+        },
+        "lenient": {
+          "gemini-3.5-flash": 0.6034,
+          "qwen3-vl-8b-instruct": 0.1348,
+          "qwen3-vl-32b-instruct": 0.1742
+        },
+        "mechanism": {
+          "gemini-3.5-flash": "HEDGE (hard 0.028/lenient 0.603)",
+          "qwen": "MISS (hard 0.08-0.11/lenient 0.13-0.17)"
+        }
+      }
+    },
+    "FLASH_ONLY": {
+      "two_layer": {
+        "PA_hard_avg": {
+          "gemini-3.5-flash": 0.609,
+          "qwen3-vl-8b-instruct": 0.127,
+          "qwen3-vl-32b-instruct": 0.109
+        },
+        "IA_hard_avg": {
+          "gemini-3.5-flash": 0.211,
+          "qwen3-vl-8b-instruct": 0.265,
+          "qwen3-vl-32b-instruct": 0.305
+        }
+      }
+    },
+    "QWEN_ONLY": {
+      "agent_match_reversal": {
+        "hard": {
+          "gemini-3.5-flash": 0.2987,
+          "qwen3-vl-8b-instruct": 0.3791,
+          "qwen3-vl-32b-instruct": 0.366
+        }
+      }
+    }
+  }
+}
