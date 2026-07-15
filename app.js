@@ -1386,6 +1386,9 @@ async function refreshStats() {
         quotaEl.textContent = effectiveQuota;
         quotaBlock.classList.toggle("met", (data.today + R) >= effectiveQuota);
       }
+      // v91 (siyuan): 改动率 — of today's annotated items that HAD a preannotation,
+      // what fraction the annotator actually changed. <30% => red "改动率低" hint.
+      computeAndShowModRate();
     }
   } catch (err) {
     console.warn("stats fetch failed", err);
@@ -1590,19 +1593,81 @@ function showPreannotationChip(pa) {
     item.insertBefore(chip, item.firstChild);
   }
   const src = String(pa?.source || "ensemble");
-  const conf = pa?.confidence || {};
-  const paC = conf.pa != null ? conf.pa.toFixed(2) : "?";
-  const iaC = conf.ia != null ? conf.ia.toFixed(2) : "?";
+  // v91 (siyuan): 清空重填 button + 置信度?/? → replaced by a 3-tier "AI分歧度"
+  // (multi-judge disagreement) badge. tier_zh/ai_tier comes from the preannotation
+  // payload (Isabella merges it into the hybrid file). Renders only when present.
+  const tierZh = pa?.tier_zh || ({ low: "低", mid: "中", high: "高" }[pa?.ai_disagreement_tier] || "");
+  const tierColor = { "低": "#16a34a", "中": "#d97706", "高": "#dc2626" }[tierZh] || "#6366f1";
   chip.innerHTML =
-    '<div><b>🤖 机器预标注已填入</b> <span style="opacity:0.75;font-size:11px">source: ' + esc(src) + ' · 置信度 PA ' + paC + ' · IA ' + iaC + '</span><div style="font-size:11px;color:#4338ca;margin-top:2px">请<b>逐项核对</b>后再提交(不核对直接提交等同没审)。</div></div>' +
-    '<button type="button" id="clear-preannotate-btn" class="ghost" style="padding:4px 10px;font-size:11.5px">🧹 清空重填</button>';
-  const btn = document.getElementById("clear-preannotate-btn");
-  if (btn) btn.addEventListener("click", clearPreannotationForm);
+    '<div><b>🤖 机器预标注已填入</b> <span style="opacity:0.75;font-size:11px">source: ' + esc(src) + '</span><div style="font-size:11px;color:#4338ca;margin-top:2px">请<b>逐项核对</b>后再提交(不核对直接提交等同没审)。</div></div>' +
+    (tierZh
+      ? '<span id="ai-disagreement" title="多判官分歧度(PA/IA 跨判官方差三档)" style="padding:4px 10px;font-size:11.5px;font-weight:600;border-radius:8px;white-space:nowrap;color:' + tierColor + ';background:#fff;border:1px solid ' + tierColor + '55">AI分歧度 ' + esc(tierZh) + '</span>'
+      : '');
 }
 
 function hidePreannotationChip() {
   const chip = document.getElementById("preannotate-chip");
   if (chip) chip.remove();
+}
+
+// v91: today's 改动率 = of today's annotated items that carried a preannotation,
+// the fraction where the annotator changed PA / IA / any sub-score. Notes are
+// EXCLUDED (a human almost always rewrites the note → would peg the rate at ~100%).
+// Pure frontend: my_annotations payload (final) vs the preannotation map. <30% => red.
+const _MODRATE_FIELDS = ["physical_adherence", "instruction_alignment",
+  "agent_consistency", "scene_consistency", "interaction_realism",
+  "agent_match", "object_correct", "goal_completed"];
+function _bjDate(ts) {
+  try { return new Date(new Date(ts).getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10); }
+  catch (_) { return ""; }
+}
+async function computeAndShowModRate() {
+  const wrap = document.getElementById("modrate-stat");
+  const el = document.getElementById("modrate");
+  const warn = document.getElementById("modrate-warn");
+  if (!wrap || !el) return;
+  try {
+    const user = localStorage.getItem(CFG.LS_USER);
+    if (!user || !CFG.APPS_SCRIPT_URL) { wrap.hidden = true; return; }
+    const [map, res] = await Promise.all([
+      _loadPreannotationMap().catch(() => null),
+      fetch(`${CFG.APPS_SCRIPT_URL}/?action=my_annotations&user=${encodeURIComponent(user)}`),
+    ]);
+    const d = await res.json().catch(() => ({}));
+    const items = d.items || [];
+    const bjToday = _bjDate(new Date().toISOString());
+    let modified = 0, comparable = 0;
+    for (const it of items) {
+      if (_bjDate(it.submitted_ts) !== bjToday) continue;
+      if (it.kind && it.kind !== "task") continue;
+      const pre = map && map.get(it.item_id);
+      if (!pre) continue;                                   // only preannotated items count
+      const p = String(it.payload || "");
+      if (/'skip':\s*True/.test(p)) continue;               // skipped item — not a review
+      comparable++;
+      let changed = false;
+      for (const f of _MODRATE_FIELDS) {
+        const m = p.match(new RegExp("'" + f + "':\\s*(-?\\d+)"));
+        if (!m) continue;
+        const pv = pre[f] != null ? Number(pre[f]) : null;
+        if (pv != null && !Number.isNaN(pv) && Number(m[1]) !== pv) { changed = true; break; }
+      }
+      if (changed) modified++;
+    }
+    if (!comparable) { wrap.hidden = true; return; }
+    const rate = modified / comparable;
+    const pct = Math.round(rate * 100);
+    const low = rate < 0.30;
+    wrap.hidden = false;
+    el.textContent = pct + "%";
+    wrap.style.color = low ? "#dc2626" : "";
+    el.title = `今日 ${modified}/${comparable} 条改动了预标注`;
+    if (warn) {
+      warn.hidden = !low;
+      warn.textContent = low ? " ⚠改动率低" : "";
+      warn.style.cssText = "color:#dc2626;font-size:11px";
+    }
+  } catch (_) { wrap.hidden = true; }
 }
 
 function clearPreannotationForm() {
