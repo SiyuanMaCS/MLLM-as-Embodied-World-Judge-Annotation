@@ -2238,6 +2238,9 @@ async function initDashboard() {
     // Back-compat: legacy "reviewer" role value also counts.
     isReviewer = (typeof d?.is_reviewer === "boolean") ? d.is_reviewer : (role === "reviewer");
     localStorage.setItem("ewj_is_reviewer", isReviewer ? "1" : "0");
+    // v104 (Ham): R3 arbitration access = backend `can_r3` (all real reviewers — author/contributor
+    // + is_reviewer + admin — not just the 7 EXTRA_REVIEWERS that is_reviewer covers).
+    localStorage.setItem("ewj_can_r3", (d?.can_r3 === true) ? "1" : "0");
     // v85az: store quota so applyRolePill can detect pure-reviewer (quota null/0).
     localStorage.setItem("ewj_quota", d?.quota == null ? "null" : String(d.quota));
     // v85bb: stash yesterday-KPI status for the Review card gating below.
@@ -2276,7 +2279,8 @@ async function initDashboard() {
   document.querySelectorAll('.home-actions [data-show-if="is_admin"]').forEach(el => { el.hidden = !isAdminRow; });
   // v102 (siyuan: R3 仲裁池开放给所有 reviewer): R3 挑错 card now shows for reviewers + admins
   // (Ham opened r3_admin_* to is_reviewer; conflict via lock/409).
-  document.querySelectorAll('.home-actions [data-show-if="r3_arbiter"]').forEach(el => { el.hidden = !(isReviewer || isAdminRow); });
+  const canR3 = localStorage.getItem("ewj_can_r3") === "1" || isAdminRow;
+  document.querySelectorAll('.home-actions [data-show-if="r3_arbiter"]').forEach(el => { el.hidden = !canR3; });
   // R3 progress badge — populate from Ham's ?action=r3_admin_progress
   if (isAdminRow) {
     const r3Badge = document.getElementById("r3-admin-badge");
