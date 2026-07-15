@@ -1594,11 +1594,15 @@ function showPreannotationChip(pa) {
   }
   // v92 (siyuan): chip now shows ONLY the multi-judge disagreement tier — drop the
   // "🤖 机器预标注已填入 source… 请逐项核对…" text and rename to 多Judge预标注分歧率.
+  // v94 (siyuan): show the raw cross-judge variance number, not the 低/中/高 tier
+  // (tier still drives the color). ai_disagreement = mean(PA-var, IA-var) across judges.
+  const dis = pa?.ai_disagreement;
   const tierZh = pa?.tier_zh || ({ low: "低", mid: "中", high: "高" }[pa?.ai_disagreement_tier] || "");
-  if (!tierZh) { chip.remove(); return; }   // no divergence data → no chip at all
+  if (dis == null && !tierZh) { chip.remove(); return; }   // no divergence data → no chip
   const tierColor = { "低": "#16a34a", "中": "#d97706", "高": "#dc2626" }[tierZh] || "#6366f1";
+  const disStr = (dis != null) ? Number(dis).toFixed(3) : esc(tierZh);
   chip.innerHTML =
-    '<span id="ai-disagreement" title="产出这条预标注的多个 Judge 在 PA/IA 上的分歧度(跨判官方差三档：低/中/高)" style="font-weight:600;color:' + tierColor + '">🤖 多Judge预标注分歧率 ' + esc(tierZh) + '</span>';
+    '<span id="ai-disagreement" title="产出这条预标注的多个 Judge 在 PA/IA 上的分歧度 = 跨判官方差均值(mean of PA-var, IA-var)" style="font-weight:600;color:' + tierColor + '">🤖 多Judge预标注分歧率 ' + disStr + '</span>';
 }
 
 function hidePreannotationChip() {
