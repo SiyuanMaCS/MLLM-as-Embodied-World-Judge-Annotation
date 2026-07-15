@@ -1592,17 +1592,13 @@ function showPreannotationChip(pa) {
     chip.style.cssText = "margin:6px 0;padding:8px 12px;background:#eef2ff;border-left:3px solid #6366f1;border-radius:4px;font-size:12.5px;color:#312e81;display:flex;justify-content:space-between;align-items:center;gap:12px";
     item.insertBefore(chip, item.firstChild);
   }
-  const src = String(pa?.source || "ensemble");
-  // v91 (siyuan): 清空重填 button + 置信度?/? → replaced by a 3-tier "AI分歧度"
-  // (multi-judge disagreement) badge. tier_zh/ai_tier comes from the preannotation
-  // payload (Isabella merges it into the hybrid file). Renders only when present.
+  // v92 (siyuan): chip now shows ONLY the multi-judge disagreement tier — drop the
+  // "🤖 机器预标注已填入 source… 请逐项核对…" text and rename to 多Judge预标注分歧率.
   const tierZh = pa?.tier_zh || ({ low: "低", mid: "中", high: "高" }[pa?.ai_disagreement_tier] || "");
+  if (!tierZh) { chip.remove(); return; }   // no divergence data → no chip at all
   const tierColor = { "低": "#16a34a", "中": "#d97706", "高": "#dc2626" }[tierZh] || "#6366f1";
   chip.innerHTML =
-    '<div><b>🤖 机器预标注已填入</b> <span style="opacity:0.75;font-size:11px">source: ' + esc(src) + '</span><div style="font-size:11px;color:#4338ca;margin-top:2px">请<b>逐项核对</b>后再提交(不核对直接提交等同没审)。</div></div>' +
-    (tierZh
-      ? '<span id="ai-disagreement" title="多判官分歧度(PA/IA 跨判官方差三档)" style="padding:4px 10px;font-size:11.5px;font-weight:600;border-radius:8px;white-space:nowrap;color:' + tierColor + ';background:#fff;border:1px solid ' + tierColor + '55">AI分歧度 ' + esc(tierZh) + '</span>'
-      : '');
+    '<span id="ai-disagreement" title="产出这条预标注的多个 Judge 在 PA/IA 上的分歧度(跨判官方差三档：低/中/高)" style="font-weight:600;color:' + tierColor + '">🤖 多Judge预标注分歧率 ' + esc(tierZh) + '</span>';
 }
 
 function hidePreannotationChip() {
