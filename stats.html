@@ -6,7 +6,7 @@
 <title>Analysis — Embodied World Judge</title>
 <script>window.__APPS_SCRIPT_URL__ = "https://busy-ricky-handhelds-estimates.trycloudflare.com";</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="style.css?v=v94">
+<link rel="stylesheet" href="style.css?v=v95">
 <style>
 /* ===== Ham stats redesign (siyuan 2026-07-02: 好好设计) — self-contained, scoped .hs- ===== */
 .hs-wrap{ --hs-gray:#9aa3b2; --hs-gray-d:#6b7280; --hs-blue:#2c5dd9; --hs-blue-d:#1f47a8;
@@ -221,7 +221,7 @@
         <span class="hs-sub">anchor for §§ 1–3</span>
       </div>
       <div style="font-size:12.5px;color:#64748b;padding:2px 4px 8px;line-height:1.55">
-        Referenced from § 1 (PA-Pearson · flash 0.530 cap, and IA-Pearson · gpt5.5 0.610 — instruction-complexity effects on both axes) and § 2 (τ_ap = AP-weighted Kendall on the 10-generator ranking, top-heavy; see § 2b for the ranking-vs-calibration orthogonality on PA). 10 judges shown; &lt; 15%-coverage judges hidden per bootstrap-CI cutoff (see App. B). Complementary per-model calibration RMSE in Appendix G.
+        Judge agreement with the 875-item human gold set, split by source: <b>Table 1a</b> closed-source, <b>Table 1b</b> open-source (grouped into general / embodied / judge VLM). Referenced from §§ 1–3. Metric definitions and reading notes follow the tables below.
       </div>
       <div id="hs-table1"><div class="hs-empty">加载中…</div></div>
     </section>
@@ -417,7 +417,7 @@
     </section>
   </div>
 </main>
-<script src="app.js?v=v94" defer></script>
+<script src="app.js?v=v95" defer></script>
 <script>
 (function(){
   var API = window.__APPS_SCRIPT_URL__;
@@ -1357,31 +1357,59 @@
           jf1: parseFloat(r[7]), exact: parseFloat(r[8]), plus1: parseFloat(r[9])
         };
       }).filter(function(m){ return (m.cov || 0) >= 50; });
-      parsed.sort(function(a,b){ return (b.pa || -9) - (a.pa || -9); });
-      var html = '<table class="lb-table" style="width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums">';
-      html += '<thead><tr style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">';
-      ['#','Model','n','PA·Pearson (95% CI)','IA·Pearson (95% CI)','PA·τ_ap↑','IA·τ_ap↑','Joint-F1','Exact PA','±1 PA'].forEach(function(h){
-        html += '<th style="padding:8px 8px;text-align:'+(h==='Model'?'left':'right')+';border-bottom:1px solid #e2e8f0">'+h+'</th>';
-      });
-      html += '</tr></thead><tbody>';
-      parsed.forEach(function(m, i){
-        html += '<tr style="border-bottom:1px solid #f1f5f9">';
-        html += '<td style="padding:7px 8px;color:#94a3b8;text-align:right;font-weight:600">'+(i+1)+'</td>';
-        html += '<td style="padding:7px 8px;font-weight:600;color:#0f172a">'+esc(m.model)+'</td>';
-        html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.n+'</td>';
+      // v95 (siyuan): split into 1a closed-source + 1b open-source (grouped into
+      // general / embodied / judge VLM); drop the two τ_ap columns; move the metric
+      // explanation out of the caption into body prose below (academic style).
+      function classify(model){
+        var m = (model||'').toLowerCase();
+        if(/gemini|seed|gpt/.test(m)) return {tier:'closed'};
+        if(/videophy|videoscore|videocon/.test(m)) return {tier:'open', group:'judge'};
+        if(/cosmos|robobrain|ocra|embodied|hy[-_ ]?embodied/.test(m)) return {tier:'open', group:'embodied'};
+        return {tier:'open', group:'general'};   // qwen / glm / internvl / default
+      }
+      function byPa(a,b){ return (b.pa||-9)-(a.pa||-9); }
+      var closed = parsed.filter(function(m){ return classify(m.model).tier==='closed'; }).sort(byPa);
+      var og = parsed.filter(function(m){ var c=classify(m.model); return c.tier==='open'&&c.group==='general'; }).sort(byPa);
+      var oe = parsed.filter(function(m){ var c=classify(m.model); return c.tier==='open'&&c.group==='embodied'; }).sort(byPa);
+      var oj = parsed.filter(function(m){ var c=classify(m.model); return c.tier==='open'&&c.group==='judge'; }).sort(byPa);
+      var COLS = ['#','Model','n','PA·Pearson (95% CI)','IA·Pearson (95% CI)','Joint-F1','Exact PA','±1 PA'];
+      function headHtml(){
+        var h='<thead><tr style="color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">';
+        COLS.forEach(function(c){ h+='<th style="padding:8px 8px;text-align:'+(c==='Model'?'left':'right')+';border-bottom:1px solid #e2e8f0">'+c+'</th>'; });
+        return h+'</tr></thead>';
+      }
+      function rowHtml(m, rank){
         var paStrip = m.pa_ci ? stripSvg(m.pa_ci.est, m.pa_ci.lo, m.pa_ci.hi, '#2563eb') : '';
         var iaStrip = m.ia_ci ? stripSvg(m.ia_ci.est, m.ia_ci.lo, m.ia_ci.hi, '#db2777') : '';
-        html += '<td style="padding:7px 8px;text-align:right;font-weight:600;white-space:nowrap"><span style="display:inline-block;min-width:44px;text-align:right">'+m.pa.toFixed(3)+'</span>'+paStrip+'</td>';
-        html += '<td style="padding:7px 8px;text-align:right;white-space:nowrap"><span style="display:inline-block;min-width:44px;text-align:right">'+m.ia.toFixed(3)+'</span>'+iaStrip+'</td>';
-        html += '<td style="padding:7px 8px;text-align:right;color:#7c3aed">'+(isFinite(m.pa_tauap)?m.pa_tauap.toFixed(3):'—')+'</td>';
-        html += '<td style="padding:7px 8px;text-align:right;color:#7c3aed">'+(isFinite(m.ia_tauap)?m.ia_tauap.toFixed(3):'—')+'</td>';
-        html += '<td style="padding:7px 8px;text-align:right;color:#64748b" title="'+(isFinite(m.jf1)?'':'undefined: judge never predicts the positive class (Joint-F1 denominator is 0)')+'">'+(isFinite(m.jf1)?m.jf1.toFixed(3):'—')+'</td>';
-        html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+(isFinite(m.exact)?m.exact.toFixed(3):'—')+'</td>';
-        html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+(isFinite(m.plus1)?m.plus1.toFixed(3):'—')+'</td>';
-        html += '</tr>';
-      });
+        var s='<tr style="border-bottom:1px solid #f1f5f9">';
+        s+='<td style="padding:7px 8px;color:#94a3b8;text-align:right;font-weight:600">'+rank+'</td>';
+        s+='<td style="padding:7px 8px;font-weight:600;color:#0f172a">'+esc(m.model)+'</td>';
+        s+='<td style="padding:7px 8px;text-align:right;color:#64748b">'+m.n+'</td>';
+        s+='<td style="padding:7px 8px;text-align:right;font-weight:600;white-space:nowrap"><span style="display:inline-block;min-width:44px;text-align:right">'+(isFinite(m.pa)?m.pa.toFixed(3):'—')+'</span>'+paStrip+'</td>';
+        s+='<td style="padding:7px 8px;text-align:right;white-space:nowrap"><span style="display:inline-block;min-width:44px;text-align:right">'+(isFinite(m.ia)?m.ia.toFixed(3):'—')+'</span>'+iaStrip+'</td>';
+        s+='<td style="padding:7px 8px;text-align:right;color:#64748b">'+(isFinite(m.jf1)?m.jf1.toFixed(3):'—')+'</td>';
+        s+='<td style="padding:7px 8px;text-align:right;color:#64748b">'+(isFinite(m.exact)?m.exact.toFixed(3):'—')+'</td>';
+        s+='<td style="padding:7px 8px;text-align:right;color:#64748b">'+(isFinite(m.plus1)?m.plus1.toFixed(3):'—')+'</td>';
+        return s+'</tr>';
+      }
+      function groupRow(label){
+        return '<tr><td colspan="'+COLS.length+'" style="padding:10px 8px 5px;font-size:11px;font-weight:700;color:#475569;background:#f8fafc;border-bottom:1px solid #e2e8f0;text-transform:uppercase;letter-spacing:.4px">'+label+'</td></tr>';
+      }
+      function tOpen(){ return '<table class="lb-table" style="width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;margin-bottom:4px">'; }
+      var html='';
+      html += '<div style="font-size:12px;font-weight:700;color:#0f172a;margin:2px 0 6px">Table 1a · 闭源 Closed-source</div>';
+      html += tOpen()+headHtml()+'<tbody>';
+      closed.forEach(function(m,i){ html+=rowHtml(m,i+1); });
       html += '</tbody></table>';
-      html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px">Pearson = per-item agreement (est + 95 % CI whisker, cluster-bootstrap by item, B = 10 000). <span style="color:#7c3aed">τ_ap</span> = AP-weighted Kendall on the 10-generator ranking, top-heavy (higher = better; no arbitrary k). Both axes have anchoring judges — PA: gemini-2.5-pro (Pearson 0.24, τ_ap 0.928); IA: cosmos-reason2-32b (Pearson 0.377, τ_ap 0.972). Population Spearman(Pearson, τ_ap) drifts with the judge pool — PA: −0.14 → +0.47 → +0.55 → +0.70 → +0.73 · IA: +0.81 → +0.49 → +0.46 → +0.64 → +0.67 (10 base → +cosmos-reason → +internvl3.5 → +video specialists VideoCon / VideoPhy2 / VideoScore2 → +robobrain2.5-8b). See § 2b for the double-evidence story and Appendix G for a complementary per-model RMSE calibration metric. Joint-F1 / Exact / ±1 = classification-style metrics.</div>';
+      html += '<div style="font-size:12px;font-weight:700;color:#0f172a;margin:16px 0 6px">Table 1b · 开源 Open-source</div>';
+      html += tOpen()+headHtml()+'<tbody>';
+      if(og.length){ html+=groupRow('通用 VLM · General VLM'); og.forEach(function(m,i){ html+=rowHtml(m,i+1); }); }
+      if(oe.length){ html+=groupRow('具身 VLM · Embodied VLM'); oe.forEach(function(m,i){ html+=rowHtml(m,i+1); }); }
+      if(oj.length){ html+=groupRow('Judge VLM'); oj.forEach(function(m,i){ html+=rowHtml(m,i+1); }); }
+      html += '</tbody></table>';
+      html += '<div style="font-size:12.5px;color:#334155;line-height:1.7;margin-top:12px;padding:0 2px">';
+      html += '<b>Metrics.</b> The two <b>Pearson</b> columns give each judge\'s per-item agreement with the human gold score (point estimate + 95% CI whisker; cluster-bootstrap by video item, B = 10,000). Among the strongest PA judges the confidence intervals overlap, so the PA leaderboard has no unique winner; the IA axis shows a genuine separation. <b>Joint-F1 / Exact PA / ±1 PA</b> are classification-style agreement metrics on the discretised 1–5 scale. Low-coverage judges are omitted, as their bootstrap CIs widen sharply (Appendix B). A complementary non-ranking calibration distance — per-model RMSE against the human generator means — is reported in Appendix G.';
+      html += '</div>';
       host.innerHTML = html;
     }).catch(function(){
       host.innerHTML = '<div class="hs-empty">Table 1 failed to load.</div>';
