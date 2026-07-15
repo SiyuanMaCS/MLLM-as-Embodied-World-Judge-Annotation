@@ -1602,7 +1602,7 @@ function showPreannotationChip(pa) {
   const tierColor = { "低": "#16a34a", "中": "#d97706", "高": "#dc2626" }[tierZh] || "#6366f1";
   const disStr = (dis != null) ? Number(dis).toFixed(3) : esc(tierZh);
   chip.innerHTML =
-    '<span id="ai-disagreement" title="产出这条预标注的多个 Judge 在 PA/IA 上的分歧度 = 跨判官方差均值(mean of PA-var, IA-var)" style="font-weight:600;color:' + tierColor + '">🤖 多Judge预标注分歧率 ' + disStr + '</span>';
+    '<span id="ai-disagreement" title="产出这条预标注的多个 Judge 在 PA/IA 上的分歧度 = 跨判官方差均值(mean of PA-var, IA-var)" style="font-weight:600;color:' + tierColor + '">🤖 方差 ' + disStr + '</span>';
 }
 
 function hidePreannotationChip() {
