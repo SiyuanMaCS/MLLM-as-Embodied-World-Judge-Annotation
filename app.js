@@ -6742,7 +6742,16 @@ async function loadAlignStatus() {
     // v85dy (siyuan: 算了 不设置锁了 · 标完之后自动可以看所有 · 也可以改;
     //   backend flipped its read_only gate from all_disclosed → my_done==total,
     //   so the ALIGN_READ_ONLY branch above already fires for state B).
-    // Nothing to do here anymore.
+    // v105 (siyuan: alignment round3 改不了): a campaign that's completed (my_done==total)
+    // but NOT all-disclosed (read_only falsy — e.g. "标注对齐 Round 3") fell through to
+    // loadAlignNext's empty "done" state with no edit surface, so the user couldn't re-score.
+    // Backend allows re-submit (latest-wins, no lock — Ham). Route to the editable my-items
+    // list directly (round2 was all-disclosed → hit the read_only overview above).
+    if (allSubmitted && (d.my_items || []).length > 0) {
+      document.getElementById("al-done-msg").hidden = false;
+      await loadMyAlignment();
+      return;
+    }
     await loadAlignNext();
   } catch (err) {
     document.getElementById("al-err-msg").textContent = err.message;
