@@ -891,6 +891,77 @@
       },
       "n_pa": 875,
       "n_ia": 875
+    },
+    "orca-4b": {
+      "pa_pearson": {
+        "est": 0.079,
+        "lo": 0.0126,
+        "hi": 0.1476
+      },
+      "ia_pearson": {
+        "est": 0.0669,
+        "lo": -0.0042,
+        "hi": 0.1383
+      },
+      "pa_knorm": {
+        "est": 0.2889,
+        "lo": 0.1556,
+        "hi": 0.5
+      },
+      "ia_knorm": {
+        "est": 0.3333,
+        "lo": 0.2222,
+        "hi": 0.5556
+      },
+      "pa_tau_ap": {
+        "est": 0.1407,
+        "lo": -0.1466,
+        "hi": 0.6747
+      },
+      "ia_tau_ap": {
+        "est": 0.1945,
+        "lo": -0.1854,
+        "hi": 0.489
+      },
+      "n_pa": 762,
+      "n_ia": 762,
+      "_note": "n=762/875 (87% cov, 113 null); near-random weak judge"
+    },
+    "random-uniform": {
+      "pa_pearson": {
+        "est": 0.0,
+        "lo": -0.063,
+        "hi": 0.065
+      },
+      "ia_pearson": {
+        "est": 0.0,
+        "lo": -0.066,
+        "hi": 0.069
+      },
+      "pa_knorm": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "ia_knorm": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "pa_tau_ap": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "ia_tau_ap": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "n_pa": 875,
+      "n_ia": 875,
+      "_baseline": true,
+      "_note": "random floor: Pearson EXPECTED=0.0 (single-draw noise, seed42=-0.0515); est=0, CI=null dist 2000 draws; Exact-PA=0.200, +-1-PA~0.54 theoretical"
     }
   }
 }
