@@ -7059,6 +7059,45 @@ async function loadAlignItemForEdit(itSeed) {
   document.getElementById("al-instruction_notes").value = p.instruction_notes || "";
   document.getElementById("al-item").hidden = false;
   document.getElementById("al-others").hidden = true;
+  renderEditOthersRef(it);   // v110: show peers' scores as grey reference while editing
+}
+
+/* v110 (siyuan/linziti: alignment 修改看不到别人的分). Render peers' alignment
+   scores as a grey, read-only reference INSIDE the edit view so a reviewer can
+   see others while still editing their own. Independence is preserved because
+   IAA is computed server-side from frozen _align_snapshots (Ham), not from the
+   editable _align_anns — so this on-screen reference cannot pollute IAA.
+   Shows nothing for blind/unsubmitted items (backend returns no peer rows until
+   the user has submitted), preserving blind-first for un-scored items. */
+function renderEditOthersRef(it) {
+  const box = document.getElementById("al-edit-others-ref");
+  if (!box) return;
+  const annots = (it.annotations || []).filter(a => !a.is_self);
+  if (!annots.length) { box.hidden = true; box.innerHTML = ""; return; }
+  const subsP = ["agent_consistency", "scene_consistency", "interaction_realism"];
+  const subsI = ["agent_match", "object_correct", "goal_completed"];
+  const subBadges = (p, keys) => keys.map(k => {
+    const v = p[k]; if (v == null) return "";
+    const glyph = v === 0 ? "✗" : (v === 1 ? "⚠" : "✓");
+    const cls = v === 0 ? "no" : (v === 1 ? "partial" : "yes");
+    return `<span class="sub-badge ${cls}" title="${k.replace(/_/g, " ")}">${glyph}</span>`;
+  }).join("");
+  let cards = "";
+  for (const a of annots) {
+    const p = a.payload || {};
+    const notes = (p.physical_notes || p.instruction_notes)
+      ? `<p class="aoc-notes"><strong>P:</strong> ${escapeHtml(p.physical_notes || "—")}<br><strong>I:</strong> ${escapeHtml(p.instruction_notes || "—")}</p>`
+      : (p.notes ? `<p class="aoc-notes">${escapeHtml(p.notes)}</p>` : "");
+    cards += `<div class="align-other-card${a.is_admin_author ? " admin-author" : ""}">
+      <div class="aoc-head"><strong>${escapeHtml(a.reviewer)}</strong>${a.is_admin_author ? '<span class="row-badge report">ADMIN</span>' : ''}</div>
+      <p class="aoc-scores">Physical: <strong>${p.physical_adherence ?? "—"}</strong> · Instruction: <strong>${p.instruction_alignment ?? "—"}</strong></p>
+      <p class="sub-line">${subBadges(p, subsP)}${subBadges(p, subsI)}</p>
+      ${notes}
+    </div>`;
+  }
+  box.innerHTML = `<div class="al-edit-others-head">${tr("align.others_title")} <span class="muted small">· ${annots.length} 位 · 参考，可对照修改（不影响独立 IAA）</span></div>
+    <div class="al-edit-others-grid">${cards}</div>`;
+  box.hidden = false;
 }
 
 /* Load a not-yet-annotated item directly (skip the loadAlignNext queue ordering).

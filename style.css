@@ -1237,6 +1237,11 @@ td.progress-cell {
 }
 .align-other-card.self { background: #eef9ef; border-color: var(--ok); }
 .align-other-card.admin-author { background: #f3e8fd; border-color: #d8c0f5; }
+/* v110: peers' scores reference shown inside the edit view (grey, read-only). */
+#al-edit-others-ref { margin: 4px 0 12px; padding: 10px 12px; background: #f6f8fc; border: 1px solid var(--border); border-radius: 10px; }
+.al-edit-others-head { font-size: 12.5px; font-weight: 700; color: #475569; margin-bottom: 8px; }
+.al-edit-others-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+#al-edit-others-ref .align-other-card { background: #fff; }
 .aoc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .aoc-head strong { font-size: 14px; }
 .aoc-scores { margin: 4px 0; font-size: 13px; }
