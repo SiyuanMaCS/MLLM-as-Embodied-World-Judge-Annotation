@@ -41,8 +41,35 @@ _5 个 judge 覆盖率 <50%,n 太小无法排名,从主表移除(JSONL 仍在仓
 
 ## Baselines
 
+Reference metrics — none are task-grounded judges; all shown to demonstrate that cheap automatic metrics can't measure physical correctness. **Distance metrics are converted to a [0,1] "higher = more real/consistent" score before correlating** (Pearson is scale-invariant, so this only flips sign to positive; magnitude unchanged). Correlations are vs **human PA** (physical adherence).
+
+**Per-item no-reference baselines** (one score per video, no GT needed; fold alongside judges):
+
+| Baseline | what | n (cov) | PA-Pearson [95% CI] | PA-Spearman | IA-Pearson |
+|---|---|--:|--:|--:|--:|
+| vjepa-similarity | V-JEPA feature-space closeness to real-video manifold (per-item decomp of FVD-JEDi) | 776 (88.7%) | **+0.140** [0.071, 0.209] | +0.142 | +0.121 |
+| frame-consistency | 1 − raw adjacent-frame pixel diff | 875 (100%) | **+0.123** [0.059, 0.185] | +0.118 | −0.008 |
+| warp-consistency | 1 − optical-flow warp residual (temporal consistency) | 875 (100%) | **+0.105** [0.041, 0.169] | +0.099 | −0.023 |
+| random-uniform | random 1–5 floor | 875 (100%) | **0.000** [−0.063, 0.065] | 0.000 | 0.000 |
+
+- Strongest (vjepa +0.140) > frame +0.123 > warp +0.105 > random 0 — but **all weak (|r|≈0.1, weakest-judge tier)**: even learned-feature-space distance can't measure physics per-item → task-grounded judges needed. Pearson ≈ Spearman → relationships are monotonic (no non-linearity artifact).
+- IA correlations ≈0 (pixel/temporal consistency is unrelated to instruction-alignment — expected).
+- ⚠️ **vjepa coverage 88.7%**: 99 videos undecodable (decord), and drops skew toward **weak** generators (abot/cosmos3/cogvideo ~18% vs strong gens ~0%); since the score anti-tracks bad videos, +0.140 is a slight **lower bound** on |corr| (full coverage ≈ slightly higher).
+
+**Model-level distribution baselines (FVD / JEDi)** — Fréchet distance of a generator's video-set vs real-video-set (one number per generator, NOT per-item). Correlation = generator-ranking vs human PA-ranking over 10 base generators; convention −FVD (higher = more real → higher PA):
+
+| Metric | Spearman (all 10) | Spearman (large-N 7) | τ_ap (all 10) | τ_ap (large-N 7) |
+|---|--:|--:|--:|--:|
+| FVD-I3D | −0.055 | +0.607 | +0.039 | +0.100 |
+| FVD-JEDi | −0.309 | +0.321 | −0.010 | −0.061 |
+
+- **large-N-7** drops the 3 small-N generators (kling/veo31/happyhorse, N 25–37) whose small samples inflate FVD and flip the all-10 correlation toward 0/negative.
+- ⚠️ Even de-confounded, **τ_ap stays ≈0.1**: FVD orders the garbage tail right (cogvideo bottom) but **mis-ranks the best generators** (human top = wan26/veo31/happyhorse; FVD "most-real" top = abot/cosmos3/gigaworld). So the flattering large-N Spearman (+0.607) reflects tail-ordering, not the judge-relevant top discrimination.
+- Conclusion: FVD/JEDi = weak model-level proxy, double-confounded (sample-size + top-mis-ranking); "looks like real video" ≠ "physically correct".
+
+**Other reference floors:**
+
 - Mode-baseline exact: PA=0.281 · IA=0.278
-- **Random-uniform floor** (n=875): PA/IA-Pearson **expected 0.000** (single draw is noise ±0.10, e.g. seed42 gave −0.0515; est=0 over the null distribution, CI PA[−0.063,0.065]/IA[−0.066,0.069]) · Exact-PA **0.200** (=1/5) · ±1-PA **0.54** (theoretical stable values). Canonical file `judge_random-uniform.jsonl` (seed=42); do NOT report the single-seed Pearson as the floor.
 - Human IAA (n=10, wide CI): PA Pearson 0.336 / Q-Kappa 0.318 · IA Pearson 0.354 / Q-Kappa 0.340
 
 See `bench/TESTSET.md` §5 for the discussion around these baselines and the human-IAA noise floor.

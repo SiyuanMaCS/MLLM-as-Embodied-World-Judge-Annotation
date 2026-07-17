@@ -962,6 +962,147 @@
       "n_ia": 875,
       "_baseline": true,
       "_note": "random floor: Pearson EXPECTED=0.0 (single-draw noise, seed42=-0.0515); est=0, CI=null dist 2000 draws; Exact-PA=0.200, +-1-PA~0.54 theoretical"
+    },
+    "vjepa-similarity": {
+      "pa_pearson": {
+        "est": 0.1405,
+        "lo": 0.0714,
+        "hi": 0.209
+      },
+      "ia_pearson": {
+        "est": 0.1206,
+        "lo": 0.0523,
+        "hi": 0.1903
+      },
+      "pa_spearman": {
+        "est": 0.1416,
+        "lo": 0.0719,
+        "hi": 0.2107
+      },
+      "ia_spearman": {
+        "est": 0.1125,
+        "lo": 0.0446,
+        "hi": 0.1831
+      },
+      "pa_knorm": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "ia_knorm": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "pa_tau_ap": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "ia_tau_ap": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "n_pa": 776,
+      "n_ia": 776,
+      "_baseline": true,
+      "_baseline_kind": "per-item-noref",
+      "_note": "per-item no-ref baseline (score01=1-minmax(dist), higher=more real); cov 0.887; Pearson+Spearman +ve; weak (|r|~0.1)"
+    },
+    "warp-consistency": {
+      "pa_pearson": {
+        "est": 0.1054,
+        "lo": 0.041,
+        "hi": 0.1692
+      },
+      "ia_pearson": {
+        "est": -0.0225,
+        "lo": -0.0882,
+        "hi": 0.0443
+      },
+      "pa_spearman": {
+        "est": 0.0988,
+        "lo": 0.0325,
+        "hi": 0.1648
+      },
+      "ia_spearman": {
+        "est": -0.0331,
+        "lo": -0.0988,
+        "hi": 0.0344
+      },
+      "pa_knorm": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "ia_knorm": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "pa_tau_ap": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "ia_tau_ap": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "n_pa": 875,
+      "n_ia": 875,
+      "_baseline": true,
+      "_baseline_kind": "per-item-noref",
+      "_note": "per-item no-ref baseline (score01=1-minmax(dist), higher=more real); cov 1.0; Pearson+Spearman +ve; weak (|r|~0.1)"
+    },
+    "frame-consistency": {
+      "pa_pearson": {
+        "est": 0.123,
+        "lo": 0.0594,
+        "hi": 0.1847
+      },
+      "ia_pearson": {
+        "est": -0.0079,
+        "lo": -0.0721,
+        "hi": 0.0581
+      },
+      "pa_spearman": {
+        "est": 0.1184,
+        "lo": 0.0526,
+        "hi": 0.1814
+      },
+      "ia_spearman": {
+        "est": -0.019,
+        "lo": -0.0838,
+        "hi": 0.0471
+      },
+      "pa_knorm": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "ia_knorm": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "pa_tau_ap": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "ia_tau_ap": {
+        "est": null,
+        "lo": null,
+        "hi": null
+      },
+      "n_pa": 875,
+      "n_ia": 875,
+      "_baseline": true,
+      "_baseline_kind": "per-item-noref",
+      "_note": "per-item no-ref baseline (score01=1-minmax(dist), higher=more real); cov 1.0; Pearson+Spearman +ve; weak (|r|~0.1)"
     }
   }
 }
