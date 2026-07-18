@@ -1642,15 +1642,25 @@ async function computeAndShowModRate() {
       if (it.kind && it.kind !== "task") continue;
       const pre = map && map.get(it.item_id);
       if (!pre) continue;                                   // only preannotated items count
-      const p = String(it.payload || "");
-      if (/'skip':\s*True/.test(p)) continue;               // skipped item — not a review
+      // v112 fix (siyuan/tony: 改动率恒 0%): backend now returns payload as a JSON
+      // object, not a python-repr string — String(obj)="[object Object]" broke the
+      // old regex. Read fields from the object (legacy string fallback kept).
+      const pl = it.payload;
+      const isObj = pl && typeof pl === "object";
+      const getNum = function(f){
+        if (isObj) { const v = pl[f]; return (v == null || v === "") ? null : Number(v); }
+        const mm = String(pl || "").match(new RegExp("'" + f + "':\\s*(-?\\d+)"));
+        return mm ? Number(mm[1]) : null;
+      };
+      const isSkip = isObj ? (pl.skip === true) : /'skip':\s*True/.test(String(pl || ""));
+      if (isSkip) continue;                                 // skipped item — not a review
       comparable++;
       let changed = false;
       for (const f of _MODRATE_FIELDS) {
-        const m = p.match(new RegExp("'" + f + "':\\s*(-?\\d+)"));
-        if (!m) continue;
+        const sv = getNum(f);
+        if (sv == null || Number.isNaN(sv)) continue;
         const pv = pre[f] != null ? Number(pre[f]) : null;
-        if (pv != null && !Number.isNaN(pv) && Number(m[1]) !== pv) { changed = true; break; }
+        if (pv != null && !Number.isNaN(pv) && sv !== pv) { changed = true; break; }
       }
       if (changed) modified++;
     }
