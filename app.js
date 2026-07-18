@@ -5814,6 +5814,58 @@ function renderRoleGate(requirement) {
   main.appendChild(card);
 }
 
+/* v113 (siyuan): global bug-report modal — free-text description + auto page/URL/ua
+   context, posted to the report route with a sentinel item_id so it lands in
+   data_reports for Francis/Ham to see. */
+function openBugReportModal() {
+  let modal = document.getElementById("bug-report-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "bug-report-modal";
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:99999;display:flex;align-items:center;justify-content:center";
+    modal.innerHTML =
+      '<div style="background:#fff;border-radius:12px;padding:18px 20px;max-width:460px;width:92%;box-shadow:0 10px 40px rgba(0,0,0,.25)">'
+      + '<h3 style="margin:0 0 4px;font-size:15px">🐛 报告问题 / Report a bug</h3>'
+      + '<p style="margin:0 0 10px;font-size:12px;color:#64748b">描述遇到的问题（自动带上当前页面/时间/浏览器）。</p>'
+      + '<textarea id="bug-report-note" rows="4" maxlength="1000" placeholder="发生了什么？在哪个页面/操作？" style="width:100%;box-sizing:border-box;font-size:13px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;resize:vertical"></textarea>'
+      + '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">'
+      + '<button id="bug-report-cancel" type="button" class="link">取消</button>'
+      + '<button id="bug-report-send" type="button" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">提交</button>'
+      + '</div></div>';
+    document.body.appendChild(modal);
+    const close = () => { modal.style.display = "none"; };
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    modal.querySelector("#bug-report-cancel").addEventListener("click", close);
+    modal.querySelector("#bug-report-send").addEventListener("click", async () => {
+      const ta = document.getElementById("bug-report-note");
+      const note = (ta.value || "").trim();
+      const cn = getLang() === "cn";
+      if (!note) { toast(cn ? "请先描述问题" : "Describe the issue first", "err"); return; }
+      const send = document.getElementById("bug-report-send");
+      send.disabled = true;
+      try {
+        const user = localStorage.getItem(CFG.LS_USER) || "anon";
+        // Ham's report_bug endpoint contract: {user, page, url, item_id(nullable), description, ua}; ts server-side.
+        const r = await fetch(CFG.APPS_SCRIPT_URL + "/", {
+          method: "POST", headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ report_bug: true, user,
+            page: (location.pathname.split("/").pop() || "?"), url: location.href,
+            item_id: null, description: note, ua: navigator.userAgent.slice(0, 120) }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || d?.ok === false) throw new Error(d?.error || ("HTTP " + r.status));
+        toast(cn ? "已提交，谢谢反馈 ✓" : "Submitted, thanks ✓", "ok");
+        ta.value = ""; close();
+      } catch (err) {
+        toast((cn ? "提交失败：" : "Report failed: ") + err.message, "err");
+      } finally { send.disabled = false; }
+    });
+  }
+  modal.style.display = "flex";
+  const ta = document.getElementById("bug-report-note");
+  if (ta) ta.focus();
+}
+
 /* Generic wiring: any page with #who + #logout-btn gets user-chip + logout behavior + lang toggle. */
 function wireGlobalChrome() {
   const user = localStorage.getItem(CFG.LS_USER);
@@ -5840,6 +5892,21 @@ function wireGlobalChrome() {
     });
     const lo = chip.querySelector("#logout-btn");
     if (lo) chip.insertBefore(btn, lo); else chip.appendChild(btn);
+  }
+  // v113 (siyuan): global bug-report button in the header (next to logout) on EVERY
+  // page — users report UI bugs directly, no need to relay. Injected here so it
+  // appears everywhere without per-page HTML edits.
+  if (chip && !document.getElementById("bug-report-btn")) {
+    const bbtn = document.createElement("button");
+    bbtn.id = "bug-report-btn";
+    bbtn.className = "link";
+    bbtn.type = "button";
+    bbtn.title = "报告问题 / Report a bug";
+    bbtn.textContent = "🐛 报告";
+    bbtn.style.cssText = "color:#dc2626;font-weight:600";
+    bbtn.addEventListener("click", () => openBugReportModal());
+    const lo2 = chip.querySelector("#logout-btn");
+    if (lo2) chip.insertBefore(bbtn, lo2); else chip.appendChild(bbtn);
   }
   // v85bz (siyuan): video-source toggle — visible on ALL pages that have a user-chip,
   // pinned right after the countdown chip so it's easy to reach when the current video
