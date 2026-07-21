@@ -148,8 +148,19 @@ def main():
           f"(baseline {sum(base.values())}/{len(base)})")
     info = wide_scan()
     if info:
-        print(f"informational: {len(info)} line(s) mention these numbers in some form "
-              f"(NOT a verdict -- benchmark scale / methodology is legitimate):")
+        # Yu (msg c57c24f7): the narrow rule is necessarily incomplete on natural
+        # language, so its gaps are only covered if a HUMAN reads this tier.  That
+        # multiplier has to be printed, not assumed -- "a check whose coverage is
+        # misunderstood is worse than one with a known gap".  Measured: all 5 of
+        # the phrasings Yu listed ("875 中的 270 条", "covered 874/875", "based on
+        # 874 valid items", "(874 valid)", "PA 875 / IA 871") are real per-item
+        # denominators and ALL 5 are missed by the narrow rule -- they land here.
+        print(f"informational: {len(info)} line(s) mention these numbers in some form.")
+        print("  This tier does NOT block, and a HUMAN must classify each as:")
+        print("    (a) per-item denominator      -> must go; the narrow rule missed it")
+        print("    (b) benchmark size/methodology -> legitimate, leave it")
+        print("  Coverage is NOT narrow+wide, it is narrow + (wide x someone reading this).")
+        print("  If nobody reads it, the narrow rule's gaps are silent.")
         for x in info[:5]: print(f"    {x}")
     if added:
         print(f"FAIL: {sum(added.values())} newly introduced occurrence(s).")
