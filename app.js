@@ -1618,17 +1618,25 @@ function hidePreannotationChip() {
 // 今日改动率 = 今天标注的、且带预标注的条目里,大分被改动的比例。
 // 纯前端计算:my_annotations 的 payload(最终值) vs 预标注 map。<30% 显红。
 //
-// ⚠️ 别把这个和后端 `?action=preannotate_delta` 的 change_rate 统一 —— 两者
-// 不是同一个指标,本来就该不一样:
-//   这里(前端)  = 一个聚合数,给标注员看"我改了多少" → "算哪些字段"是产品口径,
-//                 siyuan 2026-07-21 定为只算大分。
-//   preannotate_delta(后端) = 按轴各报各的(实测 `by_axis` 8 个轴,每轴自带
-//                 n / change_rate / mean_abs_diff / mean_signed_diff),用途是看
-//                 "预标注在每个轴上准不准、帮人省了多少工"。它没有聚合口径,
-//                 **从那边删掉 6 个子轴 = 删数据**(就看不到子分的校准情况了),
-//                 不是"改口径"。
-// 结论(Isabella 提、我拿真实端点验过输出结构):前端按 siyuan 的要求改,后端保持
-// 8 轴不动,两边各自写明用途 —— 不一致是对的,不该被"顺手统一"掉。
+// 🔴 别把这个和后端 `?action=preannotate_delta` / `preannotate_log_stats` 的
+// change_rate 统一 —— 同名,但**极性相反**,统一 = 把一个方向的好消息读成另一个
+// 方向的坏消息(Alice 发现,我打活端点verbatim 核过它自带的 `_note`):
+//
+//   后端  change_rate **低 = 好**(预填准、省人工)  _note 原文:
+//         "change_rate 越低=预填越准=越省人工 … gate 建议(Francis):
+//          主分 change_rate<0.40 及格 <0.25 优秀"
+//   前端  change_rate **低 = 可疑**(标注员没真改)  → <0.30 标红"改动率低"
+//
+//   ⇒ 同一个 0.2:后端是绿灯"优秀",这里是红灯"划水"。看到后端 0.2 就去找标注员
+//     谈话,是在为一次"预标注做得好"问责人。**丢信息还能补,读反方向会直接导致错误处置。**
+//
+// 另外两条(都实测过,别据此去"统一"):
+//   · 后端是**按轴各报各的**(`by_axis` 8 轴,每轴自带 n / change_rate /
+//     mean_abs_diff / mean_signed_diff,**没有聚合数**)→ 那边根本没有"算哪些
+//     字段"这个问题;**删掉 6 个子轴 = 删数据**(看不到预填在哪一维不准),不是改口径。
+//   · 后端那条 gate **本来就只按主分判**("主分 change_rate<0.40")→ siyuan
+//     2026-07-21 那句"只算大分"对后端根本不成立,它早就是这个口径。
+// 结论:前端按 siyuan 改(只算大分),后端保持 8 轴不动。**不一致是对的。**
 const _MODRATE_FIELDS = ["physical_adherence", "instruction_alignment"];
 function _bjDate(ts) {
   try { return new Date(new Date(ts).getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10); }
