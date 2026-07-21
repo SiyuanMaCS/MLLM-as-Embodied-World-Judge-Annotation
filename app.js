@@ -1617,6 +1617,18 @@ function hidePreannotationChip() {
 //
 // 今日改动率 = 今天标注的、且带预标注的条目里,大分被改动的比例。
 // 纯前端计算:my_annotations 的 payload(最终值) vs 预标注 map。<30% 显红。
+//
+// ⚠️ 别把这个和后端 `?action=preannotate_delta` 的 change_rate 统一 —— 两者
+// 不是同一个指标,本来就该不一样:
+//   这里(前端)  = 一个聚合数,给标注员看"我改了多少" → "算哪些字段"是产品口径,
+//                 siyuan 2026-07-21 定为只算大分。
+//   preannotate_delta(后端) = 按轴各报各的(实测 `by_axis` 8 个轴,每轴自带
+//                 n / change_rate / mean_abs_diff / mean_signed_diff),用途是看
+//                 "预标注在每个轴上准不准、帮人省了多少工"。它没有聚合口径,
+//                 **从那边删掉 6 个子轴 = 删数据**(就看不到子分的校准情况了),
+//                 不是"改口径"。
+// 结论(Isabella 提、我拿真实端点验过输出结构):前端按 siyuan 的要求改,后端保持
+// 8 轴不动,两边各自写明用途 —— 不一致是对的,不该被"顺手统一"掉。
 const _MODRATE_FIELDS = ["physical_adherence", "instruction_alignment"];
 function _bjDate(ts) {
   try { return new Date(new Date(ts).getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10); }
