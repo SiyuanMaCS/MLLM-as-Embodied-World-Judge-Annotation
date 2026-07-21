@@ -1388,8 +1388,11 @@
       function classify(model){
         var m = (model||'').toLowerCase();
         if(/gemini|seed|gpt|claude/.test(m)) return {tier:'closed'};
-        if(/videophy|videoscore|videocon/.test(m)) return {tier:'open', group:'judge'};
-        if(/cosmos|robobrain|ocra|orca|embodied|hy[-_ ]?embodied/.test(m)) return {tier:'open', group:'embodied'};
+        // v114 (Yu msg ed188218): 'rynnbrain' does NOT match 'robobrain' — it was
+        // falling through to open-general. 'phyjudge' is a purpose-built judge VLM,
+        // so it groups with videophy/videoscore/videocon, not general.
+        if(/videophy|videoscore|videocon|phyjudge/.test(m)) return {tier:'open', group:'judge'};
+        if(/cosmos|robobrain|rynnbrain|ocra|orca|embodied|hy[-_ ]?embodied/.test(m)) return {tier:'open', group:'embodied'};
         return {tier:'open', group:'general'};   // qwen / glm / internvl / default
       }
       function byPa(a,b){ return (b.pa||-9)-(a.pa||-9); }
