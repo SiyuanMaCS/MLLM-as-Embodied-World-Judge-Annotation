@@ -1103,6 +1103,41 @@
       "_baseline": true,
       "_baseline_kind": "per-item-noref",
       "_note": "per-item no-ref baseline (score01=1-minmax(dist), higher=more real); cov 1.0; Pearson+Spearman +ve; weak (|r|~0.1)"
+    },
+    "claude-haiku-4-5": {
+      "pa_pearson": {
+        "est": 0.1277,
+        "lo": 0.0599,
+        "hi": 0.1937
+      },
+      "ia_pearson": {
+        "est": 0.2926,
+        "lo": 0.2283,
+        "hi": 0.355
+      },
+      "pa_knorm": {
+        "est": 0.2889,
+        "lo": 0.1556,
+        "hi": 0.4889
+      },
+      "ia_knorm": {
+        "est": 0.1556,
+        "lo": 0.0889,
+        "hi": 0.3111
+      },
+      "pa_tau_ap": {
+        "est": 0.3516,
+        "lo": -0.1429,
+        "hi": 0.6759
+      },
+      "ia_tau_ap": {
+        "est": 0.5296,
+        "lo": 0.1642,
+        "hi": 0.8016
+      },
+      "n_pa": 875,
+      "n_ia": 875,
+      "_note": "Anthropic tier (sibling claude-opus-4.8); weak judge PA~0.13"
     }
   }
 }
