@@ -1453,18 +1453,39 @@
           if(c.length < 6) return;                                  // FVD table is 5 cols
           if(/^(baseline|metric)$/i.test(c[0]) || /^[-:\s]+$/.test(c[0])) return;  // header / separator
           var ci = ciAll[c[0]] || {};
+          // leaderboard.md writes negatives with a Unicode minus (U+2212 "−"), which
+          // parseFloat does NOT understand — "−0.008" → NaN. Normalise to ASCII '-'
+          // (and strip markdown bold) before parsing, or frame/warp IA silently
+          // degrade to "—".
+          function num(s){ return parseFloat(String(s||'').replace(/\*/g,'').replace(/[−–]/g,'-').trim()); }
           out.push({
             model: c[0], what: c[1],
             n: parseInt((c[2]||'').replace(/,/g,''), 10),
             cov: parseFloat((c[2]||'').replace(/^[^(]*\(/,'')),
-            pa: parseFloat((c[3]||'').replace(/\*/g,'')),
-            spearman: parseFloat(c[4]),
-            pa_ci: ci.pa_pearson || null
+            pa: num(c[3]),
+            spearman: num(c[4]),
+            ia: num(c[5]),
+            pa_ci: ci.pa_pearson || null,
+            ia_ci: ci.ia_pearson || null
           });
         });
         return out.sort(function(a,b){ return (b.pa||-9)-(a.pa||-9); });
       })();
       if(baseRows.length){
+        // IA column mode. 'dash' = siyuan's original call (baselines are physical-
+        // alignment only, strike IA out). 'fill' = the Isabella/Yu/Alice consensus:
+        // show the measured IA-Pearson, because vjepa's +0.121 [0.052, 0.190] has a
+        // CI excluding 0 (a real, PA-mediated effect) while frame/warp/random all
+        // have CIs containing 0 — which is itself the sharper evidence that these
+        // baselines don't track instruction alignment. Flip this one word to switch.
+        // Settled on 'dash' (siyuan's original call, and Yu msg 9c917103 landed the
+        // decisive argument): a judge's IA-Pearson correlates its *independent IA
+        // output* against human IA. A baseline emits ONE score, so its "IA-Pearson"
+        // is that same physical score vs human IA — a different quantity. Printing it
+        // in a column named IA-Pearson invites an invalid horizontal read against
+        // judges. Column = '—' (not applicable); all four measured values live in
+        // the footnote so Isabella's significant vjepa result is not lost.
+        var BASE_IA_MODE = 'dash';
         var BCOLS = ['#','Baseline','n','PA·Pearson (95% CI)','IA·Pearson','PA·Spearman','Joint-F1','Exact PA','±1 PA'];
         html += '<div style="font-size:12px;font-weight:700;color:#0f172a;margin:16px 0 6px">Table 1c · Baselines <span style="font-weight:500;color:#64748b">(physical alignment only — 非 judge,参考下限)</span></div>';
         html += tOpen();
@@ -1481,7 +1502,16 @@
           html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+(isFinite(m.n)?m.n:'—')
                +  (isFinite(m.cov) && m.cov < 99 ? '<div style="font-size:9.5px;color:#f59e0b">'+m.cov.toFixed(1)+'%</div>' : '')+'</td>';
           html += '<td style="padding:7px 8px;text-align:right;font-weight:600;white-space:nowrap"><span style="display:inline-block;min-width:44px;text-align:right">'+(isFinite(m.pa)?m.pa.toFixed(3):'—')+'</span>'+paStrip+'</td>';
-          html += '<td style="padding:7px 8px;text-align:right">'+na+'</td>';
+          // IA cell: dash, or the measured value with a "CI∋0" tag when the 95% CI
+          // contains zero (i.e. indistinguishable from no relationship).
+          var iaCell = na;
+          if(BASE_IA_MODE === 'fill' && isFinite(m.ia)){
+            var z = m.ia_ci && m.ia_ci.lo != null && m.ia_ci.hi != null && m.ia_ci.lo <= 0 && m.ia_ci.hi >= 0;
+            iaCell = '<span style="color:'+(z ? '#94a3b8' : '#0f172a')+';font-weight:'+(z ? '400' : '600')+'">'+m.ia.toFixed(3)+'</span>'
+                   + (z ? '<div style="font-size:9px;color:#cbd5e1">CI∋0</div>'
+                        : (m.ia_ci ? stripSvg(m.ia_ci.est, m.ia_ci.lo, m.ia_ci.hi, '#db2777') : ''));
+          }
+          html += '<td style="padding:7px 8px;text-align:right;white-space:nowrap">'+iaCell+'</td>';
           html += '<td style="padding:7px 8px;text-align:right;color:#64748b">'+(isFinite(m.spearman)?m.spearman.toFixed(3):'—')+'</td>';
           html += '<td style="padding:7px 8px;text-align:right">'+na+'</td>';
           html += '<td style="padding:7px 8px;text-align:right">'+na+'</td>';
@@ -1490,8 +1520,13 @@
         });
         html += '</tbody></table>';
         html += '<div style="font-size:11px;color:#64748b;line-height:1.6;margin:2px 0 4px">'
-             +  '<b>IA = —</b>(siyuan:baseline 只针对 physical alignment):这 4 个 baseline 只吃视频(像素/光流/特征空间),<b>没有 instruction 输入</b>,所以它们量到的任何 IA 相关都是<b>经 PA 中介的混淆量</b>,不是 instruction-alignment 的度量 —— 故不进榜。'
-             +  '实测值仍在 canonical 里,未丢:vjepa <b>+0.121</b> [0.052, 0.190](CI 不含 0,显著非零,大概率经 PA 中介)、frame −0.008 [−0.072, 0.058]、warp −0.023 [−0.088, 0.044]、random 0 —— 后三者 CI 均含 0,与 IA 无关。'
+             +  (BASE_IA_MODE === 'fill'
+                 ? '<b>关于 IA 列</b>:这 4 个 baseline 只吃视频(像素/光流/特征空间),<b>没有 instruction 输入</b>,结构上不可能跟踪指令对齐 —— 表里的 IA 数字正是这一点的证据,而不是它们的能力:'
+                   + 'frame −0.008、warp −0.023、random 0 的 <b>95% CI 均含 0</b>(标 CI∋0),与 IA 无关;'
+                   + '唯一显著非零的是 vjepa <b>+0.121</b> [0.052, 0.190](CI 不含 0),但它没读过指令,这个相关是<b>经 PA 中介的混淆</b>(物理崩了的视频通常也对不上指令),<b>不能当作 IA 能力</b>。'
+                 : '<b>IA = —(不适用,非缺失)</b>:该列衡量的是 judge <b>独立输出的指令对齐分</b>对人类 IA;这 4 个 baseline 每条视频<b>只输出一个物理分</b>,没有独立的 IA 输出,所以此列对它们不适用 —— 与 judge 横向比会是过度声称。'
+                   + '其单分与人类 IA 的实测相关(留档,未丢):vjepa <b>+0.121</b> [0.052, 0.190](CI 不含 0,但它读不到指令,这是<b>经 PA 中介的泄漏</b>,非指令对齐能力)、frame −0.008 [−0.072, 0.058]、warp −0.023 [−0.088, 0.044]、random 0 —— 后三者 CI 均含 0。'
+                   + '<b>这正是「baseline 只测 physical alignment」的证据。</b>')
              +  '<b>Joint-F1 / Exact / ±1 = —</b>:这些是离散 1–5 标签的一致性指标,而 baseline 输出的是连续分数,不产生标签。'
              +  '距离型指标已先转成 [0,1] "越高越真实" 再相关(Pearson 尺度不变,只翻符号)。'
              +  '⚠️ vjepa 覆盖 88.7%(99 个视频 decord 解不开,且偏向弱生成器),+0.140 是 |corr| 的<b>下界</b>。</div>';
