@@ -1610,13 +1610,14 @@ function hidePreannotationChip() {
   if (chip) chip.remove();
 }
 
-// v91: today's 改动率 = of today's annotated items that carried a preannotation,
-// the fraction where the annotator changed PA / IA / any sub-score. Notes are
-// EXCLUDED (a human almost always rewrites the note → would peg the rate at ~100%).
-// Pure frontend: my_annotations payload (final) vs the preannotation map. <30% => red.
-const _MODRATE_FIELDS = ["physical_adherence", "instruction_alignment",
-  "agent_consistency", "scene_consistency", "interaction_realism",
-  "agent_match", "object_correct", "goal_completed"];
+// v114 (siyuan: "只有大分的改动计算改动率 其他都不算"): 改动率只看两个大分
+// —— PA 和 IA。6 个子分(agent_consistency / scene_consistency /
+// interaction_realism / agent_match / object_correct / goal_completed)改了不算,
+// 备注同样不算(人几乎总会重写备注 → 会把改动率顶到 ~100%)。
+//
+// 今日改动率 = 今天标注的、且带预标注的条目里,大分被改动的比例。
+// 纯前端计算:my_annotations 的 payload(最终值) vs 预标注 map。<30% 显红。
+const _MODRATE_FIELDS = ["physical_adherence", "instruction_alignment"];
 function _bjDate(ts) {
   try { return new Date(new Date(ts).getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10); }
   catch (_) { return ""; }
