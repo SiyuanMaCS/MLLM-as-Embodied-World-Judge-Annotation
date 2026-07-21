@@ -1487,7 +1487,8 @@
         });
         html += '</tbody></table>';
         html += '<div style="font-size:11px;color:#64748b;line-height:1.6;margin:2px 0 4px">'
-             +  '<b>IA = —</b>:这 4 个 baseline 只吃视频(像素/光流/特征空间),<b>看不到 instruction</b>,所以 instruction-alignment 相关性在定义上不成立,一律划 —。'
+             +  '<b>IA = —</b>(siyuan:baseline 只针对 physical alignment):这 4 个 baseline 只吃视频(像素/光流/特征空间),<b>没有 instruction 输入</b>,所以它们量到的任何 IA 相关都是<b>经 PA 中介的混淆量</b>,不是 instruction-alignment 的度量 —— 故不进榜。'
+             +  '实测值仍在 canonical 里,未丢:vjepa <b>+0.121</b> [0.052, 0.190](CI 不含 0,显著非零,大概率经 PA 中介)、frame −0.008 [−0.072, 0.058]、warp −0.023 [−0.088, 0.044]、random 0 —— 后三者 CI 均含 0,与 IA 无关。'
              +  '<b>Joint-F1 / Exact / ±1 = —</b>:这些是离散 1–5 标签的一致性指标,而 baseline 输出的是连续分数,不产生标签。'
              +  '距离型指标已先转成 [0,1] "越高越真实" 再相关(Pearson 尺度不变,只翻符号)。'
              +  '⚠️ vjepa 覆盖 88.7%(99 个视频 decord 解不开,且偏向弱生成器),+0.140 是 |corr| 的<b>下界</b>。</div>';
