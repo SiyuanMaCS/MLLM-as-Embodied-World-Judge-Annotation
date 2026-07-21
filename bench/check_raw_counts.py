@@ -20,7 +20,7 @@ into "approved", so they are simply out of scope and stay visible as undecided.
 Counting, not diffing: the baseline is what is already there.  Only an INCREASE
 fails, so pre-existing text is never flagged and never needs an exemption entry.
 """
-import json, pathlib, re, sys
+import hashlib, json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PAT = re.compile(r'\b(875|874|873|871|870|776|762)\b')
@@ -34,43 +34,72 @@ BASELINE = ROOT / "bench" / "raw_count_baseline.json"
 def strip_comments(text):
     """Source comments are not reader-visible, so they must not count.
 
-    The first version of this script flagged 3 of its own explanatory comments --
-    the very defect (a matcher whose layer is wider than the claim) that CC and I
-    had just spent an hour on.  What siyuan asked about is what a READER sees.
+    The first version flagged 3 of its own explanatory comments -- the very
+    defect (a matcher whose layer is wider than the claim) that CC and I had
+    just spent an hour on.  What siyuan asked about is what a READER sees.
     """
     text = re.sub(r"/\*[\s\S]*?\*/", "", text)
     return "\n".join(re.sub(r"(?<!:)//.*$", "", ln) for ln in text.split("\n"))
 
-def count(path, only_between=None):
-    hits = []
+def scan(path, only_between=None):
+    """Return a MULTISET {sha1(line): [count, sample_text]} of offending lines.
+
+    Multiset, not a count and not a set -- Alice and Yu showed both weaker forms
+    are blind (msgs e0ad31fc / 8aa77928):
+      count : delete one + add one  -> total unchanged  -> silent pass
+      set   : duplicate a line that already offends -> set unchanged -> silent pass
+              ("copy an existing line" is the *easiest* way to reintroduce these,
+               with ~82 of them sitting in other panels to copy from)
+    Keyed on line CONTENT, never on line number -- line numbers drift (Yu used
+    one two hours after arguing references must not drift).
+    """
+    hits = {}
     inside = only_between is None
     body = path.read_text(encoding="utf-8")
     if path.suffix in (".html", ".js"):
         body = strip_comments(body)
-    for i, line in enumerate(body.split("\n"), 1):
+    for line in body.split("\n"):
         if only_between:
             if only_between[0] in line: inside = True
             elif only_between[1] in line: inside = False
         if not inside: continue
-        if line.strip() in ALLOWED_LINES: continue
-        for m in PAT.finditer(line):
-            hits.append((path.name, i, m.group(1), " ".join(line.split())[:90]))
+        stripped = line.strip()
+        if stripped in ALLOWED_LINES: continue
+        if not PAT.search(stripped): continue
+        h = hashlib.sha1(stripped.encode("utf-8")).hexdigest()[:16]
+        if h in hits: hits[h][0] += 1
+        else: hits[h] = [1, " ".join(stripped.split())[:100]]
+    return hits
+
+def collect():
+    hits = scan(ROOT / "bench" / "leaderboard.md")
+    for h, v in scan(ROOT / "stats.html", ("Table 1c", "renderJudgeDist")).items():
+        if h in hits: hits[h][0] += v[0]
+        else: hits[h] = v
     return hits
 
 def main():
-    hits  = count(ROOT / "bench" / "leaderboard.md")
-    hits += count(ROOT / "stats.html", only_between=("Table 1c", "renderJudgeDist"))
-    cur = len(hits)
-    base = json.loads(BASELINE.read_text())["count"] if BASELINE.exists() else 0
+    cur = collect()
     if "--update-baseline" in sys.argv:
-        BASELINE.write_text(json.dumps({"count": cur, "note":
-            "raw item counts in the decided scope; only-increases guard"}, indent=2) + "\n")
-        print(f"baseline set to {cur}"); return 0
-    print(f"raw item counts in scope: {cur} (baseline {base})")
-    if cur > base:
-        print(f"FAIL: {cur - base} raw item count(s) newly introduced.")
+        BASELINE.write_text(json.dumps(
+            {"note": "multiset of reader-visible lines carrying raw item counts; "
+                     "only ADDITIONS fail (siyuan 2026-07-21)",
+             "hits": {h: v[0] for h, v in cur.items()},
+             "samples": {h: v[1] for h, v in cur.items()}}, indent=2,
+            ensure_ascii=False) + "\n")
+        print(f"baseline set: {sum(v[0] for v in cur.values())} occurrence(s), "
+              f"{len(cur)} distinct line(s)")
+        return 0
+    base = json.loads(BASELINE.read_text())["hits"] if BASELINE.exists() else {}
+    added = {h: v[0] - base.get(h, 0) for h, v in cur.items() if v[0] > base.get(h, 0)}
+    total = sum(v[0] for v in cur.values())
+    print(f"raw item counts in scope: {total} occurrence(s), {len(cur)} distinct "
+          f"(baseline {sum(base.values())}/{len(base)})")
+    if added:
+        print(f"FAIL: {sum(added.values())} newly introduced occurrence(s).")
         print("siyuan asked for these to be removed on 2026-07-21; this fires when they come back.")
-        for h in hits: print(f"  {h[0]}:{h[1]}  '{h[2]}'  {h[3]}")
+        for h, n in added.items():
+            print(f"  +{n}x  {cur[h][1]}")
         return 1
     return 0
 

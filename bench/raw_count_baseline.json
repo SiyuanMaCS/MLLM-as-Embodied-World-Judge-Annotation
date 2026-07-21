@@ -1,4 +1,5 @@
 {
-  "count": 2,
-  "note": "raw item counts in the decided scope; only-increases guard"
+  "note": "multiset of reader-visible lines carrying raw item counts; only ADDITIONS fail (siyuan 2026-07-21)",
+  "hits": {},
+  "samples": {}
 }
