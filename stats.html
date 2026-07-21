@@ -580,7 +580,7 @@
   function renderVideogenAppendix(){
     var host = document.getElementById("hs-vg-appendix");
     if(!host) return;
-    fetch("bench/videogen_leaderboard.json?v=v122", {cache:"no-store"})
+    fetch("bench/videogen_leaderboard.json?v=v123", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(data){
         // Collapse _prefix / _rewrite variants into base model, weighted by n
@@ -629,7 +629,7 @@
   function renderJudgeDist(){
     var host = document.getElementById("hs-judgedist");
     if(!host) return;
-    fetch("bench/analysis/judge_distributions.json?v=v122", {cache:"no-store"})
+    fetch("bench/analysis/judge_distributions.json?v=v123", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.human_gold){ host.innerHTML=""; return; }
@@ -759,8 +759,8 @@
     var host = document.getElementById("hs-decoupling");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/bootstrap_ci.json?v=v122", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
-      fetch("bench/model_ranking_strict.json?v=v122", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/bootstrap_ci.json?v=v123", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch("bench/model_ranking_strict.json?v=v123", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
       var ci = (pair[0] && pair[0].judges) || {};
       var strict = pair[1] || {};
@@ -839,7 +839,7 @@
   function renderConfab(){
     var host = document.getElementById("hs-confab");
     if(!host) return;
-    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v122", {cache:"no-store"})
+    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v123", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.pa || !d.ia){ host.innerHTML = ""; return; }
@@ -907,7 +907,7 @@
   function renderSubClean(){
     var host = document.getElementById("hs-subclean");
     if(!host) return;
-    fetch("bench/analysis/subscore_ci.json?v=v122", {cache:"no-store"})
+    fetch("bench/analysis/subscore_ci.json?v=v123", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var judges = (d && d.judges) || {};
@@ -1110,8 +1110,8 @@
     var host = document.getElementById("hs-subaxis");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/judge_subscore_accuracy.json?v=v122", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
-      fetch("bench/analysis/subscore_ci.json?v=v122", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/judge_subscore_accuracy.json?v=v123", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
+      fetch("bench/analysis/subscore_ci.json?v=v123", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
         var d = pair[0];
         var ciMap = (pair[1] && pair[1].judges) || {};
@@ -1215,7 +1215,7 @@
   function renderMRMSE(){
     var host = document.getElementById("hs-mrmse");
     if(!host) return;
-    fetch("bench/analysis/model_level_rmse.json?v=v122", {cache:"no-store"})
+    fetch("bench/analysis/model_level_rmse.json?v=v123", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var byJ = (d && d.judges) || {};
@@ -1261,7 +1261,7 @@
   function renderTopSpacing(){
     var host = document.getElementById("hs-topspacing");
     if(!host) return;
-    fetch("bench/analysis/topspacing.json?v=v122", {cache:"no-store"})
+    fetch("bench/analysis/topspacing.json?v=v123", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.models){ host.innerHTML=""; return; }
@@ -1324,9 +1324,9 @@
     var host = document.getElementById("hs-table1");
     if(!host) return;
     var md, strict, ciAll;
-    var mdUrl = "bench/leaderboard.md?v=v122";
-    var strictUrl = "bench/model_ranking_strict.json?v=v122";
-    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v122";
+    var mdUrl = "bench/leaderboard.md?v=v123";
+    var strictUrl = "bench/model_ranking_strict.json?v=v123";
+    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v123";
     // Global scale for the mini error-bar strip: fixed range so error bars are
     // visually comparable across the table (widened enough to fit both the
     // strong-judge PA CIs and weak-judge CIs).
@@ -1497,32 +1497,55 @@
       // not a meaningful quantity. Joint-F1 / Exact / ±1 are '—' too: they are
       // discrete-label agreement metrics and a baseline emits a continuous score,
       // not a 1–5 label.
+      // leaderboard.md writes negatives with a Unicode minus (U+2212 "−"), which
+      // parseFloat does NOT understand — "−0.008" → NaN. Normalise to ASCII '-'
+      // (and strip markdown bold) before parsing, or frame/warp IA silently
+      // degrade to "—".
+      function num(s){ return parseFloat(String(s||'').replace(/\*/g,'').replace(/[−–]/g,'-').trim()); }
       var baseRows = (function(){
         var sec = md.match(/^## Baselines[\s\S]*$/m);
         if(!sec) return [];
+        // v123: bind the Baselines sub-table by header name too. ae54c95 fixed the
+        // MAIN table but left this one positional, i.e. I fixed one of two parsers
+        // and left the same failure class live. Isabella has already reshaped this
+        // table once today ("n (cov)" -> "cov", "776 (88.7%)" -> "88.7%"); the next
+        // column change would have shifted PA/Spearman/IA silently.
+        var lines = sec[0].split('\n');
+        var bh = -1;
+        for(var i = 0; i < lines.length; i++){
+          if(/^\s*\|\s*Baseline\s*\|/i.test(lines[i])){ bh = i; break; }
+        }
+        if(bh < 0) return [];
+        function cells(l){ return l.replace(/^\s*\|/,'').replace(/\|\s*$/,'').split('|').map(function(x){ return x.trim(); }); }
+        var bhc = cells(lines[bh]);
+        function bIdx(re){ for(var i = 0; i < bhc.length; i++){ if(re.test(bhc[i])) return i; } return -1; }
+        var BX = {
+          name:     bIdx(/^baseline$/i),
+          what:     bIdx(/^what$/i),
+          cov:      bIdx(/^n?\s*\(?cov\)?$/i),
+          pa:       bIdx(/^pa[-·\s]*pearson/i),
+          spearman: bIdx(/^pa[-·\s]*spearman/i),
+          ia:       bIdx(/^ia[-·\s]*pearson/i)
+        };
         var out = [];
-        sec[0].split('\n').forEach(function(l){
-          if(!/^\s*\|/.test(l)) return;
-          var c = l.replace(/^\s*\|/,'').replace(/\|\s*$/,'').split('|').map(function(x){ return x.trim(); });
-          if(c.length < 6) return;                                  // FVD table is 5 cols
-          if(/^(baseline|metric)$/i.test(c[0]) || /^[-:\s]+$/.test(c[0])) return;  // header / separator
-          var ci = ciAll[c[0]] || {};
-          // leaderboard.md writes negatives with a Unicode minus (U+2212 "−"), which
-          // parseFloat does NOT understand — "−0.008" → NaN. Normalise to ASCII '-'
-          // (and strip markdown bold) before parsing, or frame/warp IA silently
-          // degrade to "—".
-          function num(s){ return parseFloat(String(s||'').replace(/\*/g,'').replace(/[−–]/g,'-').trim()); }
+        for(var j = bh + 1; j < lines.length; j++){
+          if(!/^\s*\|/.test(lines[j])) break;                       // contiguous block only
+          var c = cells(lines[j]);
+          if(/^[-:\s]+$/.test(c[0])) continue;                      // separator
+          var name = BX.name >= 0 ? c[BX.name] : c[0];
+          if(!name) continue;
+          var ci = ciAll[name] || {};
           out.push({
-            model: c[0], what: c[1],
-            n: parseInt((c[2]||'').replace(/,/g,''), 10),
-            cov: parseFloat((c[2]||'').replace(/^[^(]*\(/,'')),
-            pa: num(c[3]),
-            spearman: num(c[4]),
-            ia: num(c[5]),
+            model: name,
+            what: BX.what >= 0 ? c[BX.what] : '',
+            cov: BX.cov >= 0 ? parseFloat(String(c[BX.cov]).replace(/^[^(]*\(/,'')) : NaN,
+            pa: num(BX.pa >= 0 ? c[BX.pa] : undefined),
+            spearman: num(BX.spearman >= 0 ? c[BX.spearman] : undefined),
+            ia: num(BX.ia >= 0 ? c[BX.ia] : undefined),
             pa_ci: ci.pa_pearson || null,
             ia_ci: ci.ia_pearson || null
           });
-        });
+        }
         return out.sort(function(a,b){ return (b.pa||-9)-(a.pa||-9); });
       })();
       if(baseRows.length){
@@ -2601,40 +2624,40 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v122", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v123", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v122", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v123", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v122", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v123", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v122", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v123", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v122", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v123", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v122", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v123", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v122", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v123", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -2656,11 +2679,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v122", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v123", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v122", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v123", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -2669,11 +2692,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v122", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v123", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/analysis/bootstrap_ci.json?v=v122", {cache:"no-store"})
+    fetch("bench/analysis/bootstrap_ci.json?v=v123", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
