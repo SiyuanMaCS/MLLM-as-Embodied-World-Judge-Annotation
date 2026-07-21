@@ -665,7 +665,8 @@
       },
       "n_pa": 875,
       "n_ia": 875,
-      "n_listwise": 875
+      "n_listwise": 875,
+      "ci_flip_expectation": "contains-0 with margin <2x the pearson resolution floor (ia 0.0036 = 1.50x, pa 0.0050 = 2.08x) -- the tightest of the asserted set. A flip here means a quantity already indistinguishable from zero landed on the other side, i.e. sampling noise, NOT a change in any published conclusion. Suspect noise before suspecting the artifact, and do not disable the check over it. (Alice, 2026-07-21.)"
     },
     "videophy2": {
       "pa_pearson": {
@@ -1308,6 +1309,42 @@
       "ci_endpoint_within_resolution": [
         "pa_pearson"
       ]
+    },
+    "phyjudge": {
+      "pa_pearson": {
+        "est": 0.3373,
+        "lo": 0.2791,
+        "hi": 0.3951
+      },
+      "ia_pearson": {
+        "est": 0.5205,
+        "lo": 0.4707,
+        "hi": 0.569
+      },
+      "pa_knorm": {
+        "est": 0.1111,
+        "lo": 0.0444,
+        "hi": 0.2
+      },
+      "ia_knorm": {
+        "est": 0.0889,
+        "lo": 0.0444,
+        "hi": 0.2
+      },
+      "pa_tau_ap": {
+        "est": 0.6883,
+        "lo": 0.3056,
+        "hi": 0.9405
+      },
+      "ia_tau_ap": {
+        "est": 0.6111,
+        "lo": 0.3016,
+        "hi": 0.9238
+      },
+      "n_pa": 875,
+      "n_ia": 871,
+      "n_listwise": 871,
+      "_note": "PA is NOT a native score: it is mean(PTV, persistence), a half-integer proxy (270/875 values land on .5), so Exact-PA and +-1-PA are NOT comparable with integer judges -- Pearson/Spearman are. ids required normalisation (missing data__ prefix, trailing .mp4); 875/875 matched gold after it. 4 error rows -> IA null (n_ia=871). Source HF PR #52, sha256 9c72c1fa..."
     }
   }
 }
