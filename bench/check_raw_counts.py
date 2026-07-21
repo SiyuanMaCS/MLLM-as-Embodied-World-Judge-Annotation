@@ -23,7 +23,20 @@ fails, so pre-existing text is never flagged and never needs an exemption entry.
 import datetime, hashlib, json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PAT = re.compile(r'\b(875|874|873|871|870|776|762)\b')
+NUMS = r"875|874|873|871|870|776|762"
+
+# NARROW -- the shape siyuan actually removed: a PER-JUDGE / PER-ITEM denominator.
+# Both real reintroductions match it ("vjepa n=776", "875 条里 270 条").
+PAT = re.compile(rf"(?:\bn\s*(?:=|＝|\s+of\s+)\s*(?:{NUMS})\b)"
+                 rf"|(?:(?:{NUMS})\s*(?:条里|条中|of\s+(?:{NUMS})))")
+
+# WIDE -- any bare occurrence. Informational only, never a verdict: matching bare
+# digits cannot tell "benchmark scale / methodology" (legitimate, e.g. "over 875
+# in-domain items") from "per-judge denominator" (banned). Ham showed the wide
+# form fires on a legitimate REWORD of a correct sentence (msg 53dfbb9b), and I
+# edit these files constantly -- an alarm that cries wolf on correct text is the
+# one that gets switched off, which is the outcome we spent all day avoiding.
+WIDE = re.compile(rf"\b({NUMS})\b")
 # Exact line, not "contains gold_875.jsonl": an exemption must not be wider than
 # its reason, so adding another number to this line stops matching and trips.
 ALLOWED_LINES = {
@@ -65,7 +78,7 @@ def scan(path, only_between=None):
         if not inside: continue
         stripped = line.strip()
         if stripped in ALLOWED_LINES: continue
-        if not PAT.search(stripped): continue
+        if not PAT.search(stripped): continue   # narrow: banned shape only
         h = hashlib.sha1(stripped.encode("utf-8")).hexdigest()[:16]
         if h in hits: hits[h][0] += 1
         else: hits[h] = [1, " ".join(stripped.split())[:100]]
@@ -98,6 +111,22 @@ def collect():
         else: hits[h] = v
     return hits
 
+def wide_scan():
+    """Informational only -- lines mentioning these numbers in any form."""
+    out = []
+    for path, between in ((ROOT / "bench" / "leaderboard.md", None),
+                          (ROOT / "stats.html", ("Table 1c", "renderJudgeDist"))):
+        body = path.read_text(encoding="utf-8")
+        if path.suffix in (".html", ".js"): body = strip_comments(body)
+        inside = between is None
+        for line in body.split("\n"):
+            if between:
+                if between[0] in line: inside = True
+                elif between[1] in line: inside = False
+            if inside and WIDE.search(line) and line.strip() not in ALLOWED_LINES:
+                out.append(" ".join(line.split())[:90])
+    return out
+
 def main():
     cur = collect()
     if "--update-baseline" in sys.argv:
@@ -117,6 +146,11 @@ def main():
     print("\n".join(SCANNED))
     print(f"raw item counts in scope: {total} occurrence(s), {len(cur)} distinct "
           f"(baseline {sum(base.values())}/{len(base)})")
+    info = wide_scan()
+    if info:
+        print(f"informational: {len(info)} line(s) mention these numbers in some form "
+              f"(NOT a verdict -- benchmark scale / methodology is legitimate):")
+        for x in info[:5]: print(f"    {x}")
     if added:
         print(f"FAIL: {sum(added.values())} newly introduced occurrence(s).")
         print("siyuan asked for these to be removed on 2026-07-21; this fires when they come back.")
