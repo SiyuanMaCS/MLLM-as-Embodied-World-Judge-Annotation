@@ -20,7 +20,7 @@ into "approved", so they are simply out of scope and stay visible as undecided.
 Counting, not diffing: the baseline is what is already there.  Only an INCREASE
 fails, so pre-existing text is never flagged and never needs an exemption entry.
 """
-import hashlib, json, pathlib, re, sys
+import datetime, hashlib, json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PAT = re.compile(r'\b(875|874|873|871|870|776|762)\b')
@@ -71,9 +71,29 @@ def scan(path, only_between=None):
         else: hits[h] = [1, " ".join(stripped.split())[:100]]
     return hits
 
+SCANNED = []
+
+def provenance(path):
+    """Record WHAT was scanned, so '0 matches' can never be read without also
+    seeing which file produced it (Yu, msg 0388b96a).
+
+    Isabella nearly reported '0 matches' from a three-week-old stale copy in
+    /tmp, and caught it only by happening to glance at `ls -la`.  Same shape as
+    my own '82' -- a number taken from an artifact whose provenance was never
+    established.  Printing path + mtime + digest puts the count and its source
+    on the same line, so nobody has to remember to ask.
+    """
+    st = path.stat()
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()[:12]
+    mtime = datetime.datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M")
+    SCANNED.append(f"  scanned: {path}  mtime {mtime}  sha256 {digest}")
+
 def collect():
-    hits = scan(ROOT / "bench" / "leaderboard.md")
-    for h, v in scan(ROOT / "stats.html", ("Table 1c", "renderJudgeDist")).items():
+    lb = ROOT / "bench" / "leaderboard.md"
+    sh = ROOT / "stats.html"
+    provenance(lb); provenance(sh)
+    hits = scan(lb)
+    for h, v in scan(sh, ("Table 1c", "renderJudgeDist")).items():
         if h in hits: hits[h][0] += v[0]
         else: hits[h] = v
     return hits
@@ -87,12 +107,14 @@ def main():
              "hits": {h: v[0] for h, v in cur.items()},
              "samples": {h: v[1] for h, v in cur.items()}}, indent=2,
             ensure_ascii=False) + "\n")
+        print("\n".join(SCANNED))
         print(f"baseline set: {sum(v[0] for v in cur.values())} occurrence(s), "
               f"{len(cur)} distinct line(s)")
         return 0
     base = json.loads(BASELINE.read_text())["hits"] if BASELINE.exists() else {}
     added = {h: v[0] - base.get(h, 0) for h, v in cur.items() if v[0] > base.get(h, 0)}
     total = sum(v[0] for v in cur.values())
+    print("\n".join(SCANNED))
     print(f"raw item counts in scope: {total} occurrence(s), {len(cur)} distinct "
           f"(baseline {sum(base.values())}/{len(base)})")
     if added:
