@@ -1,10 +1,14 @@
 {
   "_meta": {
+    "owner": "Isabella (canonical, replaces Alice's earlier bootstrap_ci.json)",
+    "schema_version": 3,
+    "n_convention": "per_axis",
+    "null_handling": "per-axis (available-case) for MARGINAL metrics: a row contributes to an axis whenever THAT axis is non-null, so n_pa and n_ia may differ. Matches bench/eval_metrics.py and the published leaderboard.md. Supersedes the earlier listwise convention, which differed for 6 judges by <=0.0014 in Pearson.",
+    "metric_denominators": "MARGINAL metrics (pa_pearson, ia_pearson, pa_knorm, ia_knorm, pa_tau_ap, ia_tau_ap and their CIs) use per-axis denominators n_pa / n_ia. PAIRED metrics (Joint-F1, PA<->IA correlation, any per-item PA-vs-IA agreement/decoupling analysis) MUST use the listwise intersection n_listwise -- the per-axis PA and IA sets are NOT the same items and must never be paired. bench/eval_metrics.py already follows this: joint.n equals the listwise intersection. (Boundary specified by Yu, 2026-07-21.)",
     "cluster_unit": "video tuple (item_id)",
     "B": 10000,
     "ci_method": "2.5%/97.5% percentile (est = observed point on full data)",
     "knorm_grouping": "10 merged base models (drop _prefix/_rewrite suffix)",
-    "owner": "Isabella (canonical, replaces Alice's earlier bootstrap_ci.json)",
     "n_gold_items": 875
   },
   "judges": {
@@ -40,7 +44,8 @@
         "hi": 0.9074
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "cosmos-reason2-32b": {
       "pa_pearson": {
@@ -74,7 +79,8 @@
         "hi": 0.9722
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "cosmos3-nano-reasoner": {
       "pa_pearson": {
@@ -108,18 +114,19 @@
         "hi": 0.9722
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "gemini-2.5-flash": {
       "pa_pearson": {
         "est": 0.3561,
-        "lo": 0.2959,
-        "hi": 0.4138
+        "lo": 0.2977,
+        "hi": 0.4135
       },
       "ia_pearson": {
-        "est": 0.3703,
+        "est": 0.3713,
         "lo": 0.308,
-        "hi": 0.4309
+        "hi": 0.433
       },
       "pa_knorm": {
         "est": 0.1333,
@@ -127,22 +134,23 @@
         "hi": 0.2444
       },
       "ia_knorm": {
-        "est": 0.2,
+        "est": 0.2222,
         "lo": 0.1778,
         "hi": 0.3111
       },
       "pa_tau_ap": {
         "est": 0.4667,
-        "lo": 0.2183,
+        "lo": 0.2127,
         "hi": 0.8444
       },
       "ia_tau_ap": {
-        "est": 0.5195,
-        "lo": 0.0803,
-        "hi": 0.6491
+        "est": 0.4917,
+        "lo": 0.075,
+        "hi": 0.6602
       },
       "n_pa": 869,
-      "n_ia": 869
+      "n_ia": 870,
+      "n_listwise": 869
     },
     "gemini-2.5-pro": {
       "pa_pearson": {
@@ -176,7 +184,8 @@
         "hi": 0.9556
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "gemini-3.1-pro-preview": {
       "pa_pearson": {
@@ -210,18 +219,19 @@
         "hi": 0.6676
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "gemini-3.5-flash": {
       "pa_pearson": {
         "est": 0.53,
-        "lo": 0.4811,
-        "hi": 0.5778
+        "lo": 0.479,
+        "hi": 0.5783
       },
       "ia_pearson": {
-        "est": 0.4277,
-        "lo": 0.3689,
-        "hi": 0.4851
+        "est": 0.4289,
+        "lo": 0.3698,
+        "hi": 0.487
       },
       "pa_knorm": {
         "est": 0.0889,
@@ -240,11 +250,12 @@
       },
       "ia_tau_ap": {
         "est": 0.3899,
-        "lo": 0.0803,
-        "hi": 0.6047
+        "lo": 0.0618,
+        "hi": 0.6028
       },
       "n_pa": 874,
-      "n_ia": 874
+      "n_ia": 875,
+      "n_listwise": 874
     },
     "gpt-5.2": {
       "pa_pearson": {
@@ -278,7 +289,8 @@
         "hi": 1.0
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "gpt5.5": {
       "pa_pearson": {
@@ -312,7 +324,8 @@
         "hi": 1.0
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "internvl3.5-38b": {
       "pa_pearson": {
@@ -346,7 +359,8 @@
         "hi": 0.9444
       },
       "n_pa": 869,
-      "n_ia": 869
+      "n_ia": 869,
+      "n_listwise": 869
     },
     "internvl3.5-8b": {
       "pa_pearson": {
@@ -380,7 +394,8 @@
         "hi": 0.8849
       },
       "n_pa": 869,
-      "n_ia": 869
+      "n_ia": 869,
+      "n_listwise": 869
     },
     "qwen3-vl-32b-instruct": {
       "pa_pearson": {
@@ -414,18 +429,19 @@
         "hi": 0.6676
       },
       "n_pa": 874,
-      "n_ia": 874
+      "n_ia": 874,
+      "n_listwise": 874
     },
     "qwen3-vl-8b-instruct": {
       "pa_pearson": {
-        "est": 0.2443,
-        "lo": 0.1826,
-        "hi": 0.3032
+        "est": 0.2429,
+        "lo": 0.1819,
+        "hi": 0.3036
       },
       "ia_pearson": {
         "est": 0.2998,
-        "lo": 0.2336,
-        "hi": 0.3659
+        "lo": 0.2321,
+        "hi": 0.3663
       },
       "pa_knorm": {
         "est": 0.0667,
@@ -439,27 +455,28 @@
       },
       "pa_tau_ap": {
         "est": 0.8074,
-        "lo": 0.1923,
-        "hi": 0.8479
+        "lo": 0.1963,
+        "hi": 0.8532
       },
       "ia_tau_ap": {
         "est": 0.3004,
-        "lo": -0.0811,
-        "hi": 0.4652
+        "lo": -0.0867,
+        "hi": 0.467
       },
-      "n_pa": 873,
-      "n_ia": 873
+      "n_pa": 874,
+      "n_ia": 873,
+      "n_listwise": 873
     },
     "robobrain2.5-8b": {
       "pa_pearson": {
-        "est": 0.0125,
-        "lo": -0.0559,
-        "hi": 0.0833
+        "est": 0.0128,
+        "lo": -0.0566,
+        "hi": 0.0824
       },
       "ia_pearson": {
         "est": 0.1673,
-        "lo": 0.1028,
-        "hi": 0.2296
+        "lo": 0.103,
+        "hi": 0.2287
       },
       "pa_knorm": {
         "est": 0.2222,
@@ -473,16 +490,17 @@
       },
       "pa_tau_ap": {
         "est": 0.3506,
-        "lo": -0.1072,
-        "hi": 0.7553
+        "lo": -0.115,
+        "hi": 0.7497
       },
       "ia_tau_ap": {
         "est": 0.3973,
-        "lo": 0.1328,
-        "hi": 0.7306
+        "lo": 0.1407,
+        "hi": 0.7275
       },
-      "n_pa": 874,
-      "n_ia": 874
+      "n_pa": 875,
+      "n_ia": 874,
+      "n_listwise": 874
     },
     "seed2.0_pro": {
       "pa_pearson": {
@@ -516,7 +534,8 @@
         "hi": 1.0
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "seed2.1_lite": {
       "pa_pearson": {
@@ -550,7 +569,8 @@
         "hi": 1.0
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "videocon": {
       "pa_pearson": {
@@ -584,7 +604,8 @@
         "hi": 0.2253
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "videophy2": {
       "pa_pearson": {
@@ -618,7 +639,8 @@
         "hi": 0.3551
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "videoscore2": {
       "pa_pearson": {
@@ -652,7 +674,8 @@
         "hi": 0.8519
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "glm-4.6v-flash": {
       "pa_pearson": {
@@ -686,7 +709,8 @@
         "hi": 0.8395
       },
       "n_pa": 874,
-      "n_ia": 874
+      "n_ia": 874,
+      "n_listwise": 874
     },
     "qwen3.5-flash": {
       "pa_pearson": {
@@ -720,7 +744,8 @@
         "hi": 0.6306
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "qwen3.5-plus": {
       "pa_pearson": {
@@ -754,7 +779,8 @@
         "hi": 0.6769
       },
       "n_pa": 873,
-      "n_ia": 873
+      "n_ia": 873,
+      "n_listwise": 873
     },
     "qwen3.5-27b": {
       "pa_pearson": {
@@ -788,18 +814,19 @@
         "hi": 0.9753
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "qwen3.5-9b": {
       "pa_pearson": {
-        "est": 0.2532,
-        "lo": 0.1894,
-        "hi": 0.3135
+        "est": 0.2526,
+        "lo": 0.1901,
+        "hi": 0.3118
       },
       "ia_pearson": {
         "est": 0.4182,
-        "lo": 0.3603,
-        "hi": 0.4738
+        "lo": 0.3604,
+        "hi": 0.4754
       },
       "pa_knorm": {
         "est": 0.0889,
@@ -813,16 +840,17 @@
       },
       "pa_tau_ap": {
         "est": 0.7333,
-        "lo": 0.2683,
-        "hi": 0.9127
+        "lo": 0.2738,
+        "hi": 0.9111
       },
       "ia_tau_ap": {
         "est": 0.75,
-        "lo": 0.3698,
-        "hi": 0.9683
+        "lo": 0.3735,
+        "hi": 0.963
       },
-      "n_pa": 874,
-      "n_ia": 874
+      "n_pa": 875,
+      "n_ia": 874,
+      "n_listwise": 874
     },
     "qwen3.5-4b": {
       "pa_pearson": {
@@ -856,7 +884,8 @@
         "hi": 0.9074
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "claude-opus-4.8": {
       "pa_pearson": {
@@ -890,42 +919,44 @@
         "hi": 0.9722
       },
       "n_pa": 875,
-      "n_ia": 875
+      "n_ia": 875,
+      "n_listwise": 875
     },
     "orca-4b": {
       "pa_pearson": {
-        "est": 0.079,
-        "lo": 0.0126,
-        "hi": 0.1476
+        "est": 0.0712,
+        "lo": 0.0076,
+        "hi": 0.1386
       },
       "ia_pearson": {
-        "est": 0.0669,
-        "lo": -0.0042,
-        "hi": 0.1383
+        "est": 0.0785,
+        "lo": 0.0118,
+        "hi": 0.145
       },
       "pa_knorm": {
-        "est": 0.2889,
-        "lo": 0.1556,
-        "hi": 0.5
+        "est": 0.2,
+        "lo": 0.1333,
+        "hi": 0.5111
       },
       "ia_knorm": {
-        "est": 0.3333,
-        "lo": 0.2222,
-        "hi": 0.5556
+        "est": 0.3778,
+        "lo": 0.2444,
+        "hi": 0.5778
       },
       "pa_tau_ap": {
-        "est": 0.1407,
-        "lo": -0.1466,
-        "hi": 0.6747
+        "est": 0.5463,
+        "lo": -0.1453,
+        "hi": 0.7167
       },
       "ia_tau_ap": {
-        "est": 0.1945,
-        "lo": -0.1854,
-        "hi": 0.489
+        "est": 0.1381,
+        "lo": -0.1965,
+        "hi": 0.4742
       },
-      "n_pa": 762,
-      "n_ia": 762,
-      "_note": "n=762/875 (87% cov, 113 null); near-random weak judge"
+      "n_pa": 875,
+      "n_ia": 874,
+      "_note": "FULL RERUN: 8 shards merged + re-parsed, 875/875 rows (874 valid, 1 null). Supersedes the earlier partial n=762 run. Source GitHub d79aac4.",
+      "n_listwise": 874
     },
     "random-uniform": {
       "pa_pearson": {
@@ -1137,7 +1168,80 @@
       },
       "n_pa": 875,
       "n_ia": 875,
-      "_note": "Anthropic tier (sibling claude-opus-4.8); weak judge PA~0.13"
+      "_note": "Anthropic tier (sibling claude-opus-4.8); weak judge PA~0.13",
+      "n_listwise": 875
+    },
+    "rynnbrain-1.1-9b": {
+      "pa_pearson": {
+        "est": 0.0826,
+        "lo": 0.0186,
+        "hi": 0.1456
+      },
+      "ia_pearson": {
+        "est": 0.1355,
+        "lo": 0.078,
+        "hi": 0.1925
+      },
+      "pa_knorm": {
+        "est": 0.381,
+        "lo": 0.1714,
+        "hi": 0.5882
+      },
+      "ia_knorm": {
+        "est": 0.4,
+        "lo": 0.2444,
+        "hi": 0.4889
+      },
+      "pa_tau_ap": {
+        "est": 0.1616,
+        "lo": 0.0526,
+        "hi": 0.8122
+      },
+      "ia_tau_ap": {
+        "est": 0.188,
+        "lo": -0.0147,
+        "hi": 0.5608
+      },
+      "n_pa": 875,
+      "n_ia": 875,
+      "_note": "degenerate/ceiling-collapsed weak judge: 862/875 (98.51%) of PA = 5, mean 4.970 / std 0.265; ranking metrics near-degenerate by construction. Source GitHub 2806bee (renamed 463cdd0), gate-verified by Alice (structure PASS).",
+      "n_listwise": 875
+    },
+    "mimo-vl-7b-sft": {
+      "pa_pearson": {
+        "est": 0.071,
+        "lo": 0.0005,
+        "hi": 0.1379
+      },
+      "ia_pearson": {
+        "est": 0.3096,
+        "lo": 0.2474,
+        "hi": 0.3708
+      },
+      "pa_knorm": {
+        "est": 0.2444,
+        "lo": 0.1333,
+        "hi": 0.3636
+      },
+      "ia_knorm": {
+        "est": 0.1333,
+        "lo": 0.0455,
+        "hi": 0.2222
+      },
+      "pa_tau_ap": {
+        "est": 0.3634,
+        "lo": 0.1041,
+        "hi": 0.7695
+      },
+      "ia_tau_ap": {
+        "est": 0.5111,
+        "lo": 0.3148,
+        "hi": 0.8815
+      },
+      "n_pa": 874,
+      "n_ia": 874,
+      "_note": "n=874/875 (1 fetch-error row removed upstream). Source GitHub 30202ea/2e3d078. NOTE: file stem is judge_mimo_vl_sft; canonical key taken from judge_model field.",
+      "n_listwise": 874
     }
   }
 }
