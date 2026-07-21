@@ -9,7 +9,67 @@
     "B": 10000,
     "ci_method": "2.5%/97.5% percentile (est = observed point on full data)",
     "knorm_grouping": "10 merged base models (drop _prefix/_rewrite suffix)",
-    "n_gold_items": 875
+    "n_gold_items": 875,
+    "knorm_is_discrete": "pa_knorm / ia_knorm are misordered_pairs / (45 - ties) over 10 merged base models, so CI endpoints lie on a rational lattice, AND THE LATTICE VARIES BY JUDGE because ties lower the denominator (1/45, 1/44, 1/42 ... all occur; four ia_knorm lower bounds are exactly 0.0000). 0 of 136 Pearson endpoints lie on any such lattice. 'Contains zero' for k_norm therefore means 'is the smallest attainable value zero', not 'is it significant' -- do not read k_norm CIs as significance. (Alice, 2026-07-21.)",
+    "ci_resolution": {
+      "pearson": 0.0024,
+      "tau_ap": 0.012,
+      "knorm": "excluded -- discrete lattice, never used for significance",
+      "rule": "max(p95, 3*median) of endpoint displacement, per field",
+      "bootstrap_B": 10000,
+      "measured_from": [
+        {
+          "method": "seed-pair replay: identical data and method, RNG seed changed only",
+          "by": "Isabella + Ham (independent, agreeing digit-for-digit)",
+          "B": 10000,
+          "n_endpoints": {
+            "pearson": 84,
+            "tau_ap": 59,
+            "knorm": 6
+          },
+          "result": "pearson max 0.0028 / ia_pearson max 0.0019"
+        },
+        {
+          "method": "5-seed replay of the partial-correlation pipeline",
+          "by": "Alice (independent path, different estimator and different B)",
+          "B": 4000,
+          "result": "endpoint spread 0.0019-0.0031 across frame/warp/vjepa"
+        }
+      ],
+      "validity": "VALID ONLY AT B=10000 -- Monte-Carlo error scales ~1/sqrt(B). If B changes these thresholds silently stop applying; re-measure. (Yu, 2026-07-21.)",
+      "observed": {
+        "pearson": {
+          "median": 0.0008,
+          "p95": 0.0018,
+          "max": 0.0028
+        },
+        "tau_ap": {
+          "median": 0.004,
+          "p95": 0.0122,
+          "max": 0.0148
+        },
+        "knorm": {
+          "median": 0.0198,
+          "p95": 0.0223,
+          "max": 0.0223
+        }
+      },
+      "corroboration": "NOT a replication of one constant. The two measurements report DIFFERENT STATISTICS and so are not numerically comparable: one is a range over several seeds, the other the maximum of a single pairwise difference -- different expected values before any difference in B is considered. (An earlier note here tried to argue the point from a predicted ratio under 1/sqrt(B); that argument required the two to be the same statistic, so it was void and has been withdrawn. No ratio-based reasoning belongs here -- it would only invite extrapolation. Yu + Alice, 2026-07-21.) What the two jointly support is that Pearson-family endpoint jitter is of order 0.002-0.003, nothing sharper. A genuine cross-check needs the same statistic, estimator and B. The A/B tiering does not depend on the exact value: mimo sits an order of magnitude below the floor, rynnbrain an order above.",
+      "do_not_use_a_single_global_floor": "A single combined floor (0.0223) is WRONG: it is set entirely by k_norm, the one field never used for significance, and overstates Pearson noise ~8x. Using it silently demoted 6 genuinely-guardable claims to unasserted -- a miss, not an alarm.",
+      "interpretation": "An endpoint closer to zero than its field's floor does NOT support a significance claim: which side of zero it falls on is sampling noise. Such entries carry 'ci_endpoint_within_resolution'.",
+      "scaling": {
+        "pearson": "threshold(B) = 0.0024 * max(1, sqrt(10000 / B))  -- widen only",
+        "tau_ap": "DO NOT SCALE -- re-measure. tau_ap is computed on 10 merged base models, so its jitter is not purely Monte-Carlo (coarse granularity contributes); 1/sqrt(B) would understate it.",
+        "why": "Labelling a constant with its B only makes the premise findable; rescaling makes it self-correcting. Whoever lowers B is exactly the person who will not think to revisit the threshold. (Yu, 2026-07-21.)"
+      },
+      "ci_resolution_ref": {
+        "pearson": 0.0024,
+        "tau_ap": 0.012
+      },
+      "bootstrap_B_ref": 10000,
+      "clamp_rationale": "Cost asymmetry, deliberately not an empirical decay rate: tightening the floor risks false alarms on stable results, which is how the check gets switched off entirely; widening only risks over-caution, which the printed skip list makes visible. Stated without supporting data on purpose -- an empirical justification would invite deletion if someone later measured the decay and found 1/sqrt(B) held, even though the false-alarm risk would be unchanged. To use a tighter floor at larger B, re-measure; do not extrapolate. (Yu + Alice, 2026-07-21.)"
+    },
+    "ci_stability": "Positive result worth stating (Yu, 2026-07-21): Pearson CI endpoints move only ~0.001 (median 0.0008, max 0.0028) under a seed change, ~10x more stable than initially assumed. So essentially every Pearson significance call in Table 1 holds comfortably -- including weak judges such as rynnbrain-1.1-9b (point estimate 0.083): n=875 is large enough that its CI genuinely excludes zero, at 7.8x the noise floor."
   },
   "judges": {
     "cosmos-reason2-2b": {
@@ -815,7 +875,10 @@
       },
       "n_pa": 875,
       "n_ia": 875,
-      "n_listwise": 875
+      "n_listwise": 875,
+      "ci_endpoint_within_resolution": [
+        "pa_tau_ap"
+      ]
     },
     "qwen3.5-9b": {
       "pa_pearson": {
@@ -1241,7 +1304,10 @@
       "n_pa": 874,
       "n_ia": 874,
       "_note": "n=874/875 (1 fetch-error row removed upstream). Source GitHub 30202ea/2e3d078. NOTE: file stem is judge_mimo_vl_sft; canonical key taken from judge_model field.",
-      "n_listwise": 874
+      "n_listwise": 874,
+      "ci_endpoint_within_resolution": [
+        "pa_pearson"
+      ]
     }
   }
 }
