@@ -1346,7 +1346,12 @@ async function loadForEdit(item_id, kind) {
    variable the annotator could see while scoring — so a PA difference between such groups
    cannot separate "preannotation main score was high for this class" from "the annotator
    anchored on the sub-scores displayed in front of them". Answering that needs a blind arm
-   (video + instruction only, sub-scores and notes hidden). */
+   (video + instruction only, sub-scores and notes hidden).
+
+   ⇒ Corollary: ANY re-judgement made while the prefill is visible is NOT a blind judgement,
+   however independent the judges are. Two judges who both see the same prefill and disagree
+   have shown "disagreement under a shared anchor" — which is a stronger result than blind
+   disagreement, but it is not a blind-agreement measurement and must not be reported as one. */
 function prefillAnnotateForm(p) {
   const set = (id, val) => {
     const el = document.getElementById(id);
