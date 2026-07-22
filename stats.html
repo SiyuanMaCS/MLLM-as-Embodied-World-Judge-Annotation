@@ -1106,6 +1106,25 @@
   // Yu's extraction: per-judge per-sub-axis {accuracy, recall_violation, f1,
   // missing_pct, n}. Colour = 1 − recall_violation (red = missed violations,
   // green = caught them). Truncated judges' high-missing cells get hatching.
+  //
+  // ⚠️ judge_subscore_accuracy.json is TWO DIFFERENT ANALYSES sharing one filename
+  //    (found 2026-07-22). This block renders the deploy copy; the canonical copy
+  //    published to GitHub/HF is a different study, not an older version:
+  //      deploy    sha 1a0fe595 · 12585B · 10 judges · rule-based extraction from
+  //                judge reasoning text · has subaxes/judges_full/
+  //                judges_truncated_pending/per_subaxis_summary_full5
+  //      canonical sha 0cc62420 ·  4579B ·  3 judges · explicit *_SUBS re-judge,
+  //                "ZERO extraction error" · only _meta + matrix
+  //    Neither is stale: deploy = more judges/weaker method, canonical = fewer
+  //    judges/cleaner method.
+  //
+  //    Consequence: THIS PANEL CANNOT BE REPRODUCED FROM THE PUBLISHED CANONICAL.
+  //    Worse, it fails *silently* — canonical does have `matrix`, so the guard
+  //    below passes, but judges_full/judges_truncated_pending are absent, so
+  //    judges = [] and the heatmap renders EMPTY rather than erroring.
+  //    Do not "fix" a blank Appendix F by assuming the fetch failed; check which
+  //    copy is being served first. Resolution (needs siyuan): rename to two
+  //    distinct files each labelled with its method — they are not versions.
   function renderSubaxis(){
     var host = document.getElementById("hs-subaxis");
     if(!host) return;
