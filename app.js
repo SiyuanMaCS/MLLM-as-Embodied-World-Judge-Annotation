@@ -1336,7 +1336,17 @@ async function loadForEdit(item_id, kind) {
   }
 }
 
-/* Prefill the task/gold annotate form from an existing payload (used in edit mode). */
+/* Prefill the task/gold annotate form from a payload.
+   NOT edit-mode only — four call sites, including maybeApplyPreannotation() at ~:1490,
+   which is the FRESH annotation path. So this also runs before the annotator has judged anything.
+
+   ⚠️ Measurement consequence (found 2026-07-22): this writes the six sub-scores AND
+   physical_notes/instruction_notes into the form right beside the PA/IA sliders. Any analysis
+   that groups items by their sub-scores (e.g. "all physical sub-axes <=1") is grouping on a
+   variable the annotator could see while scoring — so a PA difference between such groups
+   cannot separate "preannotation main score was high for this class" from "the annotator
+   anchored on the sub-scores displayed in front of them". Answering that needs a blind arm
+   (video + instruction only, sub-scores and notes hidden). */
 function prefillAnnotateForm(p) {
   const set = (id, val) => {
     const el = document.getElementById(id);
