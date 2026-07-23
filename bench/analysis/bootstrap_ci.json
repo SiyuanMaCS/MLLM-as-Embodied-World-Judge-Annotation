@@ -1,1352 +1,1140 @@
 {
-  "_meta": {
-    "owner": "Isabella (canonical, replaces Alice's earlier bootstrap_ci.json)",
-    "schema_version": 3,
-    "n_convention": "per_axis",
-    "null_handling": "per-axis (available-case) for MARGINAL metrics: a row contributes to an axis whenever THAT axis is non-null, so n_pa and n_ia may differ. Matches bench/eval_metrics.py and the published leaderboard.md. Supersedes the earlier listwise convention, which differed for 6 judges by <=0.0014 in Pearson.",
-    "metric_denominators": "MARGINAL metrics (pa_pearson, ia_pearson, pa_knorm, ia_knorm, pa_tau_ap, ia_tau_ap and their CIs) use per-axis denominators n_pa / n_ia. PAIRED metrics (Joint-F1, PA<->IA correlation, any per-item PA-vs-IA agreement/decoupling analysis) MUST use the listwise intersection n_listwise -- the per-axis PA and IA sets are NOT the same items and must never be paired. bench/eval_metrics.py already follows this: joint.n equals the listwise intersection. (Boundary specified by Yu, 2026-07-21.)",
-    "cluster_unit": "video tuple (item_id)",
-    "B": 10000,
-    "ci_method": "2.5%/97.5% percentile (est = observed point on full data)",
-    "knorm_grouping": "10 merged base models (drop _prefix/_rewrite suffix)",
-    "n_gold_items": 875,
-    "knorm_is_discrete": "pa_knorm / ia_knorm are misordered_pairs / (45 - ties) over 10 merged base models, so CI endpoints lie on a rational lattice, AND THE LATTICE VARIES BY JUDGE because ties lower the denominator (1/45, 1/44, 1/42 ... all occur; four ia_knorm lower bounds are exactly 0.0000). 0 of 136 Pearson endpoints lie on any such lattice. 'Contains zero' for k_norm therefore means 'is the smallest attainable value zero', not 'is it significant' -- do not read k_norm CIs as significance. (Alice, 2026-07-21.)",
-    "ci_resolution": {
-      "pearson": 0.0024,
-      "tau_ap": 0.012,
-      "knorm": "excluded -- discrete lattice, never used for significance",
-      "rule": "max(p95, 3*median) of endpoint displacement, per field",
-      "bootstrap_B": 10000,
-      "measured_from": [
-        {
-          "method": "seed-pair replay: identical data and method, RNG seed changed only",
-          "by": "Isabella + Ham (independent, agreeing digit-for-digit)",
-          "B": 10000,
-          "n_endpoints": {
-            "pearson": 84,
-            "tau_ap": 59,
-            "knorm": 6
-          },
-          "result": "pearson max 0.0028 / ia_pearson max 0.0019"
-        },
-        {
-          "method": "5-seed replay of the partial-correlation pipeline",
-          "by": "Alice (independent path, different estimator and different B)",
-          "B": 4000,
-          "result": "endpoint spread 0.0019-0.0031 across frame/warp/vjepa"
-        }
-      ],
-      "validity": "VALID ONLY AT B=10000 -- Monte-Carlo error scales ~1/sqrt(B). If B changes these thresholds silently stop applying; re-measure. (Yu, 2026-07-21.)",
-      "observed": {
-        "pearson": {
-          "median": 0.0008,
-          "p95": 0.0018,
-          "max": 0.0028
-        },
-        "tau_ap": {
-          "median": 0.004,
-          "p95": 0.0122,
-          "max": 0.0148
-        },
-        "knorm": {
-          "median": 0.0198,
-          "p95": 0.0223,
-          "max": 0.0223
-        }
-      },
-      "corroboration": "NOT a replication of one constant. The two measurements report DIFFERENT STATISTICS and so are not numerically comparable: one is a range over several seeds, the other the maximum of a single pairwise difference -- different expected values before any difference in B is considered. (An earlier note here tried to argue the point from a predicted ratio under 1/sqrt(B); that argument required the two to be the same statistic, so it was void and has been withdrawn. No ratio-based reasoning belongs here -- it would only invite extrapolation. Yu + Alice, 2026-07-21.) What the two jointly support is that Pearson-family endpoint jitter is of order 0.002-0.003, nothing sharper. A genuine cross-check needs the same statistic, estimator and B. The A/B tiering does not depend on the exact value: mimo sits an order of magnitude below the floor, rynnbrain an order above.",
-      "do_not_use_a_single_global_floor": "A single combined floor (0.0223) is WRONG: it is set entirely by k_norm, the one field never used for significance, and overstates Pearson noise ~8x. Using it silently demoted 6 genuinely-guardable claims to unasserted -- a miss, not an alarm.",
-      "interpretation": "An endpoint closer to zero than its field's floor does NOT support a significance claim: which side of zero it falls on is sampling noise. Such entries carry 'ci_endpoint_within_resolution'.",
-      "scaling": {
-        "pearson": "threshold(B) = 0.0024 * max(1, sqrt(10000 / B))  -- widen only",
-        "tau_ap": "DO NOT SCALE -- re-measure. tau_ap is computed on 10 merged base models, so its jitter is not purely Monte-Carlo (coarse granularity contributes); 1/sqrt(B) would understate it.",
-        "why": "Labelling a constant with its B only makes the premise findable; rescaling makes it self-correcting. Whoever lowers B is exactly the person who will not think to revisit the threshold. (Yu, 2026-07-21.)"
-      },
-      "ci_resolution_ref": {
-        "pearson": 0.0024,
-        "tau_ap": 0.012
-      },
-      "bootstrap_B_ref": 10000,
-      "clamp_rationale": "Cost asymmetry, deliberately not an empirical decay rate: tightening the floor risks false alarms on stable results, which is how the check gets switched off entirely; widening only risks over-caution, which the printed skip list makes visible. Stated without supporting data on purpose -- an empirical justification would invite deletion if someone later measured the decay and found 1/sqrt(B) held, even though the false-alarm risk would be unchanged. To use a tighter floor at larger B, re-measure; do not extrapolate. (Yu + Alice, 2026-07-21.)"
-    },
-    "ci_stability": "Positive result worth stating (Yu, 2026-07-21): Pearson CI endpoints move only ~0.001 (median 0.0008, max 0.0028) under a seed change, ~10x more stable than initially assumed. So essentially every Pearson significance call in Table 1 holds comfortably -- including weak judges such as rynnbrain-1.1-9b (point estimate 0.083): n=875 is large enough that its CI genuinely excludes zero, at 7.8x the noise floor.",
-    "ci_seed_generation": "mixed-legacy-hash+sha256-v1",
-    "ci_seed_generation_note": "Identifies which RNG-seed regime the CI endpoints were produced under. 22 entries still carry endpoints from the old salted hash() seed; entries folded from 2026-07-21 use the stable sha256 seed. BUMP THIS when a deliberate, signed-off re-fold migrates everything (target value 'sha256-v1'). It exists so a legitimate migration can declare itself: the unsigned-recompute guard passes when this field changes and fails when CI endpoints move while it stays put -- so the guard never needs a mute switch. (Yu, 2026-07-21.)"
+ "_meta": {
+  "owner": "Isabella (canonical, replaces Alice's earlier bootstrap_ci.json)",
+  "schema_version": 3,
+  "n_convention": "per_axis",
+  "null_handling": "per-axis (available-case) for MARGINAL metrics: a row contributes to an axis whenever THAT axis is non-null, so n_pa and n_ia may differ. Matches bench/eval_metrics.py and the published leaderboard.md.",
+  "metric_denominators": "MARGINAL metrics (pa_pearson, ia_pearson, pa_knorm, ia_knorm, pa_tau_ap, ia_tau_ap and their CIs) use per-axis denominators n_pa / n_ia. PAIRED metrics (Joint-F1, PA<->IA correlation, any per-item PA-vs-IA agreement/decoupling analysis) MUST use the listwise intersection n_listwise -- the per-axis PA and IA sets are NOT the same items and must never be paired. bench/eval_metrics.py already follows this: joint.n equals the listwise intersection. (Boundary specified by Yu, 2026-07-21.)",
+  "cluster_unit": "video tuple (item_id)",
+  "B": 10000,
+  "ci_method": "2.5%/97.5% percentile (est = observed point on full data)",
+  "knorm_grouping": "10 merged base models (drop _prefix/_rewrite suffix)",
+  "n_gold_items": 856,
+  "gold_source": "test_clean.jsonl (856; gold_875 minus 19 init/instruction rows)",
+  "n_gold_actual": 856,
+  "test_clean_sha256": "fd027efa93ec042e",
+  "note": "DERIVED SET test_clean; original bootstrap_ci.json (875) NOT overwritten"
+ },
+ "judges": {
+  "claude-haiku-4-5": {
+   "pa_pearson": {
+    "est": 0.1248,
+    "lo": 0.0572,
+    "hi": 0.1933
+   },
+   "ia_pearson": {
+    "est": 0.2898,
+    "lo": 0.2271,
+    "hi": 0.3523
+   },
+   "pa_knorm": {
+    "est": 0.2444,
+    "lo": 0.1556,
+    "hi": 0.4889
+   },
+   "ia_knorm": {
+    "est": 0.1333,
+    "lo": 0.0889,
+    "hi": 0.3111
+   },
+   "pa_tau_ap": {
+    "est": 0.4405,
+    "lo": -0.1153,
+    "hi": 0.6788
+   },
+   "ia_tau_ap": {
+    "est": 0.5667,
+    "lo": 0.1683,
+    "hi": 0.8086
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
   },
-  "judges": {
-    "cosmos-reason2-2b": {
-      "pa_pearson": {
-        "est": 0.0667,
-        "lo": 0.0066,
-        "hi": 0.125
-      },
-      "ia_pearson": {
-        "est": 0.2287,
-        "lo": 0.1643,
-        "hi": 0.291
-      },
-      "pa_knorm": {
-        "est": 0.2444,
-        "lo": 0.1333,
-        "hi": 0.4889
-      },
-      "ia_knorm": {
-        "est": 0.1111,
-        "lo": 0.0444,
-        "hi": 0.2222
-      },
-      "pa_tau_ap": {
-        "est": 0.4352,
-        "lo": -0.1508,
-        "hi": 0.7275
-      },
-      "ia_tau_ap": {
-        "est": 0.6574,
-        "lo": 0.3148,
-        "hi": 0.9074
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "cosmos-reason2-32b": {
-      "pa_pearson": {
-        "est": 0.2187,
-        "lo": 0.1526,
-        "hi": 0.2822
-      },
-      "ia_pearson": {
-        "est": 0.3769,
-        "lo": 0.3182,
-        "hi": 0.4362
-      },
-      "pa_knorm": {
-        "est": 0.1333,
-        "lo": 0.0667,
-        "hi": 0.2889
-      },
-      "ia_knorm": {
-        "est": 0.0222,
-        "lo": 0.0222,
-        "hi": 0.1556
-      },
-      "pa_tau_ap": {
-        "est": 0.3889,
-        "lo": 0.1241,
-        "hi": 0.8148
-      },
-      "ia_tau_ap": {
-        "est": 0.9722,
-        "lo": 0.4794,
-        "hi": 0.9722
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "cosmos3-nano-reasoner": {
-      "pa_pearson": {
-        "est": 0.2288,
-        "lo": 0.168,
-        "hi": 0.2854
-      },
-      "ia_pearson": {
-        "est": 0.4202,
-        "lo": 0.3615,
-        "hi": 0.4751
-      },
-      "pa_knorm": {
-        "est": 0.1591,
-        "lo": 0.0682,
-        "hi": 0.2381
-      },
-      "ia_knorm": {
-        "est": 0.0889,
-        "lo": 0.0222,
-        "hi": 0.1556
-      },
-      "pa_tau_ap": {
-        "est": 0.3979,
-        "lo": 0.2344,
-        "hi": 0.8794
-      },
-      "ia_tau_ap": {
-        "est": 0.7006,
-        "lo": 0.4414,
-        "hi": 0.9722
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "gemini-2.5-flash": {
-      "pa_pearson": {
-        "est": 0.3561,
-        "lo": 0.2977,
-        "hi": 0.4135
-      },
-      "ia_pearson": {
-        "est": 0.3713,
-        "lo": 0.308,
-        "hi": 0.433
-      },
-      "pa_knorm": {
-        "est": 0.1333,
-        "lo": 0.0667,
-        "hi": 0.2444
-      },
-      "ia_knorm": {
-        "est": 0.2222,
-        "lo": 0.1778,
-        "hi": 0.3111
-      },
-      "pa_tau_ap": {
-        "est": 0.4667,
-        "lo": 0.2127,
-        "hi": 0.8444
-      },
-      "ia_tau_ap": {
-        "est": 0.4917,
-        "lo": 0.075,
-        "hi": 0.6602
-      },
-      "n_pa": 869,
-      "n_ia": 870,
-      "n_listwise": 869
-    },
-    "gemini-2.5-pro": {
-      "pa_pearson": {
-        "est": 0.2419,
-        "lo": 0.1874,
-        "hi": 0.294
-      },
-      "ia_pearson": {
-        "est": 0.5127,
-        "lo": 0.4608,
-        "hi": 0.5625
-      },
-      "pa_knorm": {
-        "est": 0.0444,
-        "lo": 0.0444,
-        "hi": 0.2222
-      },
-      "ia_knorm": {
-        "est": 0.0889,
-        "lo": 0.0222,
-        "hi": 0.1556
-      },
-      "pa_tau_ap": {
-        "est": 0.9278,
-        "lo": 0.2981,
-        "hi": 0.9278
-      },
-      "ia_tau_ap": {
-        "est": 0.6315,
-        "lo": 0.3938,
-        "hi": 0.9556
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "gemini-3.1-pro-preview": {
-      "pa_pearson": {
-        "est": 0.4037,
-        "lo": 0.3501,
-        "hi": 0.4549
-      },
-      "ia_pearson": {
-        "est": 0.5197,
-        "lo": 0.4689,
-        "hi": 0.5684
-      },
-      "pa_knorm": {
-        "est": 0.1333,
-        "lo": 0.0667,
-        "hi": 0.2444
-      },
-      "ia_knorm": {
-        "est": 0.2222,
-        "lo": 0.1556,
-        "hi": 0.3111
-      },
-      "pa_tau_ap": {
-        "est": 0.5667,
-        "lo": 0.1825,
-        "hi": 0.8278
-      },
-      "ia_tau_ap": {
-        "est": 0.4917,
-        "lo": 0.1047,
-        "hi": 0.6676
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "gemini-3.5-flash": {
-      "pa_pearson": {
-        "est": 0.53,
-        "lo": 0.479,
-        "hi": 0.5783
-      },
-      "ia_pearson": {
-        "est": 0.4289,
-        "lo": 0.3698,
-        "hi": 0.487
-      },
-      "pa_knorm": {
-        "est": 0.0889,
-        "lo": 0.0222,
-        "hi": 0.1778
-      },
-      "ia_knorm": {
-        "est": 0.2667,
-        "lo": 0.2,
-        "hi": 0.3111
-      },
-      "pa_tau_ap": {
-        "est": 0.7333,
-        "lo": 0.2889,
-        "hi": 0.9278
-      },
-      "ia_tau_ap": {
-        "est": 0.3899,
-        "lo": 0.0618,
-        "hi": 0.6028
-      },
-      "n_pa": 874,
-      "n_ia": 875,
-      "n_listwise": 874
-    },
-    "gpt-5.2": {
-      "pa_pearson": {
-        "est": 0.4382,
-        "lo": 0.3823,
-        "hi": 0.4921
-      },
-      "ia_pearson": {
-        "est": 0.5829,
-        "lo": 0.5348,
-        "hi": 0.6283
-      },
-      "pa_knorm": {
-        "est": 0.1333,
-        "lo": 0.0444,
-        "hi": 0.2045
-      },
-      "ia_knorm": {
-        "est": 0.0444,
-        "lo": 0.0,
-        "hi": 0.1111
-      },
-      "pa_tau_ap": {
-        "est": 0.5019,
-        "lo": 0.2828,
-        "hi": 0.9
-      },
-      "ia_tau_ap": {
-        "est": 0.75,
-        "lo": 0.5333,
-        "hi": 1.0
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "gpt5.5": {
-      "pa_pearson": {
-        "est": 0.417,
-        "lo": 0.3614,
-        "hi": 0.4703
-      },
-      "ia_pearson": {
-        "est": 0.6097,
-        "lo": 0.5644,
-        "hi": 0.6523
-      },
-      "pa_knorm": {
-        "est": 0.1556,
-        "lo": 0.0667,
-        "hi": 0.2889
-      },
-      "ia_knorm": {
-        "est": 0.0444,
-        "lo": 0.0,
-        "hi": 0.1333
-      },
-      "pa_tau_ap": {
-        "est": 0.4852,
-        "lo": 0.1815,
-        "hi": 0.8333
-      },
-      "ia_tau_ap": {
-        "est": 0.75,
-        "lo": 0.5031,
-        "hi": 1.0
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "internvl3.5-38b": {
-      "pa_pearson": {
-        "est": 0.1523,
-        "lo": 0.086,
-        "hi": 0.2118
-      },
-      "ia_pearson": {
-        "est": 0.3098,
-        "lo": 0.2496,
-        "hi": 0.3682
-      },
-      "pa_knorm": {
-        "est": 0.1591,
-        "lo": 0.1111,
-        "hi": 0.4444
-      },
-      "ia_knorm": {
-        "est": 0.0667,
-        "lo": 0.0222,
-        "hi": 0.1778
-      },
-      "pa_tau_ap": {
-        "est": 0.5421,
-        "lo": -0.0447,
-        "hi": 0.787
-      },
-      "ia_tau_ap": {
-        "est": 0.6759,
-        "lo": 0.4605,
-        "hi": 0.9444
-      },
-      "n_pa": 869,
-      "n_ia": 869,
-      "n_listwise": 869
-    },
-    "internvl3.5-8b": {
-      "pa_pearson": {
-        "est": 0.1155,
-        "lo": 0.0464,
-        "hi": 0.1828
-      },
-      "ia_pearson": {
-        "est": 0.1957,
-        "lo": 0.1309,
-        "hi": 0.2555
-      },
-      "pa_knorm": {
-        "est": 0.3556,
-        "lo": 0.1905,
-        "hi": 0.5111
-      },
-      "ia_knorm": {
-        "est": 0.1111,
-        "lo": 0.0476,
-        "hi": 0.2727
-      },
-      "pa_tau_ap": {
-        "est": 0.1062,
-        "lo": -0.1284,
-        "hi": 0.6615
-      },
-      "ia_tau_ap": {
-        "est": 0.5741,
-        "lo": 0.2192,
-        "hi": 0.8849
-      },
-      "n_pa": 869,
-      "n_ia": 869,
-      "n_listwise": 869
-    },
-    "qwen3-vl-32b-instruct": {
-      "pa_pearson": {
-        "est": 0.3586,
-        "lo": 0.3006,
-        "hi": 0.4131
-      },
-      "ia_pearson": {
-        "est": 0.3956,
-        "lo": 0.3337,
-        "hi": 0.4554
-      },
-      "pa_knorm": {
-        "est": 0.0222,
-        "lo": 0.0222,
-        "hi": 0.2222
-      },
-      "ia_knorm": {
-        "est": 0.2222,
-        "lo": 0.1778,
-        "hi": 0.3111
-      },
-      "pa_tau_ap": {
-        "est": 0.7778,
-        "lo": 0.2796,
-        "hi": 0.9278
-      },
-      "ia_tau_ap": {
-        "est": 0.5287,
-        "lo": 0.1244,
-        "hi": 0.6676
-      },
-      "n_pa": 874,
-      "n_ia": 874,
-      "n_listwise": 874
-    },
-    "qwen3-vl-8b-instruct": {
-      "pa_pearson": {
-        "est": 0.2429,
-        "lo": 0.1819,
-        "hi": 0.3036
-      },
-      "ia_pearson": {
-        "est": 0.2998,
-        "lo": 0.2321,
-        "hi": 0.3663
-      },
-      "pa_knorm": {
-        "est": 0.0667,
-        "lo": 0.0667,
-        "hi": 0.2889
-      },
-      "ia_knorm": {
-        "est": 0.3111,
-        "lo": 0.2444,
-        "hi": 0.4
-      },
-      "pa_tau_ap": {
-        "est": 0.8074,
-        "lo": 0.1963,
-        "hi": 0.8532
-      },
-      "ia_tau_ap": {
-        "est": 0.3004,
-        "lo": -0.0867,
-        "hi": 0.467
-      },
-      "n_pa": 874,
-      "n_ia": 873,
-      "n_listwise": 873
-    },
-    "robobrain2.5-8b": {
-      "pa_pearson": {
-        "est": 0.0128,
-        "lo": -0.0566,
-        "hi": 0.0824
-      },
-      "ia_pearson": {
-        "est": 0.1673,
-        "lo": 0.103,
-        "hi": 0.2287
-      },
-      "pa_knorm": {
-        "est": 0.2222,
-        "lo": 0.1364,
-        "hi": 0.5227
-      },
-      "ia_knorm": {
-        "est": 0.2222,
-        "lo": 0.1333,
-        "hi": 0.3778
-      },
-      "pa_tau_ap": {
-        "est": 0.3506,
-        "lo": -0.115,
-        "hi": 0.7497
-      },
-      "ia_tau_ap": {
-        "est": 0.3973,
-        "lo": 0.1407,
-        "hi": 0.7275
-      },
-      "n_pa": 875,
-      "n_ia": 874,
-      "n_listwise": 874
-    },
-    "seed2.0_pro": {
-      "pa_pearson": {
-        "est": 0.4965,
-        "lo": 0.445,
-        "hi": 0.5458
-      },
-      "ia_pearson": {
-        "est": 0.5925,
-        "lo": 0.5439,
-        "hi": 0.6376
-      },
-      "pa_knorm": {
-        "est": 0.1111,
-        "lo": 0.0238,
-        "hi": 0.1778
-      },
-      "ia_knorm": {
-        "est": 0.0222,
-        "lo": 0.0,
-        "hi": 0.1111
-      },
-      "pa_tau_ap": {
-        "est": 0.7056,
-        "lo": 0.3278,
-        "hi": 0.9278
-      },
-      "ia_tau_ap": {
-        "est": 0.9722,
-        "lo": 0.5648,
-        "hi": 1.0
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "seed2.1_lite": {
-      "pa_pearson": {
-        "est": 0.4989,
-        "lo": 0.4521,
-        "hi": 0.5451
-      },
-      "ia_pearson": {
-        "est": 0.5596,
-        "lo": 0.5089,
-        "hi": 0.6099
-      },
-      "pa_knorm": {
-        "est": 0.0444,
-        "lo": 0.0222,
-        "hi": 0.1556
-      },
-      "ia_knorm": {
-        "est": 0.0444,
-        "lo": 0.0,
-        "hi": 0.1333
-      },
-      "pa_tau_ap": {
-        "est": 0.8815,
-        "lo": 0.3796,
-        "hi": 0.9556
-      },
-      "ia_tau_ap": {
-        "est": 0.75,
-        "lo": 0.5494,
-        "hi": 1.0
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "videocon": {
-      "pa_pearson": {
-        "est": 0.0607,
-        "lo": -0.005,
-        "hi": 0.1263
-      },
-      "ia_pearson": {
-        "est": 0.0605,
-        "lo": -0.0036,
-        "hi": 0.1255
-      },
-      "pa_knorm": {
-        "est": 0.5333,
-        "lo": 0.4667,
-        "hi": 0.7333
-      },
-      "ia_knorm": {
-        "est": 0.6222,
-        "lo": 0.4,
-        "hi": 0.7333
-      },
-      "pa_tau_ap": {
-        "est": 0.116,
-        "lo": -0.464,
-        "hi": 0.2417
-      },
-      "ia_tau_ap": {
-        "est": -0.4266,
-        "lo": -0.5481,
-        "hi": 0.2253
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875,
-      "ci_flip_expectation": "contains-0 with margin <2x the pearson resolution floor (ia 0.0036 = 1.50x, pa 0.0050 = 2.08x) -- the tightest of the asserted set. A flip here means a quantity already indistinguishable from zero landed on the other side, i.e. sampling noise, NOT a change in any published conclusion. Suspect noise before suspecting the artifact, and do not disable the check over it. (Alice, 2026-07-21.)"
-    },
-    "videophy2": {
-      "pa_pearson": {
-        "est": 0.1404,
-        "lo": 0.0752,
-        "hi": 0.2048
-      },
-      "ia_pearson": {
-        "est": 0.0953,
-        "lo": 0.0298,
-        "hi": 0.1591
-      },
-      "pa_knorm": {
-        "est": 0.4222,
-        "lo": 0.2444,
-        "hi": 0.5778
-      },
-      "ia_knorm": {
-        "est": 0.4889,
-        "lo": 0.3333,
-        "hi": 0.7111
-      },
-      "pa_tau_ap": {
-        "est": 0.1019,
-        "lo": -0.3056,
-        "hi": 0.5006
-      },
-      "ia_tau_ap": {
-        "est": -0.0593,
-        "lo": -0.478,
-        "hi": 0.3551
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "videoscore2": {
-      "pa_pearson": {
-        "est": 0.1499,
-        "lo": 0.0832,
-        "hi": 0.2174
-      },
-      "ia_pearson": {
-        "est": 0.1878,
-        "lo": 0.1236,
-        "hi": 0.2507
-      },
-      "pa_knorm": {
-        "est": 0.2222,
-        "lo": 0.1778,
-        "hi": 0.4318
-      },
-      "ia_knorm": {
-        "est": 0.1591,
-        "lo": 0.0889,
-        "hi": 0.3556
-      },
-      "pa_tau_ap": {
-        "est": 0.4445,
-        "lo": 0.0279,
-        "hi": 0.6985
-      },
-      "ia_tau_ap": {
-        "est": 0.5146,
-        "lo": 0.1621,
-        "hi": 0.8519
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "glm-4.6v-flash": {
-      "pa_pearson": {
-        "est": 0.195,
-        "lo": 0.1321,
-        "hi": 0.2541
-      },
-      "ia_pearson": {
-        "est": 0.3559,
-        "lo": 0.2953,
-        "hi": 0.4134
-      },
-      "pa_knorm": {
-        "est": 0.1111,
-        "lo": 0.0444,
-        "hi": 0.2667
-      },
-      "ia_knorm": {
-        "est": 0.1556,
-        "lo": 0.0909,
-        "hi": 0.25
-      },
-      "pa_tau_ap": {
-        "est": 0.6593,
-        "lo": 0.2146,
-        "hi": 0.8868
-      },
-      "ia_tau_ap": {
-        "est": 0.5525,
-        "lo": 0.3525,
-        "hi": 0.8395
-      },
-      "n_pa": 874,
-      "n_ia": 874,
-      "n_listwise": 874
-    },
-    "qwen3.5-flash": {
-      "pa_pearson": {
-        "est": 0.4164,
-        "lo": 0.3621,
-        "hi": 0.4699
-      },
-      "ia_pearson": {
-        "est": 0.4321,
-        "lo": 0.3706,
-        "hi": 0.4904
-      },
-      "pa_knorm": {
-        "est": 0.0222,
-        "lo": 0.0222,
-        "hi": 0.1778
-      },
-      "ia_knorm": {
-        "est": 0.2222,
-        "lo": 0.1778,
-        "hi": 0.3111
-      },
-      "pa_tau_ap": {
-        "est": 0.7778,
-        "lo": 0.3333,
-        "hi": 0.9683
-      },
-      "ia_tau_ap": {
-        "est": 0.4917,
-        "lo": 0.1121,
-        "hi": 0.6306
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "qwen3.5-plus": {
-      "pa_pearson": {
-        "est": 0.382,
-        "lo": 0.3236,
-        "hi": 0.4371
-      },
-      "ia_pearson": {
-        "est": 0.4581,
-        "lo": 0.3993,
-        "hi": 0.5159
-      },
-      "pa_knorm": {
-        "est": 0.0889,
-        "lo": 0.0222,
-        "hi": 0.2
-      },
-      "ia_knorm": {
-        "est": 0.2,
-        "lo": 0.1778,
-        "hi": 0.2889
-      },
-      "pa_tau_ap": {
-        "est": 0.5556,
-        "lo": 0.3016,
-        "hi": 0.9278
-      },
-      "ia_tau_ap": {
-        "est": 0.5658,
-        "lo": 0.1584,
-        "hi": 0.6769
-      },
-      "n_pa": 873,
-      "n_ia": 873,
-      "n_listwise": 873
-    },
-    "qwen3.5-27b": {
-      "pa_pearson": {
-        "est": 0.2686,
-        "lo": 0.21,
-        "hi": 0.3268
-      },
-      "ia_pearson": {
-        "est": 0.4806,
-        "lo": 0.4255,
-        "hi": 0.5329
-      },
-      "pa_knorm": {
-        "est": 0.2444,
-        "lo": 0.1364,
-        "hi": 0.3556
-      },
-      "ia_knorm": {
-        "est": 0.0222,
-        "lo": 0.0222,
-        "hi": 0.1333
-      },
-      "pa_tau_ap": {
-        "est": 0.2608,
-        "lo": 0.0069,
-        "hi": 0.663
-      },
-      "ia_tau_ap": {
-        "est": 0.9722,
-        "lo": 0.5111,
-        "hi": 0.9753
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875,
-      "ci_endpoint_within_resolution": [
-        "pa_tau_ap"
-      ]
-    },
-    "qwen3.5-9b": {
-      "pa_pearson": {
-        "est": 0.2526,
-        "lo": 0.1901,
-        "hi": 0.3118
-      },
-      "ia_pearson": {
-        "est": 0.4182,
-        "lo": 0.3604,
-        "hi": 0.4754
-      },
-      "pa_knorm": {
-        "est": 0.0889,
-        "lo": 0.0444,
-        "hi": 0.2222
-      },
-      "ia_knorm": {
-        "est": 0.0444,
-        "lo": 0.0222,
-        "hi": 0.1591
-      },
-      "pa_tau_ap": {
-        "est": 0.7333,
-        "lo": 0.2738,
-        "hi": 0.9111
-      },
-      "ia_tau_ap": {
-        "est": 0.75,
-        "lo": 0.3735,
-        "hi": 0.963
-      },
-      "n_pa": 875,
-      "n_ia": 874,
-      "n_listwise": 874
-    },
-    "qwen3.5-4b": {
-      "pa_pearson": {
-        "est": 0.1105,
-        "lo": 0.0468,
-        "hi": 0.1729
-      },
-      "ia_pearson": {
-        "est": 0.2114,
-        "lo": 0.1459,
-        "hi": 0.2751
-      },
-      "pa_knorm": {
-        "est": 0.3556,
-        "lo": 0.1778,
-        "hi": 0.4444
-      },
-      "ia_knorm": {
-        "est": 0.0667,
-        "lo": 0.0444,
-        "hi": 0.2667
-      },
-      "pa_tau_ap": {
-        "est": 0.1677,
-        "lo": -0.1078,
-        "hi": 0.6143
-      },
-      "ia_tau_ap": {
-        "est": 0.713,
-        "lo": 0.2685,
-        "hi": 0.9074
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "claude-opus-4.8": {
-      "pa_pearson": {
-        "est": 0.4025,
-        "lo": 0.3447,
-        "hi": 0.4575
-      },
-      "ia_pearson": {
-        "est": 0.5504,
-        "lo": 0.5022,
-        "hi": 0.5963
-      },
-      "pa_knorm": {
-        "est": 0.0444,
-        "lo": 0.0222,
-        "hi": 0.2
-      },
-      "ia_knorm": {
-        "est": 0.0667,
-        "lo": 0.0222,
-        "hi": 0.1556
-      },
-      "pa_tau_ap": {
-        "est": 0.8444,
-        "lo": 0.3,
-        "hi": 0.9444
-      },
-      "ia_tau_ap": {
-        "est": 0.6389,
-        "lo": 0.3796,
-        "hi": 0.9722
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "n_listwise": 875
-    },
-    "orca-4b": {
-      "pa_pearson": {
-        "est": 0.0712,
-        "lo": 0.0076,
-        "hi": 0.1386
-      },
-      "ia_pearson": {
-        "est": 0.0785,
-        "lo": 0.0118,
-        "hi": 0.145
-      },
-      "pa_knorm": {
-        "est": 0.2,
-        "lo": 0.1333,
-        "hi": 0.5111
-      },
-      "ia_knorm": {
-        "est": 0.3778,
-        "lo": 0.2444,
-        "hi": 0.5778
-      },
-      "pa_tau_ap": {
-        "est": 0.5463,
-        "lo": -0.1453,
-        "hi": 0.7167
-      },
-      "ia_tau_ap": {
-        "est": 0.1381,
-        "lo": -0.1965,
-        "hi": 0.4742
-      },
-      "n_pa": 875,
-      "n_ia": 874,
-      "_note": "FULL RERUN: 8 shards merged + re-parsed, 875/875 rows (874 valid, 1 null). Supersedes the earlier partial n=762 run. Source GitHub d79aac4.",
-      "n_listwise": 874
-    },
-    "random-uniform": {
-      "pa_pearson": {
-        "est": 0.0,
-        "lo": -0.063,
-        "hi": 0.065
-      },
-      "ia_pearson": {
-        "est": 0.0,
-        "lo": -0.066,
-        "hi": 0.069
-      },
-      "pa_knorm": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "ia_knorm": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "pa_tau_ap": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "ia_tau_ap": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "_baseline": true,
-      "_note": "random floor: Pearson EXPECTED=0.0 (single-draw noise, seed42=-0.0515); est=0, CI=null dist 2000 draws; Exact-PA=0.200, +-1-PA~0.54 theoretical"
-    },
-    "vjepa-similarity": {
-      "pa_pearson": {
-        "est": 0.1405,
-        "lo": 0.0714,
-        "hi": 0.209
-      },
-      "ia_pearson": {
-        "est": 0.1206,
-        "lo": 0.0523,
-        "hi": 0.1903
-      },
-      "pa_spearman": {
-        "est": 0.1416,
-        "lo": 0.0719,
-        "hi": 0.2107
-      },
-      "ia_spearman": {
-        "est": 0.1125,
-        "lo": 0.0446,
-        "hi": 0.1831
-      },
-      "pa_knorm": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "ia_knorm": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "pa_tau_ap": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "ia_tau_ap": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "n_pa": 776,
-      "n_ia": 776,
-      "_baseline": true,
-      "_baseline_kind": "per-item-noref",
-      "_note": "per-item no-ref baseline (score01=1-minmax(dist), higher=more real); cov 0.887; Pearson+Spearman +ve; weak (|r|~0.1)"
-    },
-    "warp-consistency": {
-      "pa_pearson": {
-        "est": 0.1054,
-        "lo": 0.041,
-        "hi": 0.1692
-      },
-      "ia_pearson": {
-        "est": -0.0225,
-        "lo": -0.0882,
-        "hi": 0.0443
-      },
-      "pa_spearman": {
-        "est": 0.0988,
-        "lo": 0.0325,
-        "hi": 0.1648
-      },
-      "ia_spearman": {
-        "est": -0.0331,
-        "lo": -0.0988,
-        "hi": 0.0344
-      },
-      "pa_knorm": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "ia_knorm": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "pa_tau_ap": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "ia_tau_ap": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "_baseline": true,
-      "_baseline_kind": "per-item-noref",
-      "_note": "per-item no-ref baseline (score01=1-minmax(dist), higher=more real); cov 1.0; Pearson+Spearman +ve; weak (|r|~0.1)"
-    },
-    "frame-consistency": {
-      "pa_pearson": {
-        "est": 0.123,
-        "lo": 0.0594,
-        "hi": 0.1847
-      },
-      "ia_pearson": {
-        "est": -0.0079,
-        "lo": -0.0721,
-        "hi": 0.0581
-      },
-      "pa_spearman": {
-        "est": 0.1184,
-        "lo": 0.0526,
-        "hi": 0.1814
-      },
-      "ia_spearman": {
-        "est": -0.019,
-        "lo": -0.0838,
-        "hi": 0.0471
-      },
-      "pa_knorm": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "ia_knorm": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "pa_tau_ap": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "ia_tau_ap": {
-        "est": null,
-        "lo": null,
-        "hi": null
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "_baseline": true,
-      "_baseline_kind": "per-item-noref",
-      "_note": "per-item no-ref baseline (score01=1-minmax(dist), higher=more real); cov 1.0; Pearson+Spearman +ve; weak (|r|~0.1)"
-    },
-    "claude-haiku-4-5": {
-      "pa_pearson": {
-        "est": 0.1277,
-        "lo": 0.0599,
-        "hi": 0.1937
-      },
-      "ia_pearson": {
-        "est": 0.2926,
-        "lo": 0.2283,
-        "hi": 0.355
-      },
-      "pa_knorm": {
-        "est": 0.2889,
-        "lo": 0.1556,
-        "hi": 0.4889
-      },
-      "ia_knorm": {
-        "est": 0.1556,
-        "lo": 0.0889,
-        "hi": 0.3111
-      },
-      "pa_tau_ap": {
-        "est": 0.3516,
-        "lo": -0.1429,
-        "hi": 0.6759
-      },
-      "ia_tau_ap": {
-        "est": 0.5296,
-        "lo": 0.1642,
-        "hi": 0.8016
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "_note": "Anthropic tier (sibling claude-opus-4.8); weak judge PA~0.13",
-      "n_listwise": 875
-    },
-    "rynnbrain-1.1-9b": {
-      "pa_pearson": {
-        "est": 0.0826,
-        "lo": 0.0186,
-        "hi": 0.1456
-      },
-      "ia_pearson": {
-        "est": 0.1355,
-        "lo": 0.078,
-        "hi": 0.1925
-      },
-      "pa_knorm": {
-        "est": 0.381,
-        "lo": 0.1714,
-        "hi": 0.5882
-      },
-      "ia_knorm": {
-        "est": 0.4,
-        "lo": 0.2444,
-        "hi": 0.4889
-      },
-      "pa_tau_ap": {
-        "est": 0.1616,
-        "lo": 0.0526,
-        "hi": 0.8122
-      },
-      "ia_tau_ap": {
-        "est": 0.188,
-        "lo": -0.0147,
-        "hi": 0.5608
-      },
-      "n_pa": 875,
-      "n_ia": 875,
-      "_note": "degenerate/ceiling-collapsed weak judge: 862/875 (98.51%) of PA = 5, mean 4.970 / std 0.265; ranking metrics near-degenerate by construction. Source GitHub 2806bee (renamed 463cdd0), gate-verified by Alice (structure PASS).",
-      "n_listwise": 875
-    },
-    "mimo-vl-7b-sft": {
-      "pa_pearson": {
-        "est": 0.071,
-        "lo": 0.0005,
-        "hi": 0.1379
-      },
-      "ia_pearson": {
-        "est": 0.3096,
-        "lo": 0.2474,
-        "hi": 0.3708
-      },
-      "pa_knorm": {
-        "est": 0.2444,
-        "lo": 0.1333,
-        "hi": 0.3636
-      },
-      "ia_knorm": {
-        "est": 0.1333,
-        "lo": 0.0455,
-        "hi": 0.2222
-      },
-      "pa_tau_ap": {
-        "est": 0.3634,
-        "lo": 0.1041,
-        "hi": 0.7695
-      },
-      "ia_tau_ap": {
-        "est": 0.5111,
-        "lo": 0.3148,
-        "hi": 0.8815
-      },
-      "n_pa": 874,
-      "n_ia": 874,
-      "_note": "n=874/875 (1 fetch-error row removed upstream). Source GitHub 30202ea/2e3d078. NOTE: file stem is judge_mimo_vl_sft; canonical key taken from judge_model field.",
-      "n_listwise": 874,
-      "ci_endpoint_within_resolution": [
-        "pa_pearson"
-      ]
-    },
-    "phyjudge": {
-      "pa_pearson": {
-        "est": 0.3373,
-        "lo": 0.2791,
-        "hi": 0.3951
-      },
-      "ia_pearson": {
-        "est": 0.5205,
-        "lo": 0.4707,
-        "hi": 0.569
-      },
-      "pa_knorm": {
-        "est": 0.1111,
-        "lo": 0.0444,
-        "hi": 0.2
-      },
-      "ia_knorm": {
-        "est": 0.0889,
-        "lo": 0.0444,
-        "hi": 0.2
-      },
-      "pa_tau_ap": {
-        "est": 0.6883,
-        "lo": 0.3056,
-        "hi": 0.9405
-      },
-      "ia_tau_ap": {
-        "est": 0.6111,
-        "lo": 0.3016,
-        "hi": 0.9238
-      },
-      "n_pa": 875,
-      "n_ia": 871,
-      "n_listwise": 871,
-      "_note": "PA is NOT a native score: it is mean(PTV, persistence), a half-integer proxy (270/875 values land on .5), so Exact-PA and +-1-PA are NOT comparable with integer judges -- Pearson/Spearman are. ids required normalisation (missing data__ prefix, trailing .mp4); 875/875 matched gold after it. 4 error rows -> IA null (n_ia=871). Source HF PR #52, sha256 9c72c1fa..."
-    }
+  "claude-opus-4.8": {
+   "pa_pearson": {
+    "est": 0.4005,
+    "lo": 0.3421,
+    "hi": 0.4574
+   },
+   "ia_pearson": {
+    "est": 0.5479,
+    "lo": 0.4998,
+    "hi": 0.5944
+   },
+   "pa_knorm": {
+    "est": 0.0444,
+    "lo": 0.0222,
+    "hi": 0.2
+   },
+   "ia_knorm": {
+    "est": 0.0667,
+    "lo": 0.0222,
+    "hi": 0.1556
+   },
+   "pa_tau_ap": {
+    "est": 0.8444,
+    "lo": 0.296,
+    "hi": 0.9278
+   },
+   "ia_tau_ap": {
+    "est": 0.6389,
+    "lo": 0.3889,
+    "hi": 0.9722
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "cosmos-reason2-2b": {
+   "pa_pearson": {
+    "est": 0.0641,
+    "lo": 0.0031,
+    "hi": 0.1239
+   },
+   "ia_pearson": {
+    "est": 0.2314,
+    "lo": 0.1664,
+    "hi": 0.2934
+   },
+   "pa_knorm": {
+    "est": 0.2444,
+    "lo": 0.1364,
+    "hi": 0.4889
+   },
+   "ia_knorm": {
+    "est": 0.1111,
+    "lo": 0.0444,
+    "hi": 0.2222
+   },
+   "pa_tau_ap": {
+    "est": 0.4352,
+    "lo": -0.1471,
+    "hi": 0.705
+   },
+   "ia_tau_ap": {
+    "est": 0.6574,
+    "lo": 0.3106,
+    "hi": 0.9087
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "cosmos-reason2-32b": {
+   "pa_pearson": {
+    "est": 0.2171,
+    "lo": 0.1515,
+    "hi": 0.2824
+   },
+   "ia_pearson": {
+    "est": 0.3743,
+    "lo": 0.3127,
+    "hi": 0.4337
+   },
+   "pa_knorm": {
+    "est": 0.1111,
+    "lo": 0.0667,
+    "hi": 0.2889
+   },
+   "ia_knorm": {
+    "est": 0.0222,
+    "lo": 0.0222,
+    "hi": 0.1556
+   },
+   "pa_tau_ap": {
+    "est": 0.4444,
+    "lo": 0.1127,
+    "hi": 0.8016
+   },
+   "ia_tau_ap": {
+    "est": 0.9722,
+    "lo": 0.4648,
+    "hi": 0.9722
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "cosmos3-nano-reasoner": {
+   "pa_pearson": {
+    "est": 0.2203,
+    "lo": 0.1598,
+    "hi": 0.2785
+   },
+   "ia_pearson": {
+    "est": 0.4169,
+    "lo": 0.3608,
+    "hi": 0.4747
+   },
+   "pa_knorm": {
+    "est": 0.1591,
+    "lo": 0.0682,
+    "hi": 0.25
+   },
+   "ia_knorm": {
+    "est": 0.0889,
+    "lo": 0.0222,
+    "hi": 0.1778
+   },
+   "pa_tau_ap": {
+    "est": 0.3979,
+    "lo": 0.218,
+    "hi": 0.8586
+   },
+   "ia_tau_ap": {
+    "est": 0.7006,
+    "lo": 0.4321,
+    "hi": 0.9683
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "gemini-2.5-flash": {
+   "pa_pearson": {
+    "est": 0.3509,
+    "lo": 0.2904,
+    "hi": 0.4098
+   },
+   "ia_pearson": {
+    "est": 0.369,
+    "lo": 0.3053,
+    "hi": 0.4297
+   },
+   "pa_knorm": {
+    "est": 0.1333,
+    "lo": 0.0667,
+    "hi": 0.2444
+   },
+   "ia_knorm": {
+    "est": 0.2222,
+    "lo": 0.1778,
+    "hi": 0.3111
+   },
+   "pa_tau_ap": {
+    "est": 0.4667,
+    "lo": 0.2074,
+    "hi": 0.8426
+   },
+   "ia_tau_ap": {
+    "est": 0.4917,
+    "lo": 0.0618,
+    "hi": 0.6429
+   },
+   "n_pa": 850,
+   "n_ia": 851,
+   "n_listwise": 869
+  },
+  "gemini-2.5-pro": {
+   "pa_pearson": {
+    "est": 0.2425,
+    "lo": 0.1881,
+    "hi": 0.2957
+   },
+   "ia_pearson": {
+    "est": 0.5163,
+    "lo": 0.4639,
+    "hi": 0.5673
+   },
+   "pa_knorm": {
+    "est": 0.0222,
+    "lo": 0.0222,
+    "hi": 0.2222
+   },
+   "ia_knorm": {
+    "est": 0.0889,
+    "lo": 0.0222,
+    "hi": 0.1556
+   },
+   "pa_tau_ap": {
+    "est": 0.9722,
+    "lo": 0.2907,
+    "hi": 0.9309
+   },
+   "ia_tau_ap": {
+    "est": 0.6315,
+    "lo": 0.4167,
+    "hi": 0.9722
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "gemini-3.1-pro-preview": {
+   "pa_pearson": {
+    "est": 0.4027,
+    "lo": 0.3475,
+    "hi": 0.4552
+   },
+   "ia_pearson": {
+    "est": 0.5245,
+    "lo": 0.4747,
+    "hi": 0.5729
+   },
+   "pa_knorm": {
+    "est": 0.1111,
+    "lo": 0.0667,
+    "hi": 0.2444
+   },
+   "ia_knorm": {
+    "est": 0.2222,
+    "lo": 0.1556,
+    "hi": 0.3111
+   },
+   "pa_tau_ap": {
+    "est": 0.6111,
+    "lo": 0.1889,
+    "hi": 0.8259
+   },
+   "ia_tau_ap": {
+    "est": 0.4917,
+    "lo": 0.0874,
+    "hi": 0.6602
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "gemini-3.5-flash": {
+   "pa_pearson": {
+    "est": 0.5354,
+    "lo": 0.4843,
+    "hi": 0.5843
+   },
+   "ia_pearson": {
+    "est": 0.4252,
+    "lo": 0.3655,
+    "hi": 0.4833
+   },
+   "pa_knorm": {
+    "est": 0.0889,
+    "lo": 0.0222,
+    "hi": 0.1778
+   },
+   "ia_knorm": {
+    "est": 0.2667,
+    "lo": 0.2,
+    "hi": 0.3333
+   },
+   "pa_tau_ap": {
+    "est": 0.7333,
+    "lo": 0.3016,
+    "hi": 0.9278
+   },
+   "ia_tau_ap": {
+    "est": 0.3899,
+    "lo": 0.0565,
+    "hi": 0.5989
+   },
+   "n_pa": 855,
+   "n_ia": 856,
+   "n_listwise": 874
+  },
+  "glm-4.6v-flash": {
+   "pa_pearson": {
+    "est": 0.1925,
+    "lo": 0.1303,
+    "hi": 0.2525
+   },
+   "ia_pearson": {
+    "est": 0.361,
+    "lo": 0.2992,
+    "hi": 0.4187
+   },
+   "pa_knorm": {
+    "est": 0.1111,
+    "lo": 0.0444,
+    "hi": 0.2444
+   },
+   "ia_knorm": {
+    "est": 0.1556,
+    "lo": 0.0909,
+    "hi": 0.25
+   },
+   "pa_tau_ap": {
+    "est": 0.6593,
+    "lo": 0.2185,
+    "hi": 0.8907
+   },
+   "ia_tau_ap": {
+    "est": 0.5525,
+    "lo": 0.3525,
+    "hi": 0.8395
+   },
+   "n_pa": 855,
+   "n_ia": 855,
+   "n_listwise": 874
+  },
+  "gpt-5.2": {
+   "pa_pearson": {
+    "est": 0.4352,
+    "lo": 0.3786,
+    "hi": 0.4904
+   },
+   "ia_pearson": {
+    "est": 0.5805,
+    "lo": 0.5308,
+    "hi": 0.6263
+   },
+   "pa_knorm": {
+    "est": 0.1333,
+    "lo": 0.0444,
+    "hi": 0.2222
+   },
+   "ia_knorm": {
+    "est": 0.0444,
+    "lo": 0.0,
+    "hi": 0.1333
+   },
+   "pa_tau_ap": {
+    "est": 0.5019,
+    "lo": 0.2611,
+    "hi": 0.8889
+   },
+   "ia_tau_ap": {
+    "est": 0.75,
+    "lo": 0.5056,
+    "hi": 0.9753
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "gpt5.5": {
+   "pa_pearson": {
+    "est": 0.414,
+    "lo": 0.358,
+    "hi": 0.4675
+   },
+   "ia_pearson": {
+    "est": 0.6104,
+    "lo": 0.5652,
+    "hi": 0.6533
+   },
+   "pa_knorm": {
+    "est": 0.1556,
+    "lo": 0.0667,
+    "hi": 0.2889
+   },
+   "ia_knorm": {
+    "est": 0.0444,
+    "lo": 0.0,
+    "hi": 0.1333
+   },
+   "pa_tau_ap": {
+    "est": 0.4852,
+    "lo": 0.181,
+    "hi": 0.8405
+   },
+   "ia_tau_ap": {
+    "est": 0.75,
+    "lo": 0.4784,
+    "hi": 1.0
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "internvl3.5-38b": {
+   "pa_pearson": {
+    "est": 0.1522,
+    "lo": 0.0873,
+    "hi": 0.2136
+   },
+   "ia_pearson": {
+    "est": 0.3114,
+    "lo": 0.2509,
+    "hi": 0.3713
+   },
+   "pa_knorm": {
+    "est": 0.1333,
+    "lo": 0.1111,
+    "hi": 0.4444
+   },
+   "ia_knorm": {
+    "est": 0.0889,
+    "lo": 0.0222,
+    "hi": 0.1778
+   },
+   "pa_tau_ap": {
+    "est": 0.5698,
+    "lo": -0.0413,
+    "hi": 0.7815
+   },
+   "ia_tau_ap": {
+    "est": 0.6204,
+    "lo": 0.4327,
+    "hi": 0.9444
+   },
+   "n_pa": 850,
+   "n_ia": 850,
+   "n_listwise": 869
+  },
+  "internvl3.5-8b": {
+   "pa_pearson": {
+    "est": 0.1137,
+    "lo": 0.0432,
+    "hi": 0.1827
+   },
+   "ia_pearson": {
+    "est": 0.1963,
+    "lo": 0.132,
+    "hi": 0.2585
+   },
+   "pa_knorm": {
+    "est": 0.3409,
+    "lo": 0.1905,
+    "hi": 0.5333
+   },
+   "ia_knorm": {
+    "est": 0.1111,
+    "lo": 0.0667,
+    "hi": 0.2889
+   },
+   "pa_tau_ap": {
+    "est": 0.2173,
+    "lo": -0.1385,
+    "hi": 0.6568
+   },
+   "ia_tau_ap": {
+    "est": 0.5741,
+    "lo": 0.2037,
+    "hi": 0.8794
+   },
+   "n_pa": 850,
+   "n_ia": 850,
+   "n_listwise": 869
+  },
+  "mimo-vl-7b-sft": {
+   "pa_pearson": {
+    "est": 0.0577,
+    "lo": -0.0122,
+    "hi": 0.1264
+   },
+   "ia_pearson": {
+    "est": 0.3127,
+    "lo": 0.2509,
+    "hi": 0.374
+   },
+   "pa_knorm": {
+    "est": 0.2444,
+    "lo": 0.1364,
+    "hi": 0.3778
+   },
+   "ia_knorm": {
+    "est": 0.1333,
+    "lo": 0.0444,
+    "hi": 0.2222
+   },
+   "pa_tau_ap": {
+    "est": 0.3634,
+    "lo": 0.0856,
+    "hi": 0.751
+   },
+   "ia_tau_ap": {
+    "est": 0.5111,
+    "lo": 0.3259,
+    "hi": 0.8815
+   },
+   "n_pa": 855,
+   "n_ia": 855,
+   "n_listwise": 874
+  },
+  "orca-4b": {
+   "pa_pearson": {
+    "est": 0.0805,
+    "lo": 0.0179,
+    "hi": 0.1452
+   },
+   "ia_pearson": {
+    "est": 0.0797,
+    "lo": 0.0133,
+    "hi": 0.1479
+   },
+   "pa_knorm": {
+    "est": 0.2,
+    "lo": 0.1333,
+    "hi": 0.5111
+   },
+   "ia_knorm": {
+    "est": 0.3778,
+    "lo": 0.2444,
+    "hi": 0.5778
+   },
+   "pa_tau_ap": {
+    "est": 0.5185,
+    "lo": -0.1463,
+    "hi": 0.6997
+   },
+   "ia_tau_ap": {
+    "est": 0.1548,
+    "lo": -0.2001,
+    "hi": 0.4776
+   },
+   "n_pa": 856,
+   "n_ia": 855,
+   "n_listwise": 874
+  },
+  "phyjudge": {
+   "pa_pearson": {
+    "est": 0.3366,
+    "lo": 0.2768,
+    "hi": 0.3931
+   },
+   "ia_pearson": {
+    "est": 0.5215,
+    "lo": 0.4707,
+    "hi": 0.5698
+   },
+   "pa_knorm": {
+    "est": 0.1111,
+    "lo": 0.0444,
+    "hi": 0.2
+   },
+   "ia_knorm": {
+    "est": 0.0889,
+    "lo": 0.0444,
+    "hi": 0.2
+   },
+   "pa_tau_ap": {
+    "est": 0.6883,
+    "lo": 0.3086,
+    "hi": 0.9436
+   },
+   "ia_tau_ap": {
+    "est": 0.6111,
+    "lo": 0.3004,
+    "hi": 0.9238
+   },
+   "n_pa": 856,
+   "n_ia": 852,
+   "n_listwise": 871
+  },
+  "qwen3-vl-32b-instruct": {
+   "pa_pearson": {
+    "est": 0.3535,
+    "lo": 0.294,
+    "hi": 0.4103
+   },
+   "ia_pearson": {
+    "est": 0.3956,
+    "lo": 0.3327,
+    "hi": 0.4562
+   },
+   "pa_knorm": {
+    "est": 0.0444,
+    "lo": 0.0233,
+    "hi": 0.2444
+   },
+   "ia_knorm": {
+    "est": 0.2222,
+    "lo": 0.1778,
+    "hi": 0.3111
+   },
+   "pa_tau_ap": {
+    "est": 0.7333,
+    "lo": 0.2765,
+    "hi": 0.9312
+   },
+   "ia_tau_ap": {
+    "est": 0.5287,
+    "lo": 0.1213,
+    "hi": 0.6676
+   },
+   "n_pa": 855,
+   "n_ia": 855,
+   "n_listwise": 874
+  },
+  "qwen3-vl-8b-instruct": {
+   "pa_pearson": {
+    "est": 0.2462,
+    "lo": 0.1834,
+    "hi": 0.3068
+   },
+   "ia_pearson": {
+    "est": 0.2992,
+    "lo": 0.2324,
+    "hi": 0.3656
+   },
+   "pa_knorm": {
+    "est": 0.0667,
+    "lo": 0.0667,
+    "hi": 0.2667
+   },
+   "ia_knorm": {
+    "est": 0.3111,
+    "lo": 0.2444,
+    "hi": 0.4
+   },
+   "pa_tau_ap": {
+    "est": 0.8074,
+    "lo": 0.2016,
+    "hi": 0.8537
+   },
+   "ia_tau_ap": {
+    "est": 0.3004,
+    "lo": -0.0885,
+    "hi": 0.4596
+   },
+   "n_pa": 855,
+   "n_ia": 854,
+   "n_listwise": 873
+  },
+  "qwen3.5-27b": {
+   "pa_pearson": {
+    "est": 0.2599,
+    "lo": 0.2,
+    "hi": 0.3165
+   },
+   "ia_pearson": {
+    "est": 0.4817,
+    "lo": 0.4259,
+    "hi": 0.5347
+   },
+   "pa_knorm": {
+    "est": 0.2,
+    "lo": 0.1333,
+    "hi": 0.3556
+   },
+   "ia_knorm": {
+    "est": 0.0222,
+    "lo": 0.0222,
+    "hi": 0.1556
+   },
+   "pa_tau_ap": {
+    "est": 0.3296,
+    "lo": 0.0016,
+    "hi": 0.6753
+   },
+   "ia_tau_ap": {
+    "est": 0.9722,
+    "lo": 0.496,
+    "hi": 0.9722
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "qwen3.5-4b": {
+   "pa_pearson": {
+    "est": 0.1139,
+    "lo": 0.0495,
+    "hi": 0.1775
+   },
+   "ia_pearson": {
+    "est": 0.2142,
+    "lo": 0.1498,
+    "hi": 0.2775
+   },
+   "pa_knorm": {
+    "est": 0.3556,
+    "lo": 0.1778,
+    "hi": 0.4444
+   },
+   "ia_knorm": {
+    "est": 0.0667,
+    "lo": 0.0444,
+    "hi": 0.2667
+   },
+   "pa_tau_ap": {
+    "est": 0.1677,
+    "lo": -0.089,
+    "hi": 0.6167
+   },
+   "ia_tau_ap": {
+    "est": 0.709,
+    "lo": 0.2621,
+    "hi": 0.8981
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "qwen3.5-9b": {
+   "pa_pearson": {
+    "est": 0.2467,
+    "lo": 0.1838,
+    "hi": 0.3069
+   },
+   "ia_pearson": {
+    "est": 0.4229,
+    "lo": 0.365,
+    "hi": 0.4786
+   },
+   "pa_knorm": {
+    "est": 0.0889,
+    "lo": 0.0444,
+    "hi": 0.2222
+   },
+   "ia_knorm": {
+    "est": 0.0444,
+    "lo": 0.0222,
+    "hi": 0.1556
+   },
+   "pa_tau_ap": {
+    "est": 0.7333,
+    "lo": 0.2646,
+    "hi": 0.9
+   },
+   "ia_tau_ap": {
+    "est": 0.75,
+    "lo": 0.4031,
+    "hi": 0.9722
+   },
+   "n_pa": 856,
+   "n_ia": 855,
+   "n_listwise": 874
+  },
+  "qwen3.5-flash": {
+   "pa_pearson": {
+    "est": 0.4173,
+    "lo": 0.3606,
+    "hi": 0.4718
+   },
+   "ia_pearson": {
+    "est": 0.4304,
+    "lo": 0.3678,
+    "hi": 0.4909
+   },
+   "pa_knorm": {
+    "est": 0.0222,
+    "lo": 0.0222,
+    "hi": 0.1778
+   },
+   "ia_knorm": {
+    "est": 0.2222,
+    "lo": 0.1778,
+    "hi": 0.3111
+   },
+   "pa_tau_ap": {
+    "est": 0.7778,
+    "lo": 0.3312,
+    "hi": 0.9683
+   },
+   "ia_tau_ap": {
+    "est": 0.4917,
+    "lo": 0.1028,
+    "hi": 0.6306
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "qwen3.5-plus": {
+   "pa_pearson": {
+    "est": 0.3833,
+    "lo": 0.3257,
+    "hi": 0.4398
+   },
+   "ia_pearson": {
+    "est": 0.4557,
+    "lo": 0.3946,
+    "hi": 0.5153
+   },
+   "pa_knorm": {
+    "est": 0.0889,
+    "lo": 0.0222,
+    "hi": 0.2
+   },
+   "ia_knorm": {
+    "est": 0.2,
+    "lo": 0.1778,
+    "hi": 0.2889
+   },
+   "pa_tau_ap": {
+    "est": 0.5556,
+    "lo": 0.2889,
+    "hi": 0.9259
+   },
+   "ia_tau_ap": {
+    "est": 0.5658,
+    "lo": 0.1436,
+    "hi": 0.6769
+   },
+   "n_pa": 854,
+   "n_ia": 854,
+   "n_listwise": 873
+  },
+  "random-uniform": {
+   "pa_pearson": {
+    "est": -0.0478,
+    "lo": -0.1135,
+    "hi": 0.0186
+   },
+   "ia_pearson": {
+    "est": 0.008,
+    "lo": -0.0586,
+    "hi": 0.074
+   },
+   "pa_knorm": {
+    "est": 0.3778,
+    "lo": 0.2444,
+    "hi": 0.6444
+   },
+   "ia_knorm": {
+    "est": 0.6444,
+    "lo": 0.4222,
+    "hi": 0.8409
+   },
+   "pa_tau_ap": {
+    "est": 0.2538,
+    "lo": -0.3318,
+    "hi": 0.5111
+   },
+   "ia_tau_ap": {
+    "est": 0.0525,
+    "lo": -0.6078,
+    "hi": 0.3064
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "robobrain2.5-8b": {
+   "pa_pearson": {
+    "est": 0.0129,
+    "lo": -0.0577,
+    "hi": 0.0836
+   },
+   "ia_pearson": {
+    "est": 0.1568,
+    "lo": 0.0935,
+    "hi": 0.2182
+   },
+   "pa_knorm": {
+    "est": 0.2273,
+    "lo": 0.1364,
+    "hi": 0.5333
+   },
+   "ia_knorm": {
+    "est": 0.2222,
+    "lo": 0.1333,
+    "hi": 0.3778
+   },
+   "pa_tau_ap": {
+    "est": 0.3506,
+    "lo": -0.1248,
+    "hi": 0.7407
+   },
+   "ia_tau_ap": {
+    "est": 0.3973,
+    "lo": 0.1442,
+    "hi": 0.7368
+   },
+   "n_pa": 856,
+   "n_ia": 855,
+   "n_listwise": 874
+  },
+  "rynnbrain-1.1-9b": {
+   "pa_pearson": {
+    "est": 0.0601,
+    "lo": -0.0033,
+    "hi": 0.1304
+   },
+   "ia_pearson": {
+    "est": 0.1353,
+    "lo": 0.0763,
+    "hi": 0.1936
+   },
+   "pa_knorm": {
+    "est": 0.5385,
+    "lo": 0.3333,
+    "hi": 0.6667
+   },
+   "ia_knorm": {
+    "est": 0.3778,
+    "lo": 0.2444,
+    "hi": 0.5111
+   },
+   "pa_tau_ap": {
+    "est": 0.0381,
+    "lo": 0.0001,
+    "hi": 0.7575
+   },
+   "ia_tau_ap": {
+    "est": 0.2127,
+    "lo": -0.033,
+    "hi": 0.5608
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "seed2.0_pro": {
+   "pa_pearson": {
+    "est": 0.4984,
+    "lo": 0.447,
+    "hi": 0.5485
+   },
+   "ia_pearson": {
+    "est": 0.5899,
+    "lo": 0.541,
+    "hi": 0.6365
+   },
+   "pa_knorm": {
+    "est": 0.1111,
+    "lo": 0.0222,
+    "hi": 0.1778
+   },
+   "ia_knorm": {
+    "est": 0.0222,
+    "lo": 0.0,
+    "hi": 0.1111
+   },
+   "pa_tau_ap": {
+    "est": 0.7056,
+    "lo": 0.3238,
+    "hi": 0.9278
+   },
+   "ia_tau_ap": {
+    "est": 0.9722,
+    "lo": 0.5667,
+    "hi": 1.0
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "seed2.1_lite": {
+   "pa_pearson": {
+    "est": 0.5019,
+    "lo": 0.4555,
+    "hi": 0.5474
+   },
+   "ia_pearson": {
+    "est": 0.5566,
+    "lo": 0.5067,
+    "hi": 0.6058
+   },
+   "pa_knorm": {
+    "est": 0.0444,
+    "lo": 0.0222,
+    "hi": 0.1556
+   },
+   "ia_knorm": {
+    "est": 0.0444,
+    "lo": 0.0,
+    "hi": 0.1333
+   },
+   "pa_tau_ap": {
+    "est": 0.8815,
+    "lo": 0.3815,
+    "hi": 0.963
+   },
+   "ia_tau_ap": {
+    "est": 0.75,
+    "lo": 0.5457,
+    "hi": 1.0
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "videocon": {
+   "pa_pearson": {
+    "est": 0.057,
+    "lo": -0.0096,
+    "hi": 0.1237
+   },
+   "ia_pearson": {
+    "est": 0.054,
+    "lo": -0.0113,
+    "hi": 0.1202
+   },
+   "pa_knorm": {
+    "est": 0.5556,
+    "lo": 0.4667,
+    "hi": 0.7333
+   },
+   "ia_knorm": {
+    "est": 0.6222,
+    "lo": 0.3778,
+    "hi": 0.7333
+   },
+   "pa_tau_ap": {
+    "est": 0.0716,
+    "lo": -0.4712,
+    "hi": 0.2571
+   },
+   "ia_tau_ap": {
+    "est": -0.4297,
+    "lo": -0.542,
+    "hi": 0.2455
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "videophy2": {
+   "pa_pearson": {
+    "est": 0.1331,
+    "lo": 0.0661,
+    "hi": 0.1981
+   },
+   "ia_pearson": {
+    "est": 0.0967,
+    "lo": 0.0323,
+    "hi": 0.162
+   },
+   "pa_knorm": {
+    "est": 0.4,
+    "lo": 0.2444,
+    "hi": 0.5682
+   },
+   "ia_knorm": {
+    "est": 0.5333,
+    "lo": 0.3111,
+    "hi": 0.7111
+   },
+   "pa_tau_ap": {
+    "est": 0.166,
+    "lo": -0.2593,
+    "hi": 0.5154
+   },
+   "ia_tau_ap": {
+    "est": -0.1951,
+    "lo": -0.4711,
+    "hi": 0.3965
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
+  },
+  "videoscore2": {
+   "pa_pearson": {
+    "est": 0.1524,
+    "lo": 0.0835,
+    "hi": 0.2183
+   },
+   "ia_pearson": {
+    "est": 0.1851,
+    "lo": 0.1218,
+    "hi": 0.2484
+   },
+   "pa_knorm": {
+    "est": 0.2222,
+    "lo": 0.1778,
+    "hi": 0.4222
+   },
+   "ia_knorm": {
+    "est": 0.1591,
+    "lo": 0.0889,
+    "hi": 0.3556
+   },
+   "pa_tau_ap": {
+    "est": 0.4445,
+    "lo": 0.0187,
+    "hi": 0.7007
+   },
+   "ia_tau_ap": {
+    "est": 0.5146,
+    "lo": 0.164,
+    "hi": 0.847
+   },
+   "n_pa": 856,
+   "n_ia": 856,
+   "n_listwise": 875
   }
+ }
 }

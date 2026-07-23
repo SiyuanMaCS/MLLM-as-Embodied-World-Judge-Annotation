@@ -12,349 +12,349 @@
     "gemini-3.5-flash": {
       "agent_consistency": {
         "hard_recall": {
-          "est": 0.5365,
-          "lo": 0.472,
-          "hi": 0.6
+          "est": 0.5371,
+          "lo": 0.4716,
+          "hi": 0.6036
         },
         "lenient_recall": {
-          "est": 0.8412,
-          "lo": 0.7926,
-          "hi": 0.8863
+          "est": 0.8428,
+          "lo": 0.794,
+          "hi": 0.8894
         },
         "mae": {
-          "est": 0.6309,
-          "lo": 0.584,
-          "hi": 0.6777
+          "est": 0.6308,
+          "lo": 0.5829,
+          "hi": 0.6787
         },
-        "n_coverage": 875,
-        "n_violation_items": 233
+        "n_coverage": 856,
+        "n_violation_items": 229
       },
       "scene_consistency": {
         "hard_recall": {
-          "est": 0.6708,
-          "lo": 0.6195,
-          "hi": 0.7214
+          "est": 0.6677,
+          "lo": 0.6149,
+          "hi": 0.7194
         },
         "lenient_recall": {
-          "est": 0.8168,
-          "lo": 0.7729,
-          "hi": 0.858
+          "est": 0.8179,
+          "lo": 0.7747,
+          "hi": 0.8602
         },
         "mae": {
-          "est": 0.5726,
+          "est": 0.5736,
           "lo": 0.5257,
-          "hi": 0.6206
+          "hi": 0.6215
         },
-        "n_coverage": 875,
-        "n_violation_items": 322
+        "n_coverage": 856,
+        "n_violation_items": 313
       },
       "interaction_realism": {
         "hard_recall": {
-          "est": 0.6209,
-          "lo": 0.5675,
-          "hi": 0.6728
+          "est": 0.6261,
+          "lo": 0.5727,
+          "hi": 0.6782
         },
         "lenient_recall": {
-          "est": 0.8507,
-          "lo": 0.8108,
-          "hi": 0.8879
+          "est": 0.8541,
+          "lo": 0.8152,
+          "hi": 0.8912
         },
         "mae": {
-          "est": 0.68,
-          "lo": 0.632,
-          "hi": 0.728
+          "est": 0.6752,
+          "lo": 0.6273,
+          "hi": 0.7255
         },
-        "n_coverage": 875,
-        "n_violation_items": 335
+        "n_coverage": 856,
+        "n_violation_items": 329
       },
       "agent_match": {
         "hard_recall": {
-          "est": 0.2987,
-          "lo": 0.2258,
-          "hi": 0.3733
+          "est": 0.2941,
+          "lo": 0.2229,
+          "hi": 0.3671
         },
         "lenient_recall": {
-          "est": 0.7792,
-          "lo": 0.7115,
-          "hi": 0.8435
+          "est": 0.7778,
+          "lo": 0.7086,
+          "hi": 0.8411
         },
         "mae": {
-          "est": 0.496,
-          "lo": 0.4571,
-          "hi": 0.5337
+          "est": 0.4965,
+          "lo": 0.4591,
+          "hi": 0.5362
         },
-        "n_coverage": 875,
-        "n_violation_items": 154
+        "n_coverage": 856,
+        "n_violation_items": 153
       },
       "object_correct": {
         "hard_recall": {
-          "est": 0.0279,
+          "est": 0.0282,
           "lo": 0.0058,
-          "hi": 0.0542
+          "hi": 0.0559
         },
         "lenient_recall": {
-          "est": 0.6034,
-          "lo": 0.5304,
-          "hi": 0.6735
+          "est": 0.6102,
+          "lo": 0.538,
+          "hi": 0.6816
         },
         "mae": {
-          "est": 0.6389,
-          "lo": 0.5977,
-          "hi": 0.6823
+          "est": 0.6425,
+          "lo": 0.6005,
+          "hi": 0.6846
         },
-        "n_coverage": 875,
-        "n_violation_items": 179
+        "n_coverage": 856,
+        "n_violation_items": 177
       },
       "goal_completed": {
         "hard_recall": {
-          "est": 0.305,
-          "lo": 0.2555,
-          "hi": 0.3557
+          "est": 0.3013,
+          "lo": 0.2508,
+          "hi": 0.3522
         },
         "lenient_recall": {
-          "est": 0.8962,
-          "lo": 0.861,
-          "hi": 0.9281
+          "est": 0.8974,
+          "lo": 0.8623,
+          "hi": 0.9297
         },
         "mae": {
-          "est": 0.6697,
-          "lo": 0.6297,
-          "hi": 0.7097
+          "est": 0.6729,
+          "lo": 0.632,
+          "hi": 0.715
         },
-        "n_coverage": 875,
-        "n_violation_items": 318
+        "n_coverage": 856,
+        "n_violation_items": 312
       }
     },
     "qwen3-vl-32b-instruct": {
       "agent_consistency": {
         "hard_recall": {
-          "est": 0.0815,
-          "lo": 0.048,
-          "hi": 0.1167
+          "est": 0.0786,
+          "lo": 0.0455,
+          "hi": 0.1154
         },
         "lenient_recall": {
-          "est": 0.1416,
-          "lo": 0.0982,
-          "hi": 0.1872
+          "est": 0.1397,
+          "lo": 0.0952,
+          "hi": 0.1861
         },
         "mae": {
-          "est": 0.6556,
-          "lo": 0.6007,
-          "hi": 0.712
+          "est": 0.6585,
+          "lo": 0.6035,
+          "hi": 0.7155
         },
-        "n_coverage": 874,
-        "n_violation_items": 233
+        "n_coverage": 855,
+        "n_violation_items": 229
       },
       "scene_consistency": {
         "hard_recall": {
-          "est": 0.0748,
-          "lo": 0.0473,
-          "hi": 0.1051
+          "est": 0.0737,
+          "lo": 0.0462,
+          "hi": 0.1036
         },
         "lenient_recall": {
-          "est": 0.2741,
-          "lo": 0.2242,
-          "hi": 0.3238
+          "est": 0.2756,
+          "lo": 0.2264,
+          "hi": 0.325
         },
         "mae": {
-          "est": 0.8272,
-          "lo": 0.7721,
-          "hi": 0.8833
+          "est": 0.8257,
+          "lo": 0.7708,
+          "hi": 0.883
         },
-        "n_coverage": 874,
-        "n_violation_items": 321
+        "n_coverage": 855,
+        "n_violation_items": 312
       },
       "interaction_realism": {
         "hard_recall": {
           "est": 0.1707,
-          "lo": 0.1317,
-          "hi": 0.2117
+          "lo": 0.1304,
+          "hi": 0.213
         },
         "lenient_recall": {
-          "est": 0.4671,
-          "lo": 0.4137,
-          "hi": 0.5203
+          "est": 0.4695,
+          "lo": 0.4164,
+          "hi": 0.5248
         },
         "mae": {
-          "est": 0.8192,
-          "lo": 0.7686,
-          "hi": 0.8707
+          "est": 0.8175,
+          "lo": 0.7649,
+          "hi": 0.8699
         },
-        "n_coverage": 874,
-        "n_violation_items": 334
+        "n_coverage": 855,
+        "n_violation_items": 328
       },
       "agent_match": {
         "hard_recall": {
-          "est": 0.366,
-          "lo": 0.2901,
-          "hi": 0.4437
+          "est": 0.3618,
+          "lo": 0.2866,
+          "hi": 0.4375
         },
         "lenient_recall": {
-          "est": 0.3791,
-          "lo": 0.3025,
-          "hi": 0.4581
+          "est": 0.375,
+          "lo": 0.3,
+          "hi": 0.4516
         },
         "mae": {
-          "est": 0.3169,
-          "lo": 0.2738,
-          "hi": 0.362
+          "est": 0.3205,
+          "lo": 0.2757,
+          "hi": 0.3668
         },
-        "n_coverage": 874,
-        "n_violation_items": 153
+        "n_coverage": 855,
+        "n_violation_items": 152
       },
       "object_correct": {
         "hard_recall": {
-          "est": 0.1067,
-          "lo": 0.0643,
-          "hi": 0.1543
+          "est": 0.108,
+          "lo": 0.064,
+          "hi": 0.1564
         },
         "lenient_recall": {
-          "est": 0.1742,
-          "lo": 0.1207,
-          "hi": 0.2326
+          "est": 0.1761,
+          "lo": 0.1214,
+          "hi": 0.2349
         },
         "mae": {
-          "est": 0.5503,
-          "lo": 0.4983,
-          "hi": 0.6034
+          "est": 0.5497,
+          "lo": 0.4977,
+          "hi": 0.6035
         },
-        "n_coverage": 874,
-        "n_violation_items": 178
+        "n_coverage": 855,
+        "n_violation_items": 176
       },
       "goal_completed": {
         "hard_recall": {
-          "est": 0.4416,
-          "lo": 0.3884,
-          "hi": 0.4955
+          "est": 0.4405,
+          "lo": 0.3851,
+          "hi": 0.4954
         },
         "lenient_recall": {
-          "est": 0.6877,
-          "lo": 0.6369,
-          "hi": 0.7379
+          "est": 0.6881,
+          "lo": 0.6358,
+          "hi": 0.738
         },
         "mae": {
-          "est": 0.6568,
-          "lo": 0.6071,
-          "hi": 0.7063
+          "est": 0.6585,
+          "lo": 0.6086,
+          "hi": 0.7088
         },
-        "n_coverage": 874,
-        "n_violation_items": 317
+        "n_coverage": 855,
+        "n_violation_items": 311
       }
     },
     "qwen3-vl-8b-instruct": {
       "agent_consistency": {
         "hard_recall": {
-          "est": 0.073,
-          "lo": 0.0413,
-          "hi": 0.1075
+          "est": 0.0699,
+          "lo": 0.0383,
+          "hi": 0.1046
         },
         "lenient_recall": {
-          "est": 0.1245,
-          "lo": 0.0833,
-          "hi": 0.1687
+          "est": 0.1223,
+          "lo": 0.0812,
+          "hi": 0.1659
         },
         "mae": {
-          "est": 0.6476,
-          "lo": 0.5938,
-          "hi": 0.7033
+          "est": 0.6491,
+          "lo": 0.5935,
+          "hi": 0.7076
         },
-        "n_coverage": 874,
-        "n_violation_items": 233
+        "n_coverage": 855,
+        "n_violation_items": 229
       },
       "scene_consistency": {
         "hard_recall": {
-          "est": 0.0187,
-          "lo": 0.006,
-          "hi": 0.0347
+          "est": 0.016,
+          "lo": 0.0033,
+          "hi": 0.0314
         },
         "lenient_recall": {
-          "est": 0.1308,
-          "lo": 0.0955,
-          "hi": 0.1687
+          "est": 0.1314,
+          "lo": 0.0957,
+          "hi": 0.1703
         },
         "mae": {
-          "est": 0.8982,
-          "lo": 0.8411,
-          "hi": 0.9543
+          "est": 0.8971,
+          "lo": 0.84,
+          "hi": 0.9533
         },
-        "n_coverage": 874,
-        "n_violation_items": 321
+        "n_coverage": 855,
+        "n_violation_items": 312
       },
       "interaction_realism": {
         "hard_recall": {
-          "est": 0.2904,
-          "lo": 0.2429,
-          "hi": 0.3392
+          "est": 0.2866,
+          "lo": 0.2382,
+          "hi": 0.3353
         },
         "lenient_recall": {
-          "est": 0.6647,
-          "lo": 0.6126,
-          "hi": 0.7152
+          "est": 0.6646,
+          "lo": 0.6139,
+          "hi": 0.7151
         },
         "mae": {
-          "est": 0.786,
-          "lo": 0.7371,
-          "hi": 0.8351
+          "est": 0.7895,
+          "lo": 0.7395,
+          "hi": 0.8386
         },
-        "n_coverage": 874,
-        "n_violation_items": 334
+        "n_coverage": 855,
+        "n_violation_items": 328
       },
       "agent_match": {
         "hard_recall": {
-          "est": 0.3791,
-          "lo": 0.3032,
-          "hi": 0.4562
+          "est": 0.375,
+          "lo": 0.298,
+          "hi": 0.4533
         },
         "lenient_recall": {
-          "est": 0.4314,
-          "lo": 0.3537,
-          "hi": 0.5099
+          "est": 0.4276,
+          "lo": 0.3481,
+          "hi": 0.5074
         },
         "mae": {
-          "est": 0.3535,
-          "lo": 0.307,
-          "hi": 0.4005
+          "est": 0.3579,
+          "lo": 0.3119,
+          "hi": 0.407
         },
-        "n_coverage": 874,
-        "n_violation_items": 153
+        "n_coverage": 855,
+        "n_violation_items": 152
       },
       "object_correct": {
         "hard_recall": {
-          "est": 0.0843,
-          "lo": 0.0459,
-          "hi": 0.128
+          "est": 0.0852,
+          "lo": 0.0452,
+          "hi": 0.1282
         },
         "lenient_recall": {
-          "est": 0.1348,
-          "lo": 0.0854,
-          "hi": 0.1867
+          "est": 0.1364,
+          "lo": 0.0879,
+          "hi": 0.1882
         },
         "mae": {
-          "est": 0.5595,
-          "lo": 0.5086,
-          "hi": 0.6126
+          "est": 0.5591,
+          "lo": 0.5058,
+          "hi": 0.6129
         },
-        "n_coverage": 874,
-        "n_violation_items": 178
+        "n_coverage": 855,
+        "n_violation_items": 176
       },
       "goal_completed": {
         "hard_recall": {
-          "est": 0.3312,
-          "lo": 0.2799,
-          "hi": 0.3855
+          "est": 0.3344,
+          "lo": 0.2821,
+          "hi": 0.3863
         },
         "lenient_recall": {
-          "est": 0.5647,
-          "lo": 0.5109,
-          "hi": 0.6189
+          "est": 0.5691,
+          "lo": 0.5145,
+          "hi": 0.623
         },
         "mae": {
-          "est": 0.7689,
-          "lo": 0.7159,
-          "hi": 0.8204
+          "est": 0.7626,
+          "lo": 0.7111,
+          "hi": 0.8143
         },
-        "n_coverage": 874,
-        "n_violation_items": 317
+        "n_coverage": 855,
+        "n_violation_items": 311
       }
     }
   }
