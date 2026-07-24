@@ -10,10 +10,9 @@
   "ci_method": "2.5%/97.5% percentile (est = observed point on full data)",
   "knorm_grouping": "10 merged base models (drop _prefix/_rewrite suffix)",
   "n_gold_items": 856,
-  "gold_source": "test_clean.jsonl (856; gold_875 minus 19 init/instruction rows)",
   "n_gold_actual": 856,
   "test_clean_sha256": "fd027efa93ec042e",
-  "note": "DERIVED SET test_clean; original bootstrap_ci.json (875) NOT overwritten"
+  "note": "DERIVED SET test_clean (856); +qwen3.7-plus/-max judges added 2026-07-24; original bootstrap_ci.json (875) NOT overwritten"
  },
  "judges": {
   "claude-haiku-4-5": {
@@ -855,6 +854,76 @@
    "n_pa": 854,
    "n_ia": 854,
    "n_listwise": 873
+  },
+  "qwen3.7-max": {
+   "pa_pearson": {
+    "est": 0.478,
+    "lo": 0.4237,
+    "hi": 0.5294
+   },
+   "ia_pearson": {
+    "est": 0.4721,
+    "lo": 0.4111,
+    "hi": 0.5282
+   },
+   "pa_knorm": {
+    "est": 0.1111,
+    "lo": 0.0222,
+    "hi": 0.1778
+   },
+   "ia_knorm": {
+    "est": 0.2222,
+    "lo": 0.1778,
+    "hi": 0.3111
+   },
+   "pa_tau_ap": {
+    "est": 0.5238,
+    "lo": 0.3016,
+    "hi": 0.9259
+   },
+   "ia_tau_ap": {
+    "est": 0.4917,
+    "lo": 0.1325,
+    "hi": 0.6769
+   },
+   "n_pa": 855,
+   "n_ia": 855,
+   "n_listwise": 874
+  },
+  "qwen3.7-plus": {
+   "pa_pearson": {
+    "est": 0.4708,
+    "lo": 0.4169,
+    "hi": 0.5228
+   },
+   "ia_pearson": {
+    "est": 0.48,
+    "lo": 0.4229,
+    "hi": 0.5353
+   },
+   "pa_knorm": {
+    "est": 0.0889,
+    "lo": 0.0222,
+    "hi": 0.1778
+   },
+   "ia_knorm": {
+    "est": 0.2222,
+    "lo": 0.1778,
+    "hi": 0.3111
+   },
+   "pa_tau_ap": {
+    "est": 0.5556,
+    "lo": 0.2963,
+    "hi": 0.9259
+   },
+   "ia_tau_ap": {
+    "est": 0.4917,
+    "lo": 0.117,
+    "hi": 0.6602
+   },
+   "n_pa": 855,
+   "n_ia": 855,
+   "n_listwise": 874
   },
   "random-uniform": {
    "pa_pearson": {
