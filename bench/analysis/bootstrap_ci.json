@@ -12,7 +12,9 @@
   "n_gold_items": 856,
   "n_gold_actual": 856,
   "test_clean_sha256": "fd027efa93ec042e",
-  "note": "DERIVED SET test_clean (856); +qwen3.7-plus/-max judges added 2026-07-24; original bootstrap_ci.json (875) NOT overwritten"
+  "composition": "33 MLLM judges + random-uniform (theoretical baseline, est=0.0, n-independent)",
+  "excluded_measured_baselines": "vjepa-similarity / warp-consistency / frame-consistency were measured on the gold_875 basis; carrying a measured value across a different item basis is unsafe, so they are NOT in this file. They remain in the leaderboard Baselines section, which states its own basis.",
+  "excluded_pending_approval": "mimo_embodied_7b_test — committed to results/ but not approved by siyuan for the board."
  },
  "judges": {
   "claude-haiku-4-5": {
@@ -48,7 +50,8 @@
    },
    "n_pa": 856,
    "n_ia": 856,
-   "n_listwise": 875
+   "n_listwise": 875,
+   "_note": "Anthropic tier (sibling claude-opus-4.8); weak judge PA~0.13"
   },
   "claude-opus-4.8": {
    "pa_pearson": {
@@ -538,7 +541,8 @@
    },
    "n_pa": 855,
    "n_ia": 855,
-   "n_listwise": 874
+   "n_listwise": 874,
+   "_note": "n=874/875 (1 fetch-error row removed upstream). Source GitHub 30202ea/2e3d078. NOTE: file stem is judge_mimo_vl_sft; canonical key taken from judge_model field."
   },
   "orca-4b": {
    "pa_pearson": {
@@ -573,7 +577,8 @@
    },
    "n_pa": 856,
    "n_ia": 855,
-   "n_listwise": 874
+   "n_listwise": 874,
+   "_note": "FULL RERUN: 8 shards merged + re-parsed, 875/875 rows (874 valid, 1 null). Supersedes the earlier partial n=762 run. Source GitHub d79aac4."
   },
   "phyjudge": {
    "pa_pearson": {
@@ -608,7 +613,8 @@
    },
    "n_pa": 856,
    "n_ia": 852,
-   "n_listwise": 871
+   "n_listwise": 871,
+   "_note": "PA is NOT a native score: it is mean(PTV, persistence), a half-integer proxy (270/875 values land on .5), so Exact-PA and +-1-PA are NOT comparable with integer judges -- Pearson/Spearman are. ids required normalisation (missing data__ prefix, trailing .mp4); 875/875 matched gold after it. 4 error rows -> IA null (n_ia=871). Source HF PR #52, sha256 9c72c1fa..."
   },
   "qwen3-vl-32b-instruct": {
    "pa_pearson": {
@@ -925,41 +931,6 @@
    "n_ia": 855,
    "n_listwise": 874
   },
-  "random-uniform": {
-   "pa_pearson": {
-    "est": -0.0478,
-    "lo": -0.1135,
-    "hi": 0.0186
-   },
-   "ia_pearson": {
-    "est": 0.008,
-    "lo": -0.0586,
-    "hi": 0.074
-   },
-   "pa_knorm": {
-    "est": 0.3778,
-    "lo": 0.2444,
-    "hi": 0.6444
-   },
-   "ia_knorm": {
-    "est": 0.6444,
-    "lo": 0.4222,
-    "hi": 0.8409
-   },
-   "pa_tau_ap": {
-    "est": 0.2538,
-    "lo": -0.3318,
-    "hi": 0.5111
-   },
-   "ia_tau_ap": {
-    "est": 0.0525,
-    "lo": -0.6078,
-    "hi": 0.3064
-   },
-   "n_pa": 856,
-   "n_ia": 856,
-   "n_listwise": 875
-  },
   "robobrain2.5-8b": {
    "pa_pearson": {
     "est": 0.0129,
@@ -1028,7 +999,8 @@
    },
    "n_pa": 856,
    "n_ia": 856,
-   "n_listwise": 875
+   "n_listwise": 875,
+   "_note": "degenerate/ceiling-collapsed weak judge: 862/875 (98.51%) of PA = 5, mean 4.970 / std 0.265; ranking metrics near-degenerate by construction. Source GitHub 2806bee (renamed 463cdd0), gate-verified by Alice (structure PASS)."
   },
   "seed2.0_pro": {
    "pa_pearson": {
@@ -1204,6 +1176,42 @@
    "n_pa": 856,
    "n_ia": 856,
    "n_listwise": 875
+  },
+  "random-uniform": {
+   "pa_pearson": {
+    "est": 0.0,
+    "lo": -0.063,
+    "hi": 0.065
+   },
+   "ia_pearson": {
+    "est": 0.0,
+    "lo": -0.066,
+    "hi": 0.069
+   },
+   "pa_knorm": {
+    "est": null,
+    "lo": null,
+    "hi": null
+   },
+   "ia_knorm": {
+    "est": null,
+    "lo": null,
+    "hi": null
+   },
+   "pa_tau_ap": {
+    "est": null,
+    "lo": null,
+    "hi": null
+   },
+   "ia_tau_ap": {
+    "est": null,
+    "lo": null,
+    "hi": null
+   },
+   "n_pa": 875,
+   "n_ia": 875,
+   "_baseline": true,
+   "_note": "random floor: Pearson EXPECTED=0.0 (single-draw noise, seed42=-0.0515); est=0, CI=null dist 2000 draws; Exact-PA=0.200, +-1-PA~0.54 theoretical"
   }
  }
 }
