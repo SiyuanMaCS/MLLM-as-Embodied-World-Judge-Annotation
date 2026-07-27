@@ -17,7 +17,101 @@
   "gold_875_divergence": "gold_875.jsonl is deliberately NOT updated with the 46 R3 corrections: it is kept as the original historical snapshot. The label divergence between gold_875 and test_clean is INTENTIONAL, not drift.",
   "excluded_pending_approval": "mimo_embodied_7b_test — present in results/ but NOT approved by siyuan for the board; excluded from this artifact.",
   "excluded_measured_baselines": "vjepa-similarity / warp-consistency / frame-consistency were measured on the gold_875 basis; carrying a measured value across a different item basis is unsafe, so they are NOT in this file. They remain in the leaderboard Baselines section, which states its own basis.",
-  "knorm_significance": "K_norm endpoints lie on a UNION of coarse lattices (1/45, 1/44, 1/42 ... — ties reduce the denominator per judge), not a single 1/45 grid. Too coarse for significance claims: never assert 'CI excludes zero' on K_norm. tau_ap is ~continuous at reporting precision and IS usable."
+  "knorm_significance": "K_norm endpoints lie on a UNION of coarse lattices (1/45, 1/44, 1/42 ... — ties reduce the denominator per judge), not a single 1/45 grid. Too coarse for significance claims: never assert 'CI excludes zero' on K_norm. tau_ap is ~continuous at reporting precision and IS usable.",
+  "est_outside_ci": {
+   "count": 7,
+   "entries": [
+    {
+     "judge": "cosmos-reason2-32b",
+     "metric": "ia_knorm",
+     "est": 0.0,
+     "lo": 0.0222,
+     "hi": 0.1556,
+     "boundary": true
+    },
+    {
+     "judge": "qwen3.5-27b",
+     "metric": "ia_knorm",
+     "est": 0.0,
+     "lo": 0.0222,
+     "hi": 0.1333,
+     "boundary": true
+    },
+    {
+     "judge": "cosmos-reason2-32b",
+     "metric": "ia_tau_ap",
+     "est": 1.0,
+     "lo": 0.455,
+     "hi": 0.9722,
+     "boundary": true
+    },
+    {
+     "judge": "qwen3.5-27b",
+     "metric": "ia_tau_ap",
+     "est": 1.0,
+     "lo": 0.4815,
+     "hi": 0.9753,
+     "boundary": true
+    },
+    {
+     "judge": "qwen3.5-flash",
+     "metric": "pa_knorm",
+     "est": 0.0,
+     "lo": 0.0222,
+     "hi": 0.1778,
+     "boundary": true
+    },
+    {
+     "judge": "qwen3-vl-32b-instruct",
+     "metric": "pa_tau_ap",
+     "est": 0.9556,
+     "lo": 0.3016,
+     "hi": 0.9405,
+     "boundary": false
+    },
+    {
+     "judge": "qwen3.5-flash",
+     "metric": "pa_tau_ap",
+     "est": 1.0,
+     "lo": 0.3608,
+     "hi": 0.9722,
+     "boundary": true
+    }
+   ],
+   "cause": "tau_ap/knorm are computed over only 10 base models. The point estimate uses the full sample once; each bootstrap resample draws from those same 10, so high tau_ap is pulled down systematically and the percentile upper bound can sit BELOW the full-sample est. Six of these are degenerate boundary values (est exactly 0.0 or 1.0) that resampling essentially never reproduces; qwen3-vl-32b-instruct pa_tau_ap est=0.9556 > hi=0.9405 is NOT a boundary value, so the effect is not limited to degenerate points.",
+   "rule": "DO NOT rank judges on tau_ap/knorm point estimates. Rank on the CI lower bound if a ranking is required -- it is conservative and unaffected by this bias. Reported by Yu, scope corrected by Ham, 2026-07-27."
+  },
+  "tau_ap_exclusion_summary": {
+   "pa_tau_ap": {
+    "judges_with_metric": 33,
+    "ci_excludes_zero": 24,
+    "lower_bound_below_0.05": [
+     [
+      "rynnbrain-1.1-9b",
+      0.0063
+     ],
+     [
+      "qwen3.5-27b",
+      0.0291
+     ]
+    ],
+    "est_outside_ci": [
+     "qwen3-vl-32b-instruct",
+     "qwen3.5-flash"
+    ]
+   },
+   "ia_tau_ap": {
+    "judges_with_metric": 33,
+    "ci_excludes_zero": 28,
+    "lower_bound_below_0.05": [],
+    "est_outside_ci": [
+     "cosmos-reason2-32b",
+     "qwen3.5-27b"
+    ]
+   },
+   "denominator_note": "random-uniform has NO tau_ap (est/lo/hi all null): a random baseline produces no model ordering, so no rank correlation exists. Quote these as 'N of 33 judges', never 'of 34 entries' -- 34 is the bootstrap entry count and would put an item lacking the metric into the denominator.",
+   "stability_note": "The COUNT moves between recomputes: some lower bounds sit just above zero (smallest 0.0063). The Pearson SPREAD (0.56 -> 0.06) does not depend on these borderline items -- they affect who ranks where, not how wide the spread is. Cite the spread as the robust claim; treat the count as this-run-only. (Yu + Ham, 2026-07-27.)"
+  }
  },
  "judges": {
   "claude-haiku-4-5": {
