@@ -23,6 +23,15 @@ Usage:
     python3 tools/check_inline_js.py --url https://…/stats.html
 Exit non-zero on a parse failure, on a missing checker, or on an implausibly
 small extraction.
+
+Diagnostic order when the page is reported broken (@Yu): page 200 -> data files
+200 -> live matches HEAD byte-for-byte. If all three pass and it is still dead,
+run this. Today all three passed.
+
+⚠️ Calling this through a pipe hides its exit code -- `… | tail` reports tail's
+status, which is ~always 0, so a FATAL result reads as a pass. Verified:
+naive pipe on the broken page gives 0; `set -o pipefail` gives 2; and
+`${PIPESTATUS[0]}` gives 2. In CI use one of the latter two.
 """
 from __future__ import annotations
 
