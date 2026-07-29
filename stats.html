@@ -222,8 +222,7 @@
       </div>
       <div style="font-size:12.5px;color:#64748b;padding:2px 4px 8px;line-height:1.55">
         Judge agreement with the 855-item human gold set, split by source: <b>Table 1a</b> closed-source, <b>Table 1b</b> open-source (grouped into general / embodied / judge VLM). Referenced from §§ 1–3. Metric definitions and reading notes follow the tables below.<br><br>
-        <b>⚠️ Reading the two K_norm columns.</b> They come from <code>bench/model_ranking_strict.json</code> — a 10-judge, 2026-07-09 file on the older gold labels — while PA/IA and coverage are on the 855 basis named above. Consequences: <b>(a)</b> only 10 of the 34 judges carry a K_norm value at all; the other <b>24 show <code>?</code></b>, which means "this judge post-dates that ranking file", <em>not</em> "this judge failed". <b>(b)</b> Do not compare K_norm magnitudes against the other columns. A current-basis K_norm exists for every judge in <code>bootstrap_ci.json</code> (<code>pa_knorm</code>/<code>ia_knorm</code>) and differs from the displayed value for 7 of the 10 — e.g. gemini-3.5-flash shows 0.089 here vs 0.1111 recomputed — so quote the two sources separately, never interchangeably.
-      </div>
+        <b>⚠️ Note on the published <code>leaderboard.md</code>.</b> The table above deliberately does <em>not</em> render the two K_norm columns, but the published <code>bench/leaderboard.md</code> still carries them, and they sit on a different basis from everything else here: they come from <code>bench/model_ranking_strict.json</code>, a 10-judge 2026-07-09 file on the older gold labels, while PA/IA and coverage are on the 855 basis named above. So in that file only 10 of the 34 judges carry a K_norm value at all and the other 24 show <code>?</code> — meaning "this judge post-dates that ranking file", <em>not</em> "this judge failed" — and a current-basis K_norm exists for every judge in <code>bootstrap_ci.json</code> (<code>pa_knorm</code>/<code>ia_knorm</code>) that differs from the file's value for 7 of the 10 (gemini-3.5-flash 0.089 there vs 0.1111 recomputed). Quote the two sources separately, never interchangeably.</div>
       <div id="hs-table1"><div class="hs-empty">加载中…</div></div>
       <div id="hs-judgedist" style="margin-top:16px"><div class="hs-empty">loading…</div></div>
     </section>
@@ -591,7 +590,7 @@
   function renderVideogenAppendix(){
     var host = document.getElementById("hs-vg-appendix");
     if(!host) return;
-    fetch("bench/videogen_leaderboard.json?v=v144", {cache:"no-store"})
+    fetch("bench/videogen_leaderboard.json?v=v145", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(data){
         // Collapse _prefix / _rewrite variants into base model, weighted by n
@@ -640,7 +639,7 @@
   function renderJudgeDist(){
     var host = document.getElementById("hs-judgedist");
     if(!host) return;
-    fetch("bench/analysis/judge_distributions.json?v=v144", {cache:"no-store"})
+    fetch("bench/analysis/judge_distributions.json?v=v145", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.human_gold){ host.innerHTML=""; return; }
@@ -770,8 +769,8 @@
     var host = document.getElementById("hs-decoupling");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/bootstrap_ci.json?v=v144", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
-      fetch("bench/model_ranking_strict.json?v=v144", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/bootstrap_ci.json?v=v145", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch("bench/model_ranking_strict.json?v=v145", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
       var ci = (pair[0] && pair[0].judges) || {};
       var strict = pair[1] || {};
@@ -850,7 +849,7 @@
   function renderConfab(){
     var host = document.getElementById("hs-confab");
     if(!host) return;
-    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v144", {cache:"no-store"})
+    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v145", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.pa || !d.ia){ host.innerHTML = ""; return; }
@@ -918,7 +917,7 @@
   function renderSubClean(){
     var host = document.getElementById("hs-subclean");
     if(!host) return;
-    fetch("bench/analysis/subscore_ci.json?v=v144", {cache:"no-store"})
+    fetch("bench/analysis/subscore_ci.json?v=v145", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var judges = (d && d.judges) || {};
@@ -1171,7 +1170,7 @@
   function renderMRMSE(){
     var host = document.getElementById("hs-mrmse");
     if(!host) return;
-    fetch("bench/analysis/model_level_rmse.json?v=v144", {cache:"no-store"})
+    fetch("bench/analysis/model_level_rmse.json?v=v145", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var byJ = (d && d.judges) || {};
@@ -1242,9 +1241,9 @@
     var host = document.getElementById("hs-table1");
     if(!host) return;
     var md, strict, ciAll;
-    var mdUrl = "bench/leaderboard.md?v=v144";
-    var strictUrl = "bench/model_ranking_strict.json?v=v144";
-    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v144";
+    var mdUrl = "bench/leaderboard.md?v=v145";
+    var strictUrl = "bench/model_ranking_strict.json?v=v145";
+    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v145";
     // Global scale for the mini error-bar strip: fixed range so error bars are
     // visually comparable across the table (widened enough to fit both the
     // strong-judge PA CIs and weak-judge CIs).
@@ -2582,40 +2581,40 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v144", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v145", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v144", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v145", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v144", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v145", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v144", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v145", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v144", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v145", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v144", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v145", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v144", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v145", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -2637,11 +2636,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v144", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v145", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v144", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v145", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -2650,11 +2649,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v144", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v145", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/analysis/bootstrap_ci.json?v=v144", {cache:"no-store"})
+    fetch("bench/analysis/bootstrap_ci.json?v=v145", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
