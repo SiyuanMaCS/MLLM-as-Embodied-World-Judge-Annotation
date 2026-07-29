@@ -1,7 +1,7 @@
 {
   "_meta": {
     "n_items": 875,
-    "extractor": "rule-based (negation-aware segment parser); validated vs judge reasoning on agent_match violations",
+    "extractor": "rule-based (negation-aware segment parser); validation n=4, insufficient -- see _meta.retracted",
     "missing_fallback": "pass=1 (per siyuan: omitted dim = judge assumed no problem)",
     "reliable_judges_full_reasoning": [
       "gpt-5.2",
@@ -18,7 +18,15 @@
       "qwen3-vl-32b-instruct"
     ],
     "note": "Truncated judges (pa_reason/ia_reason ~300ch) have high missing_pct on 3rd sub-dim; numbers preliminary until Ham re-runs them with full reasoning. Primary finding is on the 5 full-reasoning judges.",
-    "gold_binarization": "violation = gold sub-score 0 (strict); pass = {1,2}"
+    "gold_binarization": "violation = gold sub-score 0 (strict); pass = {1,2}",
+    "retracted": {
+      "by": "Yu",
+      "when": "2026-07-09",
+      "reason": "rule-based extraction ~27% false-neg + physical over-trigger",
+      "scope": "all 10 judges incl. reliable_judges_full_reasoning group; also invalidates the derived 'judge self-contradiction' case set (~27% of flagged cases were extractor false-negatives)",
+      "do_not_publish": true,
+      "note": "Recorded 2026-07-29. The retraction had lived only in the paper and in notes; this file carried no trace of it and its extractor line actively asserted the opposite. The rendering panel is separately disabled in stats.html (3af38cf), but that only stops the page -- this field is for anyone who opens the file."
+    }
   },
   "subaxes": [
     "agent_consistency",
