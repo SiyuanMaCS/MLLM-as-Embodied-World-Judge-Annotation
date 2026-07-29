@@ -591,7 +591,7 @@
   function renderVideogenAppendix(){
     var host = document.getElementById("hs-vg-appendix");
     if(!host) return;
-    fetch("bench/videogen_leaderboard.json?v=v141", {cache:"no-store"})
+    fetch("bench/videogen_leaderboard.json?v=v142", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(data){
         // Collapse _prefix / _rewrite variants into base model, weighted by n
@@ -640,7 +640,7 @@
   function renderJudgeDist(){
     var host = document.getElementById("hs-judgedist");
     if(!host) return;
-    fetch("bench/analysis/judge_distributions.json?v=v141", {cache:"no-store"})
+    fetch("bench/analysis/judge_distributions.json?v=v142", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.human_gold){ host.innerHTML=""; return; }
@@ -770,8 +770,8 @@
     var host = document.getElementById("hs-decoupling");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/bootstrap_ci.json?v=v141", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
-      fetch("bench/model_ranking_strict.json?v=v141", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/bootstrap_ci.json?v=v142", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch("bench/model_ranking_strict.json?v=v142", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
       var ci = (pair[0] && pair[0].judges) || {};
       var strict = pair[1] || {};
@@ -850,7 +850,7 @@
   function renderConfab(){
     var host = document.getElementById("hs-confab");
     if(!host) return;
-    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v141", {cache:"no-store"})
+    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v142", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.pa || !d.ia){ host.innerHTML = ""; return; }
@@ -918,7 +918,7 @@
   function renderSubClean(){
     var host = document.getElementById("hs-subclean");
     if(!host) return;
-    fetch("bench/analysis/subscore_ci.json?v=v141", {cache:"no-store"})
+    fetch("bench/analysis/subscore_ci.json?v=v142", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var judges = (d && d.judges) || {};
@@ -1149,129 +1149,29 @@
   //    NOTE: because this panel is dead, no *published page* currently depends on
   //    either copy. The fork is a provenance problem in the repo/HF mirror, not a
   //    live rendering problem.
-  function renderSubaxis(){
-    // 🔴 DISABLED 2026-07-29 — do not re-enable by adding the div back.
-    // This panel renders judge_subscore_accuracy.json, whose sub-score numbers come
-    // from the rule-based extraction Yu RETRACTED on 07-09 (~27% false negatives).
-    // All 10 sub-score judges need re-running; 3 are done, 7 pending.
-    //
-    // Until today the panel was inert only because no <div id="hs-subaxis"> exists,
-    // so the guard below returned early. That is accidental safety: whoever next
-    // adds the div back -- reasonably, thinking they are "restoring Appendix F" --
-    // would silently put retracted numbers back on the page, with nobody deciding
-    // to. The explicit return makes re-enabling a deliberate act: delete this
-    // block, and only once the re-runs have landed. (Raised by Yu.)
-    return;
-    /* eslint-disable no-unreachable */
-    var host = document.getElementById("hs-subaxis");
-    if(!host) return;
-    Promise.all([
-      fetch("bench/analysis/judge_subscore_accuracy.json?v=v141", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : Promise.reject(); }),
-      fetch("bench/analysis/subscore_ci.json?v=v141", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
-    ]).then(function(pair){
-        var d = pair[0];
-        var ciMap = (pair[1] && pair[1].judges) || {};
-        if(!d || !d.matrix){ host.innerHTML = ""; return; }
-        var subaxes = d.subaxes || ["agent_consistency","scene_consistency","interaction_realism","agent_match","object_correct","goal_completed"];
-        var subaxLabel = {
-          agent_consistency: "agent consistency",
-          scene_consistency: "scene consistency",
-          interaction_realism: "interaction realism",
-          agent_match: "agent match",
-          object_correct: "object correct",
-          goal_completed: "goal completed"
-        };
-        var full = d.judges_full || [];
-        var trunc = d.judges_truncated_pending || [];
-        var judges = full.concat(trunc);
-        var summary = d.per_subaxis_summary_full5 || {};
-        function colorForRecall(v){
-          // Red at 0, yellow ~0.5, green at 1
-          if(v == null || !isFinite(v)) return "#f1f5f9";
-          var t = Math.max(0, Math.min(1, v));
-          var r,g,b;
-          if(t < 0.5){
-            // red -> orange -> yellow
-            var k = t / 0.5;
-            r = 235 + (240-235)*k;
-            g = 90 + (190-90)*k;
-            b = 80 + (60-80)*k;
-          } else {
-            // yellow -> lime -> green
-            var k = (t - 0.5) / 0.5;
-            r = 240 - (240-90)*k;
-            g = 190 + (200-190)*k;
-            b = 60 + (110-60)*k;
-          }
-          return 'rgb('+Math.round(r)+','+Math.round(g)+','+Math.round(b)+')';
-        }
-        function textColorFor(v){
-          return v == null || v > 0.55 ? '#0f172a' : '#fff';
-        }
-        // Build hatch pattern for low-conf cells
-        var defs = '<defs><pattern id="hs-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#0f172a" stroke-width="1.4" opacity="0.35"/></pattern></defs>';
-        var html = '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;min-width:640px;width:100%">';
-        html += '<thead><tr>';
-        html += '<th style="padding:8px 8px;text-align:left;color:#94a3b8;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #e2e8f0;background:#fff;position:sticky;left:0">Judge</th>';
-        subaxes.forEach(function(sa){
-          var s = summary[sa] || {};
-          var sub = (s.mean_recall_violation_full5 != null) ? ' · μ ' + s.mean_recall_violation_full5.toFixed(2) : '';
-          html += '<th style="padding:8px 6px;text-align:center;color:#334155;font-size:10.5px;font-weight:600;border-bottom:1px solid #e2e8f0">' + esc(subaxLabel[sa] || sa) + '<div style="color:#94a3b8;font-weight:400;letter-spacing:0;font-size:9.5px;text-transform:none">' + sub + '</div></th>';
-        });
-        html += '</tr></thead><tbody>';
-        judges.forEach(function(j){
-          if(!d.matrix[j]) return;
-          var isTrunc = trunc.indexOf(j) >= 0;
-          var rowTag = isTrunc ? ' <span style="color:#f59e0b;font-size:10px;font-weight:600;background:#fef3c7;padding:1px 5px;border-radius:2px;margin-left:4px">truncated</span>' : ' <span style="color:#10b981;font-size:10px;font-weight:600;background:#d1fae5;padding:1px 5px;border-radius:2px;margin-left:4px">full</span>';
-          html += '<tr>';
-          html += '<td style="padding:6px 8px;font-weight:600;color:#0f172a;border-bottom:1px solid #f1f5f9;background:#fff;position:sticky;left:0;white-space:nowrap">' + esc(j) + rowTag + '</td>';
-          subaxes.forEach(function(sa){
-            var cell = d.matrix[j][sa];
-            if(!cell){ html += '<td style="padding:4px;text-align:center;border-bottom:1px solid #f1f5f9;background:#f8fafc;color:#94a3b8">—</td>'; return; }
-            var rv = cell.recall_violation;
-            var mp = cell.missing_pct;
-            var lowConf = mp > 0.30;
-            var bg = colorForRecall(rv);
-            var txt = textColorFor(rv);
-            var svgOverlay = lowConf ? '<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none">' + defs + '<rect width="100" height="100" fill="url(#hs-hatch)"/></svg>' : '';
-            var missStr = (mp != null) ? '<div style="font-size:9px;color:'+txt+';opacity:0.7;margin-top:1px">'+Math.round(mp*100)+'% miss</div>' : '';
-            // v85gc: hover tooltip showing Isabella's cluster-bootstrap CI
-            var ciCell = ciMap[j] && ciMap[j][sa];
-            var ciStr = '';
-            var tooltipTitle = j + ' · ' + (subaxLabel[sa] || sa) + '\\n recall_violation = ' + (rv != null ? rv.toFixed(3) : '—');
-            if(ciCell && ciCell.recall_ci){
-              ciStr = ' [' + ciCell.recall_ci[0].toFixed(2) + ', ' + ciCell.recall_ci[1].toFixed(2) + ']';
-              tooltipTitle += '\\n 95% CI (cluster-bootstrap, B = 10000) = [' + ciCell.recall_ci[0].toFixed(3) + ', ' + ciCell.recall_ci[1].toFixed(3) + ']';
-              if(ciCell.n_violation_items != null) tooltipTitle += '\\n n_violation_items = ' + ciCell.n_violation_items;
-            }
-            if(mp != null) tooltipTitle += '\\n missing_pct = ' + (mp * 100).toFixed(1) + '%';
-            var ciBadge = ciStr ? '<div style="font-size:9px;color:'+txt+';opacity:0.75;margin-top:1px;font-weight:500">'+ciStr+'</div>' : '';
-            html += '<td style="padding:4px;text-align:center;border-bottom:1px solid #f1f5f9;position:relative;min-width:64px" title="'+esc(tooltipTitle)+'">';
-            html += '<div style="position:relative;background:'+bg+';border-radius:4px;padding:6px 3px;color:'+txt+';font-weight:700">'+ (rv != null ? rv.toFixed(2) : '—') + ciBadge + missStr + svgOverlay + '</div>';
-            html += '</td>';
-          });
-          html += '</tr>';
-        });
-        html += '</tbody></table></div>';
-        // Legend + Yu's headline
-        html += '<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:#64748b;margin-top:10px;align-items:center">';
-        html += '<span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:14px;height:14px;background:linear-gradient(90deg,rgb(235,90,80),rgb(240,190,60),rgb(90,200,110));border-radius:3px"></span>recall_violation 0 → 1 (higher = judge caught more human-marked violations)</span>';
-        html += '<span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:14px;height:14px;background:#e2e8f0;background-image:linear-gradient(45deg,#0f172a 25%,transparent 25%,transparent 50%,#0f172a 50%,#0f172a 75%,transparent 75%,transparent);background-size:6px 6px;border-radius:3px;opacity:0.5"></span>hatch = missing_pct &gt; 30 % (low confidence, default-pass)</span>';
-        html += '</div>';
-        html += '<div style="font-size:11.5px;color:#334155;margin-top:10px;line-height:1.55;padding:8px 10px;background:#fdf4ff;border-left:3px solid #a855f7;border-radius:4px">';
-        html += '<b>Headline.</b> Across the five full-reasoning judges, physical-artifact axes (agent / scene / interaction consistency) recall &gt; 85 % of human-marked violations; the two identity-grounding axes — <b>agent_match</b> (μ recall 0.38) and <b>object_correct</b> (μ recall 0.35) — miss roughly two-thirds. VLM judges are better at "does this video look physically wrong" than at "does this video show the right effector doing the right thing to the right object". Truncated rows (hatched) are pending re-runs by Ham with the full reasoning field enabled.';
-        html += '</div>';
-        host.innerHTML = html;
-      })
-      .catch(function(){ host.innerHTML = ""; });
-  }
+  // ── renderSubaxis() REMOVED 2026-07-29 ────────────────────────────────────
+  // Appendix F sub-axis heatmap. Deleted rather than disabled, on @Yu's point:
+  // leaving the function (even with an early return) left the string
+  //   a fetch() of bench/analysis/judge_subscore_accuracy.json
+  // in the file, and Ham's patrol derives "user-visible artifacts" by statically
+  // scanning fetch() calls. So the page still *claimed* to depend on a file that
+  // is marked _meta.retracted.do_not_publish -- a permanent red that no amount of
+  // correct behaviour could clear.
+  //
+  // It rendered judge_subscore_accuracy.json, whose numbers come from the
+  // rule-based extraction @Yu retracted 2026-07-09 (~27% false negatives). All 10
+  // sub-score judges need re-running; 3 done, 7 pending.
+  //
+  // Restoring it means restoring it deliberately: git show 3f10eee^:stats.html.
+  // Do not restore before the re-runs land -- and check _meta.retracted first.
+  // ──────────────────────────────────────────────────────────────────────────
 
   // v85ga: Appendix G · model-level RMSE (calibration distance metric).
   // Pulls precomputed per-judge PA/IA RMSE from bench/analysis/model_level_rmse.json.
   function renderMRMSE(){
     var host = document.getElementById("hs-mrmse");
     if(!host) return;
-    fetch("bench/analysis/model_level_rmse.json?v=v141", {cache:"no-store"})
+    fetch("bench/analysis/model_level_rmse.json?v=v142", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var byJ = (d && d.judges) || {};
@@ -1317,7 +1217,7 @@
   function renderTopSpacing(){
     var host = document.getElementById("hs-topspacing");
     if(!host) return;
-    fetch("bench/analysis/topspacing.json?v=v141", {cache:"no-store"})
+    fetch("bench/analysis/topspacing.json?v=v142", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.models){ host.innerHTML=""; return; }
@@ -1380,9 +1280,9 @@
     var host = document.getElementById("hs-table1");
     if(!host) return;
     var md, strict, ciAll;
-    var mdUrl = "bench/leaderboard.md?v=v141";
-    var strictUrl = "bench/model_ranking_strict.json?v=v141";
-    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v141";
+    var mdUrl = "bench/leaderboard.md?v=v142";
+    var strictUrl = "bench/model_ranking_strict.json?v=v142";
+    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v142";
     // Global scale for the mini error-bar strip: fixed range so error bars are
     // visually comparable across the table (widened enough to fit both the
     // strong-judge PA CIs and weak-judge CIs).
@@ -2713,47 +2613,47 @@
     renderConfab();
     renderSubClean();
     renderMRMSE();
-    renderSubaxis();
+    // renderSubaxis();  // removed 2026-07-29 — see the block above
 
     if(!API){ showErr("backend URL not configured"); return; }
     jget("score_distribution","&user="+encodeURIComponent(USER)).then(renderDist)
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v141", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v142", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v141", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v142", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v141", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v142", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v141", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v142", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v141", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v142", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v141", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v142", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v141", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v142", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -2775,11 +2675,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v141", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v142", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v141", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v142", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -2788,11 +2688,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v141", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v142", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/analysis/bootstrap_ci.json?v=v141", {cache:"no-store"})
+    fetch("bench/analysis/bootstrap_ci.json?v=v142", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
