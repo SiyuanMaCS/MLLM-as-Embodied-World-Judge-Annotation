@@ -591,7 +591,7 @@
   function renderVideogenAppendix(){
     var host = document.getElementById("hs-vg-appendix");
     if(!host) return;
-    fetch("bench/videogen_leaderboard.json?v=v142", {cache:"no-store"})
+    fetch("bench/videogen_leaderboard.json?v=v143", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(data){
         // Collapse _prefix / _rewrite variants into base model, weighted by n
@@ -640,7 +640,7 @@
   function renderJudgeDist(){
     var host = document.getElementById("hs-judgedist");
     if(!host) return;
-    fetch("bench/analysis/judge_distributions.json?v=v142", {cache:"no-store"})
+    fetch("bench/analysis/judge_distributions.json?v=v143", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.human_gold){ host.innerHTML=""; return; }
@@ -770,8 +770,8 @@
     var host = document.getElementById("hs-decoupling");
     if(!host) return;
     Promise.all([
-      fetch("bench/analysis/bootstrap_ci.json?v=v142", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
-      fetch("bench/model_ranking_strict.json?v=v142", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+      fetch("bench/analysis/bootstrap_ci.json?v=v143", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; }),
+      fetch("bench/model_ranking_strict.json?v=v143", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
     ]).then(function(pair){
       var ci = (pair[0] && pair[0].judges) || {};
       var strict = pair[1] || {};
@@ -850,7 +850,7 @@
   function renderConfab(){
     var host = document.getElementById("hs-confab");
     if(!host) return;
-    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v142", {cache:"no-store"})
+    fetch("bench/analysis/pa_vs_ia_overpass.json?v=v143", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         if(!d || !d.pa || !d.ia){ host.innerHTML = ""; return; }
@@ -918,7 +918,7 @@
   function renderSubClean(){
     var host = document.getElementById("hs-subclean");
     if(!host) return;
-    fetch("bench/analysis/subscore_ci.json?v=v142", {cache:"no-store"})
+    fetch("bench/analysis/subscore_ci.json?v=v143", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var judges = (d && d.judges) || {};
@@ -1171,7 +1171,7 @@
   function renderMRMSE(){
     var host = document.getElementById("hs-mrmse");
     if(!host) return;
-    fetch("bench/analysis/model_level_rmse.json?v=v142", {cache:"no-store"})
+    fetch("bench/analysis/model_level_rmse.json?v=v143", {cache:"no-store"})
       .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
       .then(function(d){
         var byJ = (d && d.judges) || {};
@@ -1214,60 +1214,14 @@
   // v85g7b (Alice/Ham §2 supplement): 1D gold-PA stripplot with top-4 vs
   // full-span brackets. Makes "compressed top" visible at a glance below the
   // regression prose. Data: bench/analysis/topspacing.json (Alice).
-  function renderTopSpacing(){
-    var host = document.getElementById("hs-topspacing");
-    if(!host) return;
-    fetch("bench/analysis/topspacing.json?v=v142", {cache:"no-store"})
-      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
-      .then(function(d){
-        if(!d || !d.models){ host.innerHTML=""; return; }
-        // v85gk (siyuan: 谁能看懂 · label collision):
-        //   - Increase H to give brackets breathing room (no overlap)
-        //   - Drop the redundant "Human gold PA" axis title (section header carries it)
-        //   - Top-4 bracket above, full-span bracket below, both labels well-separated from the axis ticks
-        var W=560, H=170, PL=52, PR=28, y0=100;
-        var xMin=1.5, xMax=4.5;
-        var plotW=W-PL-PR;
-        function px(v){ return PL + (v-xMin)/(xMax-xMin)*plotW; }
-        var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;background:linear-gradient(180deg,#fcfdff,#f6f8fc);border:1px solid #eef0f5;border-radius:8px">';
-        // axis
-        s+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(PL+plotW)+'" y2="'+y0+'" stroke="#94a3b8" stroke-width="1"/>';
-        [1.5,2.0,2.5,3.0,3.5,4.0,4.5].forEach(function(t){
-          s+='<line x1="'+px(t)+'" y1="'+y0+'" x2="'+px(t)+'" y2="'+(y0+4)+'" stroke="#94a3b8" stroke-width="1"/>';
-          s+='<text x="'+px(t)+'" y="'+(y0+16)+'" font-size="10.5" fill="#64748b" text-anchor="middle">'+t.toFixed(1)+'</text>';
-        });
-        // dots
-        d.models.forEach(function(m){
-          var col = m.bucket==="top4" ? "#2563eb" : "#64748b";
-          var stroke = m.bucket==="top4" ? "#1e40af" : "#334155";
-          s+='<circle cx="'+px(m.gold_pa)+'" cy="'+y0+'" r="5" fill="'+col+'" stroke="'+stroke+'" stroke-width="1" opacity="0.88"/>';
-        });
-        // top-4 span bracket above (label safely at y = 22)
-        var top4 = d.models.filter(function(m){return m.bucket==="top4";});
-        if(top4.length){
-          var mn = Math.min.apply(null, top4.map(function(m){return m.gold_pa;}));
-          var mx = Math.max.apply(null, top4.map(function(m){return m.gold_pa;}));
-          var brY = y0 - 32;
-          s+='<line x1="'+px(mn)+'" y1="'+brY+'" x2="'+px(mx)+'" y2="'+brY+'" stroke="#2563eb" stroke-width="1.8"/>';
-          s+='<line x1="'+px(mn)+'" y1="'+brY+'" x2="'+px(mn)+'" y2="'+(brY+6)+'" stroke="#2563eb" stroke-width="1.8"/>';
-          s+='<line x1="'+px(mx)+'" y1="'+brY+'" x2="'+px(mx)+'" y2="'+(brY+6)+'" stroke="#2563eb" stroke-width="1.8"/>';
-          s+='<text x="'+((px(mn)+px(mx))/2)+'" y="'+(brY-8)+'" font-size="11" fill="#2563eb" text-anchor="middle" font-weight="700">top-4 near-tied · span '+d.top4_span.toFixed(3)+'</text>';
-        }
-        // full-span bracket below (label at y = H-8, plenty of room)
-        var allX = d.models.map(function(m){return m.gold_pa;});
-        var fmn = Math.min.apply(null, allX);
-        var fmx = Math.max.apply(null, allX);
-        var brY2 = y0 + 40;
-        s+='<line x1="'+px(fmn)+'" y1="'+brY2+'" x2="'+px(fmx)+'" y2="'+brY2+'" stroke="#64748b" stroke-width="1.4" stroke-dasharray="3,3"/>';
-        s+='<line x1="'+px(fmn)+'" y1="'+brY2+'" x2="'+px(fmn)+'" y2="'+(brY2-6)+'" stroke="#64748b" stroke-width="1.4"/>';
-        s+='<line x1="'+px(fmx)+'" y1="'+brY2+'" x2="'+px(fmx)+'" y2="'+(brY2-6)+'" stroke="#64748b" stroke-width="1.4"/>';
-        s+='<text x="'+((px(fmn)+px(fmx))/2)+'" y="'+(brY2+14)+'" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="600">full range · span '+d.full_span.toFixed(3)+' (10 generators, worst→best)</text>';
-        s+='</svg>';
-        var cap='<div style="font-size:11.5px;color:#64748b;padding:6px 4px 0;line-height:1.55">Each dot = one video-generation model, positioned on the horizontal axis by its mean human-gold PA score over the 855-item set. Blue = top-4; grey = bottom-6. The four top-scoring generators are statistically tied ('+d.top4_span.toFixed(3)+' apart), while the whole field spans '+d.full_span.toFixed(3)+' — this is why rank-fidelity loss concentrates in the blue band.</div>';
-        host.innerHTML = '<div class="hs-h" style="border:0;padding:0 0 4px"><h3 style="font-size:13px;color:#334155;margin:0">10 video-gen models on human-gold PA · top-4 vs full range</h3></div>' + s + cap;
-      })
-      .catch(function(){ host.innerHTML=""; });
-  }
+  // ── renderTopSpacing() REMOVED 2026-07-29 ─────────────────────────────────
+  // Dead panel: no <div id="hs-topspacing"> has ever existed, so the function
+  // returned at its null guard and its fetch of bench/analysis/topspacing.json
+  // never fired. Removed for the same reason as renderSubaxis: a static scan of
+  // fetch() calls counts the page as depending on a file it cannot render, and
+  // the panel was "safe" only by accident. No retracted data involved here --
+  // this one is hygiene. Restore deliberately: git show fca847b:stats.html.
+  // ──────────────────────────────────────────────────────────────────────────
 
   // v85g7 (siyuan): Table 1 = judge leaderboard anchor at top of Analysis.
   // v85g8: merge bootstrap CI from Isabella's bench/analysis/bootstrap_ci.json
@@ -1280,9 +1234,9 @@
     var host = document.getElementById("hs-table1");
     if(!host) return;
     var md, strict, ciAll;
-    var mdUrl = "bench/leaderboard.md?v=v142";
-    var strictUrl = "bench/model_ranking_strict.json?v=v142";
-    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v142";
+    var mdUrl = "bench/leaderboard.md?v=v143";
+    var strictUrl = "bench/model_ranking_strict.json?v=v143";
+    var ciUrl = "bench/analysis/bootstrap_ci.json?v=v143";
     // Global scale for the mini error-bar strip: fixed range so error bars are
     // visually comparable across the table (widened enough to fit both the
     // strong-judge PA CIs and weak-judge CIs).
@@ -2607,7 +2561,7 @@
     // v85g7: Table 1 anchor + Video-gen leaderboard appendix
     renderTable1();
     renderVideogenAppendix();
-    renderTopSpacing();
+    // renderTopSpacing();  // removed 2026-07-29 — see the block above
     renderJudgeDist();
     renderDecoupling();
     renderConfab();
@@ -2620,40 +2574,40 @@
       .catch(function(e){ document.getElementById("hs-dist").innerHTML='<div class="hs-empty">分布加载失败</div>'; showErr(String(e)); });
     // v85ey: judge confusion matrices (Ham data, static bench/ file for now;
     // will move to HF once Alice extends the sync whitelist to bench/analysis/).
-    fetch("bench/confusion_results.json?v=v142", {cache:"no-store"})
+    fetch("bench/confusion_results.json?v=v143", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cm " + r.status); return r.json(); })
       .then(renderCM)
       .catch(function(e){ document.getElementById("hs-cm").innerHTML='<div class="hs-empty">混淆矩阵加载失败</div>'; });
     // v85fr: closed-loop fetch removed (card deleted, metric now in leaderboard).
     // Judge-judge summary still needed for the ensemble card; fetch it silently.
-    fetch("bench/judge_judge_closedloop.json?v=v142", {cache:"no-store"})
+    fetch("bench/judge_judge_closedloop.json?v=v143", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("jj " + r.status); return r.json(); })
       .then(function(d){
         window.__jjSummary = { mean: d.judge_judge_pa_pearson_mean, range: d.judge_judge_pa_range || [null,null] };
         if(typeof window.__ensPayload !== 'undefined'){ renderEnsemble(window.__ensPayload); }
       })
       .catch(function(){});
-    fetch("bench/per_embodiment_pa.json?v=v142", {cache:"no-store"})
+    fetch("bench/per_embodiment_pa.json?v=v143", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("emb " + r.status); return r.json(); })
       .then(renderPerEmbodiment)
       .catch(function(e){ document.getElementById("hs-emb").innerHTML='<div class="hs-empty">per-embodiment 加载失败</div>'; });
     // v85fg: model-quality strip — gold PA/IA per embodiment category.
-    fetch("bench/per_category_embodiment.json?v=v142", {cache:"no-store"})
+    fetch("bench/per_category_embodiment.json?v=v143", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("pcq " + r.status); return r.json(); })
       .then(renderModelQualityStrip)
       .catch(function(e){ var el=document.getElementById("hs-emb-quality"); if(el) el.innerHTML='<div class="hs-empty" style="font-size:12px">生成质量加载失败</div>'; });
     // v85g3 (Ham): bias-by-band chart takes precedence — the hard version of
     // siyuan's core question. Falls back to reverse-axis (v85g2) then legacy
     // (v85fj) if either JSON is missing.
-    fetch("bench/score_effect_by_quality.json?v=v142", {cache:"no-store"})
+    fetch("bench/score_effect_by_quality.json?v=v143", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("seq " + r.status); return r.json(); })
       .then(renderCalibrationBias)
       .catch(function(){});
-    fetch("bench/calibration_by_human.json?v=v142", {cache:"no-store"})
+    fetch("bench/calibration_by_human.json?v=v143", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cbh " + r.status); return r.json(); })
       .then(renderCalibrationByHuman)
       .catch(function(){});
-    fetch("bench/calibration.json?v=v142", {cache:"no-store"})
+    fetch("bench/calibration.json?v=v143", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("cal " + r.status); return r.json(); })
       .then(function(d){ if(!window.__calBiasRendered && !window.__calByHumanRendered) renderCalibration(d); })
       .catch(function(e){ var el=document.getElementById("hs-cal"); if(el && !window.__calBiasRendered && !window.__calByHumanRendered) el.innerHTML='<div class="hs-empty">calibration 加载失败</div>'; });
@@ -2675,11 +2629,11 @@
     // exact per embodiment / complexity, plus gold_std to prove variance
     // matched. Load first so the complexity render can pick it up.
     // v85g5: quality-confound partial-correlation panel (siyuan wants visual)
-    fetch("bench/quality_confound_control.json?v=v142", {cache:"no-store"})
+    fetch("bench/quality_confound_control.json?v=v143", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("qcc " + r.status); return r.json(); })
       .then(renderPartialCorrelation)
       .catch(function(){ var el=document.getElementById("hs-icx-partial"); if(el) el.innerHTML=''; });
-    fetch("bench/score_controlled.json?v=v142", {cache:"no-store"})
+    fetch("bench/score_controlled.json?v=v143", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("sc " + r.status); return r.json(); })
       .then(function(d){
         window.__scoreControlled = d;
@@ -2688,11 +2642,11 @@
       })
       .catch(function(){ /* silent — cards fall back to Pearson-only */ });
     // v85fs: Instruction complexity 3-tier analysis.
-    fetch("bench/instruction_complexity.json?v=v142", {cache:"no-store"})
+    fetch("bench/instruction_complexity.json?v=v143", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("icx " + r.status); return r.json(); })
       .then(function(d){ window.__icxPayload = d; renderInstructionComplexity(d); })
       .catch(function(e){ var el=document.getElementById("hs-icx"); if(el) el.innerHTML='<div class="hs-empty">复杂度分析加载失败</div>'; });
-    fetch("bench/analysis/bootstrap_ci.json?v=v142", {cache:"no-store"})
+    fetch("bench/analysis/bootstrap_ci.json?v=v143", {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw new Error("ci " + r.status); return r.json(); })
       .then(renderCI)
       .catch(function(e){ document.getElementById("hs-ci").innerHTML='<div class="hs-empty">CI 加载失败</div>'; });
