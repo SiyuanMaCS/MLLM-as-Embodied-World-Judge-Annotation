@@ -58,6 +58,24 @@ run_gate() {           # run_gate <label> <script> [args...]
     fi
 }
 
+# What this script covers, stated by PATH rather than by FILE (Yu, 2026-07-30).
+# Described by file -- "Isabella's assertions check leaderboard.md, this checks
+# leaderboard.md" -- the two look redundant and somebody eventually deletes one.
+# Described by path they are plainly complementary, and the seam between them is
+# visible:
+#   generator path   Isabella's prose-asserts run AT GENERATION: prose numbers vs the
+#                    table they were generated with. Blind to a file edited by hand or
+#                    carried in by a PR -- it simply never runs on those.
+#   delivery path    this script runs AT DEPLOY: whatever the file is and wherever it
+#                    came from, does its stated basis match its own numbers, and does
+#                    the JS still parse. Blind to a generator that writes a consistent
+#                    but wrong pair -- both sides agree and nothing looks off.
+# HF PR #65 was the live case for the second: it shipped a .md directly, so the
+# generation-time asserts could never have seen it, and this gate refused it (exit 4).
+# => Report coverage by PATH. Reporting by FILE makes complementary checks read as
+#    duplicates, and duplicates get "simplified" away -- after which the seam is
+#    discovered the hard way.
+
 echo "pre-deploy gates  (leaderboard: $LB)"
 run_gate "inline JS parses"                 python3 tools/check_inline_js.py stats.html
 run_gate "basis: header agrees with numbers" python3 tools/check_basis_consistency.py "$LB"
