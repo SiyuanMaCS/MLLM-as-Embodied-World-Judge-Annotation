@@ -48,7 +48,9 @@ run_gate "basis: header agrees with numbers" python3 tools/check_basis_consisten
 echo
 if [ "$failed" -ne 0 ]; then
     echo "DO NOT DEPLOY -- at least one gate failed or could not run."
-    echo "Note: exit 3 (cannot read) and exit 4 (cannot verify) count as failures here."
+    echo "Note: exit 3 (cannot read), 4 (cannot verify) and 5 (superseded board) all count as"
+    echo "failures here -- 5 is informational when auditing all boards, but deploying a"
+    echo "self-declared historical freeze must never succeed."
     echo "A check that did not run must not be reported as a pass."
     exit 1
 fi

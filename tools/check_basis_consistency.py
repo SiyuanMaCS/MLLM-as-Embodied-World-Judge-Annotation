@@ -40,6 +40,18 @@ Exit codes
     2  MISMATCH: header claims one basis, numbers are from the other -> do not deploy
     3  the file or its header line could not be read
     4  UNVERIFIED: nothing with discriminating power was usable -> NOT a pass
+    5  SKIPPED: the board declares itself SUPERSEDED -- deliberately not checked
+
+Why 5 exists (Isabella, 2026-07-30): leaderboard.test_clean.md is a self-declaring
+historical freeze ("SUPERSEDED (2026-07-27) ... Kept for history; do not cite").
+It legitimately names two bases -- its own 856 and, as a pointer, the current
+855 board -- so the ambiguity guard would flag it forever. **A permanently red
+check is not a signal**, and worse, it would mask the bare-name 875 board, which
+is the one that actually needs a decision (claims 875, its CI has no
+_meta.n_gold_actual so it cannot be verified, carries no SUPERSEDED marker, and
+is still being published). So a self-declared freeze is reported and skipped,
+not failed -- while deploying one must still be refused, which predeploy.sh
+enforces by treating 5 as a failure.
 """
 import re
 import sys
@@ -63,6 +75,18 @@ def separation(by_basis):
     if len(vals) < 2:
         return None
     return min(b - a for a, b in zip(vals, vals[1:]))
+
+
+SUPERSEDED_RE = re.compile(r"SUPERSEDED\s*\(?\s*(\d{4}-\d{2}-\d{2})?", re.I)
+
+
+def superseded_marker(text):
+    """Return the date string if the board declares itself superseded, else None."""
+    head = "\n".join(text.split("\n")[:8])
+    m = SUPERSEDED_RE.search(head)
+    if not m:
+        return None
+    return m.group(1) or "date not stated"
 
 
 def basis_from_header(text):
@@ -122,6 +146,14 @@ def main(path):
     except OSError as exc:
         print(f"FATAL: cannot read {path}: {exc}")
         return 3
+
+    sup = superseded_marker(text)
+    if sup is not None:
+        print(f"SKIPPED: this board declares itself SUPERSEDED ({sup}).")
+        print("Not checked: a historical freeze names both its own basis and, as a pointer, the")
+        print("current board's -- so the ambiguity guard would flag it permanently, and a")
+        print("permanently red check is not a signal. Do not deploy this file.")
+        return 5
 
     claimed = basis_from_header(text)
     if claimed is None:
