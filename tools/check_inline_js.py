@@ -92,11 +92,38 @@ def main() -> int:
         fh.write("\n;\n".join(blocks))
         path = fh.name
 
-    proc = subprocess.run(["node", "--check", path], capture_output=True, text=True)
+    try:
+        proc = subprocess.run(["node", "--check", path], capture_output=True, text=True)
+    except OSError as exc:
+        print(f"FATAL: could not execute node ({exc}). The page was NOT checked; "
+              f"this is a failure, not a pass.", file=sys.stderr)
+        return 3
+
     if proc.returncode != 0:
+        # Distinguish "the JavaScript is bad" from "the checker could not run".
+        # shutil.which() above only catches node being ABSENT. A node that exists
+        # but cannot execute -- a broken shim, a missing shared library, a wrong
+        # architecture, no exec permission -- comes back non-zero with no parse
+        # diagnostic, and the old code reported that as "inline JavaScript does not
+        # parse". It failed safe (no false green) but MISDIAGNOSED: it sends the
+        # reader to hunt a syntax error in a file that is fine. Found by testing
+        # environment preconditions rather than logic, after Yu pointed out that
+        # today's ledgers all measured old code and none measured the newly written.
+        stderr = proc.stderr.strip()
+        looks_like_parse_error = bool(
+            re.search(r"SyntaxError|Unexpected (token|identifier|end of input)", stderr))
+        if proc.returncode in (126, 127) or not looks_like_parse_error:
+            print(f"FATAL: node exited {proc.returncode} without a parse diagnostic — the "
+                  f"checker could not run, so the page was NOT verified. This is a "
+                  f"failure, not a pass, and it is NOT evidence that the JavaScript is "
+                  f"broken.", file=sys.stderr)
+            if stderr:
+                print(stderr[:600], file=sys.stderr)
+            return 3
+
         print("FATAL: inline JavaScript does not parse. The page will serve with "
               "HTTP 200 and render nothing.\n", file=sys.stderr)
-        print(proc.stderr.strip()[:1200], file=sys.stderr)
+        print(stderr[:1200], file=sys.stderr)
         return 2
 
     print("inline JavaScript parses ✅")
