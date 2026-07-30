@@ -1359,8 +1359,7 @@
    },
    "n_pa": 855,
    "n_ia": 0,
-   "_baseline": true,
-   "_note": "WBench C.6 PAVRM visual plausibility, finetuned Qwen3-VL-30B-A3B (external, not ours). PA-Pearson 0.354 [0.294,0.412] on test_clean_v2 855/855; PA-Spearman 0.348. Emits NO instruction_alignment (null on all 875 source rows) => ia_* null, n_ia=0. Continuous score, range 2.3153-3.6441: rounding puts 841/855 at 3, so Exact-PA/+-1-PA are NOT reported -- computed they would be 29.1%/71.9% vs 28.8%/71.5% for a blind constant \"3\", i.e. they restate the gold label base rate. Statistically indistinguishable from phyjudge (0.355) on per-clip PA: the 0.001 gap is ~60x smaller than the CI half-width. Model-level (n=20) 0.603, jackknife 0.573-0.694 -- not comparable to per-clip judge values. Source: HF PR #64 (Vincwng), judge_wbench_visual_plausibility.jsonl."
+   "_note": "WBench C.6 PAVRM visual plausibility, finetuned Qwen3-VL-30B-A3B. Classified as a JUDGE per siyuan 2026-07-30 (overrides the agents' earlier baseline classification). PA-Pearson 0.354 [0.294,0.412] on test_clean_v2 855/855; PA-Spearman 0.348. Emits NO instruction_alignment (null on all 875 source rows) => IA-Pearson / Joint-F1 shown as \"—\". Continuous score 2.3153-3.6441: rounding puts 841/855 at 3, so Exact-PA/+-1-PA are shown as \"—\" -- computed they read 29.1%/71.9% vs 28.8%/71.5% for a blind constant \"3\", i.e. they would restate the gold label base rate rather than measure skill. Ties phyjudge (0.355) on per-clip PA: the 0.001 gap is ~60x under the CI half-width => statistically indistinguishable. Source: HF PR #64 (Vincwng)."
   }
  }
 }
