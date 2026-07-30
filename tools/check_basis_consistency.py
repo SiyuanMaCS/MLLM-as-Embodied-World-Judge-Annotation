@@ -143,17 +143,42 @@ def pa_column(text):
     """Map model name -> PA-Pearson float, binding the column BY HEADER NAME."""
     sec0 = text.split("\n## ")[0]
     rows = [l for l in sec0.split("\n") if l.strip().startswith("|")]
-    if len(rows) < 3:
+    if len(rows) < 2:
         return {}
-    hdr = [c.strip() for c in rows[0].strip("|").split("|")]
+
+    # Locate the header BY CONTENT and the data rows BY SHAPE, not by index.
+    # This was rows[0] for the header and rows[2:] for the data -- i.e. "the first
+    # pipe line is the header and exactly one separator follows it". A table with
+    # no separator row would have silently dropped its first judge, which is the
+    # under-reporting failure mode: a quiet wrong answer rather than a loud one.
+    # Found by enumerating window/slice patterns across my own tools after Ham and
+    # Isabella each did the same to theirs.
+    def cells_of(line):
+        return [c.strip() for c in line.strip("|").split("|")]
+
+    def is_separator(line):
+        return re.fullmatch(r"[\s|:-]+", line.strip()) is not None
+
+    hdr_i = None
+    for i, line in enumerate(rows):
+        cells = cells_of(line)
+        if any(c.lower() == "model" for c in cells):
+            hdr_i = i
+            break
+    if hdr_i is None:
+        return {}
+    hdr = cells_of(rows[hdr_i])
     try:
         ix_model = next(i for i, h in enumerate(hdr) if h.lower() == "model")
         ix_pa = next(i for i, h in enumerate(hdr) if re.fullmatch(r"pa[-·\s]*pearson", h, re.I))
     except StopIteration:
         return {}
+
     out = {}
-    for line in rows[2:]:
-        cells = [c.strip() for c in line.strip("|").split("|")]
+    for line in rows[hdr_i + 1:]:
+        if is_separator(line):
+            continue
+        cells = cells_of(line)
         if len(cells) <= max(ix_model, ix_pa):
             continue
         name = cells[ix_model]
