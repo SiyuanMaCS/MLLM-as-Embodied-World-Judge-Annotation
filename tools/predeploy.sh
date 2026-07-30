@@ -28,6 +28,20 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 failed=0
 
+# Every gate declares what it READ, derived from the actual invocation -- never a
+# hand-maintained list, because a hand-maintained list is a second definition and
+# second definitions drift (Ham, 2026-07-30, whose patrol now emits `guards_read`
+# from its own scope functions for the same reason).
+#
+# This exists because of the day's central failure: five guards kept reporting
+# green while the generator moved their subject to variant filenames. Not one line
+# of those guards changed. Nobody noticed because their output never said which
+# files they were reading. State it every run and the move becomes visible the
+# moment it happens.
+#
+# It also downgrades a habit into a fact. I stated read-paths in today's reports so
+# others could REPRODUCE them, not to declare the read side -- identical on the
+# page, different intentions, and a change of writing style drops it silently.
 run_gate() {           # run_gate <label> <script> [args...]
     local label="$1"; shift
     # A gate that cannot be LAUNCHED must not be reported in the gate's own
@@ -46,6 +60,13 @@ run_gate() {           # run_gate <label> <script> [args...]
         printf '          This is NOT a finding about the page -- the check never ran.\n'
         failed=1
         return
+    fi
+    # the last argument is the artifact under test; resolve it for the record
+    local target="${!#}"
+    if [ -r "$target" ] && [ "$target" != "$script" ]; then
+        printf '        reads: %s\n' "$(cd "$(dirname "$target")" && pwd)/$(basename "$target")"
+    else
+        printf '        reads: %s\n' "$script (target is the script's own default)"
     fi
     "$@" > "$tmp/out.txt" 2>&1
     local rc=$?         # immediately after the command; no pipe in between
