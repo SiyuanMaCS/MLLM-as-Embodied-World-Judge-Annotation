@@ -1175,9 +1175,22 @@ function showLoginMsg(text, isErr) {
 /* ---------- task.html: annotation loop ---------- */
 let CURRENT = null;
 
-// v85hf (siyuan pre-annotation feature, not yet production-live):
-// Machine pre-annotation is gated behind `?preannotate=1` in the URL so the
-// staging build never affects real annotators. When enabled the task page
+// ⚠️ PRE-ANNOTATION IS LIVE FOR EVERY ANNOTATOR BY DEFAULT (since v89). Read the
+// v89 note below before treating anything here as a gate — it is not one.
+//
+// ⏳ v85hf, SUPERSEDED by v89 — kept as the record, do not read as current state:
+//   "(siyuan pre-annotation feature, not yet production-live): Machine pre-annotation
+//    is gated behind `?preannotate=1` in the URL so the staging build never affects
+//    real annotators."
+// That was true on 2026-07-15 and stopped being true at v89. It sat above the v89
+// note for weeks and was read as a live safeguard on 2026-07-30 — by which time
+// BOTH halves of the backend's stated conjunction were open (`backend.py:3490`:
+// "gated behind EWJ_PREANNOT env AND frontend ?preannotate=1"): the running backend
+// has EWJ_PREANNOT=1, and this flag defaults ON. Neither was changed in error; each
+// was changed deliberately and separately, and nobody re-read the sentence that
+// depended on both.
+//
+// When enabled the task page
 // fetches an ensemble pre-annotation for the served item and pre-fills the
 // form (PA, IA, 6 sub-scores, physical_notes, instruction_notes) so a human
 // only has to verify / edit. UI shows a "🤖 预标注" chip and a "清空预标注"
