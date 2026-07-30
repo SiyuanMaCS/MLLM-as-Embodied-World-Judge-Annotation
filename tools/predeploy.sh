@@ -28,8 +28,25 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 failed=0
 
-run_gate() {           # run_gate <label> <cmd...>
+run_gate() {           # run_gate <label> <script> [args...]
     local label="$1"; shift
+    # A gate that cannot be LAUNCHED must not be reported in the gate's own
+    # vocabulary. Without this, deleting check_basis_consistency.py printed
+    #     FAIL (2)  basis: header agrees with numbers
+    # and 2 is that gate's code for "MISMATCH: header claims one basis, numbers
+    # are from the other" -- a correct verdict (do not deploy) carrying a false
+    # reason, which sends the reader to inspect a leaderboard that is fine.
+    # Yu, 2026-07-30: a wrong diagnosis costs more than a wrong verdict, because
+    # a correct verdict vouches for the wrong explanation and nobody re-checks it.
+    # Found by breaking what this script depends on rather than what it reads.
+    local script="$2"
+    if [ ! -r "$script" ]; then
+        printf '  CANNOT RUN  %s\n' "$label"
+        printf '          gate script missing or unreadable: %s\n' "$script"
+        printf '          This is NOT a finding about the page -- the check never ran.\n'
+        failed=1
+        return
+    fi
     "$@" > "$tmp/out.txt" 2>&1
     local rc=$?         # immediately after the command; no pipe in between
     if [ "$rc" -eq 0 ]; then
