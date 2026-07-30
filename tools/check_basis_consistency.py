@@ -80,9 +80,34 @@ def separation(by_basis):
 SUPERSEDED_RE = re.compile(r"SUPERSEDED\s*\(?\s*(\d{4}-\d{2}-\d{2})?", re.I)
 
 
+def header_text(text):
+    """Everything before the first table row -- the header, by STRUCTURE not line count.
+
+    Was `text.split("\n")[:8]`, a magic number. Ham hit the same shape from the
+    other side on 2026-07-30: a window too NARROW reports "this file has no X",
+    which reads as a fact rather than a conclusion and so gets believed and
+    relayed without checking (his "that header has no basis declaration" was
+    wrong, and Yu repeated it). A window too WIDE over-reports and gets audited;
+    a window too narrow under-reports and gets cited.
+
+    The header's boundary is not "some number of lines" -- it is where the table
+    starts. Same principle as taking a threshold from a gap in the data rather
+    than picking a round number: **let the boundary come from the structure of
+    the thing measured, not from a guess.** The deployed board's basis line sits
+    at line 2 with the first table row at line 12, so the old window had five
+    lines of margin -- it worked, and would have failed silently on any longer
+    preamble.
+    """
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if line.strip().startswith("|"):
+            return "\n".join(lines[:i])
+    return text
+
+
 def superseded_marker(text):
     """Return the date string if the board declares itself superseded, else None."""
-    head = "\n".join(text.split("\n")[:8])
+    head = header_text(text)
     m = SUPERSEDED_RE.search(head)
     if not m:
         return None
@@ -100,7 +125,7 @@ def basis_from_header(text):
     mention-vs-instance confusion this tool exists to catch. So: collect every
     count the header states, and if they do not agree, refuse rather than pick one.
     """
-    head = "\n".join(text.split("\n")[:8])
+    head = header_text(text)
     counts = set()
     counts.update(re.findall(r"\((\d{3,4})\s+in-domain items\)", head))
     counts.update(re.findall(r"(\d{3,4})[- ]row", head))
