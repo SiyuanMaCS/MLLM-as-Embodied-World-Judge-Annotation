@@ -100,11 +100,6 @@ See `bench/TESTSET.md` §5 for the discussion around these baselines and the hum
 
 ### `wbench_visual_plausibility` — a judge, PA-only (see Table 1a, #15)
 
-<!-- Heading level is deliberately ### and must stay ###: stats.html renders this region by
-     slicing "## Baselines" up to the NEXT top-level "## " (search(/\n## /)). A "## " heading
-     here truncates the slice, so this whole block would sit in the file and never reach the
-     page -- 2,498 chars silently dropped when it was first written as "## ". -->
-
 
 **It is a judge, not a baseline** (siyuan, 2026-07-30: 「这不是baseline 这是一个judge」). WBench PAVRM
 is a finetuned Qwen3-VL-30B-A3B, i.e. an MLLM used as a judge; four of us first filed it under
@@ -134,3 +129,30 @@ only emits PA is still a judge. It sits in the main table, ranked by PA-Pearson 
 > beside judges' per-item PA-Pearson — different denominators (n=20 vs n=855) — and drop-one
 > jackknife spans 0.573-0.694, i.e. one generator moves it by ±0.06. Same rule we adopted for
 > τ_ap: n=20 supports an interval, not a point.
+
+## Assertions (machine-checked; not rendered on the analysis page)
+
+Checked by `refresh_leaderboard.py` on every run against the table it just regenerated; a
+mismatch refuses the write.
+
+**Editing rules for everything above this heading (they are not cosmetic):**
+
+1. **No HTML comments anywhere in the `## Baselines` region.** That region is rendered verbatim
+   and only escaped, so a comment is *displayed to readers* as literal `&lt;!-- ... --&gt;` text.
+   This note used to be a comment sitting next to the wbench block, and it was showing on the
+   live site for exactly that reason — a comment explaining that the region renders verbatim,
+   being rendered verbatim. Put notes for maintainers below this heading instead.
+2. **The wbench block's heading must stay `###`, never `##`.** `stats.html` slices `## Baselines`
+   up to the next top-level `## ` (`search(/\n## /)`), so promoting it to `##` truncates the
+   slice and the whole block sits in the file while never reaching the page — 2,498 characters
+   were silently dropped when it was first written that way.
+
+This section is deliberately placed after a top-level `## ` heading:
+`stats.html` renders the `## Baselines` region verbatim and only escapes it, so an HTML comment
+placed inside that region is displayed to readers as literal `<!-- assert: ... -->` text (caught
+by Francis before it reached the site). The renderer stops the slice at the next `## `, while the
+generator's preserved region runs to end-of-file — so putting the asserts below this heading keeps
+them readable by the generator and invisible on the page. Do not move them back up.
+
+<!-- assert: wbench_visual_plausibility pa_pearson=0.354 -->
+<!-- assert: phyjudge pa_pearson=0.355 -->
