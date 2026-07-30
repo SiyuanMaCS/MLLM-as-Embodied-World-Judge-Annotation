@@ -3,7 +3,7 @@
     "B": 10000,
     "n_gold_items": 855,
     "n_judges": 42,
-    "note": "All 19 judges vs human gold on 875 items (auto-detected from bench/results/judge_*.jsonl, excludes .partial)"
+    "note": "All 42 judges vs human gold on 855 items (basis test_clean_v2.jsonl; auto-detected from bench/results/judge_*.jsonl, excludes .partial)"
   },
   "human_gold": {
     "pa": {
