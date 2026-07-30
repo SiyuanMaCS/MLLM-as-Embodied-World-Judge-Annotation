@@ -56,7 +56,7 @@ _12 个 judge 覆盖率 <50%,n 太小无法排名,从主表移除(JSONL 仍在�
 
 ## Baselines
 
-Reference metrics — none are task-grounded judges; all shown to demonstrate that cheap automatic metrics can't measure physical correctness. **Distance metrics are converted to a [0,1] "higher = more real/consistent" score before correlating** (Pearson is scale-invariant, so this only flips sign to positive; magnitude unchanged). Correlations are vs **human PA** (physical adherence).
+Reference metrics — none are task-grounded judges. The first four are **cheap automatic metrics**, shown to demonstrate that cheap automatic metrics can't measure physical correctness. `wbench-visual-plausibility` is a different kind: an **external learned reference metric** (finetuned Qwen3-VL-30B-A3B, not ours) — it is not cheap, and the "all weak" reading below does not apply to it. **Distance metrics are converted to a [0,1] "higher = more real/consistent" score before correlating** (Pearson is scale-invariant, so this only flips sign to positive; magnitude unchanged). Correlations are vs **human PA** (physical adherence).
 
 **Per-item no-reference baselines** (one score per video, no GT needed; fold alongside judges):
 
@@ -66,9 +66,12 @@ Reference metrics — none are task-grounded judges; all shown to demonstrate th
 | frame-consistency | 1 − raw adjacent-frame pixel diff | 100% | **+0.129** [0.067, 0.192] | +0.122 | +0.003 |
 | warp-consistency | 1 − optical-flow warp residual (temporal consistency) | 100% | **+0.110** [0.044, 0.173] | +0.102 | −0.014 |
 | random-uniform | random 1–5 floor | 100% | **0.000** [−0.063, 0.065] | 0.000 | 0.000 |
+| wbench-visual-plausibility | WBench C.6 PAVRM visual plausibility, finetuned Qwen3-VL-30B-A3B (external; not ours) | 100% | **+0.354** [0.294, 0.412] | +0.348 | — |
 
-- Strongest (vjepa +0.140) > frame +0.123 > warp +0.105 > random 0 — but **all weak (|r|≈0.1, weakest-judge tier)**: even learned-feature-space distance can't measure physics per-item → task-grounded judges needed. Pearson ≈ Spearman → relationships are monotonic (no non-linearity artifact).
+- **Among the four cheap metrics**: strongest (vjepa +0.140) > frame +0.123 > warp +0.105 > random 0 — but **all weak (|r|≈0.1, weakest-judge tier)**: even learned-feature-space distance can't measure physics per-item → task-grounded judges needed. Pearson ≈ Spearman → relationships are monotonic (no non-linearity artifact).
 > ⚠️ **Scope note (test_clean_v2, 855):** frame/warp are recomputed on the 855-row v2
+- **`wbench-visual-plausibility` (external, +0.354)** is not in the weak tier and is not a cheap metric. It emits no instruction_alignment, and its continuous score rounds to 3 for 841 of 855 clips, so IA / Joint-F1 / Exact-PA / ±1-PA are all reported as «—»: computed, Exact/±1 would be 29.1%/71.9% against 28.8%/71.5% for a blind constant "3", i.e. they would restate the gold label base rate rather than measure the metric. Its value is the **ordering** — on per-clip PA it is statistically indistinguishable from `phyjudge` (0.355; the 0.001 gap is ~60× smaller than the CI half-width), so it marks the floor for how much PA correlation is reachable **without reading the instruction**. Model-level (n=20) 0.603, drop-one jackknife 0.573–0.694 — not comparable to per-clip judge values.
+
 > (B=4000). vjepa-similarity is **still the gold_875 value** (+0.140) — never recomputed on any
 > test_clean basis. The curated IA analysis in the bullet below (partial-r, 5-stratum gradient,
 > SD normalisation) is computed on **gold_875**; drift measured on the 856 basis was
