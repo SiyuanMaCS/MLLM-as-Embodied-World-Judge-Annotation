@@ -98,7 +98,7 @@ Reference metrics — none are task-grounded judges; all shown to demonstrate th
 
 See `bench/TESTSET.md` §5 for the discussion around these baselines and the human-IAA noise floor.
 
-### `wbench_visual_plausibility` — a judge, PA-only (see Table 1a, #15)
+### `wbench_visual_plausibility` — a judge, PA-only (Table 1a, General VLM group #6; #15 of 35 by PA overall)
 
 
 **It is a judge, not a baseline** (siyuan, 2026-07-30: 「这不是baseline 这是一个judge」). WBench PAVRM
