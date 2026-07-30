@@ -61,20 +61,36 @@ run_gate() {           # run_gate <label> <script> [args...]
         failed=1
         return
     fi
-    # the last argument is the artifact under test; resolve it for the record
-    local target="${!#}"
-    if [ -r "$target" ] && [ "$target" != "$script" ]; then
-        printf '        reads: %s\n' "$(cd "$(dirname "$target")" && pwd)/$(basename "$target")"
-    else
-        printf '        reads: %s\n' "$script (target is the script's own default)"
-    fi
     "$@" > "$tmp/out.txt" 2>&1
     local rc=$?         # immediately after the command; no pipe in between
+
+    # What did this gate actually open? Take the answer FROM THE GATE (it emits
+    # 'READS: <path>' lines), not from this script's argv.
+    #
+    # This line used to be derived from the last argument, which named only the
+    # artifact under test. When the basis gate grew its coupling check it started
+    # opening stats.html too, and this line kept reporting one path -- a
+    # self-report SMALLER than the truth. That is the quiet half of the day's
+    # recurring fault: overstating your coverage promises more than you deliver
+    # and gets audited; understating it just leaves a dependency invisible, and
+    # nobody audits the more conservative claim. Someone tracing what this gate
+    # depends on would have missed stats.html entirely.
+    #
+    # Deriving it from argv was also a second definition of "what this gate
+    # reads" -- the gate opens the files, so the gate is where the answer lives.
+    if grep -q '^READS: ' "$tmp/out.txt"; then
+        sed -n 's/^READS: /        reads: /p' "$tmp/out.txt"
+    else
+        # Not a failure: an older or third-party gate may simply not declare.
+        # But say so, rather than silently inferring a plausible-looking path.
+        printf '        reads: (this gate declares no READS: line -- unknown)\n'
+    fi
+
     if [ "$rc" -eq 0 ]; then
         printf '  PASS  (%d)  %s\n' "$rc" "$label"
     else
         printf '  FAIL  (%d)  %s\n' "$rc" "$label"
-        sed 's/^/          /' "$tmp/out.txt"
+        grep -v '^READS: ' "$tmp/out.txt" | sed 's/^/          /'
         failed=1
     fi
 }

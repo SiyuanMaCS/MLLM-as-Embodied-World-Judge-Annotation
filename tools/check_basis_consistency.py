@@ -232,6 +232,7 @@ def page_coupling(md_path):
     if not rules:
         return False, "no colIdx(/^...$/i) bindings found in %s -- renderTable1 changed shape?" % page
     if PA_RULE in rules:
+        print("READS: %s" % os.path.abspath(page))
         return True, "%s binds PA-Pearson with the same rule (%d bindings seen)" % (os.path.basename(page), len(rules))
     # Report what the page actually has, so the next person fixes the right half.
     near = [r for r in rules if "pearson" in r.lower()]
@@ -242,6 +243,14 @@ def page_coupling(md_path):
 
 
 def main(path):
+    # Declare what this gate opens, from the gate itself. predeploy.sh used to
+    # infer this from its own argv, which named only the .md and so UNDERSTATED
+    # the real dependency set once the coupling check started reading stats.html.
+    # A self-report that is smaller than the truth is the quiet half of the fault
+    # we spent the day on: overstating gets audited because it promises more,
+    # understating just creates a blind spot nobody thinks to question.
+    print("READS: %s" % os.path.abspath(path))
+
     ok, detail = page_coupling(path)
     print(("       coupling: " if ok else "FATAL: ") + detail)
     if not ok:

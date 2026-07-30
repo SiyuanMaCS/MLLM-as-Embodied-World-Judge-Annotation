@@ -74,6 +74,12 @@ def main() -> int:
               "shipped.", file=sys.stderr)
         return 3
 
+    # Declare what this gate reads, from the gate rather than from the caller's
+    # argv -- a URL and a local path are different dependencies and only this
+    # function knows which one it took.
+    import os.path
+    print("READS: %s" % (args.target if args.url else os.path.abspath(args.target)))
+
     html = load(args.target, args.url)
     blocks = SCRIPT_RE.findall(html)
     total = sum(len(b) for b in blocks)
