@@ -53,6 +53,7 @@ is still being published). So a self-declared freeze is reported and skipped,
 not failed -- while deploying one must still be refused, which predeploy.sh
 enforces by treating 5 as a failure.
 """
+import os
 import re
 import sys
 
@@ -67,6 +68,16 @@ DISCRIMINATORS = {
 
 TOL = 0.0015      # half a unit of the 3-decimal precision the table prints
 MIN_SEP = 0.005   # a pair of basis values must differ by at least this to discriminate at all
+
+# The rule this gate uses to find the PA-Pearson column. stats.html's renderTable1
+# binds the same column with /^pa[-·\s]*pearson$/i -- so this is a SECOND COPY of the
+# page's rule, and a second copy of the thing under test is exactly what today's
+# other findings were about. It cannot be shared (that side is JS), so instead the
+# copy is made falsifiable: PAGE_RULE_RE below reads the page's own literal at check
+# time and refuses to run if the two have drifted apart. Without that, this gate can
+# validate a column the page no longer reads, and stay green while doing it.
+PA_RULE = r"pa[-·\s]*pearson"
+PAGE_RULE_RE = re.compile(r"colIdx\(/\^(.*?)\$/i\)")
 
 
 def separation(by_basis):
@@ -170,7 +181,7 @@ def pa_column(text):
     hdr = cells_of(rows[hdr_i])
     try:
         ix_model = next(i for i, h in enumerate(hdr) if h.lower() == "model")
-        ix_pa = next(i for i, h in enumerate(hdr) if re.fullmatch(r"pa[-·\s]*pearson", h, re.I))
+        ix_pa = next(i for i, h in enumerate(hdr) if re.fullmatch(PA_RULE, h, re.I))
     except StopIteration:
         return {}
 
@@ -190,7 +201,52 @@ def pa_column(text):
     return out
 
 
+def page_coupling(md_path):
+    """Is this gate still reading the same column stats.html reads?
+
+    Returns (ok, detail). Not-ok is FATAL, never a pass: if the page's binding has
+    moved, a green here means "the column I picked is consistent" about a column
+    nobody sees. Absence of stats.html is also not-ok -- this gate only ever runs
+    inside the frontend repo, so "not found" is a broken invocation, not a
+    permissible skip.
+    """
+    d = os.path.abspath(os.path.dirname(md_path) or ".")
+    page = None
+    while True:
+        cand = os.path.join(d, "stats.html")
+        if os.path.isfile(cand):
+            page = cand
+            break
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    if page is None:
+        return False, "stats.html not found above %s -- cannot confirm this gate reads the page's column" % md_path
+    try:
+        html = open(page, encoding="utf-8").read()
+    except OSError as exc:
+        return False, "cannot read %s: %s" % (page, exc)
+
+    rules = PAGE_RULE_RE.findall(html)
+    if not rules:
+        return False, "no colIdx(/^...$/i) bindings found in %s -- renderTable1 changed shape?" % page
+    if PA_RULE in rules:
+        return True, "%s binds PA-Pearson with the same rule (%d bindings seen)" % (os.path.basename(page), len(rules))
+    # Report what the page actually has, so the next person fixes the right half.
+    near = [r for r in rules if "pearson" in r.lower()]
+    return False, (
+        "PA-Pearson rule drifted: this gate uses %r, %s has %s"
+        % (PA_RULE, os.path.basename(page), near or rules)
+    )
+
+
 def main(path):
+    ok, detail = page_coupling(path)
+    print(("       coupling: " if ok else "FATAL: ") + detail)
+    if not ok:
+        return 3
+
     try:
         text = open(path, encoding="utf-8").read()
     except OSError as exc:
