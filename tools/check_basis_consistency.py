@@ -23,16 +23,23 @@ between bases by far more than rounding:
     wbench_visual_plausibility   855 -> 0.354    875 -> 0.341
     phyjudge                     855 -> 0.355
 
-A discriminating value is only useful while it discriminates; DISCRIMINATORS
-below records the source of each pair so a future reader can re-derive them
-rather than trusting this file. If a judge's two-basis values ever converge,
-it must be dropped from the table, not silently kept.
+A discriminating value is only useful while it discriminates. Rather than rely on
+someone remembering to prune, the gate SELF-CHECKS that (Yu, 2026-07-30): each
+judge's basis values must be at least MIN_SEP apart, or it is disqualified. An
+entry with only one known basis value can CONFIRM but never DISCRIMINATE -- if
+the table showed the other basis we would simply skip it -- so confirmers cannot
+produce a pass on their own. If nothing discriminating survives, exit 4.
+
+Otherwise this gate would quietly degrade into an always-true check while still
+reporting green: the exact shape of the 19.5h dead page and of the 7-21 stale
+board. DISCRIMINATORS records each value's provenance so a reader can re-derive
+it instead of trusting this file.
 
 Exit codes
-    0  header and numbers agree (or no discriminator present -- reported, not passed silently)
+    0  header and numbers agree, cross-checked by >=1 genuinely discriminating value
     2  MISMATCH: header claims one basis, numbers are from the other -> do not deploy
     3  the file or its header line could not be read
-    4  no discriminator found in the table -> gate could not run, treat as unverified
+    4  UNVERIFIED: nothing with discriminating power was usable -> NOT a pass
 """
 import re
 import sys
@@ -46,7 +53,16 @@ DISCRIMINATORS = {
     "phyjudge": {"855": 0.355},
 }
 
-TOL = 0.0015  # half a unit of the 3-decimal precision the table prints
+TOL = 0.0015      # half a unit of the 3-decimal precision the table prints
+MIN_SEP = 0.005   # a pair of basis values must differ by at least this to discriminate at all
+
+
+def separation(by_basis):
+    """Smallest gap between any two basis values, or None if fewer than two."""
+    vals = sorted(by_basis.values())
+    if len(vals) < 2:
+        return None
+    return min(b - a for a, b in zip(vals, vals[1:]))
 
 
 def basis_from_header(text):
@@ -108,8 +124,22 @@ def main(path):
         print("FATAL: could not parse the PA-Pearson column (header names changed?)")
         return 3
 
-    checked, mismatches, unusable = 0, [], []
+    # Self-check FIRST (Yu, 2026-07-30): a discriminating gate silently becomes an
+    # always-true check the moment its values stop discriminating -- and stays green.
+    # A judge with only one known basis value can CONFIRM but never DISCRIMINATE: if the
+    # table showed the other basis we would just skip it. So confirmers must not be able
+    # to produce a pass on their own.
+    discriminating, mismatches, unusable = 0, [], []
     for judge, by_basis in DISCRIMINATORS.items():
+        sep = separation(by_basis)
+        if sep is None:
+            unusable.append(f"{judge} (only one known basis value -- confirms, cannot discriminate)")
+            continue
+        if sep < MIN_SEP:
+            unusable.append(
+                f"{judge} (basis values {sorted(by_basis.values())} differ by {sep:.4f} "
+                f"< MIN_SEP {MIN_SEP} -- no longer discriminating, DISQUALIFIED)")
+            continue
         if judge not in values:
             unusable.append(f"{judge} (absent from table)")
             continue
@@ -118,9 +148,9 @@ def main(path):
             continue
         got = values[judge]
         want = by_basis[claimed]
-        checked += 1
+        discriminating += 1
         if abs(got - want) <= TOL:
-            print(f"  OK   {judge}: {got} matches basis {claimed} ({want})")
+            print(f"  OK   {judge}: {got} matches basis {claimed} ({want}); separation {sep:.4f}")
             continue
         other = [b for b, v in by_basis.items() if b != claimed and abs(got - v) <= TOL]
         hint = f" -- this is the basis-{other[0]} value" if other else ""
@@ -140,14 +170,17 @@ def main(path):
         print("the basis_plan.py isolated-tree flow, or make GOLD follow the resolved basis.")
         return 2
 
-    if checked == 0:
+    if discriminating == 0:
         print()
-        print("UNVERIFIED: no discriminating judge was usable, so the basis claim was not")
-        print("cross-checked. Treat as not-verified rather than as a pass.")
+        print("UNVERIFIED: no judge with genuine discriminating power was usable, so the basis")
+        print("claim was NOT cross-checked. This is not a pass -- a check that cannot")
+        print("distinguish the two bases would report green no matter which one produced the")
+        print("numbers. Add a judge whose values differ across bases by >= MIN_SEP.")
         return 4
 
     print()
-    print(f"basis consistent: header says {claimed} and {checked} discriminating value(s) agree")
+    print(f"basis consistent: header says {claimed}, cross-checked by {discriminating} "
+          f"discriminating value(s)")
     return 0
 
 
