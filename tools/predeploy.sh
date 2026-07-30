@@ -72,5 +72,15 @@ if [ "$failed" -ne 0 ]; then
     exit 1
 fi
 echo "all gates passed -- safe to bump the data token and deploy"
-echo "after deploying, verify twice: with a cache-buster (did I push) and without (has the CDN turned over)"
+echo
+echo "AFTER DEPLOYING, two checks that are not optional:"
+echo "  1. fetch twice: with a cache-buster (did I push?) and without (has the CDN turned over?)"
+echo "  2. compare the sha of the file THIS SCRIPT VALIDATED against the file actually SERVED:"
+echo "       sha256sum $LB"
+echo "       curl -s <site>/$LB | sha256sum"
+echo "     They must match. If they diverge, this gate is validating a file that no longer"
+echo "     reaches users -- it will keep reporting green while checking the wrong artifact."
+echo "     (Isabella/Ham, 2026-07-30: reading a function, knowing it is called, and knowing"
+echo "      what it consumes are three independent facts. Five guards passed the first two and"
+echo "      failed the third -- they watched a file nothing writes any more.)"
 exit 0
