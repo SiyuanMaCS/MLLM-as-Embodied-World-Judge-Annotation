@@ -66,17 +66,27 @@ def separation(by_basis):
 
 
 def basis_from_header(text):
-    """Return the item count the header claims, as a string, or None."""
+    """Return the item count the header claims for THIS file, or None if not determinable.
+
+    Fails closed on ambiguity. The first version searched for the string
+    "test_clean_v2" as a fallback and so read leaderboard.test_clean.md -- whose
+    header says "This is the 856-row test_clean basis. Current file:
+    leaderboard.test_clean_v2.md (855 rows ...)" -- as basis 855. It matched a
+    CROSS-REFERENCE TO ANOTHER FILE and reported it as this file's basis: the same
+    mention-vs-instance confusion this tool exists to catch. So: collect every
+    count the header states, and if they do not agree, refuse rather than pick one.
+    """
     head = "\n".join(text.split("\n")[:8])
-    m = re.search(r"\((\d+)\s+in-domain items\)", head)
-    if m:
-        return m.group(1)
-    m = re.search(r"test_clean_v2", head)
-    if m:
-        return "855"
-    m = re.search(r"gold_875", head)
-    if m:
-        return "875"
+    counts = set()
+    counts.update(re.findall(r"\((\d{3,4})\s+in-domain items\)", head))
+    counts.update(re.findall(r"(\d{3,4})[- ]row", head))
+    counts.update(re.findall(r"\((\d{3,4})\s+rows", head))
+    if len(counts) == 1:
+        return counts.pop()
+    if len(counts) > 1:
+        print(f"FATAL: header states more than one item count {sorted(counts)} -- cannot tell "
+              f"which is this file's basis (a cross-reference to another board?)")
+        return None
     return None
 
 
