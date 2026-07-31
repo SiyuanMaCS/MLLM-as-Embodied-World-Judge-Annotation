@@ -354,8 +354,8 @@
   },
   "gemini-2.5-pro_train": {
     "pa": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 0,
       "histogram": {
         "1": null,
@@ -366,8 +366,8 @@
       }
     },
     "ia": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 0,
       "histogram": {
         "1": null,
@@ -553,8 +553,8 @@
   },
   "gpt-5.2_train": {
     "pa": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 0,
       "histogram": {
         "1": null,
@@ -565,8 +565,8 @@
       }
     },
     "ia": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 0,
       "histogram": {
         "1": null,
@@ -623,8 +623,8 @@
   },
   "gpt5.5_train": {
     "pa": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 0,
       "histogram": {
         "1": null,
@@ -635,8 +635,8 @@
       }
     },
     "ia": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 0,
       "histogram": {
         "1": null,
@@ -1467,8 +1467,8 @@
   },
   "seed2.0_pro_align_r3": {
     "pa": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 1,
       "histogram": {
         "1": 0.0,
@@ -1479,8 +1479,8 @@
       }
     },
     "ia": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 1,
       "histogram": {
         "1": 0.0,
@@ -1494,8 +1494,8 @@
   },
   "seed2.0_pro_train": {
     "pa": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 0,
       "histogram": {
         "1": null,
@@ -1506,8 +1506,8 @@
       }
     },
     "ia": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 0,
       "histogram": {
         "1": null,
@@ -1564,8 +1564,8 @@
   },
   "seed2.1_lite_align_r3": {
     "pa": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 1,
       "histogram": {
         "1": 0.0,
@@ -1576,8 +1576,8 @@
       }
     },
     "ia": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 1,
       "histogram": {
         "1": 0.0,
@@ -1591,8 +1591,8 @@
   },
   "seed2.1_lite_train": {
     "pa": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 0,
       "histogram": {
         "1": null,
@@ -1603,8 +1603,8 @@
       }
     },
     "ia": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 0,
       "histogram": {
         "1": null,
@@ -1767,8 +1767,8 @@
       }
     },
     "ia": {
-      "mean": NaN,
-      "std": NaN,
+      "mean": null,
+      "std": null,
       "n": 0,
       "histogram": {
         "1": null,
