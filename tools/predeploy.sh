@@ -138,4 +138,26 @@ echo "     reaches users -- it will keep reporting green while checking the wron
 echo "     (Isabella/Ham, 2026-07-30: reading a function, knowing it is called, and knowing"
 echo "      what it consumes are three independent facts. Five guards passed the first two and"
 echo "      failed the third -- they watched a file nothing writes any more.)"
+# ---------------------------------------------------------------------------
+# Every JSON the page fetches must parse with the CONSUMER's parser, not ours.
+# 2026-07-31: judge_distributions.json shipped with 30 bare NaN. Python's json
+# module accepts NaN, JSON.parse does not, so the browser rejected the whole
+# file and the distribution panel rendered nothing for hours -- while served
+# bytes, three-way sha comparison and a Python-side filter simulation all passed.
+# A file being correct and a file being readable by the thing that reads it are
+# different facts.
+# ---------------------------------------------------------------------------
+_json_strict_fail=0
+for _f in bench/analysis/*.json bench/*.json; do
+  [ -f "$_f" ] || continue
+  if ! node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$_f" 2>/dev/null; then
+    echo "FAIL: $_f does not parse with JSON.parse (the browser will reject it)"
+    node -e "try{JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))}catch(e){console.log('      '+e.message.slice(0,100))}" "$_f" 2>/dev/null
+    _json_strict_fail=1
+  fi
+done
+[ "$_json_strict_fail" = "1" ] && { echo "REFUSING to deploy: fix the JSON before bumping the token."; exit 6; }
+echo "strict-json: all fetched .json parse with JSON.parse"
+
+
 exit 0
