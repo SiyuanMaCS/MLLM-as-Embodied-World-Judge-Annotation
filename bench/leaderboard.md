@@ -98,7 +98,37 @@ Reference metrics — none are task-grounded judges; all shown to demonstrate th
 
 See `bench/TESTSET.md` §5 for the discussion around these baselines and the human-IAA noise floor.
 
-### `wbench_visual_plausibility` — a judge, PA-only (Table 1a, General VLM group #6; #15 of 35 by PA overall)
+### `wbench_visual_plausibility` — a judge, PA-only (Table 1a, **Judge VLM** group #2; #15 of 35 by PA overall)
+
+- **`#15 of 35 by PA` is recomputable from Table 1a above** — sort the PA column; 35 rows carry a numeric PA.
+  Verified 2026-07-31 (@Yu): 35 rows, 35 with a numeric PA-Pearson, wbench sorts to #15.
+- **That rank has 0.0009 of margin.** #14 is `phyjudge` at 0.3548 against wbench's 0.3539.
+  An earlier revision of this bullet said a phyjudge rerun would break the line and "no check would
+  notice". That was wrong (@Ham): the `<!-- assert: -->` lines under `## Assertions` below are parsed and
+  enforced by `refresh_leaderboard.py`, tolerance derived from the decimals written (`0.355` → ±0.0005),
+  and a mismatch is a `SystemExit`, not a warning. A phyjudge move of 0.001 exceeds that, so it is caught.
+  Demonstrated rather than read: on an isolated hardlink copy of the tree, setting phyjudge's assert to
+  0.353 made the generator print `REFUSING to write ... differs by 0.0018 > tol 0.0005` and exit 1.
+  **What the asserts do not cover is this rank.** They are keyed by judge — two of them, on `phyjudge` and
+  `wbench_visual_plausibility` — while a rank is a property of all 35 rows. Any *third* judge drifting into
+  the 0.3539–0.3548 gap reorders these two without touching either assert, and that is silent.
+  (Checked against the pending change: HF PR #65 moves phyjudge to 0.3663, still under #13's 0.371, so
+  phyjudge holds #14 and this line survives that particular merge.)
+- **`Judge VLM group #2` is not in this file.** Grouping is computed by `stats.html`'s own script at render
+  time, so it can only be read by running the page (`tools/render_real.js` — its row/order/grouping output
+  is the part it declares trustworthy; its CI columns are stubbed and mean nothing).
+- The first version of this line said `General VLM group #6`, and **it was correct when it was written.**
+  Grouping comes from `classify()` in `stats.html`; until v154 (2026-07-31, siyuan: 「wbench_visual_
+  plausibility 这是judge vlm」) the pattern listed judges by name and nothing matched `wbench`, so it fell
+  through to open-general. Running the pre-v154 block against this file renders
+  `通用 VLM · General VLM … 6|wbench_visual_plausibility`, in a group of 14. So this is ordinary drift with
+  a datable cause, not a statement that was never true.
+  (An earlier revision of this bullet asserted it "was wrong from the moment it was written, there is no
+  earlier state in which it was correct". That was itself derived without running the page — the same
+  mistake it was describing, one level up. Checked by executing `stats.html` as of `5af0e4e^` — the actual
+  file from before the change, not a reconstruction of it. A hand-reverted copy of the current file gives
+  the same answer, but only under the assumption that `|wbench` was the sole relevant edit in that window,
+  which nobody verified; citing the reconstruction would repeat the error one level lower still.)
 
 
 **It is a judge, not a baseline** (siyuan, 2026-07-30: 「这不是baseline 这是一个judge」). WBench PAVRM
