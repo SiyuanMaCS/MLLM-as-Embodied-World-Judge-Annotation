@@ -2,28 +2,32 @@
   "_meta": {
     "cluster_unit": "item_id (video tuple)",
     "B": 10000,
+    "n_basis_items": 855,
+    "basis_source": "judge_subscore_peritem.jsonl",
+    "ci_seed_generation": 1,
+    "ci_seed_fn": "crc32(subscore_ci_v3_<judge>_<sub_axis>) & 0xFFFFFF",
     "ci_method": "2.5%/97.5% percentile (est = observed point on full data)",
     "input_schema": "Yu clean 3-tier (judge_verdict / gold_verdict in {0,1,2}) via Alice g31 explicit sub-score re-judge",
     "metrics": "hard_recall (judge==0|gold==0), lenient_recall (judge<=1|gold==0), MAE on 1-5 scale",
     "insight": "gap between hard and lenient reveals hedging: e.g. object_correct hard 0.03 but lenient 0.60 = judge sees the violation but hedges the verdict to 'minor' rather than 'clear violation'",
-    "coverage_note": "n_coverage per judge shows how many of 875 items that judge covered; partial coverage indicates aborted runs (e.g. gemini-3.1-pro-preview 41/875 aborted 2026-07-09 during Google key revocation)"
+    "coverage_note": "n_coverage per judge shows how many items that judge covered out of 855 in this basis; partial coverage indicates aborted runs (historical example, on the gold_875 basis: gemini-3.1-pro-preview 41/875 aborted 2026-07-09 during Google key revocation)"
   },
   "judges": {
     "gemini-3.5-flash": {
       "agent_consistency": {
         "hard_recall": {
           "est": 0.5371,
-          "lo": 0.4728,
-          "hi": 0.6017
+          "lo": 0.4722,
+          "hi": 0.6019
         },
         "lenient_recall": {
           "est": 0.8428,
-          "lo": 0.7953,
-          "hi": 0.8889
+          "lo": 0.794,
+          "hi": 0.888
         },
         "mae": {
           "est": 0.6316,
-          "lo": 0.5836,
+          "lo": 0.5848,
           "hi": 0.6795
         },
         "n_coverage": 855,
@@ -33,16 +37,16 @@
         "hard_recall": {
           "est": 0.6677,
           "lo": 0.6154,
-          "hi": 0.719
+          "hi": 0.7203
         },
         "lenient_recall": {
           "est": 0.8179,
-          "lo": 0.7733,
-          "hi": 0.8585
+          "lo": 0.775,
+          "hi": 0.8599
         },
         "mae": {
           "est": 0.5743,
-          "lo": 0.5287,
+          "lo": 0.5263,
           "hi": 0.6222
         },
         "n_coverage": 855,
@@ -51,18 +55,18 @@
       "interaction_realism": {
         "hard_recall": {
           "est": 0.6261,
-          "lo": 0.5741,
-          "hi": 0.6781
+          "lo": 0.5718,
+          "hi": 0.678
         },
         "lenient_recall": {
           "est": 0.8541,
-          "lo": 0.815,
-          "hi": 0.891
+          "lo": 0.8148,
+          "hi": 0.8914
         },
         "mae": {
           "est": 0.676,
           "lo": 0.6281,
-          "hi": 0.7228
+          "hi": 0.724
         },
         "n_coverage": 855,
         "n_violation_items": 329
@@ -71,16 +75,16 @@
         "hard_recall": {
           "est": 0.2941,
           "lo": 0.2222,
-          "hi": 0.3681
+          "hi": 0.3665
         },
         "lenient_recall": {
           "est": 0.7778,
-          "lo": 0.7114,
-          "hi": 0.8418
+          "lo": 0.7105,
+          "hi": 0.8424
         },
         "mae": {
           "est": 0.4971,
-          "lo": 0.4573,
+          "lo": 0.4585,
           "hi": 0.5368
         },
         "n_coverage": 855,
@@ -90,17 +94,17 @@
         "hard_recall": {
           "est": 0.0282,
           "lo": 0.0058,
-          "hi": 0.0546
+          "hi": 0.0552
         },
         "lenient_recall": {
           "est": 0.6102,
-          "lo": 0.5389,
-          "hi": 0.6798
+          "lo": 0.5371,
+          "hi": 0.6807
         },
         "mae": {
           "est": 0.6433,
           "lo": 0.6012,
-          "hi": 0.6854
+          "hi": 0.6865
         },
         "n_coverage": 855,
         "n_violation_items": 177
@@ -109,16 +113,16 @@
         "hard_recall": {
           "est": 0.3013,
           "lo": 0.2508,
-          "hi": 0.3533
+          "hi": 0.352
         },
         "lenient_recall": {
           "est": 0.8974,
-          "lo": 0.8631,
-          "hi": 0.9302
+          "lo": 0.8622,
+          "hi": 0.9298
         },
         "mae": {
           "est": 0.6737,
-          "lo": 0.6339,
+          "lo": 0.6327,
           "hi": 0.7135
         },
         "n_coverage": 855,
@@ -129,18 +133,18 @@
       "agent_consistency": {
         "hard_recall": {
           "est": 0.0786,
-          "lo": 0.0452,
-          "hi": 0.1159
+          "lo": 0.0455,
+          "hi": 0.1154
         },
         "lenient_recall": {
           "est": 0.1397,
-          "lo": 0.0968,
-          "hi": 0.187
+          "lo": 0.0958,
+          "hi": 0.1867
         },
         "mae": {
           "est": 0.6593,
-          "lo": 0.6019,
-          "hi": 0.7148
+          "lo": 0.6038,
+          "hi": 0.7158
         },
         "n_coverage": 854,
         "n_violation_items": 229
@@ -148,18 +152,18 @@
       "scene_consistency": {
         "hard_recall": {
           "est": 0.0737,
-          "lo": 0.0458,
-          "hi": 0.1042
+          "lo": 0.0464,
+          "hi": 0.1044
         },
         "lenient_recall": {
           "est": 0.2756,
-          "lo": 0.2267,
-          "hi": 0.3259
+          "lo": 0.2271,
+          "hi": 0.327
         },
         "mae": {
           "est": 0.8267,
-          "lo": 0.7708,
-          "hi": 0.8829
+          "lo": 0.7706,
+          "hi": 0.8828
         },
         "n_coverage": 854,
         "n_violation_items": 312
@@ -167,18 +171,18 @@
       "interaction_realism": {
         "hard_recall": {
           "est": 0.1707,
-          "lo": 0.131,
+          "lo": 0.1308,
           "hi": 0.2124
         },
         "lenient_recall": {
           "est": 0.4695,
-          "lo": 0.4144,
-          "hi": 0.5231
+          "lo": 0.4157,
+          "hi": 0.5242
         },
         "mae": {
           "est": 0.8173,
-          "lo": 0.765,
-          "hi": 0.8702
+          "lo": 0.7661,
+          "hi": 0.8689
         },
         "n_coverage": 854,
         "n_violation_items": 328
@@ -186,18 +190,18 @@
       "agent_match": {
         "hard_recall": {
           "est": 0.3618,
-          "lo": 0.2868,
-          "hi": 0.4383
+          "lo": 0.2857,
+          "hi": 0.4395
         },
         "lenient_recall": {
           "est": 0.375,
-          "lo": 0.2994,
-          "hi": 0.4521
+          "lo": 0.2986,
+          "hi": 0.4539
         },
         "mae": {
           "est": 0.3208,
-          "lo": 0.2772,
-          "hi": 0.3661
+          "lo": 0.2758,
+          "hi": 0.3677
         },
         "n_coverage": 854,
         "n_violation_items": 152
@@ -205,17 +209,17 @@
       "object_correct": {
         "hard_recall": {
           "est": 0.108,
-          "lo": 0.064,
-          "hi": 0.1559
+          "lo": 0.0637,
+          "hi": 0.1547
         },
         "lenient_recall": {
           "est": 0.1761,
-          "lo": 0.1207,
-          "hi": 0.2353
+          "lo": 0.1215,
+          "hi": 0.2339
         },
         "mae": {
           "est": 0.5504,
-          "lo": 0.4982,
+          "lo": 0.4988,
           "hi": 0.6047
         },
         "n_coverage": 854,
@@ -224,18 +228,18 @@
       "goal_completed": {
         "hard_recall": {
           "est": 0.4405,
-          "lo": 0.3844,
-          "hi": 0.4953
+          "lo": 0.3851,
+          "hi": 0.4955
         },
         "lenient_recall": {
           "est": 0.6881,
-          "lo": 0.6358,
-          "hi": 0.7395
+          "lo": 0.6355,
+          "hi": 0.739
         },
         "mae": {
           "est": 0.6581,
-          "lo": 0.6087,
-          "hi": 0.7084
+          "lo": 0.6077,
+          "hi": 0.7093
         },
         "n_coverage": 854,
         "n_violation_items": 311
@@ -245,18 +249,18 @@
       "agent_consistency": {
         "hard_recall": {
           "est": 0.0699,
-          "lo": 0.0388,
-          "hi": 0.1045
+          "lo": 0.0394,
+          "hi": 0.1039
         },
         "lenient_recall": {
           "est": 0.1223,
-          "lo": 0.0821,
-          "hi": 0.1667
+          "lo": 0.0812,
+          "hi": 0.166
         },
         "mae": {
           "est": 0.6499,
-          "lo": 0.5944,
-          "hi": 0.7081
+          "lo": 0.5942,
+          "hi": 0.7069
         },
         "n_coverage": 854,
         "n_violation_items": 229
@@ -265,17 +269,17 @@
         "hard_recall": {
           "est": 0.016,
           "lo": 0.0032,
-          "hi": 0.0315
+          "hi": 0.0314
         },
         "lenient_recall": {
           "est": 0.1314,
-          "lo": 0.0947,
-          "hi": 0.1698
+          "lo": 0.0945,
+          "hi": 0.1697
         },
         "mae": {
           "est": 0.8981,
-          "lo": 0.8398,
-          "hi": 0.9543
+          "lo": 0.8404,
+          "hi": 0.9555
         },
         "n_coverage": 854,
         "n_violation_items": 312
@@ -283,18 +287,18 @@
       "interaction_realism": {
         "hard_recall": {
           "est": 0.2866,
-          "lo": 0.2382,
-          "hi": 0.3355
+          "lo": 0.2385,
+          "hi": 0.3354
         },
         "lenient_recall": {
           "est": 0.6646,
-          "lo": 0.6119,
-          "hi": 0.7139
+          "lo": 0.6123,
+          "hi": 0.7163
         },
         "mae": {
           "est": 0.7904,
-          "lo": 0.7415,
-          "hi": 0.8396
+          "lo": 0.7412,
+          "hi": 0.8386
         },
         "n_coverage": 854,
         "n_violation_items": 328
@@ -302,18 +306,18 @@
       "agent_match": {
         "hard_recall": {
           "est": 0.375,
-          "lo": 0.2963,
+          "lo": 0.2987,
           "hi": 0.4539
         },
         "lenient_recall": {
           "est": 0.4276,
-          "lo": 0.3475,
+          "lo": 0.3493,
           "hi": 0.5067
         },
         "mae": {
           "est": 0.3583,
-          "lo": 0.3123,
-          "hi": 0.4075
+          "lo": 0.3115,
+          "hi": 0.4063
         },
         "n_coverage": 854,
         "n_violation_items": 152
@@ -321,18 +325,18 @@
       "object_correct": {
         "hard_recall": {
           "est": 0.0852,
-          "lo": 0.0462,
+          "lo": 0.0465,
           "hi": 0.1288
         },
         "lenient_recall": {
           "est": 0.1364,
-          "lo": 0.087,
-          "hi": 0.189
+          "lo": 0.0881,
+          "hi": 0.1899
         },
         "mae": {
           "est": 0.5597,
-          "lo": 0.5076,
-          "hi": 0.6148
+          "lo": 0.5059,
+          "hi": 0.6136
         },
         "n_coverage": 854,
         "n_violation_items": 176
@@ -340,18 +344,18 @@
       "goal_completed": {
         "hard_recall": {
           "est": 0.3344,
-          "lo": 0.2825,
-          "hi": 0.387
+          "lo": 0.2828,
+          "hi": 0.3872
         },
         "lenient_recall": {
           "est": 0.5691,
-          "lo": 0.5138,
-          "hi": 0.6246
+          "lo": 0.5137,
+          "hi": 0.6237
         },
         "mae": {
           "est": 0.7623,
-          "lo": 0.7111,
-          "hi": 0.8159
+          "lo": 0.7096,
+          "hi": 0.8152
         },
         "n_coverage": 854,
         "n_violation_items": 311

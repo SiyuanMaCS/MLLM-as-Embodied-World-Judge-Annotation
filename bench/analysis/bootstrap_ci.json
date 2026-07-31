@@ -33,6 +33,9 @@
       "provenance": "measured 2026-07-28 by diffing test_clean.jsonl vs test_clean_v2.jsonl (Isabella, Yu independently)"
     },
     "r3_relabel_timing": "test_clean(856) labels are identical to gold_875 (0 differences): v1 was a pure-removal version. All 46 relabels landed in v2.",
+    "ci_seed_generation": 1,
+    "ci_seed_generation_note": "Bump this integer in the same commit as a deliberate reseed (changing the RNG scheme, B, or the per-judge seed derivation). Leaving it unchanged while the CI endpoints move is what judge_sync reports as an unsigned recompute -- including a run that only replaces the numbers of judges already on the board, which is the common case and does not change the roster. The field name is narrower than what it signs (any unsigned recompute of existing rows, not only a reseed), so state in the bump's commit WHICH kind of change it declares; otherwise the integer becomes a number nobody can explain later.",
+    "ci_seed_fn": "sha256(isabella_bootstrap_v2:<judge>) & 0xFFFFFF",
     "n_gold_actual": 855,
     "composition": {
       "entries": 36,
