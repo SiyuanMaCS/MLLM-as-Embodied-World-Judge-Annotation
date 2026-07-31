@@ -714,38 +714,38 @@
     },
     "phyjudge": {
       "pa_pearson": {
-        "est": 0.3548,
-        "lo": 0.2987,
-        "hi": 0.4106
+        "est": 0.3663,
+        "lo": 0.3105,
+        "hi": 0.4214
       },
       "ia_pearson": {
-        "est": 0.5643,
-        "lo": 0.5172,
-        "hi": 0.6101
+        "est": 0.5426,
+        "lo": 0.4939,
+        "hi": 0.5889
       },
       "pa_knorm": {
-        "est": 0.1333,
-        "lo": 0.0444,
-        "hi": 0.2
+        "est": 0.1556,
+        "lo": 0.0667,
+        "hi": 0.2222
       },
       "ia_knorm": {
         "est": 0.0667,
         "lo": 0.0444,
-        "hi": 0.2
+        "hi": 0.1778
       },
       "pa_tau_ap": {
-        "est": 0.466,
-        "lo": 0.2809,
-        "hi": 0.9198
+        "est": 0.4012,
+        "lo": 0.2395,
+        "hi": 0.8568
       },
       "ia_tau_ap": {
-        "est": 0.6349,
-        "lo": 0.3016,
+        "est": 0.7183,
+        "lo": 0.3794,
         "hi": 0.9405
       },
       "n_pa": 855,
-      "n_ia": 851,
-      "n_listwise": 871,
+      "n_ia": 844,
+      "n_listwise": 864,
       "_note": "PA is NOT a native score: it is mean(PTV, persistence), a half-integer proxy (270/875 values land on .5), so Exact-PA and +-1-PA are NOT comparable with integer judges -- Pearson/Spearman are. ids required normalisation (missing data__ prefix, trailing .mp4); 875/875 matched gold after it. 4 error rows -> IA null (n_ia=871). Source HF PR #52, sha256 9c72c1fa..."
     },
     "qwen3-vl-32b-instruct": {

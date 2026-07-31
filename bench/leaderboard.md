@@ -102,18 +102,22 @@ See `bench/TESTSET.md` §5 for the discussion around these baselines and the hum
 
 - **`#15 of 35 by PA` is recomputable from Table 1a above** — sort the PA column; 35 rows carry a numeric PA.
   Verified 2026-07-31 (@Yu): 35 rows, 35 with a numeric PA-Pearson, wbench sorts to #15.
-- **That rank has 0.0009 of margin.** #14 is `phyjudge` at 0.3548 against wbench's 0.3539.
-  An earlier revision of this bullet said a phyjudge rerun would break the line and "no check would
-  notice". That was wrong (@Ham): the `<!-- assert: -->` lines under `## Assertions` below are parsed and
-  enforced by `refresh_leaderboard.py`, tolerance derived from the decimals written (`0.355` → ±0.0005),
-  and a mismatch is a `SystemExit`, not a warning. A phyjudge move of 0.001 exceeds that, so it is caught.
-  Demonstrated rather than read: on an isolated hardlink copy of the tree, setting phyjudge's assert to
-  0.353 made the generator print `REFUSING to write ... differs by 0.0018 > tol 0.0005` and exit 1.
-  **What the asserts do not cover is this rank.** They are keyed by judge — two of them, on `phyjudge` and
-  `wbench_visual_plausibility` — while a rank is a property of all 35 rows. Any *third* judge drifting into
-  the 0.3539–0.3548 gap reorders these two without touching either assert, and that is silent.
-  (Checked against the pending change: HF PR #65 moves phyjudge to 0.3663, still under #13's 0.371, so
-  phyjudge holds #14 and this line survives that particular merge.)
+- **The margin above wbench is whatever `phyjudge − wbench` is in Table 1a right now** — deliberately
+  not restated here. It was restated here, as "0.0009 of margin, phyjudge at 0.3548", and applying HF
+  PR #65 on 2026-07-31 moved phyjudge to 0.366 and made both numbers wrong the same hour. That bullet
+  existed to warn that a rank frozen into prose goes stale with nothing to recompute it; it became an
+  instance of what it described, from a change made while it was being read. Both endpoints *are*
+  maintained — by the two `<!-- assert: -->` lines under `## Assertions` — so the difference is
+  available; it is the *derived* figure that had no maintainer.
+  On those asserts: an earlier revision claimed a phyjudge rerun would break this line with "no check
+  would notice". That was wrong (@Ham). They are parsed and enforced by `refresh_leaderboard.py`,
+  tolerance derived from the decimals written (`0.366` → ±0.0005), and a mismatch is a `SystemExit`,
+  not a warning. Demonstrated twice, not read: on an isolated copy, setting phyjudge's assert to 0.353
+  produced `REFUSING to write ... differs by 0.0018 > tol 0.0005`, exit 1; and applying PR #65 for real
+  tripped the same gate at `prose says 0.355, computed 0.3663` until the assert was updated to match.
+  **What the asserts do not cover is this rank.** They are keyed by judge — two of them — while a rank
+  is a property of all 35 rows. Any *third* judge drifting into the gap between these two reorders them
+  without touching either assert, and that is silent.
 - **`Judge VLM group #2` is not in this file.** Grouping is computed by `stats.html`'s own script at render
   time, so it can only be read by running the page (`tools/render_real.js` — its row/order/grouping output
   is the part it declares trustworthy; its CI columns are stubbed and mean nothing).
