@@ -1357,7 +1357,10 @@
         // v114 (Yu msg ed188218): 'rynnbrain' does NOT match 'robobrain' — it was
         // falling through to open-general. 'phyjudge' is a purpose-built judge VLM,
         // so it groups with videophy/videoscore/videocon, not general.
-        if(/videophy|videoscore|videocon|phyjudge/.test(m)) return {tier:'open', group:'judge'};
+        // v154 (siyuan 2026-07-31: 「wbench_visual_plausibility 这是judge vlm」): wbench is a
+        // purpose-built judge, not a general VLM. It was falling through to open-general because
+        // the pattern listed judges by name and nothing matched 'wbench'.
+        if(/videophy|videoscore|videocon|phyjudge|wbench/.test(m)) return {tier:'open', group:'judge'};
         if(/cosmos|robobrain|rynnbrain|ocra|orca|embodied|hy[-_ ]?embodied/.test(m)) return {tier:'open', group:'embodied'};
         return {tier:'open', group:'general'};   // qwen / glm / internvl / default
       }
