@@ -59,18 +59,18 @@ _12 个 judge 覆盖率 <50%,n 太小无法排名,从主表移除(JSONL 仍在�
 
 Reference metrics — none are task-grounded judges; all shown to demonstrate that cheap automatic metrics can't measure physical correctness. **Distance metrics are converted to a [0,1] "higher = more real/consistent" score before correlating** (Pearson is scale-invariant, so this only flips sign to positive; magnitude unchanged). Correlations are vs **human PA** (physical adherence).
 
-**Per-item baselines** (one score per video; fold alongside judges — but read the GT row separately, see below):
+**Per-item baselines** (one score per video). All rows are GT-free and judge-comparable **except the flagged top row**.
 
 | Baseline | what | cov | PA-Pearson [95% CI] | PA-Spearman | IA-Pearson |
 |---|---|--:|--:|--:|--:|
-| vjepa-sim (GT) | ⚠ NEEDS GT VIDEO — not comparable to judges. V-JEPA cosine similarity between each clip and its own ground-truth video | 100% | **+0.337** [0.277, 0.396] | +0.348 | +0.244 |
-| subject-consistency | DINO feature self-similarity of the main subject across frames (no GT) | 100% | **+0.331** [0.267, 0.385] | +0.324 | +0.199 |
-| background-consistency | CLIP feature self-similarity of the background across frames (no GT) | 100% | **+0.259** [0.199, 0.321] | +0.237 | +0.183 |
-| vjepa-similarity | V-JEPA Mahalanobis distance to the real-video manifold, GT-free (per-item decomp of FVD-JEDi) | 88.7% | **+0.140** [0.071, 0.209] | +0.142 | +0.121 |
-| frame-consistency | 1 − raw adjacent-frame pixel diff (no GT) | 100% | **+0.129** [0.067, 0.192] | +0.122 | +0.003 |
-| warp-consistency | 1 − optical-flow warp residual, temporal consistency (no GT) | 100% | **+0.110** [0.044, 0.173] | +0.102 | −0.014 |
-| image-quality | MUSIQ technical image quality — sharpness/artefacts (no GT) | 100% | **+0.038** [−0.029, 0.102] | +0.055 | −0.004 |
-| flow-score | mean optical-flow magnitude, i.e. amount of motion (no GT) | 100% | **−0.175** [−0.233, −0.116] | −0.173 | −0.108 |
+| vjepa-sim (GT) | ⚠ uses the item's GT video — not judge-comparable | 100% | **+0.337** [0.277, 0.396] | +0.348 | +0.244 |
+| subject-consistency | DINO subject self-similarity across frames | 100% | **+0.331** [0.267, 0.385] | +0.324 | +0.199 |
+| background-consistency | CLIP background self-similarity across frames | 100% | **+0.259** [0.199, 0.321] | +0.237 | +0.183 |
+| vjepa-similarity | V-JEPA distance to real-video manifold (GT-free) | 88.7% | **+0.140** [0.071, 0.209] | +0.142 | +0.121 |
+| frame-consistency | 1 − adjacent-frame pixel diff | 100% | **+0.129** [0.067, 0.192] | +0.122 | +0.003 |
+| warp-consistency | 1 − optical-flow warp residual | 100% | **+0.110** [0.044, 0.173] | +0.102 | −0.014 |
+| image-quality | MUSIQ technical image quality | 100% | **+0.038** [−0.029, 0.102] | +0.055 | −0.004 |
+| flow-score | mean optical-flow magnitude (motion) | 100% | **−0.175** [−0.233, −0.116] | −0.173 | −0.108 |
 | random-uniform | random 1–5 floor | 100% | **0.000** [−0.063, 0.065] | 0.000 | 0.000 |
 
 - 🔴 **The top row is not in the same competition as the rest.** Every judge on this board sees only the instruction, the init frame and the generated video. `vjepa-sim` additionally receives **the ground-truth video of what should have happened** (601 distinct GT clips across the 855 rows). Scoring +0.337 with the answer key in hand is **not** evidence of beating judges that work without it. All other rows are GT-free and *are* directly comparable to judges.
