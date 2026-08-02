@@ -59,16 +59,26 @@ _12 个 judge 覆盖率 <50%,n 太小无法排名,从主表移除(JSONL 仍在�
 
 Reference metrics — none are task-grounded judges; all shown to demonstrate that cheap automatic metrics can't measure physical correctness. **Distance metrics are converted to a [0,1] "higher = more real/consistent" score before correlating** (Pearson is scale-invariant, so this only flips sign to positive; magnitude unchanged). Correlations are vs **human PA** (physical adherence).
 
-**Per-item no-reference baselines** (one score per video, no GT needed; fold alongside judges):
+**Per-item baselines** (one score per video; fold alongside judges — but read the GT row separately, see below):
 
 | Baseline | what | cov | PA-Pearson [95% CI] | PA-Spearman | IA-Pearson |
 |---|---|--:|--:|--:|--:|
-| vjepa-similarity | V-JEPA feature-space closeness to real-video manifold (per-item decomp of FVD-JEDi) | 88.7% | **+0.140** [0.071, 0.209] | +0.142 | +0.121 |
-| frame-consistency | 1 − raw adjacent-frame pixel diff | 100% | **+0.129** [0.067, 0.192] | +0.122 | +0.003 |
-| warp-consistency | 1 − optical-flow warp residual (temporal consistency) | 100% | **+0.110** [0.044, 0.173] | +0.102 | −0.014 |
+| vjepa-sim (GT) | ⚠ NEEDS GT VIDEO — not comparable to judges. V-JEPA cosine similarity between each clip and its own ground-truth video | 100% | **+0.337** [0.277, 0.396] | +0.348 | +0.244 |
+| subject-consistency | DINO feature self-similarity of the main subject across frames (no GT) | 100% | **+0.331** [0.267, 0.385] | +0.324 | +0.199 |
+| background-consistency | CLIP feature self-similarity of the background across frames (no GT) | 100% | **+0.259** [0.199, 0.321] | +0.237 | +0.183 |
+| vjepa-similarity | V-JEPA Mahalanobis distance to the real-video manifold, GT-free (per-item decomp of FVD-JEDi) | 88.7% | **+0.140** [0.071, 0.209] | +0.142 | +0.121 |
+| frame-consistency | 1 − raw adjacent-frame pixel diff (no GT) | 100% | **+0.129** [0.067, 0.192] | +0.122 | +0.003 |
+| warp-consistency | 1 − optical-flow warp residual, temporal consistency (no GT) | 100% | **+0.110** [0.044, 0.173] | +0.102 | −0.014 |
+| image-quality | MUSIQ technical image quality — sharpness/artefacts (no GT) | 100% | **+0.038** [−0.029, 0.102] | +0.055 | −0.004 |
+| flow-score | mean optical-flow magnitude, i.e. amount of motion (no GT) | 100% | **−0.175** [−0.233, −0.116] | −0.173 | −0.108 |
 | random-uniform | random 1–5 floor | 100% | **0.000** [−0.063, 0.065] | 0.000 | 0.000 |
 
-- Strongest (vjepa +0.140) > frame +0.123 > warp +0.105 > random 0 — but **all weak (|r|≈0.1, weakest-judge tier)**: even learned-feature-space distance can't measure physics per-item → task-grounded judges needed. Pearson ≈ Spearman → relationships are monotonic (no non-linearity artifact).
+- 🔴 **The top row is not in the same competition as the rest.** Every judge on this board sees only the instruction, the init frame and the generated video. `vjepa-sim` additionally receives **the ground-truth video of what should have happened** (601 distinct GT clips across the 855 rows). Scoring +0.337 with the answer key in hand is **not** evidence of beating judges that work without it. All other rows are GT-free and *are* directly comparable to judges.
+- 🔴 **This section's previous conclusion — "all weak, |r|≈0.1, cheap metrics can't measure physical correctness" — is now WRONG, and has been rewritten rather than patched.** The pixel/flow-era metrics really are ≈0.1 (frame +0.129, warp +0.110), but **learned feature-consistency is not**: **subject-consistency reaches +0.331 GT-free at full coverage** — above the judge median (0.260), stronger than 20 of the 35 judges on the board, and level with the **human PA IAA floor (0.336)**. The claim that survives is narrower and more useful: *cheap **pixel-level** metrics cannot measure physical correctness; **learned feature-consistency** can, to roughly the strength of a median judge — while still not doing a judge's job*, since it never sees the instruction and so cannot separate "physically plausible but wrong task" (every IA column here is ≤ +0.25).
+- **image-quality ≈ 0 (+0.038, CI spans 0) is a finding, not a null result.** Technical picture quality is **orthogonal** to physical correctness: a sharp, artefact-free rendering of an impossible action still scores high. Direct evidence that "looks good" ≠ "is physically right".
+- **flow-score is negative (−0.175)** and inherits the failure mode documented below: these metrics are optimised by **stillness**. More motion means more opportunity to violate physics, so less motion tracks higher human PA — the same reason a motionless clip (robot stalled, never executed) is the global optimum of frame/warp/flow *by definition*.
+- ⚠️ **`vjepa-sim` (+0.337) and `vjepa-similarity` (+0.140) are two different metrics, not one metric that improved 2.4×.** Both use a V-JEPA encoder; the comparand differs and that is the whole story: `vjepa-similarity` measures Mahalanobis distance to the **distribution of real videos** and is GT-free by construction (`baselines/scripts/run_vjepa_dist.py`: "distance-to-real-manifold (cheap, GT-free, per-item)"), while `vjepa-sim` measures cosine similarity to **that item's own GT clip** (`gt_video_path` on every row). They also differ in basis (855 vs gold_875) and coverage (100% vs 88.7%). **The gap is therefore attributed, and it is mostly just what the answer key is worth.**
+
 > ⚠️ **Scope note (test_clean_v2, 855):** frame/warp are recomputed on the 855-row v2
 > (B=4000). vjepa-similarity is **still the gold_875 value** (+0.140) — never recomputed on any
 > test_clean basis. The curated IA analysis in the bullet below (partial-r, 5-stratum gradient,
