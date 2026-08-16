@@ -1,189 +1,269 @@
 # Pre-annotation Guide — Embodied World Judge
 
-For external agents producing **pre-annotations** for the training set.
-Rubric transcribed from `docs.html` in this repo (the standard human annotators were held to).
-**If this file and `docs.html` ever disagree, `docs.html` wins.**
+**Audience: an external agent with an API key. You only need to know how to call an API.**
+Everything required is in this file — the exact prompts, sampling settings, and output schema.
+
+**Work item list:** [`preannotation_queue_v1.json`](./preannotation_queue_v1.json) — **5,846 videos.**
+
+> Provenance: prompts and parameters below are copied **verbatim** from the pipeline that produced
+> the existing 5,183 pre-annotations (`judge/prompts.py`, `judge/openai_judge.py`,
+> `judge/video_utils.py`, `bench/run_bench.py`). Do not paraphrase them — see §7.
 
 ---
 
-## 1. What you are labelling
+## 1. TL;DR — the loop
 
-Each item is a short video of a **robot gripper or human hand doing manipulation**, paired with an
-**instruction** and an **`init_frame`** (the first frame = the conditioning frame given to the
-generator).
+For **each** item in `items[]`:
 
-You score **two independent axes**:
+1. Download `video_url`.
+2. Sample frames: **4 fps**, longest side **≤ 512 px**, JPEG, base64 data URIs.
+3. Make **TWO separate chat-completion calls** (they are deliberately not combined):
+   - **Call A — Physical Adherence**, frames only, **instruction NOT included**.
+   - **Call B — Instruction Alignment**, frames **+ the instruction**.
+4. Make **Call C** for the six sub-scores (§4).
+5. Append one JSON line to your output file.
 
-| Axis | Meaning | What you may look at |
-|---|---|---|
-| **PA** — Physical Adherence | Is the video *physically* real? | **The video only. Ignore the instruction.** |
-| **IA** — Instruction Alignment | Did the video *do what was asked*? | Instruction **+ `init_frame`** |
-
-The axes are genuinely independent. "Physically perfect but did the wrong thing" (PA high, IA low)
-and "completed the task but looks unreal" (IA high, PA low) are both normal and expected.
-
-Each axis = **one 1–5 main score** + **three 0/1/2 sub-scores** + **required notes**.
-
-```
-✗ 0 = major / violated      ⚠ 1 = minor / partial      ✓ 2 = holds / passes
-```
+`temperature = 0.0`, `max_tokens = 600`, JSON-only replies.
 
 ---
 
-## 2. Axis A — Physical Adherence (judge from the video alone)
+## 2. Frame sampling — get this exactly right
 
-| Sub-score | ✓ 2 | ⚠ 1 | ✗ 0 |
-|---|---|---|---|
-| `agent_consistency`<br>gripper/hand integrity | structure stable throughout | slight brief deformation/jitter, still recognisable as a gripper/hand | clearly **melting, twisting, vanishing, extra/missing limbs** |
-| `scene_consistency`<br>background **and objects** | background + objects stable throughout | slight flicker/drift, one object briefly unstable | scene collapse, objects **teleporting, appearing/disappearing from nowhere, severe deformation** |
-| `interaction_realism`<br>contact & forces | contact, grasp, forces all plausible | slight clipping / contact a bit unnatural but the action holds | obvious **clipping, moving an object while grasping nothing, violating gravity/inertia** |
+Frame count is **per video** (durations vary), derived from a fixed 4 fps:
 
-**Main score 1–5** (holistic — informed by the sub-scores, **not a mechanical sum**):
-
-| 5 | 4 | 3 | 2 | 1 |
-|---|---|---|---|---|
-| highly realistic, almost nothing to criticise | broadly realistic, minor flaws only | clearly inconsistent, watchable but obviously flawed | severe violations, scene still recognisable | physics completely broken |
-
-> ⚠️ **`scene_consistency` covers BACKGROUND *and* OBJECTS.** Mass appearing from nowhere, an object
-> teleporting, or severe warping is **`scene_consistency`**, *not* `interaction_realism`.
-> `interaction_realism` is **contact / grasp / forces only**.
-
----
-
-## 3. Axis B — Instruction Alignment (use instruction + `init_frame`)
-
-Judge task semantics and completion — **not** image realism.
-
-| Sub-score | ✓ 2 | ⚠ 1 | ✗ 0 |
-|---|---|---|---|
-| `agent_match` | right agent doing the right action | **action completed but slight agent mismatch** (e.g. asked for right hand, used left) | unrelated action / completely wrong agent |
-| `object_correct` | operates on exactly the object named (object + colour) | partially correct / ambiguous / brushes an adjacent object | completely wrong object |
-| `goal_completed` | instruction's end-state fully reached | partially done / close but not complete (e.g. lifted but never placed in) | not done / completely off |
-
-**Main score 1–5:**
-
-| 5 | 4 | 3 | 2 | 1 |
-|---|---|---|---|---|
-| fully compliant — agent, object, goal all correct and complete | broadly compliant, minor shortfall | partially deviating — one sub-score ⚠ or ✗ | clearly non-compliant — wrong action or object, several ✗ | completely non-compliant — wrong agent / no motion |
-
-> ⚠️ **`object_correct` is about IDENTITY only** — is it the object the instruction named?
-
----
-
-## 4. The rules that get broken most
-
-1. **Sub-scores first, then the main score.** Judge each ✓/⚠/✗ objectively, then set the main score
-   holistically. It is **not** a mechanical sum.
-2. **🔴 USE THE ⚠ MIDDLE TIER.** This is the single most common failure. In the existing data
-   `agent_match` and `object_correct` are almost only ✓ or ✗ — that is wrong. *"Used the wrong hand
-   but completed the action"*, *"slight clipping"*, *"basically achieved but not fully"* are all ⚠.
-3. **PA ignores the instruction entirely.** A video that flawlessly does the wrong thing is still PA 5.
-4. **IA uses `init_frame` as the reference** for what the agent and scene started as.
-5. **Notes are mandatory.** Every sub-score marked ⚠ or ✗ needs **one sentence of concrete visual
-   evidence** — what you saw, and when.
-6. **Default is 5 + all ✓.** Only move off that when you actually observe a problem.
-
-### Worked examples (from the human FAQ)
-
-| Situation | Correct scoring |
-|---|---|
-| Instruction says right hand, video uses left, everything else correct | `agent_match` = **⚠ 1**, others ✓; **IA main 3–4, not 1** |
-| Slight clipping, but the goal is achieved | `interaction_realism` = ⚠; `goal_completed` = ✓; PA main 3–4, IA main 4–5 |
-| Right agent, right object, right action, but stops halfway | `goal_completed` = ⚠; IA main = 3 |
-
----
-
-## 5. Input format
-
-`preannotation_queue_v1.json`:
-
-```jsonc
-{
-  "_meta": { "predicate": "...", "denominators": {...}, "counts": {...} },
-  "items": [
-    {
-      "item_id": "data__<dataset>__generated_data__<model>__<task>__<episode>__1__<file>",
-      "dataset": "agibot_world", "model": "...", "task": "task_0004", "episode": "episode_0001",
-      "video_url": "https://huggingface.co/.../resolve/main/....mp4",
-      "init_frame_url": "https://huggingface.co/.../prompt/init_frame.png",
-      "instruction_url": "https://huggingface.co/.../prompt/instruction.txt",
-      "instruction": "Toast the two slices of bread ...",   // may be null -> fetch instruction_url
-      "instruction_from_sibling_model": true                // see warning below
-    }
-  ],
-  "excluded": [ { "...": "...", "_excluded_reason": "..." } ]
-}
+```python
+num_frames = max(1, ceil(duration_seconds * 4.0))   # 4 fps — DO NOT CHANGE
 ```
 
-### 🔴 Three traps that will silently corrupt your output
+```python
+import cv2, base64
+def sample_frames(video_path, num_frames, max_side=512):
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened(): return []
+    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
+    idxs = [int(round(i * (total - 1) / max(1, num_frames - 1))) for i in range(num_frames)]
+    out = []
+    for i in sorted(set(idxs)):
+        cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+        ok, frame = cap.read()
+        if not ok: continue
+        h, w = frame.shape[:2]
+        s = min(1.0, max_side / float(max(h, w)))
+        if s < 1.0: frame = cv2.resize(frame, (int(w*s), int(h*s)))
+        ok, buf = cv2.imencode(".jpg", frame)
+        if ok: out.append("data:image/jpeg;base64," + base64.b64encode(buf).decode())
+    return out                       # evenly spaced, temporal order
+```
 
-1. **`prompt.txt` is NOT the instruction.** Many directories contain both. `instruction.txt` is the
-   canonical task; **`prompt.txt` is the generator's input** — for `_prefix` models it has a physics
-   preamble bolted on, and for `_rewrite` models **it describes a different, narrower action**.
-   Measured: they differ for **22 of 24 models**. **Only ever read `instruction.txt` / the
-   `instruction` field.**
-2. **`instruction_from_sibling_model: true` is expected, not a bug.** That item's own directory has
-   no `instruction.txt`, so the URL points at **another model's** directory for the **same
-   `dataset|task|episode`**. The instruction is a property of the ground-truth episode; this was
-   verified byte-identical across models on 22 GT keys spanning all 11 datasets.
-3. **Video frame 0 IS the declared `init_frame`.** So if the content visibly departs from
-   `init_frame`, that is **real drift** (`scene_consistency` ✗), not a framing artefact.
+**4 fps and 512 px are load-bearing.** The existing 5,183 pre-annotations and the whole test-875
+leaderboard were produced at these settings. Change them and your scores cannot be ensembled with
+the existing ones.
 
-### Two things worth knowing before you trust your eyes
+### Message shape
 
-- **A near-static video is not automatically `goal_completed` ✗.** A small tool oscillating quickly
-  reads as frozen in whole-frame statistics *and* in any every-Nth-frame sample. Track the object
-  **every frame**, and compare path length against net displacement.
-- **If an object appears to grow**, measure something you know is fixed **in the same frame**. If
-  the invariant is unchanged, the object grew — the camera did not move.
+```python
+resp = client.chat.completions.create(
+    model=MODEL,
+    messages=[
+        {"role": "system", "content": SYSTEM},
+        {"role": "user", "content":
+            [{"type": "text", "text": USER_PROMPT}] +
+            [{"type": "image_url", "image_url": {"url": uri}} for uri in frames]},
+    ],
+    temperature=0.0,
+    max_tokens=600,
+)
+```
 
 ---
 
-## 6. Output format
+## 3. The two main prompts — copy verbatim
 
-One JSON object per item, matching the human schema exactly:
+### Call A — Physical Adherence (video only; **do not pass the instruction**)
+
+System:
+
+```text
+You are a strict, calibrated evaluator of the PHYSICAL REALISM of AI-generated embodied / robot-manipulation videos (a robot arm/gripper or a human hand acting on objects). You are shown uniformly-sampled frames of one generated video in temporal order. Judge the physics of the video itself. Be conservative: reserve 5 for clearly flawless physics and 1 for clearly broken physics.
+```
+
+User:
+
+```text
+Task: Judge the PHYSICAL REALISM of this AI-generated robot / embodied-manipulation
+video, from the video alone (ignore any task instruction).
+
+Criteria (your reasoning must address each; you may also note other issues):
+1. Agent integrity — the arm/gripper/hand stays structurally complete and consistent
+   (no melting, fused/extra fingers, warping).
+2. Scene & object consistency — background and objects stay temporally stable
+   (no flicker, teleport, morphing, appear/disappear).
+3. Interaction realism — contacts obey physics (grasps close and bear weight, no
+   interpenetration, motion respects gravity/inertia).
+
+Score (integer 1-5): 1 = gross violations throughout; 2 = major violations;
+3 = noticeable local inconsistencies; 4 = minor issues only; 5 = no visible violation.
+
+Reason first, then score. Output JSON only:
+{"reasoning": "<assess agent integrity, scene & object consistency, and interaction realism, each with concrete visual evidence>", "physical_adherence": <1-5>}
+```
+
+### Call B — Instruction Alignment (frames **+** instruction)
+
+System:
+
+```text
+You are a strict, calibrated evaluator of whether an AI-generated embodied-manipulation video correctly performs a given task instruction. You are shown the instruction and uniformly-sampled frames of one generated video in temporal order; the FIRST frame is the initial scene the video was conditioned on. Judge task execution, not raw visual quality. Be conservative: reserve 5 for full, correct task completion and 1 for unrelated videos.
+```
+
+User (substitute the item's instruction into `{instruction}`):
+
+```text
+Task: Judge whether this AI-generated video performs the instructed manipulation
+task. The first frame is the initial scene the video was conditioned on.
+
+Instruction: "{instruction}"
+
+Criteria (your reasoning must address each; you may also note other issues):
+1. Agent match — the task is done by the SAME manipulator shown in the first frame
+   (not a different/new agent).
+2. Object correctness — the manipulated object is the instruction's target object.
+3. Goal completion — the instructed goal is actually achieved by the end
+   (not merely approached).
+
+Score (integer 1-5): 1 = unrelated or task not performed; 2 = major misalignment;
+3 = partial completion; 4 = minor shortfalls only; 5 = full, correct completion.
+
+Reason first, then score. Output JSON only:
+{"reasoning": "<assess agent match, object correctness, and goal completion, each with concrete evidence>", "instruction_alignment": <1-5>}
+```
+
+**Where the instruction comes from:** use the item's `instruction` field. If it is `null`, fetch
+`instruction_url` (plain text). **Never read `prompt.txt`** — see §7.
+
+---
+
+## 4. Call C — the six sub-scores
+
+> ⚠️ **Status: this prompt is NEW.** `JUDGES.md` in the HF dataset tells you to use
+> `PHYSICAL_ADHERENCE_PROMPT_SUBS` / `INSTRUCTION_ALIGNMENT_PROMPT_SUBS` — **those constants do not
+> exist** in `judge/prompts.py` (verified in two independent copies). The shipped prompts emit main
+> scores only. The prompt below was written to match the human rubric (`judge/RUBRIC.md`,
+> `docs.html`) so all eight fields can be filled. It is **not** the byte-identical original, so
+> treat sub-scores as slightly less comparable than PA/IA until the original surfaces.
+
+System: reuse the **Physical Adherence** system message from §3.
+
+User (pass frames **and** the instruction):
+
+```text
+Task: Rate SIX fixed sub-criteria for this AI-generated robot / embodied-manipulation video.
+
+Instruction (for the alignment sub-criteria only): "{instruction}"
+The first frame is the initial scene the video was conditioned on.
+
+Score EACH sub-criterion as an integer:
+  0 = violated (major)   1 = partial / minor   2 = holds
+
+Physical (judge from the video alone, ignore the instruction):
+  agent_consistency   — arm/gripper/hand stays structurally complete and consistent
+                        (0 = melting, fusing, extra/missing fingers, vanishing)
+  scene_consistency   — background AND objects stay temporally stable
+                        (0 = objects teleport, appear/disappear from nowhere, severely deform)
+  interaction_realism — contact, grasp and forces are plausible
+                        (0 = interpenetration, moving an object while grasping nothing,
+                         gravity/inertia violated)
+
+Alignment (use the instruction and the first frame):
+  agent_match     — the SAME manipulator shown in the first frame does the task
+                    (1 = task done but wrong hand/gripper used)
+  object_correct  — the manipulated object is the instruction's target object
+                    (1 = partially correct, ambiguous, or an adjacent object is touched)
+  goal_completed  — the instructed end-state is actually reached
+                    (1 = partially done, e.g. lifted but never placed)
+
+Rules:
+- Use 1 whenever the failure is real but minor or partial. Do NOT collapse to only 0 and 2.
+- scene_consistency covers OBJECTS as well as background. Mass appearing from nowhere,
+  teleporting or severe warping is scene_consistency, NOT interaction_realism.
+- interaction_realism is about contact / grasp / forces ONLY.
+- object_correct is about object IDENTITY ONLY.
+
+Output JSON only:
+{"physical_notes": "<one concrete visual observation per physical sub-criterion scored 0 or 1>", "instruction_notes": "<one concrete visual observation per alignment sub-criterion scored 0 or 1>", "agent_consistency": <0-2>, "scene_consistency": <0-2>, "interaction_realism": <0-2>, "agent_match": <0-2>, "object_correct": <0-2>, "goal_completed": <0-2>}
+```
+
+---
+
+## 5. Output — where it goes
+
+Write **JSONL**, one object per line, and append as you go so the run is resumable (on restart,
+skip `item_id`s already present in your output file).
+
+**Filename:** `judge_<your-model-name>.jsonl` — e.g. `judge_gemini-3.5-flash.jsonl`.
 
 ```json
-{
-  "item_id": "<copied verbatim from the input>",
-  "payload": {
-    "skip": false,
-    "physical_adherence": 3,
-    "instruction_alignment": 4,
-    "agent_consistency": 2,
-    "scene_consistency": 1,
-    "interaction_realism": 2,
-    "agent_match": 1,
-    "object_correct": 2,
-    "goal_completed": 2,
-    "subs_v": 2,
-    "physical_notes": "Scene: the silver tray has no clear source before frame 8 — appears mid-clip.",
-    "instruction_notes": "Agent: instruction says right gripper, the left is used; task otherwise completed."
-  }
-}
+{"item_id": "data__agibot_world__generated_data__abot_physworld_f113_prefix__task_0002__episode_0001__1__task_0002_episode_0001",
+ "judge_model": "gemini-3.5-flash",
+ "physical_adherence": 4, "instruction_alignment": 3,
+ "agent_consistency": 2, "scene_consistency": 1, "interaction_realism": 1,
+ "agent_match": 2, "object_correct": 1, "goal_completed": 0,
+ "physical_reasoning": "<reasoning string from Call A>",
+ "instruction_reasoning": "<reasoning string from Call B>",
+ "physical_notes": "<from Call C>", "instruction_notes": "<from Call C>",
+ "error": null}
 ```
 
-- `physical_adherence` / `instruction_alignment` ∈ **1–5**
-- the six sub-scores ∈ **0 / 1 / 2**
-- **`subs_v` must be `2`**
-- **all eight scores are required** on every item
-- notes: required for every ⚠/✗ sub-score, and must cite **what was seen and roughly when**
+Rules:
+- `physical_adherence`, `instruction_alignment` ∈ **1–5**; the six sub-scores ∈ **0/1/2**.
+- **All eight scores required.** If a call fails, still write the line with the scores you have and
+  a non-null `error` — never silently drop an item.
+- Never invent scores for a video you could not decode. Write
+  `{"item_id": "...", "error": "decode_failed"}`.
 
-### If an item is unusable
-
-Do **not** invent scores. Emit:
-
-```json
-{ "item_id": "...", "report": true, "reason": "video will not decode | instruction contradicts init_frame | static black frames | other" }
-```
-
-`excluded` in the input already lists **45** items known to be unusable
-(**38** are 48-byte stubs with no `moov` atom; **7** have no `instruction.txt` for their GT episode).
-They are **not** in `items` — you do not need to handle them.
+**Delivery:** open a pull request against the HF dataset
+`HuggingFriends/mllm-as-embodied-world-judge`, putting your file in `bench/train_preannot/`.
+Do not push to `main`. If you cannot open a PR, hand the file back to whoever commissioned the run.
+**Multiple agents are expected to run different models over the same 5,846 items** — the outputs are
+later ensembled, so do not partition the list between yourselves unless told to.
 
 ---
 
-## 7. Scope of this queue — read the predicate, not the title
+## 6. Cost and scale
+
+Per item: **3 API calls**, each with `ceil(duration × 4)` images at ≤512 px, `max_tokens=600`.
+Videos are short (mostly ~5–8 s), so expect roughly **20–35 frames per call**.
+**5,846 items ⇒ ~17,500 calls.** Run with modest concurrency and expect to resume at least once —
+write every line as you get it.
+
+---
+
+## 7. Four traps that will silently corrupt your output
+
+1. **`prompt.txt` is NOT the instruction.** Many directories contain both `instruction.txt` and
+   `prompt.txt`. `instruction.txt` is the canonical task; **`prompt.txt` is the generator's input** —
+   for `_prefix` models it carries a physics preamble, and for `_rewrite` models **it describes a
+   different, narrower action**. Measured: they differ for **22 of 24 models**. Use the `instruction`
+   field or `instruction_url` — never `prompt.txt`.
+2. **`instruction_from_sibling_model: true` is expected.** That item's own folder has no
+   `instruction.txt`, so the URL points into **another model's** folder for the **same
+   `dataset|task|episode`**. Instruction is a property of the ground-truth episode; verified
+   byte-identical across models on 22 GT keys spanning all 11 datasets.
+3. **Do not merge Call A and Call B.** Physical Adherence is judged **without** the instruction on
+   purpose — showing it leaks task context into the physics score and breaks comparability with
+   every existing score.
+4. **Frame 0 IS the declared `init_frame`.** If content visibly departs from `init_frame`, that is
+   real drift (`scene_consistency`), not a framing artefact.
+
+Two perception traps seen in this data:
+- **A near-static video is not automatically `goal_completed` = 0.** A small tool oscillating fast
+  reads as frozen in whole-frame statistics *and* in any every-Nth-frame sample.
+- **If an object appears to grow**, measure something known to be fixed **in the same frame**. If the
+  invariant is unchanged, the object grew — the camera did not move.
+
+---
+
+## 8. Scope — read the predicate, not the title
 
 ```
 train_manifest_v2                                 11,617
@@ -194,18 +274,24 @@ train_manifest_v2                                 11,617
         └ items to label                            5,846
 ```
 
+`excluded[]` in the JSON lists the **45** unusable items with reasons (**38** are 48-byte stubs with
+no `moov` atom; **7** have no `instruction.txt` for their GT episode). They are **not** in `items[]`.
+
 ⚠️ **"Needs pre-annotation" has more than one true answer.** Strictly *"lacks a pre-annotation"* is
-**6,434** — that includes **543** items which already carry a **human** annotation. Those 543 are
-deliberately **not** in this queue. Always quote the predicate together with the number.
+**6,434**, which includes **543** items that already carry a **human** annotation — deliberately not
+queued. Quote the predicate whenever you quote the number.
 
 ---
 
-## 8. Ground rules
+## 9. Ground rules
 
-- **Never** guess a URL by string-stitching. Use the URLs in the JSON.
-- Pre-annotations are **not** gold. They are a first pass to be reviewed by a human.
-- Do not copy a previous item's scores forward. Each item is judged on its own.
-- If you are unsure between two adjacent tiers, **prefer ⚠** — the middle tier is under-used, and an
-  honest ⚠ is worth more than a confident ✗.
+- Pre-annotations are **not** gold. A human reviews and corrects every one.
+- **Never** guess a URL by string-stitching; use the URLs in the JSON.
+- Do not carry scores over between items.
+- Between two adjacent tiers, prefer the middle one. In the existing data `agent_match` and
+  `object_correct` are almost only 0 or 2 — that under-use of 1 is the single most common defect,
+  and an honest 1 is worth more than a confident 0.
 
-Reference work: VideoPhy / VideoPhy2, VideoScore / VideoScore2, WorldModelBench, WorldArena, VBench-2.0.
+Human-facing rubric: `docs.html` in this repo. **If this file and `docs.html` ever disagree,
+`docs.html` wins.** Reference work: VideoPhy / VideoPhy-2, VideoScore / VideoScore-2,
+WorldModelBench, WorldArena, VBench-2.0.
