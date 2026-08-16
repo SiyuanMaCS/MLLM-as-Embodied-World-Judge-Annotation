@@ -236,6 +236,27 @@ Videos are short (mostly ~5–8 s), so expect roughly **20–35 frames per call*
 **5,846 items ⇒ ~17,500 calls.** Run with modest concurrency and expect to resume at least once —
 write every line as you get it.
 
+### Is `max_tokens=600` enough? — measured, not assumed
+
+Completion length over the **5,247** real judge runs that produced the existing pre-annotations
+(tokenised with `cl100k_base`):
+
+| call | median | p99 | **max** | cap | rows ≥550 |
+|---|---:|---:|---:|---:|---:|
+| A — physical adherence | 130 | 193 | **230** | 600 | **0** |
+| B — instruction alignment | 92 | 167 | **265** | 600 | **0** |
+| C — sub-scores *(modelled on 5,132 real note pairs)* | 186 | 264 | **282** | 600 | **0** |
+
+The longest real completion used **44%** of the budget, and **0 of 5,247** rows carried an `error`
+or a null score. Three reasoning-model runs (`cosmos-reason2-32b`, `gpt-5.2`,
+`cosmos3-nano-reasoner`, 875 items each) also completed with **0 errors** at this cap.
+
+⚠️ **Scope of that evidence: it covers the models above, not every model you might pick.** Some
+reasoning models bill hidden thinking tokens against `max_tokens` and can return an empty or
+truncated body. So: **keep 600**, but if your model returns unparseable or empty JSON, retry that
+item at `max_tokens=1500` and record it — do not silently drop the item, and do not raise the cap
+globally, because that changes nothing for the models above and costs money.
+
 ---
 
 ## 7. Four traps that will silently corrupt your output
