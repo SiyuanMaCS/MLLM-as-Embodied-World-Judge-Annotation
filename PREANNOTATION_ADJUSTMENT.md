@@ -1,5 +1,12 @@
 # Pre-annotation Adjustment Spec — v2 → v3
 
+> ⛔ **SUPERSEDED (2026-08-20) by [`EXTERNAL_AGENT_REQUIREMENTS.md`](./EXTERNAL_AGENT_REQUIREMENTS.md).**
+> Two sections of this file are now WRONG and would cost real money to follow:
+> **§3 (re-run the sub-scores)** and **§4 (backfill the 515 notes)** — sub-scores are not a
+> training target, so both are cancelled. The **accept bands in §5 are incomplete**: they band
+> only `instruction_alignment` 1 and 2, and cannot see the v3 change to the 4-vs-5 boundary.
+> Use the other file.
+
 **Who this is for:** the external agent that produced
 `preannotations_train_final_v2.jsonl` (5,796 rows).
 
